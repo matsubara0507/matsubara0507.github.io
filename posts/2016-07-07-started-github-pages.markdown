@@ -103,7 +103,7 @@ $ cp -a _site/. .
 2回目以降は，まず初めに
 ```
 $ rsync -a --filter='P _site/' --filter='P _cache/' --filter='P .git/'
-  --filter='P .stack-work' --filter='P .gitignore' --delete-excluded _site/
+  --filter='P .stack-work' --filter='P .gitignore' --delete-excluded _site/ .
 ```
 とすると，差分を消してくれる．
 
@@ -123,7 +123,7 @@ config = defaultConfiguration
                       "&& rsync -a --filter='P _site/'" `mappend`
                       " --filter='P _cache/' --filter='P .git/'" `mappend`
                       " --filter='P .stack-work' --filter='P .gitignore'" `mappend`
-                      " --delete-excluded _site/" `mappend`
+                      " --delete-excluded _site/ ." `mappend`
                       "&& cp -a _site/. ." `mappend`
                       "&& git add -A" `mappend`
                       "&& git commit -m 'Publish'" `mappend`
