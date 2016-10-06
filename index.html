@@ -1,14 +1,16 @@
----
-title: Home
----
+<div class="home">
+ <div class="top card">
+    $partial("includes/social.html")$
+    <p class="description">$description$</p>
+    <a href="/about.html" class="btn">Read More</a>
+  </div>
+  <div class="posts card">
+      <div class="card-content white-text">
+        <span class="card-title">Posts</span>
 
-<h2>Welcome</h2>
+        $partial("templates/post-list.html")$
 
-<img src="/images/icon.jpg" style="float: right; margin: 10px; height: 150px;" />
-
-<p>基本的にメモ書き用のブログです．</p>
-
-<h2>Posts</h2>
-$partial("templates/post-list.html")$
-
-<p>…or you can find more in the <a href="/archive.html">archives</a>.</p>
+      </div>
+      <a href="/archive.html" class="btn">More</a>
+   </div>
+</div>
