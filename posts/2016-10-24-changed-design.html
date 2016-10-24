@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>
+    
+      Hakyll で作った GitHub Pages のデザインを変更してみた
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="../">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="../">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Hakyll で作った GitHub Pages のデザインを変更してみた</h1>
+    <p class="post-meta">
+      <time datetime="2016-10-24T00:00:00UTC" itemprop="datePublished">
+        Oct 24, 2016
+      </time>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p><a href="./2016-07-07-started-github-pages.html">Hakyll を使って自分の GitHub Pages を作った</a>が，デフォルトのデザインがあんまりカッコよくないので変更してみた．</p>
+<p><a href="https://jaspervdj.be/hakyll/examples.html">ココ</a> とか <a href="http://katychuang.com/hakyll-cssgarden/gallery/">ココ</a> にデザインの例があるのだが，しっくりくるのが無かった．</p>
+<p>そこで，<a href="http://jekyllthemes.org/">Jekyll のテーマ</a> の中からいい感じのテーマを選んで，それを <strong>Hakyll で動くように書き換えてみた</strong> ．</p>
+<p>ただし，自動で変換をするというわけではなく，手作業で変換している． 流石に変換器を作るのはつらそう．</p>
+<h2 id="wing-theme">Wing Theme</h2>
+<p><a href="https://github.com/nikrich/jekyll-wing-template">Wing</a> というテーマがカッコよくかつシンプルで移植しやすそうだったので，今回はこのテーマを Hakyll 用に移植する．</p>
+<p>移植した Hakyll 版の Wing テンプレートは私の <a href="https://github.com/matsubara0507/hakyll-wing-template">GitHub リポジトリ</a>に公開した．</p>
+<h2 id="移植">移植</h2>
+<h3 id="jekyll-と-hakyll">Jekyll と Hakyll</h3>
+<p>Jekyll も Hakyll も HTML に HTML を挿入したり，環境変数みたいのを使えたり，<code>if</code> や <code>for</code> の制御構文が使えたり，かなり共通項が多い． 以下に対応を書いてみた．</p>
+<div class="sourceCode"><pre class="sourceCode html"><code class="sourceCode html"><span class="co">&lt;!-- 比較 : 上 Jekyll 下 Hakyll --&gt;</span>
+
+<span class="co">&lt;!-- HTMLの挿入 --&gt;</span>
+
+{% include header.html %}
+
+$partial(&quot;includes/header.html&quot;)$
+
+<span class="co">&lt;!-- 制御構文 if --&gt;</span>
+{% if page.title %}
+  {{ page.title | escape }}
+{% else %}
+  {{ site.title | escape }}
+{% endif %}
+
+$if(title)$
+  $title$
+$else$
+  $site_title$
+$endif$
+
+<span class="co">&lt;!-- 制御構文 for --&gt;</span>
+
+{% for post in site.posts %}
+  <span class="kw">&lt;li&gt;</span>
+    <span class="kw">&lt;span</span><span class="ot"> class=</span><span class="st">&quot;post-meta&quot;</span><span class="kw">&gt;</span>{{ post.date | date: &quot;%b %-d, %Y&quot; }}<span class="kw">&lt;/span&gt;</span>
+    <span class="kw">&lt;a</span><span class="ot"> class=</span><span class="st">&quot;post-link&quot;</span><span class="ot"> href=</span><span class="st">&quot;{{ post.url | prepend: site.baseurl }}&quot;</span><span class="kw">&gt;</span>{{ post.title }}<span class="kw">&lt;/a&gt;</span>            
+  <span class="kw">&lt;/li&gt;</span>
+{% endfor %}
+
+$for(posts)$
+  <span class="kw">&lt;li&gt;</span>
+    <span class="kw">&lt;span</span><span class="ot"> class=</span><span class="st">&quot;post-meta&quot;</span><span class="kw">&gt;</span>$date$<span class="kw">&lt;/span&gt;</span>
+    <span class="kw">&lt;a</span><span class="ot"> class=</span><span class="st">&quot;post-link&quot;</span><span class="ot"> href=</span><span class="st">&quot;$url$&quot;</span><span class="kw">&gt;</span>$title$<span class="kw">&lt;/a&gt;</span>
+  <span class="kw">&lt;/li&gt;</span>
+$endfor$</code></pre></div>
+<p>基本的に <code>{{ ... }}</code> や <code>{% ... %}</code> が <code>$ ... $</code> に変わっただけのように見える．</p>
+<p>実は環境変数(みたいなの)の設定に関する点で大きく異なる．</p>
+<p>Jekyll の場合，環境変数はディレクトリやファイルから自動で設定される． 対して Hakyll は Haskell プログロムを書いて，自分で設定する必要がある．</p>
+<p>例えば，for 文の <code>posts</code> という変数には，Jekyll の場合 <code>_posts</code> ディレクトリがそのまま対応している． 対して，Hakyll の場合，<code>posts</code> ディレクトリが対応することを次のように <code>site.hs</code> に<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>書いてやる必要がある．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">create [<span class="st">&quot;archive.html&quot;</span>] <span class="fu">$</span> <span class="kw">do</span>
+  route idRoute
+  compile <span class="fu">$</span> <span class="kw">do</span>
+      posts <span class="ot">&lt;-</span> recentFirst <span class="fu">=&lt;&lt;</span> loadAll <span class="st">&quot;posts/*&quot;</span> <span class="co">-- ココと</span>
+      <span class="kw">let</span> archiveCtx <span class="fu">=</span>
+            listField <span class="st">&quot;posts&quot;</span> postCtx (return posts) <span class="ot">`mappend`</span> <span class="co">-- ココ</span>
+            constField <span class="st">&quot;title&quot;</span> <span class="st">&quot;Archives&quot;</span> <span class="ot">`mappend`</span>
+            siteCtx <span class="ot">`mappend`</span>
+            defaultContext</code></pre></div>
+<p>要するに，Hakyll の方が面倒だが自由度が高いのだ．</p>
+<p>なので，この違いを手作業で食ってやる必要があった．</p>
+<h3 id="環境変数を定義">環境変数を定義</h3>
+<p>上述した通り，Hakyll の場合はどこでどんな環境変数を使えるかを自前で全部定義してあげる必要がある．</p>
+<p>Hakyll では <code>match</code> や <code>create</code> という関数を用いることで，HTML ファイルの <code>$ ... $</code> 中身を置き換えたり，ファイル自体を生成したりできる． 例えば，次のようなコードを書ける．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">match <span class="st">&quot;about.md&quot;</span> <span class="fu">$</span> <span class="kw">do</span>
+  route   <span class="fu">$</span> setExtension <span class="st">&quot;html&quot;</span>                       <span class="co">-- (1)</span>
+  compile <span class="fu">$</span> pandocCompiler                            <span class="co">-- (2)</span>
+    <span class="fu">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/page.html&quot;</span>     
+                (siteCtx <span class="ot">`mappend`</span> defaultContext)    <span class="co">-- (3)</span>
+    <span class="fu">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/default.html&quot;</span>
+                (siteCtx <span class="ot">`mappend`</span> defaultContext)    <span class="co">-- (4)</span>
+    <span class="fu">&gt;&gt;=</span> relativizeUrls                                <span class="co">-- (5)</span></code></pre></div>
+<p>これは，<code>about.md</code> ファイルを使って <code>about.html</code> ファイルを生成している． 各手続きを説明すると</p>
+<ol style="list-style-type: decimal">
+<li>拡張子を <code>html</code> に変更</li>
+<li>pandoc で MD から HTML にコンパイル</li>
+<li><code>page.html</code> の <code>$body$</code> に 変換した <code>about.html</code> を挿入</li>
+<li><code>default.html</code> の <code>$body$</code> に変換した <code>about.html</code> を挿入</li>
+<li>URL を相対化</li>
+</ol>
+<ol start="3" style="list-style-type: decimal">
+<li>の “変換した <code>about.html</code>” とは，pandoc でコンパイルまでしたものを指し，(4) のは (3) の挿入までのものを指している．</li>
+</ol>
+<p>ココでの，<code>siteCtx</code> や <code>defaultContext</code> が定義された環境変数のリストである． 例えば次のようなものが書ける．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">siteCtx ::</span> <span class="dt">Context</span> <span class="dt">String</span>
+siteCtx <span class="fu">=</span>
+  dateField <span class="st">&quot;site_title&quot;</span> <span class="st">&quot;My Haskell Blog&quot;</span> <span class="ot">`mappend`</span>
+  dateField <span class="st">&quot;github_account&quot;</span> <span class="st">&quot;ilovehaskell&quot;</span></code></pre></div>
+<p>このような <code>siteCtx</code> を定義して，上記した <code>match &quot;about.md&quot; $ do ...</code> を実行すると，<code>page.html</code> や <code>default.html</code> 内の <code>$site_title$</code> が “My Haskell Blog” に置き換えられる．</p>
+<p>基本的にはこの点をチマチマと書き換えてた．</p>
+<h3 id="sass">sass</h3>
+<p>Jekyll の方の Wing テーマでは内部で Gem の sass コマンドを呼んでいるのだが，Hakyll では同じようにはうまくかなかった．</p>
+<p>なので，外で sass から css にコンパイルすることにした．</p>
+<p>そのうち自動化したい．</p>
+<h3 id="日付と時間">日付と時間</h3>
+<p>Jekyll の場合，与えた環境変数(みたいなの)のフォーマットを後から指定できる．</p>
+<div class="sourceCode"><pre class="sourceCode html"><code class="sourceCode html"><span class="kw">&lt;p</span><span class="ot"> class=</span><span class="st">&quot;post-meta&quot;</span><span class="kw">&gt;</span>
+  <span class="kw">&lt;time</span><span class="ot"> datetime=</span><span class="st">&quot;{{ page.date | date_to_xmlschema }}&quot;</span><span class="ot"> itemprop=</span><span class="st">&quot;datePublished&quot;</span><span class="kw">&gt;</span>
+    {{ page.date | date: &quot;%b %-d, %Y&quot; }}
+  <span class="kw">&lt;/time&gt;</span>
+  ...
+<span class="kw">&lt;/p&gt;</span></code></pre></div>
+<p>2行目と3行目の <code>page.date</code> 形式を別々に指定している． Hakyll ではこれができない…(ちゃんと調べてないのでもしかしたらできるかも…)．</p>
+<p>フォーマットは <code>COntext String</code> を作ったときに指定する必要がある． そのため，今回は別々の変数を与えることにした．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">postCtx ::</span> <span class="dt">Context</span> <span class="dt">String</span>
+postCtx <span class="fu">=</span>
+  dateField <span class="st">&quot;time&quot;</span> <span class="st">&quot;%Y-%m-%dT%H:%M:%S%Z&quot;</span> <span class="ot">`mappend`</span>
+  dateField <span class="st">&quot;date&quot;</span> <span class="st">&quot;%b %-d, %Y&quot;</span> <span class="ot">`mappend`</span>
+  defaultContext</code></pre></div>
+<h3 id="シンタックスハイライト">シンタックスハイライト</h3>
+<p>Jekyll のシンタックスハイライトを Haskell では使うことができなかった． たぶん Jekyll と Haskell の MD から HTML へのトランスレータが違うせいだろう． 現に，Jekyll の場合，下記のようにコードを書く．</p>
+<div class="sourceCode"><pre class="sourceCode html"><code class="sourceCode html">{% highlight ruby %}
+def print_hi(name)
+  puts &quot;Hi, #{name}&quot;
+end
+print_hi('Tom')
+#=&gt; prints 'Hi, Tom' to STDOUT.
+{% endhighlight %}</code></pre></div>
+<p>仕方がないので， パッケージを使うことにした． このやり方は <a href="https://imokuri123.com/blog/2015/12/how-to-create-blog-with-hakyll-part4.html#シンタックスハイライト">このページ</a> を参照した．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">create [<span class="st">&quot;css/highlight.css&quot;</span>] <span class="fu">$</span> <span class="kw">do</span>
+  route   idRoute
+  compile <span class="fu">$</span> makeItem (compressCss <span class="fu">$</span> styleToCss pygments)</code></pre></div>
+<p>こうすることで，Hakyll でも使える <code>highlight.css</code> を作れる．</p>
+<h3 id="config-ファイル">Config ファイル</h3>
+<p>Jekyll は <code>_config.yml</code> で書いた環境変数(みたいなの)を取り込むことができる．</p>
+<p>Hakyll も新しいバージョンでは <code>meta.html</code> でできんことも無いみたいだけど，良くわからないかったので，自前で組み込んだ．</p>
+<p>Haskell の Yaml パッケージは <a href="https://hackage.haskell.org/package/yaml">yaml</a> が有名だが，これは既に決まっている構造の Yaml ファイル読み込むことはできるが，構造が決まってない Yaml を文字列の連想配列みたいのに落とすことはできない． それを行うには <a href="http://hackage.haskell.org/package/HsSyck">HsSync</a> というパッケージをラップした <a href="https://hackage.haskell.org/package/yaml-light">yaml-light</a> を使う．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">main <span class="fu">=</span> <span class="kw">do</span>
+  configYaml <span class="ot">&lt;-</span> parseYamlFile <span class="st">&quot;config.yaml&quot;</span>
+  <span class="kw">let</span> siteCtx <span class="fu">=</span> mkSiteCtx configYaml
+  hakyllWith config <span class="fu">$</span> <span class="kw">do</span> <span class="fu">...</span>
+
+<span class="ot">mkSiteCtx ::</span> <span class="dt">YamlLight</span> <span class="ot">-&gt;</span> <span class="dt">Context</span> <span class="dt">String</span>
+mkSiteCtx <span class="fu">=</span> mconcat <span class="fu">.</span> fmap mkSiteCtx' <span class="fu">.</span> getTerminalsKeys
+  <span class="kw">where</span>
+    mkSiteCtx' (val, [<span class="dt">YStr</span> key]) <span class="fu">=</span> constField (toString key) (toString val)
+    mkSiteCtx' _ <span class="fu">=</span> mempty</code></pre></div>
+<h2 id="今後の展望">今後の展望</h2>
+<p>当分はこのデザインで使っていこうと思う． しかし，このデザインではタグやカテゴリによる管理ができないので対応させるか，対応した Jekyll のテーマをまた移植したい．</p>
+<h2 id="おしまい">おしまい</h2>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p><code>site.hs</code> に書くかどうか自体も自分でいじれる<a href="#fnref1">↩</a></p></li>
+</ol>
+</div>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>
