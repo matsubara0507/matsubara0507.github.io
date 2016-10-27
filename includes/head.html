@@ -3,6 +3,10 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  $if(google_analytics)$
+    $partial("includes/analytics.html")$
+  $endif$
+
   <title>
     $if(title)$
       $title$
