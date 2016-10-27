@@ -8,10 +8,14 @@
   $endif$
 
   <title>
-    $if(title)$
-      $title$
-    $else$
+    $if(isIndex)$
       $site_title$
+    $else$
+      $if(title)$
+        $title$
+      $else$
+        $site_title$
+      $endif$
     $endif$
   </title>
 

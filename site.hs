@@ -61,7 +61,7 @@ main = do
         posts <- take 4 <$> (recentFirst =<< loadAll "posts/*")
         let indexCtx =
               listField "posts" postCtx (return posts) `mappend`
-              constField "title" "My Hakyll Blog" `mappend`
+              boolField "isIndex" (const True) `mappend` 
               siteCtx `mappend`
               defaultContext
 
