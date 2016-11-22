@@ -61,7 +61,7 @@ main = do
         posts <- take 4 <$> (recentFirst =<< loadAll "posts/*")
         let indexCtx =
               listField "posts" postCtx (return posts) `mappend`
-              boolField "isIndex" (const True) `mappend` 
+              boolField "isIndex" (const True) `mappend`
               siteCtx `mappend`
               defaultContext
 
@@ -69,6 +69,16 @@ main = do
             >>= applyAsTemplate indexCtx
             >>= loadAndApplyTemplate "templates/default.html" indexCtx
             >>= relativizeUrls
+
+    create ["sitemap.xml"] $ do
+         route idRoute
+         compile $ do
+           posts <- recentFirst =<< loadAll "posts/*"
+           let sitemapCtx =
+                 listField "entries" (postCtx `mappend` siteCtx) (return posts)
+
+           makeItem ""
+            >>= loadAndApplyTemplate "templates/sitemap.xml" sitemapCtx
 
 --------------------------------------------------------------------------------
 postCtx :: Context String

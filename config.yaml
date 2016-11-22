@@ -1,6 +1,6 @@
 # Site settings
 site_title: ひげメモ
 description: タダのメモ書き
-baseurl: ""
+baseurl: "https://matsubara0507.github.io"
 github:  matsubara0507
 google_analytics: UA-86386380-1
