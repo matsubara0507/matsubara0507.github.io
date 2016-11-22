@@ -83,7 +83,7 @@ main = do
 --------------------------------------------------------------------------------
 postCtx :: Context String
 postCtx =
-  dateField "time" "%Y-%m-%dT%H:%M:%S%Z" `mappend`
+  dateField "time" "%Y-%m-%d" `mappend`
   dateField "date" "%b %-d, %Y" `mappend`
   defaultContext
 
