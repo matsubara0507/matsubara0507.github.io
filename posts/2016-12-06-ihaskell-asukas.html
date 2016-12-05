@@ -70,10 +70,10 @@
   </header>
 
   <div class="post-content" itemprop="articleBody">
-    <p>[IGGG アドベントカレンダー 2016] 6日目の記事です．</p>
+    <p><a href="http://www.adventar.org/calendars/1572">IGGG アドベントカレンダー 2016</a> 6日目の記事です．</p>
 <p>やっと手に入れた <a href="https://arukas.io/">Arukas</a> のアカウント使って簡易的なテストをしました．</p>
 <p>タイトル通り，使ったコンテナは <a href="https://github.com/gibiansky/IHaskell">IHaskell</a> です．</p>
-<p>結論を先に言うと，結局 Arukas ではうまくいってません． ローカルで試したところうまく行きました． サービスが重いせいかもしれませんが，今後うまくいったら追記します．</p>
+<p>結論を先に言うと，結局 Arukas ではうまくいってません． しかし，ローカルで試したところうまく行きました． サービスが重いせいかもしれませんが，今後うまくいったら追記します．</p>
 <h2 id="arukas">Arukas</h2>
 <p>Arukas とはさくらインターネットさんが運営する Web サービスの一つで，Docker コンテナ専用のホスティングサービスです．</p>
 <p>Docker とは任意の用途に特化させた軽量な仮想環境(コンテナ)という感じのモノです． 自分も触り始めたばっかでちっっっとも詳しくないので自分でググって調べてください．</p>
@@ -94,7 +94,7 @@
 <p>現状，Arukas は Docker Hub に公開されているパブリックなコンテナしか Docker イメージしか使えない点に注意です．</p>
 <p>今後，他の方法も可能になるかはわかりません(<a href="https://arukas.io/help/help-dockerfile-upload/">寧ろ無さそう？</a>)．</p>
 <p>なので使い方としては，完成したモノをアップロードするために使うべきなんですかね． テストは別の環境で行って．</p>
-<p>あとは，<code>Apps</code> のところの今作ったアプリ名をクリックして，<code>デプロイ</code> (実行) を押し，<code>Endpoint</code> の URL にアクセスすれば良い．</p>
+<p>あとは，<code>Apps</code> のところの今作ったアプリ名をクリックして，<code>デプロイ</code> (起動) を押し，<code>Endpoint</code> の URL にアクセスすれば良い．</p>
 <div class="figure">
 <img src="../assets/ihaskell-arukas/home.jpg" />
 
@@ -116,7 +116,7 @@ fizzbuzz <span class="fu">=</span> fromMaybe <span class="fu">.</span> show <spa
 <img src="../assets/ihaskell-arukas/error.jpg" />
 
 </div>
-<p>え、エラー？</p>
+<p>え，エラー？</p>
 <p>IPython (2系) の方ではうまくいくのに….</p>
 <p>ローカルでやってみた．</p>
 <div class="figure">
@@ -124,7 +124,7 @@ fizzbuzz <span class="fu">=</span> fromMaybe <span class="fu">.</span> show <spa
 
 </div>
 <p>うまくいった． なかなか遅いが，一応動く．</p>
-<p>なんか途中からコンテナのデプロイすらうまくいかない(時間がめちゃくちゃかかる)ようになったので，向こうの負荷がひどいのかも．</p>
+<p>Arukas の方はときおりコンテナのデプロイすらうまくいかない(時間がめちゃくちゃかかる)ようになったので，向こうの負荷がひどいのかも．</p>
 <h2 id="おしまい">おしまい</h2>
 <p>結果，うまくいかなかったという話． カレンダー用にとはいえ，手抜きですいません． 前述したとおり，うまくいったら追記します．</p>
 <p>ホントは Arukas を LINE Bot に使おうかと思ったけど，別の案を考えたほうがよさそうだなぁ．</p>
