@@ -9,7 +9,7 @@
   background-color: $card-bg-color;
 }
 
-.card { 
+.card {
   margin: $element-top-margin 0 $element-bottom-margin 0;
   background-color: $card-bg-color;
   transition: box-shadow .25s;
@@ -146,6 +146,13 @@
     }
     .card-title {
       line-height: 48px;
+    }
+
+    .figure {
+      img {
+        width: 100%;
+        padding: 10px;
+      }
     }
   }
 

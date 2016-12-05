@@ -169,6 +169,9 @@ body {
       color: inherit; }
     .card .card-content .card-title {
       line-height: 48px; }
+    .card .card-content .figure img {
+      width: 100%;
+      padding: 10px; }
   .card .card-action {
     position: relative;
     background-color: inherit;

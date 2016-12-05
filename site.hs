@@ -18,7 +18,7 @@ main = do
         route   idRoute
         compile $ makeItem (compressCss $ styleToCss pygments)
 
-    match "assets/*" $ do
+    match ("assets/*" .||. "assets/*/*") $ do
         route   idRoute
         compile copyFileCompiler
 
