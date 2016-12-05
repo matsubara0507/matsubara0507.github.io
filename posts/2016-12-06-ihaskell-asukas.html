@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        IHaskell on Docker on Arukas
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">IHaskell on Docker on Arukas</h1>
+    <p class="post-meta">
+      <time datetime="2016-12-06" itemprop="datePublished">
+        Dec 6, 2016
+      </time>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>[IGGG アドベントカレンダー 2016] 6日目の記事です．</p>
+<p>やっと手に入れた <a href="https://arukas.io/">Arukas</a> のアカウント使って簡易的なテストをしました．</p>
+<p>タイトル通り，使ったコンテナは <a href="https://github.com/gibiansky/IHaskell">IHaskell</a> です．</p>
+<p>結論を先に言うと，結局 Arukas ではうまくいってません． ローカルで試したところうまく行きました． サービスが重いせいかもしれませんが，今後うまくいったら追記します．</p>
+<h2 id="arukas">Arukas</h2>
+<p>Arukas とはさくらインターネットさんが運営する Web サービスの一つで，Docker コンテナ専用のホスティングサービスです．</p>
+<p>Docker とは任意の用途に特化させた軽量な仮想環境(コンテナ)という感じのモノです． 自分も触り始めたばっかでちっっっとも詳しくないので自分でググって調べてください．</p>
+<p>現在 Arukas はまだ試験運用中(β版)であり，そのため<a href="https://arukas.io/terms/terms-arukas/">3月</a>までコンテナを10個まで無償で作成できます．</p>
+<p>10月中旬位に登録ユーザーが予想以上になったため，<a href="https://twitter.com/arukas_io/status/788314127684898817">一時的に新規ユーザー登録を停止</a>していましたが，11月末日に再開始されました．</p>
+<p>どうやら，<a href="https://arukas.io/updates/20160908_resume_signup/">以前にも停止していた</a> みたいなので，新規登録はお早めに．</p>
+<h2 id="ihaskell">IHaskell</h2>
+<p>IHaskell とは <a href="https://ipython.org/">IPython</a> で有名な Jupyter Notebook 上で動作する Haskell のことです． IPython は強力でインタラクティブな Python の実行環境です．</p>
+<p>コッチの方も自分はちっっっとも詳しくないのでググってみてください．</p>
+<p>試しに，公式のデモを使ってみるのも良いのかもしれません <a href="https://try.jupyter.org">try.jupyter.org</a> ．</p>
+<h2 id="アプリケーションを作成">アプリケーションを作成</h2>
+<p>アカウント登録したら，アプリを新しく作成をします．</p>
+<div class="figure">
+<img src="../assets/ihaskell-arukas/new_app.jpg" />
+
+</div>
+<p>のように設定しました． (エンドポイントを指定しない場合ランダムに生成される)</p>
+<p>現状，Arukas は Docker Hub に公開されているパブリックなコンテナしか Docker イメージしか使えない点に注意です．</p>
+<p>今後，他の方法も可能になるかはわかりません(<a href="https://arukas.io/help/help-dockerfile-upload/">寧ろ無さそう？</a>)．</p>
+<p>なので使い方としては，完成したモノをアップロードするために使うべきなんですかね． テストは別の環境で行って．</p>
+<p>あとは，<code>Apps</code> のところの今作ったアプリ名をクリックして，<code>デプロイ</code> (実行) を押し，<code>Endpoint</code> の URL にアクセスすれば良い．</p>
+<div class="figure">
+<img src="../assets/ihaskell-arukas/home.jpg" />
+
+</div>
+<h2 id="テスト">テスト</h2>
+<p>適当に有名な <a href="https://ja.wikipedia.org/wiki/Fizz_Buzz">FizzBuzz</a> プログラムでも実行してみます．</p>
+<p>全体のコードはこんな感じ．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad</span> (guard)
+<span class="kw">import </span><span class="dt">Data.Maybe</span> (fromMaybe)
+<span class="kw">import </span><span class="dt">Data.Monoid</span> ((&lt;&gt;))
+
+<span class="ot">fizzbuzz ::</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">String</span>
+fizzbuzz <span class="fu">=</span> fromMaybe <span class="fu">.</span> show <span class="fu">&lt;*&gt;</span> <span class="dv">3</span> <span class="fu">~&gt;</span> <span class="st">&quot;Fizz&quot;</span> <span class="fu">&lt;&gt;</span> <span class="dv">5</span> <span class="fu">~&gt;</span> <span class="st">&quot;Buzz&quot;</span>
+  <span class="kw">where</span>
+    (d <span class="fu">~&gt;</span> s) n <span class="fu">=</span> s <span class="fu">&lt;$</span> guard (n <span class="ot">`mod`</span> d <span class="fu">==</span> <span class="dv">0</span>)</code></pre></div>
+<p><a href="https://www.reddit.com/r/haskell/comments/2cum9p/i_did_a_haskell_fizzbuzz/">ココ</a>より参照した(自分は解説しません)．</p>
+<p>これを Jupyter に書き加えて実行．</p>
+<div class="figure">
+<img src="../assets/ihaskell-arukas/error.jpg" />
+
+</div>
+<p>え、エラー？</p>
+<p>IPython (2系) の方ではうまくいくのに….</p>
+<p>ローカルでやってみた．</p>
+<div class="figure">
+<img src="../assets/ihaskell-arukas/local.jpg" />
+
+</div>
+<p>うまくいった． なかなか遅いが，一応動く．</p>
+<p>なんか途中からコンテナのデプロイすらうまくいかない(時間がめちゃくちゃかかる)ようになったので，向こうの負荷がひどいのかも．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>結果，うまくいかなかったという話． カレンダー用にとはいえ，手抜きですいません． 前述したとおり，うまくいったら追記します．</p>
+<p>ホントは Arukas を LINE Bot に使おうかと思ったけど，別の案を考えたほうがよさそうだなぁ．</p>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>
