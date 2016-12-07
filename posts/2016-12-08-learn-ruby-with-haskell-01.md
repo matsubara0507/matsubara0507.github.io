@@ -1,9 +1,9 @@
 ---
 title: Haskell で学ぶ Ruby (その１)
-thumbnail: /assets/learn-ruby-with-haskell/pc-has-rb.png
+thumbnail: /assets/learn-ruby-with-haskell/pc-has-rb.jpg
 ---
 
-![](/assets/learn-ruby-with-haskell/pc-has-rb.png)
+![](/assets/learn-ruby-with-haskell/pc-has-rb.jpg)
 
 [IGGG アドベントカレンダー](http://www.adventar.org/calendars/1572) 8日目の記事です．
 
