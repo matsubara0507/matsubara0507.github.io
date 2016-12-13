@@ -52,29 +52,29 @@ Marp はマークダウン記法のファイルからスライドを生成して
 まぁわざわざ書き出す必要はないんですけど，GitHub とかでわかるので．
 
 - Markdown から生成
-  - GFM をベースにしてる
-  - `---` でスライドを区切る ([Deckest](http://www.decksetapp.com/) に寄せてる)
+    - GFM をベースにしてる
+    - `---` でスライドを区切る ([Deckest](http://www.decksetapp.com/) に寄せてる)
 - テーマとカラーを指定できる
-  - テーマは頭に `<!-- $theme: gaia -->`
-  - カラーは各ページの頭に `<!-- *template: default -->`
-  - `*` があると一枚だけで無いと以降全部
+    - テーマは頭に `<!-- $theme: gaia -->`
+    - カラーは各ページの頭に `<!-- *template: default -->`
+    - `*` があると一枚だけで無いと以降全部
 - PDFにエクスポート
-  - 現状プレゼンテーションモードが無いので
-  - 発表するときは PDF で
+    - 現状プレゼンテーションモードが無いので
+    - 発表するときは PDF で
 - 画像に関するオプション
-  - `![70%](hoge.jpg)` で拡縮変更
-  - `![center](hoge.jpg)` でセンタリング
-  - `![bg](hoge.jpg)` で背景に設定
-  - `![fit](hoge.jpg)` でサイズを合わせてくれる
-  - `![70% center](hoge.jpg)` 空白区切りで複数指定か
+    - `![70%](hoge.jpg)` で拡縮変更
+    - `![center](hoge.jpg)` でセンタリング
+    - `![bg](hoge.jpg)` で背景に設定
+    - `![fit](hoge.jpg)` でサイズを合わせてくれる
+    - `![70% center](hoge.jpg)` 空白区切りで複数指定か
 - `$ ... $` や `$$ ... $$` で数式をレンダリング
-  - [KaTex](https://khan.github.io/KaTeX/) を使ってる
-  - なので完全に [LaTex 表記をサポートしてるわけではない](https://github.com/Khan/KaTeX/wiki/Function-Support-in-KaTeX)
+    - [KaTex](https://khan.github.io/KaTeX/) を使ってる
+    - なので完全に [LaTex 表記をサポートしてるわけではない](https://github.com/Khan/KaTeX/wiki/Function-Support-in-KaTeX)
 - emoji をサポート
-  - [チェックボックスも絵文字を使えばいいんだって](https://github.com/yhatt/marp/issues/80)
+    - [チェックボックスも絵文字を使えばいいんだって](https://github.com/yhatt/marp/issues/80)
 - `==abc==` でハイライト
 - `<!-- footer: text -->` でフッターを設定
-  - `*` があると以降のスライド全部に付ける
+    - `*` があると以降のスライド全部に付ける
 - `<!-- page_number: true -->` でページ番号をそのページから追加(デフォルトは `false`)
 - `<!-- $width: 12in -->` や `<!-- $height: 6in -->` や `<!-- $size: 16:9 -->` でサイズを変更できる
 
@@ -83,10 +83,10 @@ Marp はマークダウン記法のファイルからスライドを生成して
 逆に，たぶん現状できないのは
 
 - プレゼンテーションモード
-  - [対応予定?](https://github.com/yhatt/marp/issues/13)
+    - [対応予定?](https://github.com/yhatt/marp/issues/13)
 - テーマの作成(カスタム CSS)
-  - 現状のテーマのCSSをいじるのはできる([README](https://github.com/yhatt/marp#readme) 参照)
-  - もっといいのは[対応予定?](https://github.com/yhatt/marp/issues/1)
+    - 現状のテーマのCSSをいじるのはできる([README](https://github.com/yhatt/marp#readme) 参照)
+    - もっといいのは[対応予定?](https://github.com/yhatt/marp/issues/1)
 - ついてるエディタのショートカットをいじれない
 
 これも，他にもあるかもしれない．
