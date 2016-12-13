@@ -112,41 +112,59 @@
 <h3 id="marp-の機能まとめ">Marp の機能まとめ</h3>
 <p>まぁわざわざ書き出す必要はないんですけど，GitHub とかでわかるので．</p>
 <ul>
-<li>Markdown から生成</li>
+<li>Markdown から生成
+<ul>
 <li>GFM をベースにしてる</li>
 <li><code>---</code> でスライドを区切る (<a href="http://www.decksetapp.com/">Deckest</a> に寄せてる)</li>
-<li>テーマとカラーを指定できる</li>
+</ul></li>
+<li>テーマとカラーを指定できる
+<ul>
 <li>テーマは頭に <code>&lt;!-- $theme: gaia --&gt;</code></li>
 <li>カラーは各ページの頭に <code>&lt;!-- *template: default --&gt;</code></li>
 <li><code>*</code> があると一枚だけで無いと以降全部</li>
-<li>PDFにエクスポート</li>
+</ul></li>
+<li>PDFにエクスポート
+<ul>
 <li>現状プレゼンテーションモードが無いので</li>
 <li>発表するときは PDF で</li>
-<li>画像に関するオプション</li>
+</ul></li>
+<li>画像に関するオプション
+<ul>
 <li><code>![70%](hoge.jpg)</code> で拡縮変更</li>
 <li><code>![center](hoge.jpg)</code> でセンタリング</li>
 <li><code>![bg](hoge.jpg)</code> で背景に設定</li>
 <li><code>![fit](hoge.jpg)</code> でサイズを合わせてくれる</li>
 <li><code>![70% center](hoge.jpg)</code> 空白区切りで複数指定か</li>
-<li><code>$ ... $</code> や <code>$$ ... $$</code> で数式をレンダリング</li>
+</ul></li>
+<li><code>$ ... $</code> や <code>$$ ... $$</code> で数式をレンダリング
+<ul>
 <li><a href="https://khan.github.io/KaTeX/">KaTex</a> を使ってる</li>
 <li>なので完全に <a href="https://github.com/Khan/KaTeX/wiki/Function-Support-in-KaTeX">LaTex 表記をサポートしてるわけではない</a></li>
-<li>emoji をサポート</li>
+</ul></li>
+<li>emoji をサポート
+<ul>
 <li><a href="https://github.com/yhatt/marp/issues/80">チェックボックスも絵文字を使えばいいんだって</a></li>
+</ul></li>
 <li><code>==abc==</code> でハイライト</li>
-<li><code>&lt;!-- footer: text --&gt;</code> でフッターを設定</li>
+<li><code>&lt;!-- footer: text --&gt;</code> でフッターを設定
+<ul>
 <li><code>*</code> があると以降のスライド全部に付ける</li>
+</ul></li>
 <li><code>&lt;!-- page_number: true --&gt;</code> でページ番号をそのページから追加(デフォルトは <code>false</code>)</li>
 <li><code>&lt;!-- $width: 12in --&gt;</code> や <code>&lt;!-- $height: 6in --&gt;</code> や <code>&lt;!-- $size: 16:9 --&gt;</code> でサイズを変更できる</li>
 </ul>
 <p>他にもあるかもしれない．</p>
 <p>逆に，たぶん現状できないのは</p>
 <ul>
-<li>プレゼンテーションモード</li>
+<li>プレゼンテーションモード
+<ul>
 <li><a href="https://github.com/yhatt/marp/issues/13">対応予定?</a></li>
-<li>テーマの作成(カスタム CSS)</li>
+</ul></li>
+<li>テーマの作成(カスタム CSS)
+<ul>
 <li>現状のテーマのCSSをいじるのはできる(<a href="https://github.com/yhatt/marp#readme">README</a> 参照)</li>
 <li>もっといいのは<a href="https://github.com/yhatt/marp/issues/1">対応予定?</a></li>
+</ul></li>
 <li>ついてるエディタのショートカットをいじれない</li>
 </ul>
 <p>これも，他にもあるかもしれない．</p>
