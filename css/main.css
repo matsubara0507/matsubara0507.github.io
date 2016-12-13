@@ -172,6 +172,10 @@ body {
     .card .card-content .figure img {
       width: 100%;
       padding: 10px; }
+    .card .card-content div .slide {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px; }
   .card .card-action {
     position: relative;
     background-color: inherit;
