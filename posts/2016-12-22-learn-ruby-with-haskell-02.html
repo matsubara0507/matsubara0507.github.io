@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="Haskell で学ぶ Ruby (その２)" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        Haskell で学ぶ Ruby (その２)
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Haskell で学ぶ Ruby (その２)</h1>
+    <p class="post-meta">
+      <time datetime="2016-12-22" itemprop="datePublished">
+        Dec 22, 2016
+      </time>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p><a href="http://qiita.com/advent-calendar/2016/lang_dev">Qiita の言語実装 advent Calendar 2016</a> の21日目用の記事です． (1日遅れですいません)</p>
+<p>前に書いた <a href="https://matsubara0507.github.io/posts/2016-12-08-learn-ruby-with-haskell-01.html">その１</a> に続いて，「<a href="http://ascii.jp/elem/000/001/230/1230449/">Ruby で学ぶ Ruby</a>」中の MinRuby を <strong>Haskell</strong> で実装していきたいと思います．</p>
+<p>ソースコードは<a href="https://github.com/matsubara0507/MinRuby/tree/master/haskell/minruby">コチラ</a></p>
+<h2 id="minruby">MinRuby</h2>
+<p>ascii.jp にて連載中の 「Ruby で学ぶ Ruby」 でステップバイステップに作成中の処理系． 名前の通り，Ruby のサブクラスになってる．</p>
+<p>自分はそれを，大好きな Haskell で実装してみようと試みてる．</p>
+<p>連載の方は <a href="https://docs.ruby-lang.org/ja/latest/method/Ripper/s/sexp.html">Ripper</a> というライブラリを使って構文解析を省略してるが，Haskell にそんなライブラリが無いので構文解析から少しずつ書いてる．</p>
+<p>今のところ連載の方は，整数演算，論理演算，変数，条件分岐，ループ，組み込み関数が使える． 自分の方は今のところ分岐もどきまで…</p>
+<h2 id="ステップバイステップ">ステップバイステップ</h2>
+<p>その１では雑な二項演算までしか書いてなかったので，少しずつ改良してく．</p>
+<h3 id="型">型</h3>
+<p>まずは最も重要な型から．</p>
+<p>構文解析というのは文字列(<code>String</code>) から構文木に変換するもの． その１ではめんどくさくて文字列の木(<code>Tree String</code> ，<code>Tree</code> は <a href="https://hackage.haskell.org/package/containers">containers</a> から)を使ったが，後々に論理演算を使うためにも，ちゃんと和型を定義してく．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Value</span> <span class="fu">=</span> <span class="dt">SVal</span> {<span class="ot"> getString ::</span> <span class="dt">String</span> }
+           <span class="fu">|</span> <span class="dt">IVal</span> {<span class="ot"> getInt ::</span> <span class="dt">Int</span> }
+           <span class="fu">|</span> <span class="dt">BVal</span> {<span class="ot"> getBool ::</span> <span class="dt">Bool</span> }
+           <span class="fu">|</span> <span class="dt">UVal</span> ()
+           <span class="kw">deriving</span> (<span class="dt">Eq</span>)</code></pre></div>
+<p>Ruby の場合は，このあたりをへテロリストで，なんも気にせず返せるのズルい．</p>
+<div class="sourceCode"><pre class="sourceCode ruby"><code class="sourceCode ruby">p(minruby_parse(<span class="st">&quot;4 * (56 / 7 + 8 + 9)&quot;</span>))
+<span class="co">#=&gt; [&quot;*&quot;, [[&quot;lit&quot;, 4], [&quot;+&quot;, [&quot;+&quot;, [&quot;/&quot;, [&quot;lit&quot;, 56], [&quot;lit&quot;, 7]], [&quot;lit&quot;, 8]], [&quot;lit&quot;, 9]]]]</span></code></pre></div>
+<p>こっちは <code>Tree Value</code> 型を返す(イロイロ省略してる)．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> minrubyParse()
+<span class="dt">Node</span> <span class="st">&quot;*&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">4</span> []], <span class="dt">Node</span> <span class="st">&quot;+&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;/&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">56</span> []], <span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">7</span> []]], <span class="dt">Node</span> <span class="st">&quot;+&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">8</span> []], <span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">9</span> []]]]]</code></pre></div>
+<h3 id="パーサー">パーサー</h3>
+<p>長くなるので今回は割愛．</p>
+<h3 id="整数演算">整数演算</h3>
+<p>連載の方は第4回目で電卓を作り始めた(その前の回は Ruby 入門的なの)．</p>
+<p>自分もまずはそこから．</p>
+<p>意味解析はこんな感じ．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">MinRuby</span> (<span class="dt">Value</span>(..), minrubyParse)
+<span class="kw">import </span><span class="dt">Data.Tree</span> (<span class="dt">Tree</span>(..))
+
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+main <span class="fu">=</span> <span class="kw">do</span>
+  input <span class="ot">&lt;-</span> getLine
+  <span class="kw">let</span> tree <span class="fu">=</span> minrubyParse input
+  print <span class="fu">$</span> evaluate tree
+
+<span class="ot">evaluate ::</span> <span class="dt">Tree</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+evaluate (<span class="dt">Node</span> v ls) <span class="fu">=</span>
+  <span class="kw">if</span> null ls <span class="kw">then</span> v <span class="kw">else</span>
+  <span class="kw">case</span> getString v <span class="kw">of</span>
+    <span class="st">&quot;lit&quot;</span> <span class="ot">-&gt;</span> evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>
+    <span class="st">&quot;+&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="fu">+</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">1</span>)
+    <span class="st">&quot;-&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="fu">-</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">1</span>)
+    <span class="st">&quot;*&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="fu">*</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">1</span>)
+    <span class="st">&quot;/&quot;</span>   <span class="ot">-&gt;</span> intOp div (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">1</span>)
+    <span class="st">&quot;%&quot;</span>   <span class="ot">-&gt;</span> intOp mod (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">1</span>)
+    <span class="st">&quot;**&quot;</span>  <span class="ot">-&gt;</span> intOp (<span class="fu">^</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">1</span>)
+    _     <span class="ot">-&gt;</span> error (<span class="st">&quot;undefined : &quot;</span> <span class="ot">`mappend`</span> show v)
+
+<span class="ot">intOp ::</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+intOp f (<span class="dt">IVal</span> v1) (<span class="dt">IVal</span> v2) <span class="fu">=</span> <span class="dt">IVal</span> <span class="fu">$</span> f v1 v2
+intOp f v1 v2 <span class="fu">=</span> error <span class="fu">$</span> <span class="st">&quot;unmatch type &quot;</span> <span class="ot">`mappend`</span> concatMap show [v1,v2]</code></pre></div>
+<pre><code>$ stack exec -- interp
+4 * (56 / 7 + 8 + 9)
+100</code></pre>
+<h3 id="論理演算">論理演算</h3>
+<p>ここからがめんどい．</p>
+<p>論理演算の型が多相的だからだ．</p>
+<p>今回は単純に型の差分を食ってくれる関数を書いた．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE Rank2Types #-}</span>
+
+<span class="ot">boolOp ::</span> (forall a <span class="fu">.</span> <span class="dt">Ord</span> a <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Bool</span>) <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+boolOp f (<span class="dt">SVal</span> v1) (<span class="dt">SVal</span> v2) <span class="fu">=</span> <span class="dt">BVal</span> <span class="fu">$</span> f v1 v2
+boolOp f (<span class="dt">IVal</span> v1) (<span class="dt">IVal</span> v2) <span class="fu">=</span> <span class="dt">BVal</span> <span class="fu">$</span> f v1 v2
+boolOp f (<span class="dt">BVal</span> v1) (<span class="dt">BVal</span> v2) <span class="fu">=</span> <span class="dt">BVal</span> <span class="fu">$</span> f v1 v2
+boolOp _ _ _ <span class="fu">=</span> <span class="dt">BVal</span> <span class="dt">False</span></code></pre></div>
+<p>勉強不足のため，あんまり詳しくは分かってないので説明は割愛するが，<a href="https://ja.wikibooks.org/wiki/Haskell/%E5%AD%98%E5%9C%A8%E9%87%8F%E5%8C%96%E3%81%95%E3%82%8C%E3%81%9F%E5%9E%8B">このページ</a>の技術を使ってる．</p>
+<p>鍵となるのは1引数目の型 <code>forall a . Ord a =&gt; a -&gt; a -&gt; Bool</code> ． <code>String</code>，<code>Int</code>，<code>Bool</code> に対する別々の型の論理演算を共通の形で利用するためには，このように書いて，いわゆる存在型を使う必要がある．</p>
+<p>で，これを使って <code>evaluate</code> を拡張する．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">evaluate ::</span> <span class="dt">Tree</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+evaluate (<span class="dt">Node</span> v ls) <span class="fu">=</span>
+  <span class="kw">if</span> null ls <span class="kw">then</span> v <span class="kw">else</span>
+  <span class="kw">case</span> getString v <span class="kw">of</span>
+    <span class="st">&quot;lit&quot;</span> <span class="ot">-&gt;</span> evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>
+    <span class="st">&quot;+&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="fu">+</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">1</span>)
+    <span class="st">&quot;-&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="fu">-</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">1</span>)
+    <span class="st">&quot;*&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="fu">*</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">1</span>)
+    <span class="st">&quot;/&quot;</span>   <span class="ot">-&gt;</span> intOp div (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">1</span>)
+    <span class="st">&quot;%&quot;</span>   <span class="ot">-&gt;</span> intOp mod (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">1</span>)
+    <span class="st">&quot;**&quot;</span>  <span class="ot">-&gt;</span> intOp (<span class="fu">^</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">1</span>)
+    <span class="st">&quot;&lt;&quot;</span>   <span class="ot">-&gt;</span> boolOp (<span class="fu">&lt;</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">1</span>)
+    <span class="st">&quot;&lt;=&quot;</span>  <span class="ot">-&gt;</span> boolOp (<span class="fu">&lt;=</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">1</span>)
+    <span class="st">&quot;==&quot;</span>  <span class="ot">-&gt;</span> boolOp (<span class="fu">==</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">1</span>)
+    <span class="st">&quot;!=&quot;</span>  <span class="ot">-&gt;</span> boolOp (<span class="fu">/=</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">1</span>)
+    <span class="st">&quot;&gt;&quot;</span>   <span class="ot">-&gt;</span> boolOp (<span class="fu">&gt;</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">1</span>)
+    <span class="st">&quot;&gt;=&quot;</span>  <span class="ot">-&gt;</span> boolOp (<span class="fu">&gt;=</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>) (evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">1</span>)
+    _     <span class="ot">-&gt;</span> error (<span class="st">&quot;undefined : &quot;</span> <span class="ot">`mappend`</span> show v)</code></pre></div>
+<h3 id="複文と標準出力">複文と標準出力</h3>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> minrubyParse <span class="st">&quot;1+2\n3*4&quot;</span>
+<span class="dt">Node</span> <span class="st">&quot;stmt&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;+&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">1</span> []], <span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">2</span> []]], <span class="dt">Node</span> <span class="st">&quot;*&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">3</span> []], <span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">4</span> []]]]
+<span class="fu">&gt;</span> minrubyParse <span class="st">&quot;p(1+2)&quot;</span>
+<span class="dt">Node</span> <span class="st">&quot;func_call&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;p&quot;</span> [], <span class="dt">Node</span> <span class="st">&quot;+&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">1</span> []], <span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">2</span> []]]]</code></pre></div>
+<p>問題は標準出力の方． Haskell は IO がつらい． まぁ，Applicative のおかげで大木は変更しなくてよいのだが．</p>
+<p>明示的に撮り歩かう必要があるので型を変更する．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">MinRuby</span>
+
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+main <span class="fu">=</span> <span class="kw">do</span>
+  input <span class="ot">&lt;-</span> minrubyLoad
+  <span class="kw">let</span> tree <span class="fu">=</span> minrubyParse input
+  evaluate tree
+  return ()
+
+<span class="ot">evaluate ::</span> <span class="dt">Tree</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Value</span>
+evaluate (<span class="dt">Node</span> v ls) <span class="fu">=</span> <span class="kw">do</span>
+  <span class="kw">if</span> null ls <span class="kw">then</span> return v <span class="kw">else</span>
+  <span class="kw">case</span> getString v <span class="kw">of</span>
+    <span class="st">&quot;func_call&quot;</span> <span class="ot">-&gt;</span> <span class="dt">UVal</span> <span class="fu">&lt;$&gt;</span> (print <span class="fu">=&lt;&lt;</span> evaluate (ls <span class="fu">!!</span> <span class="dv">1</span>))
+    <span class="st">&quot;stmt&quot;</span> <span class="ot">-&gt;</span> foldM (const evaluate) (<span class="dt">UVal</span> ()) ls
+    <span class="st">&quot;lit&quot;</span> <span class="ot">-&gt;</span> evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>
+    <span class="st">&quot;+&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="fu">+</span>) <span class="fu">&lt;$&gt;</span> evaluate (ls <span class="fu">!!</span> <span class="dv">0</span>) <span class="fu">&lt;*&gt;</span> evaluate (ls <span class="fu">!!</span> <span class="dv">1</span>)
+    <span class="st">&quot;-&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="fu">-</span>) <span class="fu">&lt;$&gt;</span> evaluate (ls <span class="fu">!!</span> <span class="dv">0</span>) <span class="fu">&lt;*&gt;</span> evaluate (ls <span class="fu">!!</span> <span class="dv">1</span>)
+    <span class="fu">...</span>
+    _     <span class="ot">-&gt;</span> error (<span class="st">&quot;undefined : &quot;</span> <span class="ot">`mappend`</span> show v)</code></pre></div>
+<p><code>func_call</code> の処理は，連載に習ってとりあえず標準出力にしている．</p>
+<h3 id="変数">変数</h3>
+<p>変数と値をマッピングした，環境(Environment)を定義し，状態として持ちまわす．</p>
+<p>連想配列には <a href="https://hackage.haskell.org/package/hashmap">hashmap</a> ライブラリを，状態型クラスには <a href="https://hackage.haskell.org/package/mtl">mtl</a> を使う．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad.State</span> (<span class="dt">StateT</span>)
+<span class="kw">import </span><span class="dt">Data.HashMap</span> (<span class="dt">Map</span>)
+
+<span class="kw">type</span> <span class="dt">Env</span> <span class="fu">=</span> <span class="dt">Map</span> <span class="dt">String</span> <span class="dt">Value</span>
+<span class="kw">type</span> <span class="dt">Eval</span> a <span class="fu">=</span> <span class="dt">StateT</span> <span class="dt">Env</span> <span class="dt">IO</span> a</code></pre></div>
+<p>構文木は</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> minrubyParse <span class="st">&quot;x = 1&quot;</span>
+<span class="dt">Node</span> <span class="st">&quot;var_assign&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;x&quot;</span> [], <span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">1</span>[]]]
+<span class="fu">&gt;</span> minrubyParse <span class="st">&quot;x&quot;</span>
+<span class="dt">Node</span> <span class="st">&quot;var_ref&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;x&quot;</span> []]</code></pre></div>
+<p>もともと IO を使ってたおかげで，あんまりもとのコードは書き換えなくて済む．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad</span> (join, foldM)
+<span class="kw">import </span><span class="dt">Control.Monad.State.Strict</span> (<span class="dt">StateT</span>, evalStateT, modify, gets)
+<span class="kw">import </span><span class="dt">Control.Monad.Trans</span> (lift)
+<span class="kw">import </span><span class="dt">Data.HashMap</span> (<span class="dt">Map</span>, empty, insert, findWithDefault)
+
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+main <span class="fu">=</span> <span class="kw">do</span>
+  input <span class="ot">&lt;-</span> minrubyLoad
+  <span class="kw">let</span> tree <span class="fu">=</span> minrubyParse input
+  evalStateT (evaluate tree) empty
+  return ()
+
+<span class="ot">evaluate ::</span> <span class="dt">Tree</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Eval</span> <span class="dt">Value</span>
+evaluate (<span class="dt">Node</span> v ls) <span class="fu">=</span> <span class="kw">do</span>
+  <span class="kw">if</span> null ls <span class="kw">then</span> return v <span class="kw">else</span>
+  <span class="kw">case</span> getString v <span class="kw">of</span>
+    <span class="st">&quot;var_assign&quot;</span> <span class="ot">-&gt;</span> join <span class="fu">$</span> assign <span class="fu">&lt;$&gt;</span> evaluate (ls <span class="fu">!!</span> <span class="dv">0</span>) <span class="fu">&lt;*&gt;</span> evaluate (ls <span class="fu">!!</span> <span class="dv">1</span>)
+    <span class="st">&quot;var_ref&quot;</span> <span class="ot">-&gt;</span> refer <span class="fu">=&lt;&lt;</span> evaluate (ls <span class="fu">!!</span> <span class="dv">0</span>)
+    <span class="st">&quot;func_call&quot;</span> <span class="ot">-&gt;</span> <span class="dt">UVal</span> <span class="fu">&lt;$&gt;</span> (lift <span class="fu">.</span> print <span class="fu">=&lt;&lt;</span> evaluate (ls <span class="fu">!!</span> <span class="dv">1</span>))
+    <span class="st">&quot;stmt&quot;</span> <span class="ot">-&gt;</span> foldM (const evaluate) (<span class="dt">UVal</span> ()) ls
+    <span class="st">&quot;lit&quot;</span> <span class="ot">-&gt;</span> evaluate <span class="fu">$</span> ls <span class="fu">!!</span> <span class="dv">0</span>
+    <span class="st">&quot;+&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="fu">+</span>) <span class="fu">&lt;$&gt;</span> evaluate (ls <span class="fu">!!</span> <span class="dv">0</span>) <span class="fu">&lt;*&gt;</span> evaluate (ls <span class="fu">!!</span> <span class="dv">1</span>)
+    <span class="st">&quot;-&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="fu">-</span>) <span class="fu">&lt;$&gt;</span> evaluate (ls <span class="fu">!!</span> <span class="dv">0</span>) <span class="fu">&lt;*&gt;</span> evaluate (ls <span class="fu">!!</span> <span class="dv">1</span>)
+    <span class="fu">...</span>
+    _     <span class="ot">-&gt;</span> error (<span class="st">&quot;undefined : &quot;</span> <span class="ot">`mappend`</span> show v)
+
+<span class="ot">assign ::</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Eval</span> <span class="dt">Value</span>
+assign k v <span class="fu">=</span> modify (insert (getString k) v) <span class="fu">*&gt;</span> return v
+
+<span class="ot">refer ::</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Eval</span> <span class="dt">Value</span>
+refer k <span class="fu">=</span> gets <span class="fu">$</span> findWithDefault emassage (getString k)
+  <span class="kw">where</span>
+    emassage <span class="fu">=</span> error <span class="fu">$</span> <span class="st">&quot;undefined : &quot;</span> <span class="ot">`mappend`</span> getString k</code></pre></div>
+<p><code>assign</code> のとこ，<code>join</code> 使って無理やり畳み込んでる． なんかいい方法ないのかしら…</p>
+<h3 id="条件分岐">条件分岐</h3>
+<p>そもそも，パースがうまくいかない． <code>Node &quot;if&quot; [bexp, exp1, exp2]</code> といった感じに返ってくるが，<code>exp1</code> や <code>exp2</code> に複文が書けない． 難しい…</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">evaluate ::</span> <span class="dt">Tree</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Eval</span> <span class="dt">Value</span>
+evaluate (<span class="dt">Node</span> v ls) <span class="fu">=</span> <span class="kw">do</span>
+  <span class="kw">if</span> null ls <span class="kw">then</span> return v <span class="kw">else</span>
+  <span class="kw">case</span> getString v <span class="kw">of</span>
+    <span class="st">&quot;if&quot;</span>   <span class="ot">-&gt;</span> evaluate (ls <span class="fu">!!</span> <span class="dv">0</span>) <span class="fu">&gt;&gt;=</span>
+                \b <span class="ot">-&gt;</span> evaluate <span class="fu">$</span> <span class="kw">if</span> getBool b <span class="kw">then</span> ls <span class="fu">!!</span> <span class="dv">1</span> <span class="kw">else</span> ls <span class="fu">!!</span> <span class="dv">2</span>
+    <span class="fu">...</span>
+    _     <span class="ot">-&gt;</span> error (<span class="st">&quot;undefined : &quot;</span> <span class="ot">`mappend`</span> show v)</code></pre></div>
+<p>Haskell って，if式を綺麗に書けないんだよなぁ． 参考演算子をデフォで入れてくれればいいのに．</p>
+<h2 id="実行">実行</h2>
+<p>一応，こういう Ruby コードは実行できる．</p>
+<div class="sourceCode"><pre class="sourceCode ruby"><code class="sourceCode ruby">x = <span class="dv">1</span>
+y = x + <span class="dv">1</span>
+<span class="kw">if</span> <span class="dv">0</span> == <span class="dv">0</span>
+  p(y)
+<span class="kw">else</span>
+  p(x)
+<span class="kw">end</span></code></pre></div>
+<pre><code>&gt;stack exec -- interp test.rb
+2</code></pre>
+<h2 id="おしまい">おしまい</h2>
+<p>Parsec 使って，それっぽくパーサーを書いてるが，いよいよ限界が来た． ちゃんと Ruby の BNF 見て書き写さなきゃダメかなぁ．</p>
+<p>そしたら，<a href="https://hackage.haskell.org/package/alex">Alex</a> と <a href="https://hackage.haskell.org/package/happy">Happy</a> の方が楽な気がする…</p>
+<p>頑張って，完成形まで持ってきたいです．</p>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>
