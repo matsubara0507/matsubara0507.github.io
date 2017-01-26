@@ -2,7 +2,7 @@
 title: git challenge に向けて - git 備忘録
 ---
 
-ミクシィ主催の [git challenge というイベントの第5回](https://mixi-recruit.snar.jp/jobboard/detail.aspx) に参加できるようになった．
+ミクシィ主催の [git challenge というイベントの第5回](https://mixi-recruit.snar.jp/jobboard/detail.aspx?id=jcak-QWdFlI) に参加できるようになった．
 
 [git](https://git-scm.com/) は普段から使っているが，基本的に [Atlassian](https://ja.atlassian.com/) の [SourceTree](https://ja.atlassian.com/software/sourcetree) を使ってポチポチしてるだけであり，知識は必要に応じてググったものしかない．
 ということで，とても良い機会なので本を一冊読んで，一から丁寧に学んでみることにした．
