@@ -20,7 +20,7 @@ GitHub 上に[サンプル](https://github.com/mixi-git-challenge)があるの�
 
 ## 参加まで
 
-IGGG で昔々に話題に上がって，兼ねてから気になっていた．
+IGGG で昔々に話題で上がったことがあり，予てから気になっていた．
 
 ![](/assets/after-the-git-challenge/git_power.jpg)
 
