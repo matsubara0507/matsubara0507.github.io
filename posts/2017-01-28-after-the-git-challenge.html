@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="git challenge を終えて" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        git challenge を終えて
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">git challenge を終えて</h1>
+    <p class="post-meta">
+      <time datetime="2017-01-28" itemprop="datePublished">
+        Jan 28, 2017
+      </time>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <div class="figure">
+<img src="../assets/after-the-git-challenge/until_write_blog.jpg" />
+
+</div>
+<p>だそうなので書きます．</p>
+<p>問題をできるだけ使いまわしたいから，ネタバレNGなので，あまり突っ込んだ話は書けませんが．</p>
+<p>ちなみに，結果は丁度真ん中(6/11)ぐらいの順位でした．</p>
+<h2 id="git-challenge">git challenge</h2>
+<p>ミクシィ主催の <a href="https://mixi-recruit.snar.jp/jobboard/detail.aspx">第5回 git challenge</a> に参加してきました．</p>
+<p>git challenge とは，git 版の CTF みたいなもので，業務で実際に起こり得る git のインシデント(?)を直してポイントを稼ぎ，そのポイントを競う大会である．</p>
+<p>GitHub 上に<a href="https://github.com/mixi-git-challenge">サンプル</a>があるので，見てみると分かると思う．</p>
+<h2 id="参加まで">参加まで</h2>
+<p>IGGG で昔々に話題に上がって，兼ねてから気になっていた．</p>
+<div class="figure">
+<img src="../assets/after-the-git-challenge/git_power.jpg" />
+
+</div>
+<p>なんとか日程があったので，応募したら通った(人数が多いと抽選)． ラッキー．</p>
+<p>通ったら，専用 Slack に招待された． 早速過去ログを漁ってみると</p>
+<div class="figure">
+<img src="../assets/after-the-git-challenge/fun_log.jpg" />
+
+</div>
+<p>そうか，過去と未来に挑戦するのか….</p>
+<p>得する情報もあった． 問題によっては，<code>git push origin master -f</code> して過去改変する必要があり，そうすると問題そのものがなくなる． あってれば問題ないんだが，間違ってた時には復元を運営に頼む必要がある． 割と手作業なので，運営側でアクシデントがあると，すぐ直せなくなるから，手元に元の状態も残しておくと良いって書いてあった．</p>
+<h2 id="当日">当日</h2>
+<p>11時集合，10時40分受付開始．</p>
+<p>午前はキーノートとチュートリアル</p>
+<p>キーノートは「他の VCS ではなく git をプロダクト開発で採用するメリットについて」という話がメインな感じだった．</p>
+<p>ランチ((巻き)すし)を食べて，13時半ごろから問題開始． 解答時間は3時間．</p>
+<p>その後，1時間ほど解説して，19時まで懇親会して解散．</p>
+<p>ちなみに，解説は <a href="https://github.com/Kuniwak">kuniwaku</a> さんという方がしてくれたんだが，挑戦された問題のうち，一番難しい(ヤバい)問題を解説してる時が一番楽しそうだった(解説の中で)． <del>もし，今回のよりもヤバい問題を思いついたら，kuniwaku さんに教えると楽しそうに解いてくれるのかもしれない．</del></p>
+<h2 id="感想">感想</h2>
+<ul>
+<li>問題の読み間違えみたいな凡ミスが多かった
+<ul>
+<li>プッシュ先を間違えるとか</li>
+<li>気を付けないと</li>
+</ul></li>
+<li>問題や解説を通して「こういう問題に対してどういうアプローチから始めれば良いか」というのが分かってめちゃくちゃ勉強になった
+<ul>
+<li>何より実戦形式に学べるので入りやすいし楽しい</li>
+</ul></li>
+<li>シェル芸大事
+<ul>
+<li>苦手だったのでつらかった</li>
+</ul></li>
+<li>git も微妙にバージョンが上がって便利コマンドが増えてるので最新を使おう</li>
+<li>一度コミットされてさえいれば復元は可能(時間が経つとつらいが)</li>
+<li>Perl のいいところ
+<ul>
+<li>シェルスクリプトよりはいい</li>
+<li>言語好きなら触ってみると面白いよ，と言われた，やるか…</li>
+</ul></li>
+<li>ミクシィ Slack には Vim チャネルと Emacs チャネルがあるらしい
+<ul>
+<li><del>人数は Vim の方が多い</del></li>
+</ul></li>
+<li>ミクシィには Lisp を1時間半で書ける人がいる</li>
+</ul>
+<p>全体としては「もっとやってたかったなぁ」という感じでした． CTF とかやってる(僕はつよくない)と1日なんで、それに比べると短くてさみしい． しかも，もう二度と参加できないので悲しい(それぐらい楽しかった)．</p>
+<p>まぁ，運営側にすごい負担になるのでしょうがないです． 問題一新して，誰でも再度参加できるの期待してます(それかどっか他の企業でもやってくれないかなぁ)．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>そういえば，参加学生のほとんどが Mac だったなぁ． ぼくは Windows を VAIO で使ってるので，目の前のピンクが <strong>「VAIO でやばいお」</strong> とか言わねーの？って言ってた． 言わねーよ．</p>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>
