@@ -101,6 +101,7 @@ config = defaultConfiguration
                       "&& rsync -a --filter='P _site/'" `mappend`
                       " --filter='P _cache/' --filter='P .git/'" `mappend`
                       " --filter='P .stack-work' --filter='P .gitignore'" `mappend`
+                      " --filter='P draft/'" `mappend`
                       " --delete-excluded _site/ ." `mappend`
                       "&& cp -a _site/. ." `mappend`
                       "&& git add -A" `mappend`
