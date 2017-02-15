@@ -2,4 +2,4 @@ _cache/
 _site/
 .stack-work/
 .sass-cache/
-draft/
+.draft
