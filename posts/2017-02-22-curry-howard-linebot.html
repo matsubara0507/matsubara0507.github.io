@@ -139,7 +139,7 @@ source-repository head
 <h3 id="echo-bot">echo bot</h3>
 <p>まずはテストがてら echo bot を作った．</p>
 <p>その時のソースコードは<a href="https://github.com/matsubara0507/curry-howard-linebot">コチラ</a>．</p>
-<p>Haskell SDK にある [sample コード] が一応 echo bot を作るための handler になってるっぽい． ので，それを参考にしながら，<code>main</code> を補い，不必要な部分は削除して書いた．</p>
+<p>Haskell SDK にある <a href="https://github.com/noraesae/line/tree/master/examples">sample コード</a> が一応 echo bot を作るための handler になってるっぽい． ので，それを参考にしながら，<code>main</code> を補い，不必要な部分は削除して書いた．</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
 
 <span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span>
@@ -197,7 +197,7 @@ echo replyToken content <span class="fu">=</span> <span class="kw">do</span>
 <p>LINE Bot に webhook するためにはシークレットキーが必要で，API を叩くためにはAPIトークンが必要． どちらも，環境変数から取ってきたかったので <code>loohupEnv</code> で取ってきている． エラー処理も何もしていないので，改善の余地ありですね． <code>ChannelSecret</code> 型も <code>ChannelAccessToken</code> 型も一般的な <code>Text</code> 型(lineライブラリには別の意味の <code>Text</code> 型があるので注意)のエイリアスなので，<code>T.pack</code> して変換してる．</p>
 <p>他は，まぁ，Haskell で Web 系のアプリ書くと，こうなるんだろーなという感じに書いてある(サンプルそのまんま)．</p>
 <h3 id="bot-の準備">Bot の準備</h3>
-<p>LINE Bot のアカウントの取得と Heroku アプリを作成． それぞれ公式サイトでカチカチやってればできるはず(ないしはググれば腐るほど出てくる)．</p>
+<p><a href="https://business.line.me/ja/services/bot">LINE Bot のアカウント</a>の取得と <a href="https://www.heroku.com/">Heroku アプリ</a>を作成． それぞれ公式サイトでカチカチやってればできるはず(ないしはググれば腐るほど出てくる)．</p>
 <p>カチカチして Heroku アプリを作った場合は，まずはリポジトリにリモート設定する．</p>
 <pre><code>$ heroku git:remote -a &lt;app-name&gt;</code></pre>
 <p>次に buildpack を設定．</p>
@@ -225,7 +225,7 @@ curryHowardCorrespondence <span class="fu">=</span>
     , [<span class="st">&quot;Session Type&quot;</span>, <span class="st">&quot;セッション型&quot;</span>]
     , <span class="st">&quot;http://ctp.di.fct.unl.pt/~btoninho/mscs12.pdf&quot;</span>)
   ]</code></pre></div>
-<p>対応表は<a href>このスライド</a>を参考にして証明が載ってそうな論文を探した(大変)．</p>
+<p>対応表は<a href="http://icfp16.sigplan.org/event/plmw-icfp-2016-some-types-of-types">このスライド</a>を参考にして証明が載ってそうな論文を探した(大変)．</p>
 <p>これを参照して取ってくるように echo bot を書き換える． Haskell プログラミングはトップダウン．</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">handleMessageEvent ::</span> <span class="dt">ReplyableEvent</span> <span class="dt">EventMessage</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()
 handleMessageEvent event <span class="fu">=</span> <span class="kw">do</span>
