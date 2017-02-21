@@ -84,7 +84,7 @@ source-repository head
 
 その時のソースコードは[コチラ](https://github.com/matsubara0507/curry-howard-linebot)．
 
-Haskell SDK にある [sample コード] が一応 echo bot を作るための handler になってるっぽい．
+Haskell SDK にある [sample コード](https://github.com/noraesae/line/tree/master/examples) が一応 echo bot を作るための handler になってるっぽい．
 ので，それを参考にしながら，`main` を補い，不必要な部分は削除して書いた．
 
 ```Haskell
@@ -153,7 +153,7 @@ LINE Bot に webhook するためにはシークレットキーが必要で，AP
 
 ### Bot の準備
 
-LINE Bot のアカウントの取得と Heroku アプリを作成．
+[LINE Bot のアカウント](https://business.line.me/ja/services/bot)の取得と [Heroku アプリ](https://www.heroku.com/)を作成．
 それぞれ公式サイトでカチカチやってればできるはず(ないしはググれば腐るほど出てくる)．
 
 カチカチして Heroku アプリを作った場合は，まずはリポジトリにリモート設定する．
@@ -201,7 +201,7 @@ curryHowardCorrespondence =
   ]
 ```
 
-対応表は[このスライド]()を参考にして証明が載ってそうな論文を探した(大変)．
+対応表は[このスライド](http://icfp16.sigplan.org/event/plmw-icfp-2016-some-types-of-types)を参考にして証明が載ってそうな論文を探した(大変)．
 
 これを参照して取ってくるように echo bot を書き換える．
 Haskell プログラミングはトップダウン．
