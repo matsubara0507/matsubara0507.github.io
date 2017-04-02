@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
     <url>
+        <loc>https://matsubara0507.github.io/posts/2017-04-02-want-to-make-docker-merge.html</loc>
+        <changefreq>never</changefreq>
+        <lastmod>2017-04-02</lastmod>
+        <priority>0.8</priority>
+    </url>
+
+    <url>
         <loc>https://matsubara0507.github.io/posts/2017-03-30-write-lightweight-dockerfile.html</loc>
         <changefreq>never</changefreq>
         <lastmod>2017-03-30</lastmod>

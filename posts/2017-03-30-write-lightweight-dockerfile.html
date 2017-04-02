@@ -150,7 +150,7 @@ $ docker images | grep haskell
 haskell             latest              198e758a94f7        8 days ago          961.1 MB</code></pre>
 <p>Haskell の<a href="https://github.com/freebroccolo/docker-haskell/blob/5f1ae82bd27501322100b915c9ae6cc9f9aea129/8.0/Dockerfile">公式のDockerfile</a> を見ると，GHC を直接入れて，stack の global config yaml の <code>system-ghc</code> のオプションを <code>true</code> にしている． こうすることで，<code>stack ghc</code> や <code>stack ghci</code> などがカレントディレクトリに config yaml が無い場合に，インストール済みの GHC を使ってくれる．</p>
 <p>なるほど，こうしよう．</p>
-<pre><code>RUN echo 'deb http://ppa.launchpad.net/hvr/ghc/ubuntu trusty main' &gt; /etc/apt/sources.list.d/ghc.list \
+<div class="sourceCode"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span class="kw">RUN</span> echo <span class="st">'deb http://ppa.launchpad.net/hvr/ghc/ubuntu trusty main'</span> &gt; /etc/apt/sources.list.d/ghc.list \
     &amp;&amp; apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F6F88286 \
     &amp;&amp; apt-get update &amp;&amp; apt-get install -y --no-install-recommends \
     ca-certificates \
@@ -159,14 +159,14 @@ haskell             latest              198e758a94f7        8 days ago          
     libtinfo-dev \
     &amp;&amp; apt-get clean \
     &amp;&amp; rm -rf /var/lib/apt/lists/*
-RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 575159689BEFB442 \
-    &amp;&amp; echo 'deb http://download.fpcomplete.com/debian jessie main' | tee /etc/apt/sources.list.d/fpco.list \
+<span class="kw">RUN</span> apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 575159689BEFB442 \
+    &amp;&amp; echo <span class="st">'deb http://download.fpcomplete.com/debian jessie main'</span> | tee /etc/apt/sources.list.d/fpco.list \
     &amp;&amp; apt-get update &amp;&amp; apt-get install -y --no-install-recommends \
     stack \
     &amp;&amp; apt-get clean \
     &amp;&amp; rm -rf /var/lib/apt/lists/*
-RUN stack config set system-ghc --global true
-ENV PATH /opt/ghc/8.0.2/bin:$PATH</code></pre>
+<span class="kw">RUN</span> stack config set system-ghc --global true
+<span class="kw">ENV</span> PATH /opt/ghc/8.0.2/bin:$PATH</code></pre></div>
 <p>stack の入れ方は元ので良さそう．</p>
 <h3 id="erlang">Erlang</h3>
 <p>イロイロ試した結果，<code>erlang-base-hipe</code> いらなそう． これをなくしたらだいぶ build が早くなった．</p>
@@ -177,12 +177,12 @@ erlang              slim                45d18161e949        8 days ago          
 <h3 id="io">Io</h3>
 <p>io をクローンして build した後にクローンしたのを削除するようにした． 一連のレイヤーでやらないと意味ないのでそうした．</p>
 <p>こんな感じ．</p>
-<pre><code>RUN git clone --branch 2015.11.11 --depth 1 https://github.com/stevedekorte/io.git ~/io \
+<div class="sourceCode"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span class="kw">RUN</span> git clone --branch 2015.11.11 --depth 1 https://github.com/stevedekorte/io.git ~/io \
     &amp;&amp; mkdir -p ~/io/build \
     &amp;&amp; cd ~/io/build \
     &amp;&amp; cmake .. \
     &amp;&amp; make install \
-    &amp;&amp; rm -fr ~/io</code></pre>
+    &amp;&amp; rm -fr ~/io</code></pre></div>
 <h3 id="common">Common</h3>
 <p>なんか各言語を独立させたいので，Common の欄はやめた． 必要な箇所で必ず <code>apt-get install</code> するようにした． <code>--no-install-recommends</code> オプションを付ければ何度もインストールされないので問題ないはず．</p>
 <h2 id="修正">修正</h2>
