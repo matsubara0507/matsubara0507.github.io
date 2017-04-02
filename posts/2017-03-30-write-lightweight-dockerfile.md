@@ -105,7 +105,7 @@ Haskell の[公式のDockerfile](https://github.com/freebroccolo/docker-haskell/
 
 なるほど，こうしよう．
 
-```
+```Dockerfile
 RUN echo 'deb http://ppa.launchpad.net/hvr/ghc/ubuntu trusty main' > /etc/apt/sources.list.d/ghc.list \
     && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F6F88286 \
     && apt-get update && apt-get install -y --no-install-recommends \
@@ -147,7 +147,7 @@ io をクローンして build した後にクローンしたのを削除する�
 
 こんな感じ．
 
-```
+```Dockerfile
 RUN git clone --branch 2015.11.11 --depth 1 https://github.com/stevedekorte/io.git ~/io \
     && mkdir -p ~/io/build \
     && cd ~/io/build \
