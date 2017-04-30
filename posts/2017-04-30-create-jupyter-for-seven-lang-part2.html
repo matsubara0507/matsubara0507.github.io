@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="7つの言語の Juputer Notebook を作る (後半戦)" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+    <meta property="og:image" content="/assets/create-jupyter-for-seven-lang/jupyter7.jpg" />
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        7つの言語の Juputer Notebook を作る (後半戦)
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">7つの言語の Juputer Notebook を作る (後半戦)</h1>
+    <p class="post-meta">
+      <time datetime="2017-04-30" itemprop="datePublished">
+        Apr 30, 2017
+      </time>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>「<a href="https://estore.ohmsha.co.jp/titles/978427406857P">7つの言語、7つの世界</a>」という書籍の演習問題をやるために，それらの言語の Jupyter Kernel の入った Jupyter Notebook を作っている．</p>
+<p>長くなりそうだったので2回に分けて，今回は後半戦．</p>
+<p>ちなみに出来上がった Docker イメージは<a href="https://hub.docker.com/r/matsubara0507/jupyter-seven-lang/">コレ</a>．</p>
+<h2 id="前半">前半</h2>
+<p><a href="2017-04-24-create-jupyter-for-seven-lang-part1.html">前半</a>では，Ruby, Io, Scala, Clojure, Haskell を手元でビルドした．</p>
+<p>公判では，Prolog と Erlang をビルドして，7つの言語の入った jupyter notebook を完成させる！</p>
+<h2 id="作る">作る</h2>
+<h3 id="prolog">Prolog</h3>
+<p>二転ぐらいする．</p>
+<p><a href="https://github.com/jupyter/jupyter/wiki/Jupyter-kernels">Jupyter の公式のリスト</a> を見ると，<a href="https://github.com/Calysto/calysto_prolog">ひとつ Prolog Kernel があった</a>．</p>
+<p>言わずもがな， <strong>Build できない</strong>． jupyter のバージョンが古い． README に書いてあるように，<code>pip3 install --upgrade calysto-prolog</code> しても動かないので，fork して書き換えることにした．</p>
+<p>あまり，Python に詳しくないのだが，<code>setup.py</code> をいじるようだ．</p>
+<p><a href="https://github.com/matsubara0507/calysto_prolog/commit/4b857a9146dad89966d99b4ec72363b455af43ce">結果こんな感じ</a>． たしか、<a href="https://github.com/Calysto/calysto_processing/issues/8">この Isuue</a> を参照した気がする．</p>
+<p>もともとは <code>kernel_spec</code> のインストールと <code>setup</code> が一緒に実行されてた． が，今の jupyter は <code>jupyter kernelspec install</code> で<code>kernel_spec</code> のインストールを行うので，分けた．</p>
+<p><a href="https://github.com/matsubara0507/calysto_prolog/blob/docker/Dockerfile">Dockerfile</a> を書いておいたので，ビルドの仕方はそれを参照してほしい(Dockerfile 便利)．</p>
+<p>あとでプルリク投げてみよう．</p>
+<h4 id="prolog-の構文ががが">Prolog の構文ががが</h4>
+<p>うまくできた！と思って jupyter notebook (console) を起動するも…</p>
+<div class="figure">
+<img src="../assets/create-jupyter-for-seven-lang/calysto_prolog_console.jpg" />
+
+</div>
+<p>書籍のサンプルコードが動かない…(<code>friend(wallace, grommit)?</code> は <code>True</code> でないといけない．)．</p>
+<p>等価演算子 <code>=</code> などの論理演算子がデフォルトでないのだ． それもそのはずで，<a href="https://github.com/Calysto/calysto_prolog/blob/master/calysto_prolog/prolog.py">Calysto Prolog は Python で書かれた，独自実装のコンパクト Prologだった</a>． それぐらい知っとけという話だ．</p>
+<p>流石にサンプルが動かせないと <strong>本末転倒</strong> なので，自分で Simple Kernel を書くことにした．</p>
+<p>できたのが<a href="https://github.com/matsubara0507/iprolog">コレ</a>． これ自体は Io 言語のときと同じ様に作った． 簡単だった．</p>
+<h3 id="erlang">Erlang</h3>
+<h5 id="結論-うごかない">結論: うごかない</h5>
+<p>これもバージョンのせいだと思うのだが，リストにあった <a href="https://github.com/robbielynch/ierlang">IErlang</a> がビルドできない． <code>escript</code> をいじってみたり、<code>ierl_script.erl</code> を書き換えてみたり，いろいろ試してみた． 前には進んだんだが，最終的に session socket がどーのこーのと怒られて，IErlang でパッチ当てて IPython のコードを直接書き換えてる部分なのでお手上げ侍(書き換えられたら他の言語が動かなくなるかもだし)．</p>
+<p>直してくれてる Fork もないし，時間かかりそうだからあきらめた．</p>
+<p>で，Io・Prolog と同じように simple kernel を書くことにした．</p>
+<div class="figure">
+<img src="../assets/create-jupyter-for-seven-lang/ierlang_notebook.jpg" />
+
+</div>
+<p>変な数字が入る… 原因は簡単で，simple kernel を書くときに使っている，<code>replwrap</code> というライブラリが，プロンプトの区切り文字を単純にしか区切らないから． つまり</p>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="kw">def</span> _start_erlang(<span class="va">self</span>):
+    sig <span class="op">=</span> signal.signal(signal.SIGINT, signal.SIG_DFL)
+    <span class="cf">try</span>:
+        <span class="va">self</span>.erlangwrapper <span class="op">=</span> replwrap.REPLWrapper(<span class="st">&quot;erl&quot;</span>, <span class="st">&quot;&gt; &quot;</span>, <span class="va">None</span>)
+    <span class="cf">finally</span>:
+        signal.signal(signal.SIGINT, sig)</code></pre></div>
+<p>で，プロンプトの区切り文字を <code>&quot;&gt; &quot;</code> で指定してるのだが，erl は</p>
+<pre><code>1&gt; 1+1.
+2
+2&gt; 2+3.
+5
+3&gt;</code></pre>
+<p>となり，<code>&quot;&gt; &quot;</code> よりも前に行番号みたいのが入る． これはやっかいで，動的に変化するプロンプトの文字を区切れるかが分からない(方法はあるかも)．</p>
+<p>いろいろ考えたが，これ以上弄ってたら終わらないので，諦めた． ちくしょう．</p>
+<h3 id="scala-がおや">Scala がおや？</h3>
+<p>さぁ合体しようと思ったら，急に変なエラーが出てきた． <code>apt-get update</code> が通らない．</p>
+<p>Scala の sbt をインストールしてる URL <code>https://dl.bintray.com/sbt/debian/Release</code> がダメみたいである． ここ最近の事象みたいで，<a href="http://stackoverflow.com/questions/43441152/sbt-download-repository-forbidden">StackOverflow にあった</a>．</p>
+<p>しょうがないので，<code>scala</code> 同様に <a href="https://github.com/matsubara0507/seven-languages-in-seven-weeks/commit/742cff384eeb72cb57b012731104f3796285dea0">GitHub からダウンロードしてくるように変更した</a>．</p>
+<h3 id="合体">合体</h3>
+<p>やっと合体</p>
+<pre><code>$ stack exec -- docker-marge ../Dockerfiles/iruby/Dockerfile ../Dockerfiles/iio/Dockerfile ../Dockerfiles/iprolog/Dockerfile ../Dockerfiles/iscala/Dockerfile ../Dockerfiles/ierlang/Dockerfile ../Dockerfiles/iclojure/Dockerfile ../Dockerfiles/ihaskell/Dockerfile &gt; ../Dockerfiles/jupyter/Dockerfile
+$ cd ../
+$ docker build -t jupyter-seven-lang Dockerfiles/jupyter/Dockerfile</code></pre>
+<p>あいかわらずものすごい時間がかかる(とくに Haskell)が手元ではビルドできた．</p>
+<p>Docker Hub で自動ビルドしてもらったところ…</p>
+<div class="figure">
+<img src="../assets/create-jupyter-for-seven-lang/dockerhub_error.jpg" />
+
+</div>
+<p><code>build finished</code> とか <code>build cancelled</code> とか出る． なぜ…</p>
+<p>ビルド時間のせいかもと思って，Haskell と<a href="https://hub.docker.com/r/matsubara0507/jupyter-six-lang/">それ以外</a>に分けた． でもダメ．</p>
+<p>やっぱり，<a href="http://stackoverflow.com/questions/34440753/docker-hub-timeout-in-automated-build">メモリの上限があるみたい</a>で，手元では，3GBないと IHaskell をビルドできなかったので，そのせいだろう．</p>
+<p>しょうがないから，<code>docker push</code> してあげた． これもいずれ直したい…</p>
+<h2 id="できた">できた</h2>
+<p>壮観</p>
+<div class="figure">
+<img src="../assets/create-jupyter-for-seven-lang/jupyter7.jpg" />
+
+</div>
+<h2 id="おしまい">おしまい</h2>
+<p>Erlang は悔しい…. 何とか，Erlang を読めるようになって動くように修正したい．</p>
+<p>それと，本の演習やらなきゃ(わすれてたw)</p>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>
