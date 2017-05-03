@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="GitHub API を GAS でいい感じで叩くためのライブラリを作った (未完)" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        GitHub API を GAS でいい感じで叩くためのライブラリを作った (未完)
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">GitHub API を GAS でいい感じで叩くためのライブラリを作った (未完)</h1>
+    <p class="post-meta">
+      <time datetime="2017-05-03" itemprop="datePublished">
+        May 3, 2017
+      </time>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>Google Apps Script で <a href="https://developer.github.com/v3/">GitHub API</a> を叩きたくなったが，ライブラリが見つからなかったので，作った。 といっても，現状は <strong>ワタシが必要だった API しか実装していない</strong> です． すいません．</p>
+<ul>
+<li>API ID : <code>MpVhtQfIUrL3OfsqY2BMtnIv0J4XZf0PJ</code></li>
+<li>コード : <a href="https://github.com/matsubara0507/gasdump/tree/githubapi/GitHubAPI" class="uri">https://github.com/matsubara0507/gasdump/tree/githubapi/GitHubAPI</a></li>
+</ul>
+<h2 id="いきさつ">いきさつ</h2>
+<p>GitHub で日記を書こうと思った． で，毎日，日付のファイル作るのだるいので，朝になったら自動で作ってくれるスクリプト書いて動かそうと考えた．</p>
+<p>そんなのわざわざ GitHub API を使わなくても，<code>git</code> コマンド叩けば一発なんだが，スクリプトをホスティングする場所がない(無料で)！ しかし，GAS であればタダで毎日回せる！ ということで，GAS から GitHub API を叩いて，毎日，日記用のファイルを生成+コミットしてくれる<a href="https://github.com/matsubara0507/gasdump/tree/githubapi">スクリプト</a>を書いた．</p>
+<h2 id="作る">作る</h2>
+<p>前に，GAS コードを GitHub でバージョン管理したい．</p>
+<h3 id="バージョン管理">バージョン管理</h3>
+<p>ググったらすごい良いのがあった．</p>
+<ul>
+<li><a href="https://techblog.recruitjobs.net/development/maneged_google-apps-script_by_github">手軽にGoogle Apps ScriptのコードをGithubで管理する | Recruit Jobs TECHBLOG</a></li>
+</ul>
+<p>本当にすごい便利．</p>
+<p>ただ，一度 Diff がうまく取れなくなってしまって困った． 調べたら，ちゃんと <a href="https://github.com/leonhartX/gas-github/issues/18">Issue</a> があった． ファイル名と関数名を一緒にするとだめらしい．</p>
+<h3 id="ファイルをコミットするスクリプト">ファイルをコミットするスクリプト</h3>
+<p>最初は下記のサイトを参考にして GitHub API の認証を OAuth2 で行おうとした．</p>
+<ul>
+<li><a href="http://dackdive.hateblo.jp/entry/2015/11/30/192207">Google Apps ScriptでOAuth2を使う(GitHubのissueを出力) - dackdive's blog</a></li>
+</ul>
+<p>だが，ぜんぜんうまくいかず，<a href="https://developer.github.com/v3/oauth/">APIトークンだけを発行するやり方</a>にした． 最初からそれでよかったかな．</p>
+<p>次に，公式の GitHub API ドキュメントとにらめっこしながら，ファイルをコミットするスクリプトを書いた． 下記のサイトが非常に役に立った．</p>
+<ul>
+<li><a href="http://qiita.com/ngs/items/34e51186a485c705ffdb">GitHub API v3 でリポジトリを作成して、ファイルをコミットする - Qiita</a></li>
+</ul>
+<p>「ファイルをコミットする」といっても実際には複数の処理に分かれているようだ(<code>git-commit</code> もそうなのかな？)．</p>
+<ol style="list-style-type: decimal">
+<li>コミットしたいブランチの情報を取得(既存のブランチに紐づけないならいらない)</li>
+<li>blobオブジェクトを作成(ファイル単位のオブジェクト)</li>
+<li>treeオブジェクトを作成(ディレクトリ単位のオブジェクト)
+<ul>
+<li>差分をしっかりとりたいなら，前のコミットのtreeオブジェクトが必要</li>
+</ul></li>
+<li>commitオブジェクトを作成(treeオブジェクトをコミットに紐づける)</li>
+<li>ブランチに紐づける</li>
+</ol>
+<p>という感じだ． なので，これらを実行する関数を作った．</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">getBranch</span>(branchName<span class="op">,</span> baseUrl<span class="op">,</span> prop) <span class="op">{</span>
+  <span class="kw">var</span> response <span class="op">=</span> <span class="va">UrlFetchApp</span>.<span class="at">fetch</span>(baseUrl <span class="op">+</span> <span class="st">'/branches/'</span> <span class="op">+</span> branchName<span class="op">,</span> <span class="op">{</span>
+    <span class="dt">headers</span><span class="op">:</span> <span class="op">{</span>
+      <span class="dt">Authorization</span><span class="op">:</span> <span class="st">'token '</span> <span class="op">+</span> <span class="va">prop</span>.<span class="at">GITHUB_TOKEN</span>
+    <span class="op">}</span>
+  <span class="op">}</span>)<span class="op">;</span>
+  <span class="cf">return</span> <span class="va">JSON</span>.<span class="at">parse</span>(response)<span class="op">;</span>
+<span class="op">}</span>
+
+<span class="kw">function</span> <span class="at">createBlob</span>(content<span class="op">,</span> baseUrl<span class="op">,</span> prop) <span class="op">{</span>
+  <span class="kw">var</span> data <span class="op">=</span> <span class="op">{</span> <span class="st">'content'</span><span class="op">:</span> content<span class="op">,</span> <span class="st">'encoding'</span><span class="op">:</span> <span class="st">'utf-8'</span> <span class="op">};</span>
+  <span class="kw">var</span> response <span class="op">=</span> <span class="va">UrlFetchApp</span>.<span class="at">fetch</span>(baseUrl <span class="op">+</span> <span class="st">'/git/blobs'</span><span class="op">,</span> <span class="op">{</span>
+    <span class="dt">headers</span><span class="op">:</span> <span class="op">{</span>
+      <span class="dt">Authorization</span><span class="op">:</span> <span class="st">'token '</span> <span class="op">+</span> <span class="va">prop</span>.<span class="at">GITHUB_TOKEN</span>
+    <span class="op">},</span>
+    <span class="dt">method</span><span class="op">:</span> <span class="st">'POST'</span><span class="op">,</span>
+    <span class="dt">contentType</span><span class="op">:</span> <span class="st">'application/json'</span><span class="op">,</span>
+    <span class="dt">payload</span><span class="op">:</span> <span class="va">JSON</span>.<span class="at">stringify</span>(data)
+  <span class="op">}</span>)<span class="op">;</span>
+  <span class="cf">return</span> <span class="va">JSON</span>.<span class="at">parse</span>(response)<span class="op">;</span>
+<span class="op">}</span></code></pre></div>
+<p>全部書くと多くなるので2つだけ(そのときの<a href="https://github.com/matsubara0507/gasdump/blob/06732121139ec6b9c71e7aebdd8dbbb1bdddcef3/MakeTodayDiary.gs">コード</a>)．</p>
+<p>これを呼ぶ部分はこんな感じ．</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">makeTodayDiary</span>() <span class="op">{</span>
+  <span class="kw">var</span> prop <span class="op">=</span> <span class="va">PropertiesService</span>.<span class="at">getScriptProperties</span>().<span class="at">getProperties</span>()<span class="op">;</span>
+  <span class="kw">const</span> username <span class="op">=</span> <span class="va">prop</span>.<span class="at">GITHUB_USERNAME</span><span class="op">;</span>
+  <span class="kw">const</span> repo <span class="op">=</span> <span class="va">prop</span>.<span class="at">GITHUB_REPO</span><span class="op">;</span>
+  <span class="kw">const</span> baseUrl <span class="op">=</span> <span class="st">'https://api.github.com/repos/'</span> <span class="op">+</span> username <span class="op">+</span> <span class="st">'/'</span> <span class="op">+</span> repo
+  <span class="kw">var</span> branch <span class="op">=</span> <span class="at">getBranch</span>(<span class="va">prop</span>.<span class="at">GITHUB_BRANCH</span><span class="op">,</span> baseUrl<span class="op">,</span> prop)<span class="op">;</span>
+  <span class="kw">var</span> pTree <span class="op">=</span> <span class="at">getTree</span>(branch[<span class="st">'commit'</span>][<span class="st">'commit'</span>][<span class="st">'tree'</span>][<span class="st">'sha'</span>]<span class="op">,</span> baseUrl<span class="op">,</span> prop)<span class="op">;</span>
+  <span class="kw">var</span> blob <span class="op">=</span> <span class="at">createBlob</span>(<span class="st">'testgas'</span><span class="op">,</span> baseUrl<span class="op">,</span> prop)<span class="op">;</span>
+  <span class="kw">var</span> data <span class="op">=</span> <span class="op">{</span>
+    <span class="st">'tree'</span><span class="op">:</span> pTree[<span class="st">'tree'</span>].<span class="at">concat</span>([<span class="op">{</span><span class="st">'path'</span><span class="op">:</span> <span class="st">'testgas1.md'</span><span class="op">,</span><span class="st">'mode'</span><span class="op">:</span> <span class="st">'100644'</span><span class="op">,</span><span class="st">'type'</span><span class="op">:</span> <span class="st">'blob'</span><span class="op">,</span><span class="st">'sha'</span><span class="op">:</span> blob[<span class="st">'sha'</span>]<span class="op">}</span>])
+  <span class="op">};</span>
+  <span class="kw">var</span> tree <span class="op">=</span> <span class="at">createTree</span>(data<span class="op">,</span> baseUrl<span class="op">,</span> prop)<span class="op">;</span>
+  <span class="kw">var</span> commit <span class="op">=</span> <span class="at">createCommit</span>(<span class="st">'commit!!'</span><span class="op">,</span> tree[<span class="st">'sha'</span>]<span class="op">,</span> branch[<span class="st">'commit'</span>][<span class="st">'sha'</span>]<span class="op">,</span> baseUrl<span class="op">,</span> prop)<span class="op">;</span>
+  <span class="kw">var</span> result <span class="op">=</span> <span class="at">updateReference</span>(<span class="va">prop</span>.<span class="at">GITHUB_BRANCH</span><span class="op">,</span> commit[<span class="st">'sha'</span>]<span class="op">,</span> baseUrl<span class="op">,</span> prop)<span class="op">;</span>
+  <span class="va">Logger</span>.<span class="at">log</span>(result)<span class="op">;</span>
+<span class="op">}</span></code></pre></div>
+<p>適当にテスト用の<a href="https://github.com/matsubara0507/test-githubAPIhs/commit/3709e0758fbecbe8884100ad5e0e81c7e04b345a">リポジトリを作って試したら</a>いい感じに動いた．</p>
+<h3 id="タイムスタンプ">タイムスタンプ</h3>
+<p>ちなみに，コミット時に必要となるタイムスタンプが意外と困った． コミットに使われるフォーマットは <code>2017-05-02T22:22:22+09:00</code> といった感じ． それを <code>Utilities.formatDate</code> でどう書くかが分からなかった．</p>
+<p><a href="https://developers.google.com/apps-script/reference/utilities/utilities#formatDate(Date,String,String)">公式ドキュメント</a>曰く，Java の <a href="http://docs.oracle.com/javase/7/docs/api/java/text/SimpleDateFormat.html">SimpleDateFormat</a> を参考にすればよいらしい．</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">toISOFormat</span>(date<span class="op">,</span> tz) <span class="op">{</span>
+  <span class="cf">return</span> <span class="va">Utilities</span>.<span class="at">formatDate</span>(date<span class="op">,</span> tz<span class="op">,</span> <span class="st">&quot;yyyy-MM-dd'T'HH:mm:ssXXX&quot;</span>)<span class="op">;</span>
+<span class="op">};</span></code></pre></div>
+<h3 id="ライブラリにする">ライブラリにする</h3>
+<p>どう見たって，重複部分が多いので，まとめて，ついでにライブラリにした．</p>
+<p>最終的にはこんな感じ．</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript">(<span class="kw">function</span>(exports) <span class="op">{</span>
+  <span class="kw">var</span> GitHubAPI<span class="op">;</span>
+  GitHubAPI <span class="op">=</span> (<span class="kw">function</span>()<span class="op">{</span>
+    <span class="va">GitHubAPI</span>.<span class="at">name</span> <span class="op">=</span> <span class="st">'GitHubAPI'</span><span class="op">;</span>
+
+    <span class="kw">function</span> <span class="at">GitHubAPI</span>(userid<span class="op">,</span> repo<span class="op">,</span> token<span class="op">,</span> option) <span class="op">{</span>
+      <span class="kw">this</span>.<span class="at">userid</span> <span class="op">=</span> userid<span class="op">;</span>
+      <span class="kw">this</span>.<span class="at">repo</span> <span class="op">=</span> repo<span class="op">;</span>
+      <span class="kw">this</span>.<span class="at">token</span> <span class="op">=</span> token<span class="op">;</span>
+      <span class="kw">this</span>.<span class="at">option</span> <span class="op">=</span> option <span class="op">!=</span> <span class="kw">null</span> <span class="op">?</span> option : <span class="op">{};</span>
+
+      <span class="cf">if</span>(<span class="op">!</span><span class="kw">this</span>.<span class="va">option</span>.<span class="at">tz</span>) <span class="kw">this</span>.<span class="va">option</span>.<span class="at">tz</span> <span class="op">=</span> <span class="va">Session</span>.<span class="at">getScriptTimeZone</span>()<span class="op">;</span>
+
+      <span class="kw">this</span>.<span class="at">BASE_URL</span> <span class="op">=</span> <span class="st">'https://api.github.com/repos/'</span><span class="op">;</span>
+      <span class="kw">this</span>.<span class="at">API_ENDPOINT</span> <span class="op">=</span> <span class="st">&quot;&quot;</span> <span class="op">+</span> <span class="kw">this</span>.<span class="at">BASE_URL</span> <span class="op">+</span> <span class="kw">this</span>.<span class="at">userid</span> <span class="op">+</span> <span class="st">'/'</span> <span class="op">+</span> <span class="kw">this</span>.<span class="at">repo</span><span class="op">;</span>
+    <span class="op">}</span>
+    <span class="va">GitHubAPI</span>.<span class="va">prototype</span>.<span class="at">runREST</span> <span class="op">=</span> <span class="kw">function</span>(method<span class="op">,</span> endpoint<span class="op">,</span> data) <span class="op">{</span>
+      <span class="kw">var</span> params<span class="op">;</span>
+      <span class="cf">switch</span> (method) <span class="op">{</span>
+        <span class="cf">case</span> <span class="st">'GET'</span><span class="op">:</span>
+          params <span class="op">=</span> <span class="op">{</span> <span class="dt">headers </span><span class="op">:</span> <span class="op">{</span> <span class="dt">Authorization</span><span class="op">:</span> <span class="st">'token '</span> <span class="op">+</span> <span class="kw">this</span>.<span class="at">token</span> <span class="op">}</span> <span class="op">};</span>
+          <span class="cf">break</span><span class="op">;</span>
+        <span class="cf">case</span> <span class="st">'POST'</span><span class="op">:</span>
+        <span class="cf">case</span> <span class="st">'PATCH'</span><span class="op">:</span>
+          params <span class="op">=</span> <span class="op">{</span>
+            <span class="dt">headers</span><span class="op">:</span> <span class="op">{</span>
+              <span class="dt">Authorization</span><span class="op">:</span> <span class="st">'token '</span> <span class="op">+</span> <span class="kw">this</span>.<span class="at">token</span>
+            <span class="op">},</span>
+            <span class="dt">method</span><span class="op">:</span> method<span class="op">,</span>
+            <span class="dt">contentType</span><span class="op">:</span> <span class="st">'application/json'</span><span class="op">,</span>
+            <span class="dt">payload</span><span class="op">:</span> <span class="va">JSON</span>.<span class="at">stringify</span>(data)
+          <span class="op">};</span>
+          <span class="cf">break</span><span class="op">;</span>
+        <span class="dt">default</span><span class="op">:</span>
+          <span class="cf">throw</span> <span class="st">'undefined HTTP method: '</span> <span class="op">+</span> method<span class="op">;</span>
+      <span class="op">}</span>
+      <span class="kw">var</span> response <span class="op">=</span> <span class="va">UrlFetchApp</span>.<span class="at">fetch</span>(<span class="kw">this</span>.<span class="at">API_ENDPOINT</span> <span class="op">+</span> endpoint<span class="op">,</span> params)<span class="op">;</span>
+      <span class="cf">return</span> <span class="va">JSON</span>.<span class="at">parse</span>(response)<span class="op">;</span>
+    <span class="op">};</span>
+
+    <span class="va">GitHubAPI</span>.<span class="va">prototype</span>.<span class="at">get</span> <span class="op">=</span> <span class="kw">function</span>(endpoint)<span class="op">{</span> <span class="cf">return</span> <span class="kw">this</span>.<span class="at">runREST</span>(<span class="st">'GET'</span><span class="op">,</span> endpoint<span class="op">,</span> <span class="kw">null</span>)<span class="op">;</span> <span class="op">};</span>
+    <span class="va">GitHubAPI</span>.<span class="va">prototype</span>.<span class="at">post</span> <span class="op">=</span> <span class="kw">function</span>(endpoint<span class="op">,</span> data)<span class="op">{</span> <span class="cf">return</span> <span class="kw">this</span>.<span class="at">runREST</span>(<span class="st">'POST'</span><span class="op">,</span> endpoint<span class="op">,</span> data)<span class="op">;</span> <span class="op">};</span>
+    <span class="va">GitHubAPI</span>.<span class="va">prototype</span>.<span class="at">patch</span> <span class="op">=</span> <span class="kw">function</span>(endpoint<span class="op">,</span> data)<span class="op">{</span> <span class="cf">return</span> <span class="kw">this</span>.<span class="at">runREST</span>(<span class="st">'PATCH'</span><span class="op">,</span> endpoint<span class="op">,</span> data)<span class="op">;</span> <span class="op">};</span>
+
+    <span class="va">GitHubAPI</span>.<span class="va">prototype</span>.<span class="at">toISOFormat</span> <span class="op">=</span> <span class="kw">function</span>(date<span class="op">,</span> tz) <span class="op">{</span>
+      <span class="cf">return</span> <span class="va">Utilities</span>.<span class="at">formatDate</span>(date<span class="op">,</span> tz<span class="op">,</span> <span class="st">&quot;yyyy-MM-dd'T'HH:mm:ssXXX&quot;</span>)<span class="op">;</span>
+    <span class="op">};</span>
+
+    <span class="va">GitHubAPI</span>.<span class="va">prototype</span>.<span class="at">getBranch</span> <span class="op">=</span> <span class="kw">function</span>(branchName) <span class="op">{</span>
+      <span class="cf">return</span> <span class="kw">this</span>.<span class="at">get</span>(<span class="st">'/branches/'</span> <span class="op">+</span> branchName)<span class="op">;</span>
+    <span class="op">};</span>
+    <span class="va">GitHubAPI</span>.<span class="va">prototype</span>.<span class="at">createBlob</span> <span class="op">=</span> <span class="kw">function</span>(content) <span class="op">{</span>
+      <span class="cf">return</span> <span class="kw">this</span>.<span class="at">post</span>(<span class="st">'/git/blobs'</span><span class="op">,</span> <span class="op">{</span> <span class="st">'content'</span><span class="op">:</span> content<span class="op">,</span> <span class="st">'encoding'</span><span class="op">:</span> <span class="st">'utf-8'</span> <span class="op">}</span>)<span class="op">;</span>
+    <span class="op">};</span>
+    <span class="va">GitHubAPI</span>.<span class="va">prototype</span>.<span class="at">createCommit</span> <span class="op">=</span> <span class="kw">function</span>(message<span class="op">,</span> treeSha<span class="op">,</span> parentSha) <span class="op">{</span>
+      <span class="kw">var</span> data <span class="op">=</span> <span class="op">{</span>
+        <span class="st">'message'</span><span class="op">:</span> message<span class="op">,</span>
+        <span class="st">'author'</span><span class="op">:</span> <span class="op">{</span>
+          <span class="st">'name'</span><span class="op">:</span> <span class="kw">this</span>.<span class="va">option</span>.<span class="at">name</span><span class="op">,</span>
+          <span class="st">'email'</span><span class="op">:</span> <span class="kw">this</span>.<span class="va">option</span>.<span class="at">email</span><span class="op">,</span>
+          <span class="st">'date'</span><span class="op">:</span> <span class="kw">this</span>.<span class="at">toISOFormat</span>(<span class="kw">new</span> <span class="at">Date</span>()<span class="op">,</span> <span class="kw">this</span>.<span class="va">option</span>.<span class="at">tz</span>)
+        <span class="op">},</span>
+        <span class="st">'parents'</span><span class="op">:</span> [parentSha]<span class="op">,</span>
+        <span class="st">'tree'</span><span class="op">:</span> treeSha
+      <span class="op">}</span>    
+      <span class="cf">return</span> <span class="kw">this</span>.<span class="at">post</span>(<span class="st">'/git/commits'</span><span class="op">,</span> data)<span class="op">;</span>
+    <span class="op">};</span>
+    <span class="va">GitHubAPI</span>.<span class="va">prototype</span>.<span class="at">updateReference</span> <span class="op">=</span> <span class="kw">function</span>(branchName<span class="op">,</span> commitSha) <span class="op">{</span>
+      <span class="cf">return</span> <span class="kw">this</span>.<span class="at">patch</span>(<span class="st">'/git/refs/heads/'</span> <span class="op">+</span> branchName<span class="op">,</span> <span class="op">{</span> <span class="st">'sha'</span><span class="op">:</span> commitSha <span class="op">}</span>)<span class="op">;</span>
+    <span class="op">};</span>
+    <span class="va">GitHubAPI</span>.<span class="va">prototype</span>.<span class="at">getTree</span> <span class="op">=</span> <span class="kw">function</span>(treeSha) <span class="op">{</span>
+      <span class="cf">return</span> <span class="kw">this</span>.<span class="at">get</span>(<span class="st">'/git/trees/'</span> <span class="op">+</span> treeSha)<span class="op">;</span>
+    <span class="op">};</span>
+    <span class="va">GitHubAPI</span>.<span class="va">prototype</span>.<span class="at">createTree</span> <span class="op">=</span> <span class="kw">function</span>(data) <span class="op">{</span>
+      <span class="cf">return</span> <span class="kw">this</span>.<span class="at">post</span>(<span class="st">'/git/trees'</span><span class="op">,</span> data)<span class="op">;</span>
+    <span class="op">};</span>
+    <span class="cf">return</span> GitHubAPI<span class="op">;</span>
+  <span class="op">}</span>)()<span class="op">;</span>
+
+  <span class="cf">return</span> <span class="va">exports</span>.<span class="at">GitHubAPI</span> <span class="op">=</span> GitHubAPI<span class="op">;</span>
+<span class="op">}</span>)(<span class="kw">this</span>)<span class="op">;</span></code></pre></div>
+<p><a href="https://github.com/soundTricker/SlackApp/blob/master/bin/Code.gs">Slack API の GAS ライブラリ</a>を参考にした．</p>
+<p>綺麗になってすごい満足．</p>
+<h2 id="実行">実行</h2>
+<p>使う側はこんな感じ</p>
+<div class="sourceCode"><pre class="sourceCode js"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">makeTodayDiary</span>() <span class="op">{</span>  
+  <span class="kw">var</span> prop <span class="op">=</span> <span class="va">PropertiesService</span>.<span class="at">getScriptProperties</span>().<span class="at">getProperties</span>()<span class="op">;</span>
+  <span class="kw">const</span> date <span class="op">=</span> <span class="kw">new</span> <span class="at">Date</span>()<span class="op">;</span>
+
+  <span class="kw">var</span> option <span class="op">=</span> <span class="op">{</span> <span class="dt">name</span><span class="op">:</span> <span class="va">prop</span>.<span class="at">NAME</span><span class="op">,</span> <span class="dt">email</span><span class="op">:</span> <span class="va">prop</span>.<span class="at">EMAIL</span> <span class="op">};</span>
+  <span class="kw">var</span> github <span class="op">=</span> <span class="kw">new</span> <span class="va">GitHubAPI</span>.<span class="at">GitHubAPI</span>(<span class="va">prop</span>.<span class="at">GITHUB_USERNAME</span><span class="op">,</span> <span class="va">prop</span>.<span class="at">GITHUB_REPO</span><span class="op">,</span> <span class="va">prop</span>.<span class="at">GITHUB_TOKEN</span><span class="op">,</span> option)<span class="op">;</span>
+
+  <span class="kw">var</span> branch <span class="op">=</span> <span class="va">github</span>.<span class="at">getBranch</span>(<span class="va">prop</span>.<span class="at">GITHUB_BRANCH</span>)<span class="op">;</span>
+  <span class="kw">var</span> pTree <span class="op">=</span> <span class="va">github</span>.<span class="at">getTree</span>(branch[<span class="st">'commit'</span>][<span class="st">'commit'</span>][<span class="st">'tree'</span>][<span class="st">'sha'</span>])<span class="op">;</span>
+  <span class="kw">var</span> blob <span class="op">=</span> <span class="va">github</span>.<span class="at">createBlob</span>(<span class="st">'# '</span> <span class="op">+</span> <span class="va">Utilities</span>.<span class="at">formatDate</span>(date<span class="op">,</span> <span class="va">option</span>.<span class="at">tz</span><span class="op">,</span> <span class="st">&quot;yyyy/MM/dd (EEE)&quot;</span>))<span class="op">;</span>
+  <span class="kw">var</span> data <span class="op">=</span> <span class="op">{</span>
+    <span class="st">'tree'</span><span class="op">:</span> pTree[<span class="st">'tree'</span>].<span class="at">concat</span>([<span class="op">{</span>
+      <span class="st">'path'</span><span class="op">:</span> <span class="st">'diary/'</span> <span class="op">+</span> <span class="va">Utilities</span>.<span class="at">formatDate</span>(date<span class="op">,</span> <span class="va">option</span>.<span class="at">tz</span><span class="op">,</span> <span class="st">&quot;yyyy/MM/dd&quot;</span>) <span class="op">+</span> <span class="st">'.md'</span><span class="op">,</span>
+      <span class="st">'mode'</span><span class="op">:</span> <span class="st">'100644'</span><span class="op">,</span>
+      <span class="st">'type'</span><span class="op">:</span> <span class="st">'blob'</span><span class="op">,</span>
+      <span class="st">'sha'</span><span class="op">:</span> blob[<span class="st">'sha'</span>]
+    <span class="op">}</span>])
+  <span class="op">};</span>
+  <span class="kw">var</span> tree <span class="op">=</span> <span class="va">github</span>.<span class="at">createTree</span>(data)<span class="op">;</span>
+  <span class="kw">var</span> commit <span class="op">=</span> <span class="va">github</span>.<span class="at">createCommit</span>(<span class="st">'commit!!'</span><span class="op">,</span> tree[<span class="st">'sha'</span>]<span class="op">,</span> branch[<span class="st">'commit'</span>][<span class="st">'sha'</span>])<span class="op">;</span>
+  <span class="kw">var</span> result <span class="op">=</span> <span class="va">github</span>.<span class="at">updateReference</span>(<span class="va">prop</span>.<span class="at">GITHUB_BRANCH</span><span class="op">,</span> commit[<span class="st">'sha'</span>])<span class="op">;</span>
+  <span class="va">Logger</span>.<span class="at">log</span>(result)<span class="op">;</span>
+<span class="op">}</span></code></pre></div>
+<p>こんな感じのコミットがされる．</p>
+<div class="figure">
+<img src="../assets/make-githubapi-lib-for-gas/commit.jpg" />
+
+</div>
+<h2 id="todo">ToDo</h2>
+<ul>
+<li>他のAPIを追加
+<ul>
+<li>非常に多いのですこしずつやってく</li>
+</ul></li>
+<li>ドキュメントの作成</li>
+<li>テストコード
+<ul>
+<li>書きたいけど，どう書けば良いのかな？</li>
+</ul></li>
+</ul>
+<h2 id="おしまい">おしまい</h2>
+<p>日記続くといいなぁ</p>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>
