@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="ポイントフリーワンライナー関数を作って遊んだ (Haskell)" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        ポイントフリーワンライナー関数を作って遊んだ (Haskell)
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">ポイントフリーワンライナー関数を作って遊んだ (Haskell)</h1>
+    <p class="post-meta">
+      <time datetime="2017-05-12" itemprop="datePublished">
+        May 12, 2017
+      </time>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>一行でプログラムや関数を書くのを書く<a href="https://en.wikipedia.org/wiki/One-liner_program">ワンライナー</a>(そのまんま)と言い、引数を取らない形で関数を書くのを<a href="https://wiki.haskell.org/Pointfree">ポイントフリースタイル</a>という．</p>
+<p>Haskell界隈ではポイントフリースタイルが好まれる(？)ようで，ぼくもなんとなく好きだ． まぁ，読みにくくなる場合もあるからよとが読むコードには控えるけども．</p>
+<p>で，遊んでたらいい感じのコードができたので書き残しておく．</p>
+<p>すっごいラフな記事．</p>
+<h2 id="いきさつ">いきさつ</h2>
+<p><a href="https://haskell.jp/">Haskell-jp</a> の Slack に参加してる． そこで，「実数を文字列にするときに整数のときだけ小数点以下を表示しない方法」について質問された。</p>
+<p>ようは</p>
+<pre><code>&gt; pFrac 1.0
+&quot;1&quot;
+&gt; pFrac 1.2
+&quot;1.2&quot;</code></pre>
+<p>という <code>pFrac</code> 関数のコト．</p>
+<p>何人かの人が考えてくれてて，でぼくも考えた．</p>
+<h2 id="pfrac-その1">pFrac その1</h2>
+<p>ぼくは，<code>if</code> 式も <code>let</code> 式もラムダ式も使わず，ポイントフリースタイルで書けないかなと考えた．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">pFrac1 ::</span> (<span class="dt">Show</span> a, <span class="dt">RealFrac</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">String</span>
+pFrac1 <span class="fu">=</span> snd <span class="fu">.</span> uncurry min <span class="fu">.</span> ((negate <span class="fu">.</span> fromIntegral <span class="fu">&amp;&amp;&amp;</span> show) <span class="fu">.</span> floor <span class="fu">&amp;&amp;&amp;</span> (negate <span class="fu">&amp;&amp;&amp;</span> show))</code></pre></div>
+<p>数値だし，うまく比較すれば出せるかなと考えた． タプルにして，出力する文字列と，比較する数値を保持してる． タプル使って後から使う値を保持して計算していくのは，単純ラムダ計算っぽいよね．</p>
+<p><code>floor</code> を <code>ceiling</code> に変えれば，<code>negate</code> 使わずに書けるのでは？と言われた． 確かに，みんな賢いな．</p>
+<h2 id="pfrac-その2">pFrac その2</h2>
+<p><code>Data.Ratio</code> を使って出力する関数を提案した人がいた． 整数なら分数の分母が <code>1</code> だろうというアイデアだ． 賢い．</p>
+<p>もともとはラムダ式使って部分的に束縛していたが，<code>let</code> 式でも書けるよという人が現れ…</p>
+<p>いっそのコトどっちも無い関数にした(別に言い争いは全く起きてないw)．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Arrow</span> ((&amp;&amp;&amp;))
+<span class="kw">import </span><span class="dt">Data.Bool</span> (bool)
+<span class="kw">import </span><span class="dt">Data.Ratio</span> (numerator,denominator,toRational)
+
+<span class="ot">pFrac2 ::</span> (<span class="dt">Show</span> a, <span class="dt">Real</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">String</span>
+pFrac2 <span class="fu">=</span> uncurry (uncurry <span class="fu">&lt;$&gt;</span> bool) <span class="fu">.</span> (show <span class="fu">&amp;&amp;&amp;</span> (show <span class="fu">.</span> numerator <span class="fu">&amp;&amp;&amp;</span> (<span class="fu">==</span>) <span class="dv">1</span> <span class="fu">.</span> denominator) <span class="fu">.</span> toRational)</code></pre></div>
+<p><code>bool :: a -&gt; a -&gt; Bool -&gt; a</code> は <code>if</code> 式と同じ動作をする． <code>uncurry &lt;$&gt; bool</code> は面白い． 型は <code>a -&gt; (a, Bool) -&gt; a</code> となり，中の2引数をアンカリー化する． なんでわざわざ <code>(a, (a, Bool))</code> という形でアンカリー化したかというと，後半ふたつが <code>toRational</code> するからだ．</p>
+<p>ちなみに <code>(&amp;&amp;&amp;)</code> は <code>(a -&gt; b) -&gt; (a -&gt; b') -&gt; a -&gt; (b, b')</code> という感じの型の関数である(<a href="http://hackage.haskell.org/package/base-4.9.1.0/docs/Control-Arrow.html#v:-38--38--38-">正確には違うが</a>)．</p>
+<h2 id="lifta2"><code>liftA2</code></h2>
+<p>そのあとに <code>liftA2</code> を使う形のを提案された． 確かに読みやすかった． <code>liftA2</code> の型は <code>Applicative f =&gt; (a -&gt; b -&gt; c) -&gt; f a -&gt; f b -&gt; f c</code> である． (有名な話だが) 関数の <code>a -&gt;</code> もモナドなので，<code>liftA2 :: (a -&gt; b -&gt; c) -&gt; (x -&gt; a) -&gt; (x -&gt; b) -&gt; (x -&gt; c)</code> とも考えられる． <code>liftA2</code> つよい(とコメントしたらバーベルを持ち上げるスタンプを押された，うまい)．</p>
+<p>で，<code>liftA2</code> って <code>import</code> 無しでかつポイントフリーに書けないかなと思った． <a href="http://hackage.haskell.org/package/base-4.9.1.0/docs/src/GHC.Base.html#liftA2">ソースコード</a>を見ると</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- | Lift a binary function to actions.</span>
+<span class="ot">liftA2 ::</span> <span class="dt">Applicative</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> c) <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f b <span class="ot">-&gt;</span> f c
+liftA2 f a b <span class="fu">=</span> fmap f a <span class="fu">&lt;*&gt;</span> b</code></pre></div>
+<p>となってる． なるほど． まずは <code>b</code> が消せる．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">liftA2 f a <span class="fu">=</span> (<span class="fu">&lt;*&gt;</span>) (fmap f a)</code></pre></div>
+<p>次に <code>a</code></p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">liftA2 f <span class="fu">=</span> (<span class="fu">&lt;*&gt;</span>) <span class="fu">.</span> fmap f</code></pre></div>
+<p>さて，ここで困った… いろいろ試した結果．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">liftA2 f <span class="fu">=</span> (<span class="fu">.</span>) (<span class="fu">&lt;*&gt;</span>) <span class="fu">.</span> fmap f</code></pre></div>
+<p>うん． これはやばい． どっかで見つけたら読めないな．</p>
+<h2 id="fizzbuzz">fizzbuzz</h2>
+<p>書きたくなるよね． 有名なのが<a href="https://www.reddit.com/r/haskell/comments/2cum9p/i_did_a_haskell_fizzbuzz/cjj7g65/">コレ</a>．</p>
+<p>でも，<code>guard</code> をインポートしてるし，<code>let</code> 式も使ってる． 使わないで書けないかなと考えた．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">fizzbuzz ::</span> (<span class="dt">Show</span> b, <span class="dt">Integral</span> b) <span class="ot">=&gt;</span> b <span class="ot">-&gt;</span> <span class="dt">String</span>
+fizzbuzz <span class="fu">=</span> flip (maybe show const) <span class="fu">&lt;*&gt;</span> mconcat <span class="fu">.</span> fmap (<span class="dt">Just</span> <span class="fu">.</span> snd) <span class="fu">.</span> flip (filter <span class="fu">&lt;$&gt;</span> flip (fmap (<span class="dv">0</span> <span class="fu">==</span>) <span class="fu">.</span> (flip mod <span class="fu">&lt;$&gt;</span> fst))) [(<span class="dv">3</span>,<span class="st">&quot;Fizz&quot;</span>),(<span class="dv">5</span>,<span class="st">&quot;Buzz&quot;</span>)]</code></pre></div>
+<p>長い． がインポート要らないし，ワンライナーだし，ポイントフリーだし，分岐も代入もないし良い感じ(個人的には)． やってることは単純だけど．</p>
+<p>まず，<code>filter</code> で割り切れないのを除外し，それを <code>Just</code> でラップし，連結し，<code>Nothing</code> だったら入力した数値を <code>show</code> してる． 順々に頭(<code>Just &quot;Fizz&quot;</code> を返すとしてとか考えて)から(手書きで)書いて行き，型を確認して組み合わせていった． 静的型検査だからできる技．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>ただ遊んだだけです． 変なことに時間を使ってしまった…orz</p>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>
