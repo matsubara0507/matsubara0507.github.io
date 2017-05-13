@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
     <url>
+        <loc>https://matsubara0507.github.io/posts/2017-05-13-fix-haskell-on-win10cu.html</loc>
+        <changefreq>never</changefreq>
+        <lastmod>2017-05-13</lastmod>
+        <priority>0.8</priority>
+    </url>
+
+    <url>
         <loc>https://matsubara0507.github.io/posts/2017-05-12-pointfree-oneliner-haskell-function.html</loc>
         <changefreq>never</changefreq>
         <lastmod>2017-05-12</lastmod>
