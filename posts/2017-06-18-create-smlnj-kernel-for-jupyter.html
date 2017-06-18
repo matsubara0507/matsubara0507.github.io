@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="SML/NJ の Jupyter Kernel を作る" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+    <meta property="og:image" content="/assets/create-smlnj-kernel-for-jupyter/ismlnj2.png" />
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        SML/NJ の Jupyter Kernel を作る
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">SML/NJ の Jupyter Kernel を作る</h1>
+    <p class="post-meta">
+      <time datetime="2017-06-18" itemprop="datePublished">
+        Jun 18, 2017
+      </time>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>「<a href="http://asciidwango.jp/post/160831986220/">純粋関数型データ構造</a>」を読むために，<a href="http://www.smlnj.org/">SML/NJ</a> の Jupyter Simple Kernel を作った話．</p>
+<h2 id="いきさつ">いきさつ</h2>
+<p><strong>純粋関数型</strong> と書いてあったのでてっきり，<strong>Haskell のデータ構造の本</strong> かと思って(間違って)買ってしまった． しかし，同じタイミングで「<a href="https://connpass.com/event/57831/">名古屋PFDS読書会</a>」という勉強会が始まったので，それに合わせて読もうかと思った． で，どーせなら <a href="http://jupyter.org/">Jupyter Notebook</a> でやりたいなと思ってカーネルを作ってみた．</p>
+<h2 id="作った">作った</h2>
+<p><a href="../posts/2017-04-18-create-io-kernel-for-jupyter.html">Io</a> や <a href="2017-04-30-create-jupyter-for-seven-lang-part2">Erleng</a> で同じことしてたので，同じように作った．</p>
+<p>Docker に Jupyter(Python) と SML/NJ を入れて作業した． SML/NJ のインストールの仕方は，<a href="http://www.smlnj.org/install/index.html">公式サイト</a>と <a href="https://hub.docker.com/r/msgodf/dockerfile-smlnj/~/dockerfile/">Docker Hub にあった Dockerfile</a> を参考にした．</p>
+<p>リポジトリは<a href="https://github.com/matsubara0507/simple-ismlnj">ココ</a>で Dockerイメージは<a href="https://hub.docker.com/r/matsubara0507/simple-ismlnj/">コチラ</a>．</p>
+<p>最終的なカーネルのコードはこんな感じ．</p>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="im">from</span> ipykernel.kernelbase <span class="im">import</span> Kernel
+<span class="im">from</span> pexpect <span class="im">import</span> replwrap, EOF
+<span class="im">from</span> subprocess <span class="im">import</span> check_output
+
+<span class="im">import</span> re
+<span class="im">import</span> signal
+
+crlf_pat <span class="op">=</span> re.<span class="bu">compile</span>(<span class="vs">r'[\r\n]+'</span>)
+
+<span class="kw">class</span> SMLNJKernel(Kernel):
+    implementation <span class="op">=</span> <span class="st">'SML/NJ'</span>
+    implementation_version <span class="op">=</span> <span class="st">'0.0.1'</span>
+
+    language_info <span class="op">=</span> {
+        <span class="st">'name'</span>: <span class="st">'SML/NJ'</span>,
+        <span class="co">'codemirror_mode'</span>: <span class="st">'fsharp'</span>,
+        <span class="co">'mimetype'</span>: <span class="st">'text/plain'</span>,
+        <span class="co">'file_extension'</span>: <span class="st">'.sml'</span>
+    }
+
+    _language_version <span class="op">=</span> <span class="st">'110.81'</span>
+
+
+    <span class="at">@property</span>
+    <span class="kw">def</span> language_version(<span class="va">self</span>):
+        <span class="cf">if</span> <span class="va">self</span>._language_version <span class="kw">is</span> <span class="va">None</span>:
+            <span class="va">self</span>._language_version <span class="op">=</span> check_output([<span class="st">'sml'</span>, <span class="st">''</span>]).decode(<span class="st">'utf-8'</span>)
+        <span class="cf">return</span> <span class="va">self</span>._language_version
+
+    <span class="at">@property</span>
+    <span class="kw">def</span> banner(<span class="va">self</span>):
+        <span class="cf">return</span> <span class="st">u'Simple SML/NJ Kernel (</span><span class="sc">%s</span><span class="st">)'</span> <span class="op">%</span> <span class="va">self</span>.language_version
+
+    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, <span class="op">**</span>kwargs):
+        Kernel.<span class="fu">__init__</span>(<span class="va">self</span>, <span class="op">**</span>kwargs)
+        <span class="va">self</span>._start_smlnj()
+
+    <span class="kw">def</span> _start_smlnj(<span class="va">self</span>):
+        sig <span class="op">=</span> signal.signal(signal.SIGINT, signal.SIG_DFL)
+        <span class="cf">try</span>:
+            <span class="va">self</span>.smlnjwrapper <span class="op">=</span> replwrap.REPLWrapper(<span class="st">&quot;sml&quot;</span>, <span class="st">&quot;- &quot;</span>, <span class="va">None</span>)
+        <span class="cf">finally</span>:
+            signal.signal(signal.SIGINT, sig)
+
+    <span class="kw">def</span> do_execute(<span class="va">self</span>, code, silent, store_history<span class="op">=</span><span class="va">True</span>,
+                   user_expressions<span class="op">=</span><span class="va">None</span>, allow_stdin<span class="op">=</span><span class="va">False</span>):
+        code <span class="op">=</span> crlf_pat.sub(<span class="st">' '</span>, code.strip())
+        <span class="cf">if</span> <span class="kw">not</span> code:
+            <span class="cf">return</span> {<span class="st">'status'</span>: <span class="st">'ok'</span>, <span class="st">'execution_count'</span>: <span class="va">self</span>.execution_count,
+                    <span class="co">'payload'</span>: [], <span class="st">'user_expressions'</span>: {}}
+
+        interrupted <span class="op">=</span> <span class="va">False</span>
+        <span class="cf">try</span>:
+            output <span class="op">=</span> <span class="va">self</span>.smlnjwrapper.run_command(code, timeout<span class="op">=</span><span class="va">None</span>)
+        <span class="cf">except</span> <span class="pp">KeyboardInterrupt</span>:
+            <span class="va">self</span>.smlnjwrapper.child.sendintr()
+            interrupted <span class="op">=</span> <span class="va">True</span>
+            <span class="va">self</span>.smlnjwrapper._expect_prompt()
+            output <span class="op">=</span> <span class="va">self</span>.smlnjwrapper.child.before
+        <span class="cf">except</span> EOF:
+            output <span class="op">=</span> <span class="va">self</span>.smlnjwrapper.child.before <span class="op">+</span> <span class="st">'Restarting SML/NJ'</span>
+            <span class="va">self</span>._start_smlnjang()
+
+        <span class="cf">if</span> <span class="kw">not</span> silent:
+            <span class="co"># Send standard output</span>
+            stream_content <span class="op">=</span> {<span class="st">'name'</span>: <span class="st">'stdout'</span>, <span class="st">'text'</span>: output}
+            <span class="va">self</span>.send_response(<span class="va">self</span>.iopub_socket, <span class="st">'stream'</span>, stream_content)
+
+        <span class="cf">if</span> interrupted:
+            <span class="cf">return</span> {<span class="st">'status'</span>: <span class="st">'abort'</span>, <span class="st">'execution_count'</span>: <span class="va">self</span>.execution_count}
+
+        <span class="cf">return</span> {<span class="st">'status'</span>: <span class="st">'ok'</span>, <span class="st">'execution_count'</span>: <span class="va">self</span>.execution_count,
+                <span class="co">'payload'</span>: [], <span class="st">'user_expressions'</span>: {}}
+
+<span class="co"># ===== MAIN =====</span>
+<span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">'__main__'</span>:
+    <span class="im">from</span> IPython.kernel.zmq.kernelapp <span class="im">import</span> IPKernelApp
+    IPKernelApp.launch_instance(kernel_class<span class="op">=</span>SMLNJKernel)</code></pre></div>
+<p>プロンプトを設定することが出来無そうだったので，そのまま <code>-</code> を指定している． そのため，どこかでおかしくなるかも…</p>
+<p>あと，シンタックスハイライトに F# を使った． Jupyter のシンタックスハイライトの <a href="http://codemirror.net/mode/index.html">CodeMirroe には SML が無かった</a> ので，なんとなく近そうな F# にした(OCaml の方が良いのだろうか？)．</p>
+<h2 id="実行">実行</h2>
+<div class="figure">
+<img src="../assets/create-smlnj-kernel-for-jupyter/ismlnj1.jpg" />
+
+</div>
+<div class="figure">
+<img src="../assets/create-smlnj-kernel-for-jupyter/ismlnj2.jpg" />
+
+</div>
+<h2 id="ちなみに">ちなみに</h2>
+<p>末尾にセミコロン <code>;</code> を忘れると，セルの評価が終わらないので注意． やっちゃった場合は，一度止めて(四角の停止ボタンを押す)から再評価してください．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>今のところ，とりあえず動いてるが，サクッと適当に作ったので，どこかおかしい部分があるかも…</p>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+  <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+    <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+      <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+    </a>
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>
