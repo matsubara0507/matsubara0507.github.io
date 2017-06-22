@@ -86,7 +86,7 @@
 <h2 id="いきさつ">いきさつ</h2>
 <p><strong>純粋関数型</strong> と書いてあったのでてっきり，<strong>Haskell のデータ構造の本</strong> かと思って(間違って)買ってしまった． しかし，同じタイミングで「<a href="https://connpass.com/event/57831/">名古屋PFDS読書会</a>」という勉強会が始まったので，それに合わせて読もうかと思った． で，どーせなら <a href="http://jupyter.org/">Jupyter Notebook</a> でやりたいなと思ってカーネルを作ってみた．</p>
 <h2 id="作った">作った</h2>
-<p><a href="../posts/2017-04-18-create-io-kernel-for-jupyter.html">Io</a> や <a href="2017-04-30-create-jupyter-for-seven-lang-part2">Erleng</a> で同じことしてたので，同じように作った．</p>
+<p><a href="../posts/2017-04-18-create-io-kernel-for-jupyter.html">Io</a> や <a href="../posts/2017-04-30-create-jupyter-for-seven-lang-part2">Erleng</a> で同じことしてたので，同じように作った．</p>
 <p>Docker に Jupyter(Python) と SML/NJ を入れて作業した． SML/NJ のインストールの仕方は，<a href="http://www.smlnj.org/install/index.html">公式サイト</a>と <a href="https://hub.docker.com/r/msgodf/dockerfile-smlnj/~/dockerfile/">Docker Hub にあった Dockerfile</a> を参考にした．</p>
 <p>リポジトリは<a href="https://github.com/matsubara0507/simple-ismlnj">ココ</a>で Dockerイメージは<a href="https://hub.docker.com/r/matsubara0507/simple-ismlnj/">コチラ</a>．</p>
 <p>最終的なカーネルのコードはこんな感じ．</p>

@@ -82,7 +82,7 @@
   <div class="post-content" itemprop="articleBody">
     <p>ちょっとイロイロあって Do 記法についていじってたら，知らない動作をしてくれたので，メモっておく．</p>
 <h2 id="いきさつ">いきさつ</h2>
-<p><a href="../2017-04-02-want-to-make-docker-merge.html">前回の記事</a> で書いたように， Haskell の <a href="https://hackage.haskell.org/package/language-dockerfile-0.3.5.0">language-dockerfile</a> というライブラリをいじってた． が，ちょっと違和感を感じる挙動の関数があったので，いじってプルリクでも送ろうかと思い，コードを読んでいたら…</p>
+<p><a href="../posts/2017-04-02-want-to-make-docker-merge.html">前回の記事</a> で書いたように， Haskell の <a href="https://hackage.haskell.org/package/language-dockerfile-0.3.5.0">language-dockerfile</a> というライブラリをいじってた． が，ちょっと違和感を感じる挙動の関数があったので，いじってプルリクでも送ろうかと思い，コードを読んでいたら…</p>
 <h2 id="何が変か">何が変か</h2>
 <p>問題のコードは，例えばコレ．</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">prettyPrintBaseImage ::</span> <span class="dt">BaseImage</span> <span class="ot">-&gt;</span> <span class="dt">Doc</span>

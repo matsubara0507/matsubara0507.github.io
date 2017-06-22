@@ -122,7 +122,7 @@
 </div>
 <p>上図の赤枠のレイヤーは同一である． 上ふたつずつが異なる． なので，ふたつの Dockerfile を前半の共通部分をまず実行し，つぎに異なる部分を実行するような階層構造にしてほしい．</p>
 <p>こうすることで，独立した Dockerfile，例えば Ruby をインストールする Dockerfile と Haskell をインストールする Dockerfile を別々に作成・テストし，それを組み合わせて(マージして)，Ruby と Haskell をインストールする Dockerfile を作りたい．</p>
-<p>と<a href="../2017-03-30-write-lightweight-dockerfile.html">前回の記事</a>の最後で言った(つもり)．</p>
+<p>と<a href="../posts/2017-03-30-write-lightweight-dockerfile.html">前回の記事</a>の最後で言った(つもり)．</p>
 <p>ので，そういうことをしてくれるコマンドを作ってみた．</p>
 <h2 id="どうつくるか">どうつくるか</h2>
 <p>もちろん Haskell (ぶれない)．</p>

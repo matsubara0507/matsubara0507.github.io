@@ -80,7 +80,7 @@
   </header>
 
   <div class="post-content" itemprop="articleBody">
-    <p><a href="../2017-03-27-seven-lang-on-docker.html">前回</a>，7つの言語の処理系の入ったコンテナの <a href="https://github.com/matsubara0507/seven-languages-in-seven-weeks/blob/00d123ee180c6322a441180214a67574fe541eda/seven-lang-docker/Dockerfile">Dockerfile</a> を書いた．</p>
+    <p><a href="../posts/2017-03-27-seven-lang-on-docker.html">前回</a>，7つの言語の処理系の入ったコンテナの <a href="https://github.com/matsubara0507/seven-languages-in-seven-weeks/blob/00d123ee180c6322a441180214a67574fe541eda/seven-lang-docker/Dockerfile">Dockerfile</a> を書いた．</p>
 <p>が，重い． 4GB 近くあるし，build にも1時間ぐらいかかる． これを何とか解消しようと思った．</p>
 <h2 id="各レイヤーを見る">各レイヤーを見る</h2>
 <p>Docker イメージは階層構造になっている． まずは，どこが重いかを確認(ローカルでは <code>seven-lang</code> って名前で作ってた)．</p>
