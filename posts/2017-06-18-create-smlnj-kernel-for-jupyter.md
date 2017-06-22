@@ -13,7 +13,7 @@ thumbnail: /assets/create-smlnj-kernel-for-jupyter/ismlnj2.png
 
 ## 作った
 
-[Io](/posts/2017-04-18-create-io-kernel-for-jupyter.html) や [Erleng](2017-04-30-create-jupyter-for-seven-lang-part2) で同じことしてたので，同じように作った．
+[Io](/posts/2017-04-18-create-io-kernel-for-jupyter.html) や [Erleng](/posts/2017-04-30-create-jupyter-for-seven-lang-part2) で同じことしてたので，同じように作った．
 
 Docker に Jupyter(Python) と SML/NJ を入れて作業した．
 SML/NJ のインストールの仕方は，[公式サイト](http://www.smlnj.org/install/index.html)と [Docker Hub にあった Dockerfile](https://hub.docker.com/r/msgodf/dockerfile-smlnj/~/dockerfile/) を参考にした．

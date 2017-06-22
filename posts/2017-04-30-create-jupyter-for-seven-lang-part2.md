@@ -11,7 +11,7 @@ thumbnail: /assets/create-jupyter-for-seven-lang/jupyter7.jpg
 
 ## 前半
 
-[前半](2017-04-24-create-jupyter-for-seven-lang-part1.html)では，Ruby, Io, Scala, Clojure, Haskell を手元でビルドした．
+[前半](/posts/2017-04-24-create-jupyter-for-seven-lang-part1.html)では，Ruby, Io, Scala, Clojure, Haskell を手元でビルドした．
 
 公判では，Prolog と Erlang をビルドして，7つの言語の入った jupyter notebook を完成させる！
 

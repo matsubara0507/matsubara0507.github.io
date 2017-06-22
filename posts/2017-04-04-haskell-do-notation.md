@@ -6,7 +6,7 @@ title: Do 記法の意外な挙動 (Haskell)
 
 ## いきさつ
 
-[前回の記事](/2017-04-02-want-to-make-docker-merge.html) で書いたように， Haskell の [language-dockerfile](https://hackage.haskell.org/package/language-dockerfile-0.3.5.0) というライブラリをいじってた．
+[前回の記事](/posts/2017-04-02-want-to-make-docker-merge.html) で書いたように， Haskell の [language-dockerfile](https://hackage.haskell.org/package/language-dockerfile-0.3.5.0) というライブラリをいじってた．
 が，ちょっと違和感を感じる挙動の関数があったので，いじってプルリクでも送ろうかと思い，コードを読んでいたら...
 
 ## 何が変か

@@ -6,7 +6,7 @@ title: Haskell で学ぶ Ruby (その２)
 (1日遅れですいません)
 
 
-前に書いた [その１](https://matsubara0507.github.io/posts/2016-12-08-learn-ruby-with-haskell-01.html) に続いて，「[Ruby で学ぶ Ruby](http://ascii.jp/elem/000/001/230/1230449/)」中の MinRuby を **Haskell** で実装していきたいと思います．
+前に書いた [その１](/posts/2016-12-08-learn-ruby-with-haskell-01.html) に続いて，「[Ruby で学ぶ Ruby](http://ascii.jp/elem/000/001/230/1230449/)」中の MinRuby を **Haskell** で実装していきたいと思います．
 
 ソースコードは[コチラ](https://github.com/matsubara0507/MinRuby/tree/master/haskell/minruby)
 

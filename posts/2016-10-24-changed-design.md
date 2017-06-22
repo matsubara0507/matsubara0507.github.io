@@ -2,7 +2,7 @@
 title: Hakyll で作った GitHub Pages のデザインを変更してみた
 ---
 
-[Hakyll を使って自分の GitHub Pages を作った](./2016-07-07-started-github-pages.html)が，デフォルトのデザインがあんまりカッコよくないので変更してみた．
+[Hakyll を使って自分の GitHub Pages を作った](/posts/2016-07-07-started-github-pages.html)が，デフォルトのデザインがあんまりカッコよくないので変更してみた．
 
 [ココ](https://jaspervdj.be/hakyll/examples.html) とか [ココ](http://katychuang.com/hakyll-cssgarden/gallery/) にデザインの例があるのだが，しっくりくるのが無かった．
 

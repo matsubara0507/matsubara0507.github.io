@@ -11,11 +11,11 @@ title: 7つの言語の Juputer Notebook を作る (前半戦)
 これを作ろうと考えて，すでに2ヶ月ぐらい経っている．
 重い腰を上げて，3月末からやっとこさやり始めた．
 
-Docker すら触ったことなかったので，そこから初めて，まずは[7つの言語の処理系の入った Dockerイメージを書いた](2017-03-27-seven-lang-on-docker.html)．
-次に [Docker の軽量化](2017-03-30-write-lightweight-dockerfile)，[Dockerfile の組み合わせ方の考察](2017-04-02-want-to-make-docker-merge)を行って，Docker について軽く学んだ(ちゃんとも学びたい...)．
+Docker すら触ったことなかったので，そこから初めて，まずは[7つの言語の処理系の入った Dockerイメージを書いた](/posts/2017-03-27-seven-lang-on-docker.html)．
+次に [Docker の軽量化](/posts/2017-03-30-write-lightweight-dockerfile)，[Dockerfile の組み合わせ方の考察](/posts/2017-04-02-want-to-make-docker-merge)を行って，Docker について軽く学んだ(ちゃんとも学びたい...)．
 
 そして，やっとこさ Jupyter Kernel の作成に取り掛かった．
-[Jupyter の公式のリスト](https://github.com/jupyter/jupyter/wiki/Jupyter-kernels) を見る限り，Io言語以外は既にありそうなので，まずは [Io言語の Kernel を書いてみた](2017-04-18-create-io-kernel-for-jupyter)．
+[Jupyter の公式のリスト](https://github.com/jupyter/jupyter/wiki/Jupyter-kernels) を見る限り，Io言語以外は既にありそうなので，まずは [Io言語の Kernel を書いてみた](/posts/2017-04-18-create-io-kernel-for-jupyter)．
 
 あとは，組み合わせるだけだ！簡単だ！と思ったのだが...人生そんなに甘くなかった...
 

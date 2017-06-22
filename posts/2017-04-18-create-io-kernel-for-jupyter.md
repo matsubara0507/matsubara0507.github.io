@@ -9,7 +9,7 @@ thumbnail: /assets/create-io-kernel-for-jupyter/iio2.png
 
 ## いきさつ
 
-[何回か前の記事](2017-03-27-seven-lang-on-docker.html)で書いたんだが，「[7つの言語、7つの世界](https://estore.ohmsha.co.jp/titles/978427406857P)」という書籍の Jupyter notebook を作りたい．
+[何回か前の記事](/posts/2017-03-27-seven-lang-on-docker.html)で書いたんだが，「[7つの言語、7つの世界](https://estore.ohmsha.co.jp/titles/978427406857P)」という書籍の Jupyter notebook を作りたい．
 が，Io の Kernerl だけ[なかった](https://github.com/jupyter/jupyter/wiki/Jupyter-kernels)ので，(ついに)作ろうかなと．
 
 ### Io

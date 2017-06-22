@@ -239,7 +239,7 @@ module NatI =
 
 ## 第一級モジュール
 
-[続く...](2016-12-11-ocaml-module-memo02.html)
+[続く...](/posts/2016-12-11-ocaml-module-memo02.html)
 
 ## 参考
 

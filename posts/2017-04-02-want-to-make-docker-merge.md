@@ -51,7 +51,7 @@ ENV PATH /opt/ghc/8.0.2/bin:$PATH
 
 こうすることで，独立した Dockerfile，例えば Ruby をインストールする Dockerfile と Haskell をインストールする Dockerfile を別々に作成・テストし，それを組み合わせて(マージして)，Ruby と Haskell をインストールする Dockerfile を作りたい．
 
-と[前回の記事](/2017-03-30-write-lightweight-dockerfile.html)の最後で言った(つもり)．
+と[前回の記事](/posts/2017-03-30-write-lightweight-dockerfile.html)の最後で言った(つもり)．
 
 ので，そういうことをしてくれるコマンドを作ってみた．
 
