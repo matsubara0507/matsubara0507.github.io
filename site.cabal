@@ -1,5 +1,5 @@
 name:                site
-version:             0.2.0.0
+version:             0.2.0.1
 homepage:            https://matsubara0507.github.io
 license:             MIT
 license-file:        LICENSE
@@ -12,7 +12,7 @@ cabal-version:       >= 1.10
 executable site
   main-is:           site.hs
   build-depends:     base == 4.*
-                   , hakyll == 4.8.*
+                   , hakyll
                    , highlighting-kate
                    , yaml-light
                    , utf8-string
