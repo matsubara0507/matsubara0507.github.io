@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
     <url>
+        <loc>https://matsubara0507.github.io/posts/2017-08-05-create-brainfuck-in-haskell.html</loc>
+        <changefreq>never</changefreq>
+        <lastmod>2017-08-05</lastmod>
+        <priority>0.8</priority>
+    </url>
+
+    <url>
         <loc>https://matsubara0507.github.io/posts/2017-08-02-pycamp-aichi.html</loc>
         <changefreq>never</changefreq>
         <lastmod>2017-08-02</lastmod>

@@ -178,9 +178,9 @@ crlf_pat <span class="op">=</span> re.<span class="bu">compile</span>(<span clas
 
     language_info <span class="op">=</span> {
         <span class="st">'name'</span>: <span class="st">'Io'</span>,
-        <span class="co">'codemirror_mode'</span>: <span class="st">'scheme'</span>,
-        <span class="co">'mimetype'</span>: <span class="st">'text/plain'</span>,
-        <span class="co">'file_extension'</span>: <span class="st">'.io'</span>
+        <span class="st">'codemirror_mode'</span>: <span class="st">'scheme'</span>,
+        <span class="st">'mimetype'</span>: <span class="st">'text/plain'</span>,
+        <span class="st">'file_extension'</span>: <span class="st">'.io'</span>
     }
 
     _language_version <span class="op">=</span> <span class="va">None</span>
@@ -212,7 +212,7 @@ crlf_pat <span class="op">=</span> re.<span class="bu">compile</span>(<span clas
         code <span class="op">=</span> crlf_pat.sub(<span class="st">' '</span>, code.strip())
         <span class="cf">if</span> <span class="kw">not</span> code:
             <span class="cf">return</span> {<span class="st">'status'</span>: <span class="st">'ok'</span>, <span class="st">'execution_count'</span>: <span class="va">self</span>.execution_count,
-                    <span class="co">'payload'</span>: [], <span class="st">'user_expressions'</span>: {}}
+                    <span class="st">'payload'</span>: [], <span class="st">'user_expressions'</span>: {}}
 
         interrupted <span class="op">=</span> <span class="va">False</span>
         <span class="cf">try</span>:
@@ -235,7 +235,7 @@ crlf_pat <span class="op">=</span> re.<span class="bu">compile</span>(<span clas
             <span class="cf">return</span> {<span class="st">'status'</span>: <span class="st">'abort'</span>, <span class="st">'execution_count'</span>: <span class="va">self</span>.execution_count}
 
         <span class="cf">return</span> {<span class="st">'status'</span>: <span class="st">'ok'</span>, <span class="st">'execution_count'</span>: <span class="va">self</span>.execution_count,
-                <span class="co">'payload'</span>: [], <span class="st">'user_expressions'</span>: {}}
+                <span class="st">'payload'</span>: [], <span class="st">'user_expressions'</span>: {}}
 
 <span class="co"># ===== MAIN =====</span>
 <span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">'__main__'</span>:
