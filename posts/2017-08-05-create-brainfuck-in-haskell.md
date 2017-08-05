@@ -6,7 +6,7 @@ title: Haskell で書く Brainf*ck 処理系
 
 ## いきさつ
 
-先日，[bulderscon in tokyo 2017](https://builderscon.io/tokyo/2017) というイベントに行ってきた．
+先日，[builderscon in tokyo 2017](https://builderscon.io/tokyo/2017) というイベントに行ってきた．
 そこのフリードリンクコーナーにこんな紙コップが...
 
 ![](/assets/create-brainfuck-in-haskell/braincup.jpg)
@@ -20,7 +20,7 @@ title: Haskell で書く Brainf*ck 処理系
 Brainf*ck の処理系は，コードの見た目こそ気持ち悪いが非常に単純．
 
 - コードは8文字 `><+-.,[]` だけで構成される(それ以外は無視)
-- コードを頭から一文字ずつ読み実行していく
+- コードを頭から一文字ずつ読んで実行していく
 - 一本の無限に長いテープ(メモリ)を考える
 - テープは全て `0` で初期化されてる
 - プログラムはテープの数値の変更や読み取りができる
@@ -43,10 +43,10 @@ Brainf*ck の処理系は，コードの見た目こそ気持ち悪いが非常�
 
 ### 実行機の型を考える
 
-関数型プログラミングはまず型から考える(自論)．
+関数型プログラミングは，まず型から考える(自論)．
 
-前述したとおり，Brainf*ck の実行期は，プログラム列と無限に長いテープ(メモリ)があればよい．
-組込みのリスト(単方向リスト)でも良いが，テープの上を前後(左右)に移動するので双方向リストの方が良いだろう．
+前述したとおり，Brainf*ck の実行機は，プログラム列と無限に長いテープ(メモリ)があればよい．
+組込みのリスト(単方向リスト)でも良いが，テープの上を前後(か左右)に移動するので双方向リストの方が良いだろう．
 
 Haskell で双方向リストを実装するやり方はいろいろあるが，今回は便宜上以下のようにする．
 
@@ -70,10 +70,10 @@ moveBack _ (Tape f c b) = Tape (c : f) (head b) (tail b)
 
 用意した関数は以下の3つだけ(これだけで十分だから)．
 
-- `mapCrr` は現在の値のみに，第一引数の関数 `f` を適用する．
+- `mapCrr` は現在の値にのみ，第一引数の関数 `f` を適用する
 - `moveFront` はテープのヘッダを前進させる
 - `moveBack` はテープのヘッダを後進させる
-    - ただし，後ろに無限に長いとするので，初期化値 `a` を引数で与えている
+    - ただし，後ろへ無限に長いとするので，初期化値 `a` を引数で与えている
 
 テープには数値を印字しているので，テープ(メモリ)の型は `Tape Int` でいいでしょう．
 
@@ -88,7 +88,7 @@ moveBack _ (Tape f c b) = Tape (c : f) (head b) (tail b)
 type Program = Tape (Maybe Char)
 ```
 
-結果実行期の型は以下のようになる．
+結果として実行機の型は以下のようになる．
 
 ```Haskell
 data Machine = Machine { programOf :: Program
@@ -110,7 +110,7 @@ fin :: Maybe Char
 fin = Nothing
 ```
 
-`flip mappend [fin] . fmap Just` は，`Char` 型の値を `Just` にラップし，空文字 `""` 対策に終端文字を足している．
+`flip mappend [fin] . fmap Just` は，`Char` 型の値を `Just` にラップし，空文字 `""` 対策として終端文字を末尾に足している．
 
 ```Haskell
 > prog = "+[-]"
@@ -142,7 +142,7 @@ run' :: Machine -> IO Machine
 run' = undefined
 ```
 
-`(/=) fin . current . programOf` の部分は `Machine` 型の値から現在見てるコード文字を見て終端文字(`Nothing`)かどうかを判定している．
+`(/=) fin . current . programOf` の部分は `Machine` 型の値から現在見てるコードの文字が終端文字(`Nothing`)かどうかを判定している．
 `loopM f p a` は `p a` が `False` になるまで，`f a` を繰り返し適用している．
 
 ### 処理部分
@@ -186,7 +186,7 @@ updateCounter p q a = (+) (if p a then 1 else if q a then -1 else 0)
 `cond` 補助関数が 2. にあたる．
 `[` (ないしは `]`)の移動は `jump` 関数を利用して，単純に一個ずつ前(ないしは後ろ)に移動し，対応する `]` (ないしは `[`)を探している(**そのため，対応していないと止まらない**)．
 対応してるかどうかは `go n` の `n` をカウンターとして保持している．
-`updateCounter` 関数は，そのカウンターを後進するための関数である．
+`updateCounter` 関数は，そのカウンターを更新するための関数である．
 
 ### Main 関数
 
