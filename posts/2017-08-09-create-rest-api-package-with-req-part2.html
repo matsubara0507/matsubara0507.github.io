@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="req を使って REST API Haskell パッケージを作る その２" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        req を使って REST API Haskell パッケージを作る その２
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">req を使って REST API Haskell パッケージを作る その２</h1>
+    <p class="post-meta">
+      <time datetime="2017-08-09" itemprop="datePublished">
+        Aug 9, 2017
+      </time>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>こういう名前は正しくないかもしれないが，ここでは REST API パッケージ(ライブラリ)とは，既存の REST API を走査するための Haskell パッケージのことを指してる． 例えば，既にあるものだと，<a href="https://developer.github.com/v3/">GitHub API</a> の <a href="http://hackage.haskell.org/package/github"><code>github</code></a> や <a href="https://api.slack.com/">Slack API</a> の <a href="https://hackage.haskell.org/package/slack-api"><code>slack-api</code></a> などがある．</p>
+<p>とある事情で，<a href="http://developer.chatwork.com/">ChatWork API</a> の Haskell パッケージを <a href="https://hackage.haskell.org/package/req"><code>req</code></a> ライブラリを使って作ったので，その過程を残しておく．</p>
+<p><a href="../posts/2017-08-09-create-rest-api-package-with-req-part2.html">前回</a>で，基本的なエンドポイント関数は作れた． 今回は，エラー用の JSON が返ってきたときの処理の追加と，(自分流の)テストの追加を書こうと思う．</p>
+<p>ちなみに，完成品は<a href="https://github.com/matsubara0507/chatwork">ココ</a>にある．</p>
+<h2 id="作る">作る</h2>
+<h3 id="エラー用の-json-への処理の追加">エラー用の JSON への処理の追加</h3>
+<p>例えば<a href="../posts/2017-08-09-create-rest-api-package-with-req-part2.html">前回</a>に次のようなエンドポイント関数を定義した(今回は詳細を割愛)．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">getMe ::</span> (<span class="dt">MonadHttp</span> m) <span class="ot">=&gt;</span> <span class="dt">Token</span> <span class="ot">-&gt;</span> m (<span class="dt">JsonResponse</span> <span class="dt">Me</span>)
+getMe token <span class="fu">=</span> req <span class="dt">GET</span> (baseUrl <span class="fu">/:</span> <span class="st">&quot;me&quot;</span>) <span class="dt">NoReqBody</span> jsonResponse (mkHeader token)</code></pre></div>
+<p>次のように用いる．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;&gt;</span> <span class="fu">:</span><span class="kw">module</span> <span class="dt">Network.HTTP.Req</span> <span class="dt">ChatWork</span>
+<span class="fu">&gt;&gt;</span> token <span class="fu">=</span> <span class="st">&quot;xxx&quot;</span>
+<span class="fu">&gt;&gt;</span> print <span class="fu">=&lt;&lt;</span> (responseBody <span class="fu">&lt;$&gt;</span> getMe token)
+<span class="dt">Right</span> (<span class="dt">Me</span> {meToAccountId <span class="fu">=</span> <span class="dv">1234567</span>, meToRoomId <span class="fu">=</span> <span class="dv">9876543</span>, meToName <span class="fu">=</span> <span class="st">&quot;\26494\21407\20449\24544&quot;</span>, meToChatworkId <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToOrganizationId <span class="fu">=</span> <span class="dv">13579</span>, meToOrganizationName <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToDepartment <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTitle <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToUrl <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToIntroduction <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToMail <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTelOrganization <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTelExtension <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTelMobile <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToSkype <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToFacebook <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTwitter <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToAvatarImageUrl <span class="fu">=</span> <span class="st">&quot;https://appdata.chatwork.com/avatar/1234/12345678.rsz.png&quot;</span>})</code></pre></div>
+<p><code>token</code> という変数は，名前の通り発行した認証トークンを束縛している． API の定義では，ここで間違ったトークンを与えると，次のような JSON を返すということに<a href="http://developer.chatwork.com/ja/endpoints.html">なっている</a>．</p>
+<div class="sourceCode"><pre class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span>
+  <span class="dt">&quot;errors&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;Invalid API token&quot;</span><span class="ot">]</span>
+<span class="fu">}</span></code></pre></div>
+<p>現状の <code>getMe</code> 関数は，<code>Me</code> 型に対応する JSON しかパースできず，この形の JSON はパースエラーとなる(そりゃそう)． なのでうまい事 <code>Either</code> 型なんかを使ってラップしてやる必要がある．</p>
+<p>まずは，このエラーの場合の JSON 用の型を定義する．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">ChatWork.Utils</span> (strLength)
+<span class="kw">import </span><span class="dt">Data.Aeson</span> (<span class="dt">FromJSON</span> (..), <span class="dt">ToJSON</span> (..),
+                   genericParseJSON, genericToJSON)
+<span class="kw">import </span><span class="dt">Data.Aeson.Casing</span> (aesonDrop, snakeCase)
+<span class="kw">import </span><span class="dt">Data.Text</span> (<span class="dt">Text</span>)
+<span class="kw">import </span><span class="dt">GHC.Generics</span> (<span class="dt">Generic</span>)
+
+<span class="kw">newtype</span> <span class="dt">ChatWorkErrors</span> <span class="fu">=</span>
+  <span class="dt">ChatWorkErrors</span> {<span class="ot"> getErrors ::</span> [<span class="dt">Text</span>] } <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>, <span class="dt">Generic</span>)
+
+<span class="kw">instance</span> <span class="dt">ToJSON</span> <span class="dt">ChatWorkErrors</span> <span class="kw">where</span>
+  toJSON <span class="fu">=</span> genericToJSON <span class="fu">$</span> aesonDrop (strLength <span class="st">&quot;get&quot;</span>) snakeCase
+<span class="kw">instance</span> <span class="dt">FromJSON</span> <span class="dt">ChatWorkErrors</span> <span class="kw">where</span>
+  parseJSON <span class="fu">=</span> genericParseJSON <span class="fu">$</span> aesonDrop (strLength <span class="st">&quot;get&quot;</span>) snakeCase</code></pre></div>
+<p>これと何らかの型を <code>Either</code> 型でラップしてあげる．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE FlexibleInstances    #-}</span>
+
+<span class="kw">type</span> <span class="dt">ChatWorkResponse</span> a <span class="fu">=</span> <span class="dt">JsonResponse</span> (<span class="dt">Either</span> <span class="dt">ChatWorkErrors</span> a)
+
+<span class="kw">instance</span> <span class="ot">{-# OVERLAPS #-}</span> (<span class="dt">FromJSON</span> a) <span class="ot">=&gt;</span> <span class="dt">FromJSON</span> (<span class="dt">Either</span> <span class="dt">ChatWorkErrors</span> a) <span class="kw">where</span>
+  parseJSON v <span class="fu">=</span> ((<span class="dt">Left</span> <span class="fu">&lt;$&gt;</span> parseJSON v) <span class="fu">&lt;|&gt;</span> (<span class="dt">Right</span> <span class="fu">&lt;$&gt;</span> parseJSON v))</code></pre></div>
+<p>ついでに，<code>JsonResponse</code> のラップした． こうしておくと，例えば <code>JsonResponse Me</code> と書いてた部分を <code>ChatWorkResponse Me</code> と置き換えるだけで良くなる．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- getMe :: (MonadHttp m) =&gt; Token -&gt; m (JsonResponse Me)</span>
+<span class="ot">getMe ::</span> (<span class="dt">MonadHttp</span> m) <span class="ot">=&gt;</span> <span class="dt">Token</span> <span class="ot">-&gt;</span> m (<span class="dt">ChatWorkResponse</span> <span class="dt">Me</span>)
+getMe token <span class="fu">=</span> req <span class="dt">GET</span> (baseUrl <span class="fu">/:</span> <span class="st">&quot;me&quot;</span>) <span class="dt">NoReqBody</span> jsonResponse (mkHeader token)</code></pre></div>
+<p><code>Either ChatWorkErrors a</code> 型を <code>FromJSON</code> 型クラスのインスタンスにするには少しだけ工夫が要る． なぜなら，すでに <code>Either e a</code> 型が<a href="https://hackage.haskell.org/package/aeson-1.2.1.0/docs/Data-Aeson.html#t:FromJSON">インスタンスになっているから</a>． そのために <code>FlexibleInstances</code> 言語拡張をして，<code>{-# OVERLAPS #-}</code> を書き加える必要がある．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;&gt;</span> token <span class="fu">=</span> <span class="st">&quot;yyy&quot;</span>
+<span class="fu">&gt;&gt;</span> print <span class="fu">=&lt;&lt;</span> (responseBody <span class="fu">&lt;$&gt;</span> getMe token)
+<span class="dt">ChatWorkErrors</span> {getErrors <span class="fu">=</span> [<span class="st">&quot;Invalid API token&quot;</span>]}</code></pre></div>
+<p>ちなみに，<code>Either e a</code> 型のインスタンスではダメで，これは <code>Left</code> とか <code>Right</code> とかを含んだ文字列じゃないとパースできない．</p>
+<h3 id="自分流のテストの追加">(自分流の)テストの追加</h3>
+<p>で最後にテストを追加しようと思う． TDD的には最悪なのは分かるが，全部手探りで進めたので許してほしい．</p>
+<p>理想としては，<a href="https://hackage.haskell.org/package/hspec"><code>hspec</code></a> パッケージを使って次のように書きたい．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">ChatWork.Endpoints.Me</span> (getMe)
+<span class="kw">import </span><span class="dt">ChatWork.MonadHttpIO</span> ()
+<span class="kw">import </span><span class="dt">ChatWork.Types</span> (<span class="dt">Me</span> (..))
+<span class="kw">import </span><span class="dt">Network.HTTP.Req</span> (responseBody)
+<span class="kw">import </span><span class="dt">Test.Hspec</span> (<span class="dt">Spec</span>, context, describe, hspec, it, shouldReturn)
+
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+main <span class="fu">=</span> hspec spec
+
+<span class="ot">token ::</span> <span class="dt">Token</span>
+token <span class="fu">=</span> <span class="st">&quot;...&quot;</span>
+
+<span class="ot">spec ::</span> <span class="dt">Spec</span>
+spec <span class="fu">=</span> <span class="kw">do</span>
+    describe <span class="st">&quot;getMe: endpoint GET /me&quot;</span> <span class="fu">$</span> <span class="kw">do</span>
+      context <span class="st">&quot;correct responce&quot;</span> <span class="fu">$</span> <span class="kw">do</span>
+        it <span class="st">&quot;should return Right me response body&quot;</span> <span class="fu">$</span> <span class="kw">do</span>
+          (responseBody <span class="fu">&lt;$&gt;</span> getMe token) <span class="ot">`shouldReturn`</span> <span class="dt">Right</span> me
+
+<span class="ot">me ::</span> <span class="dt">Me</span>
+me <span class="fu">=</span> <span class="fu">...</span></code></pre></div>
+<p>しかし，認証トークンを直接書きたくないし，そもそもChatWork API のサーバーに直接通信したくない(サーバーに問題があってもテストエラーになってしまうから)． そのために認証の要らないモックサーバーを立てよう．</p>
+<p>イロイロ調べた結果 <code>hspec</code> の <a href="https://hackage.haskell.org/package/hspec-2.4.4/docs/Test-Hspec.html#v:around"><code>around</code></a> 関数や <a href="https://hackage.haskell.org/package/hspec-2.4.4/docs/Test-Hspec.html#v:around_"><code>around_</code></a> 関数を利用すると，テストを実行する際に任意の <code>IO</code> アクションを実行できるようだ．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">around ::</span> (<span class="dt">ActionWith</span> a <span class="ot">-&gt;</span> <span class="dt">IO</span> ()) <span class="ot">-&gt;</span> <span class="dt">SpecWith</span> a <span class="ot">-&gt;</span> <span class="dt">Spec</span>
+around <span class="fu">=</span> <span class="fu">...</span>
+
+<span class="ot">around_ ::</span> (<span class="dt">IO</span> () <span class="ot">-&gt;</span> <span class="dt">IO</span> ()) <span class="ot">-&gt;</span> <span class="dt">SpecWith</span> a <span class="ot">-&gt;</span> <span class="dt">SpecWith</span> a
+around_ <span class="fu">=</span> <span class="fu">...</span></code></pre></div>
+<p>モックサーバーは <a href="https://hackage.haskell.org/package/servant-server"><code>servant-server</code></a> パッケージを使って立てる． <code>servant-server</code> の使い方は細かくは解説しない(ググるなり，<a href="https://github.com/matsubara0507/chatwork/blob/master/test/ChatWork/Test/MockServer.hs">ぼくのコード</a>を見るなりしてください)．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Network.Wai.Handler.Warp</span> (run)
+<span class="kw">import </span><span class="dt">Servant.Server</span> (serve)
+<span class="kw">import </span><span class="dt">Servant</span>
+
+<span class="kw">type</span> <span class="dt">ChatWorkHeader</span> a <span class="fu">=</span> <span class="dt">Headers</span> <span class="ch">'[Header &quot;Content-Length&quot; Int64] a</span>
+
+<span class="kw">type</span> <span class="dt">API</span> <span class="fu">=</span> <span class="st">&quot;me&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">'[JSON] (ChatWorkHeader Me)</span>
+      <span class="fu">:&lt;|&gt;</span> <span class="st">&quot;my&quot;</span> <span class="fu">:&gt;</span> <span class="st">&quot;status&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">'[JSON] (ChatWorkHeader MyStatus)</span>
+      <span class="fu">:&lt;|&gt;</span> <span class="fu">...</span>
+
+<span class="ot">api ::</span> <span class="dt">Proxy</span> <span class="dt">API</span>
+api <span class="fu">=</span> <span class="dt">Proxy</span>
+
+<span class="ot">server ::</span> <span class="dt">Server</span> <span class="dt">API</span>
+server <span class="fu">=</span> getMe <span class="fu">:&lt;|&gt;</span> getMyStatus <span class="fu">:&lt;|&gt;</span> getMyTasks <span class="fu">:&lt;|&gt;</span> getContacts
+    <span class="fu">:&lt;|&gt;</span> getIncomingRequests <span class="fu">:&lt;|&gt;</span> acceptIncomingRequest <span class="fu">:&lt;|&gt;</span> rejectIncomingRequest
+    <span class="fu">:&lt;|&gt;</span> <span class="fu">...</span>
+  <span class="kw">where</span>
+    getMe <span class="fu">=</span> return <span class="fu">$</span> addHeader (LBS.length <span class="fu">$</span> encode me) me
+    getMyStatus <span class="fu">=</span> return <span class="fu">$</span> addHeader (LBS.length <span class="fu">$</span> encode myStatus) myStatus
+    <span class="fu">...</span>
+
+<span class="ot">mockServer ::</span> <span class="dt">IO</span> ()
+mockServer <span class="fu">=</span> run <span class="dv">8000</span> (serve api server)</code></pre></div>
+<p>空文字が返ってきたら <code>[]</code> にする処理を，ヘッダーの <code>Content-Length</code> を見て処理しているので，<code>Headers</code> 型に <code>'[Header &quot;Content-Length&quot; Int64]</code> を与えて，<code>addHeader</code> 関数を使ってヘッダーに書き加えている．</p>
+<h2 id="section"></h2>
+<p>あとは <code>mockServer</code> 関数を <code>IO () -&gt; IO ()</code> 型になるようにラップするだけ． ここで，普通に <code>mockServer</code> 関数を実行するとプログラムがそこで止まってしまう． なので，<a href="http://hackage.haskell.org/package/base-4.10.0.0/docs/Control-Concurrent.html#v:forkIO"><code>forkIO</code></a> 関数を使って子プロセスで実行する．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Concurrent</span> (forkIO, killThread)
+<span class="kw">import </span><span class="dt">Control.Exception</span> (finally)
+
+<span class="ot">runMockServer ::</span> <span class="dt">IO</span> () <span class="ot">-&gt;</span> <span class="dt">IO</span> ()
+runMockServer action <span class="fu">=</span> <span class="kw">do</span>
+  tid <span class="ot">&lt;-</span> forkIO mockServer
+  action <span class="ot">`finally`</span> killThread tid</code></pre></div>
+<p>引数の <code>action</code> は(おそらく)実行する <code>Spec</code> 型のテストセットだと思う． プロセスは，テストが終わってから殺してほしいので，<a href="http://hackage.haskell.org/package/base-4.10.0.0/docs/Control-Exception.html#v:finally"><code>finally</code></a> 関数を使って，そのように指定する．</p>
+<h2 id="section-1"></h2>
+<p><code>runMockServer</code> 関数を使う前に，認証トークンと <code>baseUrl</code> を隠蔽して抽象化してくれる，<code>Client</code> 型クラスを定義しておく．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE DataKinds      #-}</span>
+<span class="ot">{-# LANGUAGE KindSignatures #-}</span>
+<span class="ot">{-# LANGUAGE TypeFamilies   #-}</span>
+
+<span class="kw">import </span><span class="dt">Network.HTTP.Req</span> (<span class="dt">Option</span>, <span class="dt">Scheme</span>, <span class="dt">Url</span>)
+
+<span class="kw">class</span> <span class="dt">Client</span> a <span class="kw">where</span>
+  <span class="kw">type</span> <span class="dt">ClientScheme</span><span class="ot"> a ::</span> <span class="dt">Scheme</span>
+<span class="ot">  baseUrl ::</span> a <span class="ot">-&gt;</span> <span class="dt">Url</span> (<span class="dt">ClientScheme</span> a)
+<span class="ot">  mkHeader ::</span> a <span class="ot">-&gt;</span> <span class="dt">Option</span> scheme</code></pre></div>
+<p><code>Client</code> 型クラスを用いると，今までのエンドポイント関数は次のような型に書き換わる．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- getMe :: (MonadHttp m) =&gt; Token -&gt; m (ChatWorkResponse Me)</span>
+<span class="ot">getMe ::</span> (<span class="dt">MonadHttp</span> m, <span class="dt">Client</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> m (<span class="dt">ChatWorkResponse</span> <span class="dt">Me</span>)
+getMe client <span class="fu">=</span> req <span class="dt">GET</span> (baseUrl client <span class="fu">/:</span> <span class="st">&quot;me&quot;</span>) <span class="dt">NoReqBody</span> jsonResponse (mkHeader client)</code></pre></div>
+<p>ちなみに，普通に ChatWork API サーバーとやり取りする場合には次のような型を定義して用いる．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Network.HTTP.Req</span> (<span class="dt">Scheme</span> (<span class="dt">Https</span>))
+
+<span class="kw">type</span> <span class="dt">Token</span> <span class="fu">=</span> <span class="dt">ByteString</span>
+<span class="kw">newtype</span> <span class="dt">ChatWorkClient</span> <span class="fu">=</span> <span class="dt">ChatWorkClient</span> <span class="dt">Token</span>
+
+<span class="kw">instance</span> <span class="dt">Client</span> <span class="dt">ChatWorkClient</span> <span class="kw">where</span>
+  <span class="kw">type</span> <span class="dt">ClientScheme</span> <span class="dt">ChatWorkClient</span> <span class="fu">=</span> <span class="ch">'Https</span>
+  baseUrl <span class="fu">=</span> const (https <span class="st">&quot;api.chatwork.com&quot;</span> <span class="fu">/:</span> <span class="st">&quot;v2&quot;</span>)
+  mkHeader (<span class="dt">ChatWorkClient</span> token) <span class="fu">=</span> header <span class="st">&quot;X-ChatWorkToken&quot;</span> token</code></pre></div>
+<p>そして，テストの場合は次のようになる．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Network.HTTP.Req</span> (http, <span class="dt">Scheme</span> (<span class="dt">Http</span>), port)
+
+<span class="kw">data</span> <span class="dt">TestClient</span> <span class="fu">=</span> <span class="dt">TestClient</span>
+
+<span class="kw">instance</span> <span class="dt">Client</span> <span class="dt">TestClient</span> <span class="kw">where</span>
+  <span class="kw">type</span> <span class="dt">ClientScheme</span> <span class="dt">TestClient</span> <span class="fu">=</span> <span class="ch">'Http</span>
+  baseUrl <span class="fu">=</span> const (http <span class="st">&quot;localhost&quot;</span>)
+  mkHeader <span class="fu">=</span> const (port <span class="dv">8000</span>)</code></pre></div>
+<h2 id="section-2"></h2>
+<p>そしていよいよ，<code>runMockServer</code> 関数を使って <code>Spec</code> 型を構成する．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">spec ::</span> <span class="dt">Spec</span>
+spec <span class="fu">=</span> around_ runMockServer <span class="fu">$</span> <span class="kw">do</span>
+    describe <span class="st">&quot;getMe: endpoint GET /me&quot;</span> <span class="fu">$</span> <span class="kw">do</span>
+      context <span class="st">&quot;correct responce&quot;</span> <span class="fu">$</span> <span class="kw">do</span>
+        it <span class="st">&quot;should return Right me response body&quot;</span> <span class="fu">$</span> <span class="kw">do</span>
+          (responseBody <span class="fu">&lt;$&gt;</span> getMe <span class="dt">TestClient</span>) <span class="ot">`shouldReturn`</span> <span class="dt">Right</span> me</code></pre></div>
+<p>これらを <strong>全てのエンドポイント分</strong> 作る…(苦行)．</p>
+<h3 id="chatwork.monadhttpio-とは"><code>ChatWork.MonadHttpIO</code> とは？</h3>
+<p>ちなみに，途中でインポートした <a href="https://hackage.haskell.org/package/chatwork-0.1.0.0/docs/ChatWork-MonadHttpIO.html"><code>ChatWork.MonadHttpIO</code></a> モジュールは何かというと，ただの <a href="https://hackage.haskell.org/package/req-0.3.0/docs/Network-HTTP-Req.html#t:MonadHttp"><code>MonadHttp</code></a> 型クラスの <code>IO</code> 型のインスタンスである．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Exception</span> (throwIO)
+<span class="kw">import </span><span class="dt">Network.HTTP.Req</span> (<span class="dt">MonadHttp</span>)
+
+<span class="kw">instance</span> <span class="dt">MonadHttp</span> <span class="dt">IO</span> <span class="kw">where</span>
+  handleHttpException <span class="fu">=</span> throwIO</code></pre></div>
+<p>なんでこんなことをしているかと言うと，<code>req</code> 関数(や <code>req'</code> 関数)を利用するには，<code>MonadHttp</code> 型クラスのインスタンスの中でないといけないからだ． つまり，これが無いと <code>IO</code> 型である <code>main</code> 関数の中や <code>ghci</code> で利用できないのだ．</p>
+<p>実は<a href="https://github.com/mrkkrp/req/issues/12">この問題</a>は <code>req-4.0</code> では既に解決済みで，<a href="https://hackage.haskell.org/package/req-0.4.0/docs/Network-HTTP-Req.html#t:Req"><code>Req</code></a> 型を使えばよくなっている． こんな感じに実行できる．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.Default.Class</span> (def)
+<span class="kw">import </span><span class="dt">Network.HTTP.Req</span> (runReq, responseBody)
+
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+main <span class="fu">=</span> <span class="kw">do</span>
+  <span class="kw">let</span> client <span class="fu">=</span> <span class="dt">ChatWorkClient</span> <span class="st">&quot;XXXXX&quot;</span>
+  response <span class="ot">&lt;-</span> runReq def (getMe client)
+  print <span class="fu">$</span> responseBody response</code></pre></div>
+<h2 id="おしまい">おしまい</h2>
+<p>このあと Haskage や Stackage に登録して，無事作ったライブラリが Nightly に登録された． 次回はその過程も書いてみようかなぁ(ググればわかるんだけど)．</p>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+  <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+    <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+      <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+    </a>
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>

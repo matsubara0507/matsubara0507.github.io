@@ -81,7 +81,7 @@
 
   <div class="post-content" itemprop="articleBody">
     <p>こういう名前は正しくないかもしれないが，ここでは REST API パッケージ(ライブラリ)とは，既存の REST API を走査するための Haskell パッケージのことを指してる． 例えば，既にあるものだと，<a href="https://developer.github.com/v3/">GitHub API</a> の <a href="http://hackage.haskell.org/package/github"><code>github</code></a> や <a href="https://api.slack.com/">Slack API</a> の <a href="https://hackage.haskell.org/package/slack-api"><code>slack-api</code></a> などがある．</p>
-<p>今回はとある事情で，<a href="http://developer.chatwork.com/">ChatWork API</a> の Haskell パッケージを <a href="https://hackage.haskell.org/package/req"><code>req</code></a> ライブラリを使って作ったので，その過程を残してく．</p>
+<p>今回はとある事情で，<a href="http://developer.chatwork.com/">ChatWork API</a> の Haskell パッケージを <a href="https://hackage.haskell.org/package/req"><code>req</code></a> ライブラリを使って作ったので，その過程を残しておく．</p>
 <p>ちなみに，完成品は<a href="https://github.com/matsubara0507/chatwork">ココ</a>にある．</p>
 <h2 id="いきさつ">いきさつ</h2>
 <p>Haskell でプログラミングする(別に Haskell だけではないけど)アルバイトをしてて，そこで ChatWork API を走査する Haskell パッケージが無いから作ってと言われた． だけ．</p>
@@ -188,7 +188,7 @@ baseUrl <span class="fu">=</span> https <span class="st">&quot;api.chatwork.com&
 <span class="ot">mkHeader ::</span> <span class="dt">Token</span> <span class="ot">-&gt;</span> <span class="dt">Option</span> <span class="ch">'Https</span>
 mkHeader token <span class="fu">=</span> header <span class="st">&quot;X-ChatWorkToken&quot;</span> token
 
-<span class="ot">getMe ::</span> (<span class="dt">MonadHttp</span> m) <span class="ot">=&gt;</span> <span class="dt">Token</span> <span class="ot">-&gt;</span> m (<span class="dt">JsonResponse</span> <span class="dt">GetMeResponse</span>)
+<span class="ot">getMe ::</span> (<span class="dt">MonadHttp</span> m) <span class="ot">=&gt;</span> <span class="dt">Token</span> <span class="ot">-&gt;</span> m (<span class="dt">JsonResponse</span> <span class="dt">Me</span>)
 getMe token <span class="fu">=</span> req <span class="dt">GET</span> (baseUrl <span class="fu">/:</span> <span class="st">&quot;me&quot;</span>) <span class="dt">NoReqBody</span> jsonResponse (mkHeader token)</code></pre></div>
 <p>べた書きはあんまりよくないが，<code>baseUrl</code> にどのエンドポイントでも変わらない，ベースとなる URL を定義しておく． <code>req</code> 関数の型は以下の通り</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">req
@@ -216,7 +216,7 @@ getMe token <span class="fu">=</span> req <span class="dt">GET</span> (baseUrl <
 <h2 id="section-3"></h2>
 <p>これを GHCi で実行すると次のようになる</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;&gt;</span> <span class="fu">:</span><span class="kw">module</span> <span class="dt">Network.HTTP.Req</span> <span class="dt">ChatWork</span>
-<span class="fu">&gt;&gt;</span> token <span class="fu">=</span> <span class="dt">ChatWorkClient</span> <span class="st">&quot;xxx&quot;</span>
+<span class="fu">&gt;&gt;</span> token <span class="fu">=</span> <span class="st">&quot;xxx&quot;</span>
 <span class="fu">&gt;&gt;</span> print <span class="fu">=&lt;&lt;</span> (responseBody <span class="fu">&lt;$&gt;</span> getMe token)
 <span class="dt">Right</span> (<span class="dt">Me</span> {meToAccountId <span class="fu">=</span> <span class="dv">1234567</span>, meToRoomId <span class="fu">=</span> <span class="dv">9876543</span>, meToName <span class="fu">=</span> <span class="st">&quot;\26494\21407\20449\24544&quot;</span>, meToChatworkId <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToOrganizationId <span class="fu">=</span> <span class="dv">13579</span>, meToOrganizationName <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToDepartment <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTitle <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToUrl <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToIntroduction <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToMail <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTelOrganization <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTelExtension <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTelMobile <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToSkype <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToFacebook <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTwitter <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToAvatarImageUrl <span class="fu">=</span> <span class="st">&quot;https://appdata.chatwork.com/avatar/1234/12345678.rsz.png&quot;</span>})</code></pre></div>
 <h3 id="manager-を使ってカスタマイズ"><code>Manager</code> を使ってカスタマイズ</h3>
