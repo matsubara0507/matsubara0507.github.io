@@ -5,7 +5,7 @@ title: req を使って REST API Haskell パッケージを作る その１
 こういう名前は正しくないかもしれないが，ここでは REST API パッケージ(ライブラリ)とは，既存の REST API を走査するための Haskell パッケージのことを指してる．
 例えば，既にあるものだと，[GitHub API](https://developer.github.com/v3/) の [`github`](http://hackage.haskell.org/package/github) や [Slack API](https://api.slack.com/) の [`slack-api`](https://hackage.haskell.org/package/slack-api) などがある．
 
-今回はとある事情で，[ChatWork API](http://developer.chatwork.com/) の Haskell パッケージを [`req`](https://hackage.haskell.org/package/req) ライブラリを使って作ったので，その過程を残してく．
+今回はとある事情で，[ChatWork API](http://developer.chatwork.com/) の Haskell パッケージを [`req`](https://hackage.haskell.org/package/req) ライブラリを使って作ったので，その過程を残しておく．
 
 ちなみに，完成品は[ココ](https://github.com/matsubara0507/chatwork)にある．
 
@@ -159,7 +159,7 @@ baseUrl = https "api.chatwork.com" /: "v2"
 mkHeader :: Token -> Option 'Https
 mkHeader token = header "X-ChatWorkToken" token
 
-getMe :: (MonadHttp m) => Token -> m (JsonResponse GetMeResponse)
+getMe :: (MonadHttp m) => Token -> m (JsonResponse Me)
 getMe token = req GET (baseUrl /: "me") NoReqBody jsonResponse (mkHeader token)
 ```
 
@@ -201,7 +201,7 @@ GETメソッドの場合は本体(`body`)を指定できない(これは `HttpBp
 
 ```haskell
 >> :module Network.HTTP.Req ChatWork
->> token = ChatWorkClient "xxx"
+>> token = "xxx"
 >> print =<< (responseBody <$> getMe token)
 Right (Me {meToAccountId = 1234567, meToRoomId = 9876543, meToName = "\26494\21407\20449\24544", meToChatworkId = "", meToOrganizationId = 13579, meToOrganizationName = "", meToDepartment = "", meToTitle = "", meToUrl = "", meToIntroduction = "", meToMail = "", meToTelOrganization = "", meToTelExtension = "", meToTelMobile = "", meToSkype = "", meToFacebook = "", meToTwitter = "", meToAvatarImageUrl = "https://appdata.chatwork.com/avatar/1234/12345678.rsz.png"})
 ```
