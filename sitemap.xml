@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
     <url>
+        <loc>https://matsubara0507.github.io/posts/2017-08-11-use-resolver-of-ghc-8-2.html</loc>
+        <changefreq>never</changefreq>
+        <lastmod>2017-08-11</lastmod>
+        <priority>0.8</priority>
+    </url>
+
+    <url>
         <loc>https://matsubara0507.github.io/posts/2017-08-09-create-rest-api-package-with-req-part2.html</loc>
         <changefreq>never</changefreq>
         <lastmod>2017-08-09</lastmod>

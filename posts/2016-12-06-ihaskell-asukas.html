@@ -98,19 +98,13 @@
 <p>試しに，公式のデモを使ってみるのも良いのかもしれません <a href="https://try.jupyter.org">try.jupyter.org</a> ．</p>
 <h2 id="アプリケーションを作成">アプリケーションを作成</h2>
 <p>アカウント登録したら，アプリを新しく作成をします．</p>
-<div class="figure">
-<img src="../assets/ihaskell-arukas/new_app.jpg" />
-
-</div>
+<p><img src="../assets/ihaskell-arukas/new_app.jpg" /></p>
 <p>のように設定しました． (エンドポイントを指定しない場合ランダムに生成される)</p>
 <p>現状，Arukas は Docker Hub に公開されているパブリックなコンテナしか Docker イメージしか使えない点に注意です．</p>
 <p>今後，他の方法も可能になるかはわかりません(<a href="https://arukas.io/help/help-dockerfile-upload/">寧ろ無さそう？</a>)．</p>
 <p>なので使い方としては，完成したモノをアップロードするために使うべきなんですかね． テストは別の環境で行って．</p>
 <p>あとは，<code>Apps</code> のところの今作ったアプリ名をクリックして，<code>デプロイ</code> (起動) を押し，<code>Endpoint</code> の URL にアクセスすれば良い．</p>
-<div class="figure">
-<img src="../assets/ihaskell-arukas/home.jpg" />
-
-</div>
+<p><img src="../assets/ihaskell-arukas/home.jpg" /></p>
 <h2 id="テスト">テスト</h2>
 <p>適当に有名な <a href="https://ja.wikipedia.org/wiki/Fizz_Buzz">FizzBuzz</a> プログラムでも実行してみます．</p>
 <p>全体のコードはこんな感じ．</p>
@@ -124,17 +118,11 @@ fizzbuzz <span class="fu">=</span> fromMaybe <span class="fu">.</span> show <spa
     (d <span class="fu">~&gt;</span> s) n <span class="fu">=</span> s <span class="fu">&lt;$</span> guard (n <span class="ot">`mod`</span> d <span class="fu">==</span> <span class="dv">0</span>)</code></pre></div>
 <p><a href="https://www.reddit.com/r/haskell/comments/2cum9p/i_did_a_haskell_fizzbuzz/">ココ</a>より参照した(自分は解説しません)．</p>
 <p>これを Jupyter に書き加えて実行．</p>
-<div class="figure">
-<img src="../assets/ihaskell-arukas/error.jpg" />
-
-</div>
+<p><img src="../assets/ihaskell-arukas/error.jpg" /></p>
 <p>え，エラー？</p>
 <p>IPython (2系) の方ではうまくいくのに….</p>
 <p>ローカルでやってみた．</p>
-<div class="figure">
-<img src="../assets/ihaskell-arukas/local.jpg" />
-
-</div>
+<p><img src="../assets/ihaskell-arukas/local.jpg" /></p>
 <p>うまくいった． なかなか遅いが，一応動く．</p>
 <p>Arukas の方はときおりコンテナのデプロイすらうまくいかない(時間がめちゃくちゃかかる)ようになったので，向こうの負荷がひどいのかも．</p>
 <h2 id="おしまい">おしまい</h2>

@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="このサイトを GHC8.2 の stackage resolver でビルドしてみた" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        このサイトを GHC8.2 の stackage resolver でビルドしてみた
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">このサイトを GHC8.2 の stackage resolver でビルドしてみた</h1>
+    <p class="post-meta">
+      <time datetime="2017-08-11" itemprop="datePublished">
+        Aug 11, 2017
+      </time>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>このサイトは Haskell の静的サイトジェネレーター <a href="https://hackage.haskell.org/package/hakyll">Hakyll</a> を使っており，古いパッケージ(Hakyll とは関係ない)を使ってた関係で，かなり古い LTS を使ってた(<code>lts-6.20</code>)． サイトを作ってから約1年経ち，Haskell力(というか stack 力)も上がり，別に古い LTS を使わずとも <code>stack.yaml</code> をいじればなんとかなるというのが分かり，ずっと最新のに上げたいなぁと思っていた．</p>
+<p>で，今回はいっそのこと最近リリースされた GHC8.2 用の resolver で，なんとかビルドしてみようかなと思ったわけです．</p>
+<p>無駄に順を追って書いてあるけど，最後の数行を読むだけで十分(笑)．</p>
+<h2 id="ghc8.2-系の-stackage-resolver">GHC8.2 系の Stackage resolver</h2>
+<p>3週間ほど前に <a href="https://www.reddit.com/r/haskell_jp/comments/6ozjh0/announce_ghc_821_available/">GHC8.2.1 が遂にリリース</a>され，それに伴い，10日ほど前に <a href="https://www.stackage.org/">Stackage</a> の <a href="https://www.reddit.com/r/haskell_jp/comments/6qs9jy/stackage_nightly_20170731%E3%82%88%E3%82%8Aghc_821%E3%81%8C%E3%82%B5%E3%83%9D%E3%83%BC%E3%83%88/">GHC8.2 対応の resolver がリリース</a>された． まだリリースされたばかりで，Hakyll を含め，いろんなパッケージが除外されている．</p>
+<p>なので，この resolver で Hakyll のサイトをビルドするには三手間ぐらい必要だった．</p>
+<h2 id="stack.yaml-をいじる"><code>stack.yaml</code> をいじる</h2>
+<p>基本的には stack.yaml をいじるだけで良い(??)．</p>
+<h3 id="extra-deps-を書き換えていく"><code>extra-deps</code> を書き換えていく</h3>
+<p>試しに <code>stack.yaml</code> の resolver を <code>nightly-2017-08-10</code> にして <code>stack build</code> してみると次のように出る．</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">stack</span> build
+
+<span class="ex">Error</span>: While constructing the build plan, the following exceptions were encountered:
+
+<span class="ex">In</span> the dependencies for site-0.2.0.1:
+    <span class="ex">hakyll</span> must match -any, but the stack configuration has no specified version (latest applicable is 4.9.8.0)
+    <span class="ex">yaml-light</span> must match -any, but the stack configuration has no specified version (latest applicable is 0.1.4)
+<span class="ex">needed</span> since site-0.2.0.1 is a build target.
+
+<span class="ex">Recommended</span> action: try adding the following to your extra-deps in C:\Users\hoge\matsubara0507.github.io\stack.yaml:
+<span class="ex">-</span> hakyll-4.9.8.0
+<span class="ex">-</span> yaml-light-0.1.4
+
+<span class="ex">You</span> may also want to try the <span class="st">'stack solver'</span> command
+<span class="ex">Plan</span> construction failed.</code></pre></div>
+<p><code>hakyll</code> と <a href="https://hackage.haskell.org/package/yaml-light"><code>yaml-light</code></a> が無いと言われる． ので，素直にエラーメッセージ通り，<code>stack.yaml</code> の <code>extra-deps</code> に2つのパッケージを書き加えてやる．</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">stack</span> build
+
+<span class="ex">Error</span>: While constructing the build plan, the following exceptions were encountered:
+
+<span class="ex">In</span> the dependencies for hakyll-4.9.8.0:
+    <span class="ex">pandoc</span> must match <span class="op">&gt;</span>=1.14 <span class="kw">&amp;&amp;</span> <span class="op">&lt;</span><span class="ex">1.20</span>, but the stack configuration has no specified version
+           <span class="kw">(</span><span class="ex">latest</span> applicable is 1.19.2.1<span class="kw">)</span>
+    <span class="ex">pandoc-citeproc</span> must match <span class="op">&gt;</span>=0.10.5 <span class="kw">&amp;&amp;</span> <span class="op">&lt;</span><span class="ex">0.11</span>, but the stack configuration has no specified version
+                    <span class="kw">(</span><span class="ex">latest</span> applicable is 0.10.5.1<span class="kw">)</span>
+    <span class="ex">process-1.6.1.0</span> must match <span class="op">&gt;</span>=1.0 <span class="kw">&amp;&amp;</span> <span class="op">&lt;</span><span class="ex">1.6</span> (latest applicable is 1.5.0.0)
+    <span class="ex">time-1.8.0.2</span> must match <span class="op">&gt;</span>=1.4 <span class="kw">&amp;&amp;</span> <span class="op">&lt;</span><span class="ex">1.8</span> (latest applicable is 1.7.0.1)
+<span class="ex">needed</span> due to site-0.2.0.1 -<span class="op">&gt;</span> hakyll-4.9.8.0
+
+<span class="ex">In</span> the dependencies for yaml-light-0.1.4:
+    <span class="ex">HsSyck</span> must match -any, but the stack configuration has no specified version (latest applicable is 0.53)
+<span class="ex">needed</span> due to site-0.2.0.1 -<span class="op">&gt;</span> yaml-light-0.1.4
+
+<span class="ex">Recommended</span> action: try adding the following to your extra-deps in C:\Users\hoge\matsubara0507.github.io\stack.yaml:
+<span class="ex">-</span> HsSyck-0.53
+<span class="ex">-</span> pandoc-1.19.2.1
+<span class="ex">-</span> pandoc-citeproc-0.10.5.1
+
+<span class="ex">You</span> may also want to try the <span class="st">'stack solver'</span> command
+<span class="ex">Plan</span> construction failed.</code></pre></div>
+<p>また書き加える．</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">stack</span> build
+<span class="ex">Unable</span> to parse cabal file for haddock-library-1.4.5: FromString <span class="st">&quot;This package requires at least Cabal version 2.0&quot;</span> Nothing</code></pre></div>
+<p>うーん，これはよくわからない． てっきり，<code>Cabal</code> を 2.0 以上にすればよいのかと思い，それに対応した <a href="https://github.com/commercialhaskell/stack/commit/1f2ddf113bffc53c5046498476bd89c6e12860c4"><code>stack-1.5.1</code></a> にあげればうまくいくのだと思ったのだが，うまくいかなかった． なので，問題が起きない <code>haddock-library-1.4.3</code> を使うことにした．</p>
+<h2 id="section"></h2>
+<p>ちなみに，<code>nightly-2017-08-10</code> を使うだけで以下のような同様のエラーが出たが，これは <code>stack-1.5.1</code> にするだけでうまくいった(haskell-jp で <a href="https://github.com/igrep">igrep</a> さんに<a href="https://haskell-jp.slackarchive.io/questions/page-15/ts-1502333357684352">教えてもらった</a>！感謝！！)．</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">stack</span> build
+<span class="ex">Unable</span> to parse cabal file: FromString <span class="st">&quot;This package requires at least Cabal version 2.0&quot;</span> Nothing</code></pre></div>
+<h2 id="section-1"></h2>
+<p>閑話休題</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">stack</span> build
+
+<span class="ex">Error</span>: While constructing the build plan, the following exceptions were encountered:
+
+<span class="ex">In</span> the dependencies for hakyll-4.9.8.0:
+    <span class="ex">process-1.6.1.0</span> must match <span class="op">&gt;</span>=1.0 <span class="kw">&amp;&amp;</span> <span class="op">&lt;</span><span class="ex">1.6</span> (latest applicable is 1.5.0.0)
+    <span class="ex">time-1.8.0.2</span> must match <span class="op">&gt;</span>=1.4 <span class="kw">&amp;&amp;</span> <span class="op">&lt;</span><span class="ex">1.8</span> (latest applicable is 1.7.0.1)
+<span class="ex">needed</span> due to site-0.2.0.1 -<span class="op">&gt;</span> hakyll-4.9.8.0
+
+<span class="ex">In</span> the dependencies for pandoc-1.19.2.1:
+    <span class="ex">hslua-0.6.0</span> must match <span class="op">&gt;</span>=0.3 <span class="kw">&amp;&amp;</span> <span class="op">&lt;</span><span class="ex">0.5</span> (latest applicable is 0.4.1)
+    <span class="ex">process-1.6.1.0</span> must match <span class="op">&gt;</span>=1 <span class="kw">&amp;&amp;</span> <span class="op">&lt;</span><span class="ex">1.5</span> (latest applicable is 1.4.3.0)
+    <span class="ex">skylighting-0.3.3.1</span> must match <span class="op">&gt;</span>=0.1.1.4 <span class="kw">&amp;&amp;</span> <span class="op">&lt;</span><span class="ex">0.2</span> (latest applicable is 0.1.1.5)
+    <span class="ex">time-1.8.0.2</span> must match <span class="op">&gt;</span>=1.5 <span class="kw">&amp;&amp;</span> <span class="op">&lt;</span><span class="ex">1.7</span> (latest applicable is 1.6.0.1)
+<span class="ex">needed</span> due to site-0.2.0.1 -<span class="op">&gt;</span> pandoc-1.19.2.1
+
+<span class="ex">Plan</span> construction failed.</code></pre></div>
+<p>適当に古いパッケージを選択してあげる．</p>
+<pre><code>- time-1.6.0.1
+- skylighting-0.1.1.5
+- process-1.4.3.0
+- hslua-0.4.1</code></pre>
+<h3 id="pandoc-2.0-を使う">Pandoc 2.0 を使う</h3>
+<p>今までのようなエラーは出なくなったが普通にコンパイルエラーが起きる．</p>
+<pre><code>pandoc-1.19.2.1: configure
+Progress: 1/4
+--  While building package pandoc-1.19.2.1 using:
+    Process exited with code: ExitFailure 1
+    Logs have been written to: C:\Users\hoge\matsubara0507.github.io\.stack-work\logs\pandoc-1.19.2.1.log
+
+    [1 of 2] Compiling Main
+
+    C:\Users\hoge\AppData\Local\Temp\stack2412\pandoc-1.19.2.1\Setup.hs:42:3: error:
+        • Couldn't match expected type ‘ComponentLocalBuildInfo
+                                        -&gt; PreProcessor’
+                      with actual type ‘PreProcessor’
+        • In the expression:
+            PreProcessor
+              {platformIndependent = True,
+               runPreProcessor = mkSimplePreProcessor
+                                   $ \ infile outfile verbosity
+                                       -&gt; do let ...
+                                             ....}
+          In the expression:
+            \ _ lbi
+              -&gt; PreProcessor
+                   {platformIndependent = True,
+                    runPreProcessor = mkSimplePreProcessor
+                                        $ \ infile outfile verbosity -&gt; ...}
+          In the expression:
+            (&quot;hsb&quot;,
+             \ _ lbi
+               -&gt; PreProcessor
+                    {platformIndependent = True,
+                     runPreProcessor = mkSimplePreProcessor
+                                         $ \ infile outfile verbosity -&gt; ...})
+       |
+    42 |   PreProcessor {
+       |   ^^^^^^^^^^^^^^...
+
+    C:\Users\hoge\AppData\Local\Temp\stack2412\pandoc-1.19.2.1\Setup.hs:45:39: error:
+        Data constructor not in scope: FlagName :: [Char] -&gt; FlagName
+       |
+    45 |       do let embedData = case lookup (FlagName &quot;embed_data_files&quot;)
+       |                                       ^^^^^^^^</code></pre>
+<p>これは <code>Cabal-2.0</code> で変わった仕様によるエラーだ． 最新の <a href="https://github.com/jgm/pandoc/tree/f4bff5d3599d0b6874c6b6604fb11016f8e038a9"><code>pandoc-2.0</code></a>なら直っているので，個別にクローンする設定にする．</p>
+<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">packages:</span>
+<span class="kw">-</span> <span class="st">'.'</span>
+<span class="kw">-</span> <span class="fu">location:</span>
+    <span class="fu">git:</span><span class="at"> https://github.com/jgm/pandoc</span>
+    <span class="fu">commit:</span><span class="at"> f4bff5d3599d0b6874c6b6604fb11016f8e038a9</span>
+  <span class="fu">extra-dep:</span><span class="at"> true</span></code></pre></div>
+<p><code>stack.yaml</code> をこう書き換えてビルドする．</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">stack</span> build
+
+<span class="ex">Error</span>: While constructing the build plan, the following exceptions were encountered:
+
+<span class="ex">In</span> the dependencies for pandoc-2.0:
+    <span class="ex">cmark-gfm</span> must match <span class="op">&gt;</span>=0.1.1 <span class="kw">&amp;&amp;</span> <span class="op">&lt;</span><span class="ex">0.2</span>, but the stack configuration has no specified version
+              <span class="kw">(</span><span class="ex">latest</span> applicable is 0.1.3<span class="kw">)</span>
+    <span class="ex">skylighting-0.1.1.5</span> must match <span class="op">&gt;</span>=0.3.3 <span class="kw">&amp;&amp;</span> <span class="op">&lt;</span><span class="ex">0.4</span> (latest applicable is 0.3.3.1)
+<span class="ex">needed</span> due to site-0.2.0.1 -<span class="op">&gt;</span> pandoc-2.0
+
+<span class="ex">Recommended</span> action: try adding the following to your extra-deps in C:\Users\hoge\matsubara0507.github.io\stack.yaml:
+<span class="ex">-</span> cmark-gfm-0.1.3
+
+<span class="ex">You</span> may also want to try the <span class="st">'stack solver'</span> command
+<span class="ex">Plan</span> construction failed.</code></pre></div>
+<p><code>pandoc-2.0</code> では <code>skylighting</code> の PVP を変えたようだので <code>extra-deps</code> から外し，代わりに <code>cmark-gfm-0.1.3</code> を書き加える．</p>
+<h3 id="fork-して書き換える">Fork して書き換える</h3>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ex">stack</span> build
+
+<span class="ex">Error</span>: While constructing the build plan, the following exceptions were encountered:
+
+<span class="ex">In</span> the dependencies for hakyll-4.9.8.0:
+    <span class="ex">pandoc-2.0</span> must match <span class="op">&gt;</span>=1.14 <span class="kw">&amp;&amp;</span> <span class="op">&lt;</span><span class="ex">1.20</span> (latest applicable is 1.19.2.1)
+<span class="ex">needed</span> due to site-0.2.0.1 -<span class="op">&gt;</span> hakyll-4.9.8.0
+
+<span class="ex">Plan</span> construction failed.</code></pre></div>
+<p><code>hakyll</code> がそもそも <code>pandoc-2.0</code> に対応していないようだ． 割とここからが大変． というのも <code>pandoc-2.0</code> はまぁまぁ仕様が変わっているので，PVP をいじるだけではうまくビルドできない． 幸いにも，<code>pandoc-2.0</code> に対応させた <a href="https://github.com/rlpowell/hakyll/commit/5c26faf2d867d9c644f8110f2c9bd6bd8c32986a">fork</a> があったので，これを参考に書き直した． ついでに，<code>time</code> パッケージと <code>process</code> パッケージの PVP も書き直す．</p>
+<p>それらの書き換えを自分の <a href="https://github.com/matsubara0507/hakyll/tree/ghc8.2">fork</a> で行いプッシュして，それをクローンするように <code>stack.yaml</code> を書き加えた．</p>
+<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">packages:</span>
+<span class="kw">-</span> <span class="st">'.'</span>
+<span class="kw">-</span> <span class="fu">location:</span>
+    <span class="fu">git:</span><span class="at"> https://github.com/matsubara0507/hakyll</span>
+    <span class="fu">commit:</span><span class="at"> 4c2c499213750d622250f8277533eafb5ec1dc94</span>
+  <span class="fu">extra-dep:</span><span class="at"> true</span>
+<span class="kw">-</span> <span class="fu">location:</span>
+    <span class="fu">git:</span><span class="at"> https://github.com/jgm/pandoc</span>
+    <span class="fu">commit:</span><span class="at"> f4bff5d3599d0b6874c6b6604fb11016f8e038a9</span>
+  <span class="fu">extra-dep:</span><span class="at"> true</span></code></pre></div>
+<p>これでビルドすると <code>pandoc-citeproc</code> が怒られる．</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">pandoc-citeproc-0.10.5.1</span>: configure
+<span class="ex">Progress</span>: 2/4
+<span class="ex">--</span>  While building package pandoc-citeproc-0.10.5.1 using:
+    <span class="ex">Process</span> exited with code: ExitFailure 1
+    <span class="ex">Logs</span> have been written to: C:\Users\hoge\matsubara0507.github.io\.stack-work\logs\pandoc-citeproc-0.10.5.1.log
+
+    [<span class="ex">1</span> of 2] Compiling Main
+    <span class="ex">C</span>:\Users\hoge\AppData\Local\Temp\stack13296\pandoc-citeproc-0.10.5.1\Setup.hs:38:3: error:
+        • <span class="ex">Couldn</span><span class="st">'t match expected type ‘ComponentLocalBuildInfo</span>
+<span class="st">                                        -&gt; PreProcessor’</span>
+<span class="st">                      with actual type ‘PreProcessor’</span>
+<span class="st">        • In the expression:</span>
+<span class="st">            PreProcessor</span>
+<span class="st">              {platformIndependent = True,</span>
+<span class="st">               runPreProcessor = mkSimplePreProcessor</span>
+<span class="st">                                   $ \ infile outfile verbosity</span>
+<span class="st">                                       -&gt; do info verbosity</span>
+<span class="st">                                               $ &quot;Preprocessing &quot; ++ infile ++ &quot; to &quot; ++ outfile</span>
+<span class="st">                                             ....}</span>
+<span class="st">          In the expression:</span>
+<span class="st">            \ _ _</span>
+<span class="st">              -&gt; PreProcessor</span>
+<span class="st">                   {platformIndependent = True,</span>
+<span class="st">                    runPreProcessor = mkSimplePreProcessor</span>
+<span class="st">                                        $ \ infile outfile verbosity -&gt; ...}</span>
+<span class="st">          In the expression:</span>
+<span class="st">            (&quot;hsb&quot;,</span>
+<span class="st">             \ _ _</span>
+<span class="st">               -&gt; PreProcessor</span>
+<span class="st">                    {platformIndependent = True,</span>
+<span class="st">                     runPreProcessor = mkSimplePreProcessor</span>
+<span class="st">                                         $ \ infile outfile verbosity -&gt; ...})</span>
+<span class="st">       |</span>
+<span class="st">    38 |   PreProcessor {</span>
+<span class="st">       |   ^^^^^^^^^^^^^^...</span></code></pre></div>
+<p>これも <code>Cabal-2.0</code> の影響だ． なので，<code>pandoc-citeproc</code> パッケージも fork して直してプッシュしてそれをクローンする．</p>
+<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">packages:</span>
+<span class="kw">-</span> <span class="st">'.'</span>
+<span class="kw">-</span> <span class="fu">location:</span>
+    <span class="fu">git:</span><span class="at"> https://github.com/matsubara0507/hakyll</span>
+    <span class="fu">commit:</span><span class="at"> 4c2c499213750d622250f8277533eafb5ec1dc94</span>
+  <span class="fu">extra-dep:</span><span class="at"> true</span>
+<span class="kw">-</span> <span class="fu">location:</span>
+    <span class="fu">git:</span><span class="at"> https://github.com/jgm/pandoc</span>
+    <span class="fu">commit:</span><span class="at"> f4bff5d3599d0b6874c6b6604fb11016f8e038a9</span>
+  <span class="fu">extra-dep:</span><span class="at"> true</span>
+<span class="kw">-</span> <span class="fu">location:</span>
+      <span class="fu">git:</span><span class="at"> https://github.com/matsubara0507/pandoc-citeproc.git</span>
+      <span class="fu">commit:</span><span class="at"> 2a232dd33eb42ba73653a9661288a0026179c50f</span>
+  <span class="fu">extra-dep:</span><span class="at"> true</span></code></pre></div>
+<h3 id="最終的に">最終的に</h3>
+<p>多少整理して最終的に <code>stack.yaml</code> はこんな風になった．</p>
+<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">resolver:</span><span class="at"> nightly-2017-08-10</span>
+
+<span class="fu">packages:</span>
+<span class="kw">-</span> <span class="st">'.'</span>
+<span class="kw">-</span> <span class="fu">location:</span>
+    <span class="fu">git:</span><span class="at"> https://github.com/matsubara0507/hakyll</span>
+    <span class="fu">commit:</span><span class="at"> 4c2c499213750d622250f8277533eafb5ec1dc94</span>
+  <span class="fu">extra-dep:</span><span class="at"> true</span>
+<span class="kw">-</span> <span class="fu">location:</span>
+    <span class="fu">git:</span><span class="at"> https://github.com/jgm/pandoc</span>
+    <span class="fu">commit:</span><span class="at"> f4bff5d3599d0b6874c6b6604fb11016f8e038a9</span>
+  <span class="fu">extra-dep:</span><span class="at"> true</span>
+<span class="kw">-</span> <span class="fu">location:</span>
+      <span class="fu">git:</span><span class="at"> https://github.com/matsubara0507/pandoc-citeproc.git</span>
+      <span class="fu">commit:</span><span class="at"> 2a232dd33eb42ba73653a9661288a0026179c50f</span>
+  <span class="fu">extra-dep:</span><span class="at"> true</span>
+
+<span class="fu">extra-deps:</span>
+<span class="kw">-</span> cmark-gfm-0.1.3
+<span class="kw">-</span> haddock-library-1.4.3
+<span class="kw">-</span> hs-bibutils-5.5
+<span class="kw">-</span> hslua-0.5.0
+<span class="kw">-</span> HsSyck-0.53
+<span class="kw">-</span> rfc5051-0.1.0.3
+<span class="kw">-</span> yaml-light-0.1.4
+
+<span class="fu">flags:</span><span class="at"> </span><span class="kw">{}</span>
+
+<span class="fu">extra-package-dbs:</span><span class="at"> </span><span class="kw">[]</span></code></pre></div>
+<h2 id="おしまい">おしまい</h2>
+<p>これで GHC8.2 の LTS が出てもすぐに対応できるね！(たぶん)</p>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+  <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+    <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+      <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+    </a>
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>

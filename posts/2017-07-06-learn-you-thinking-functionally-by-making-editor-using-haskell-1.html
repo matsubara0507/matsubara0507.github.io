@@ -97,7 +97,7 @@
 <h2 id="section-2"></h2>
 <p>(ちなみに，みんな関数型パーサーを取り扱うのは，みんな好きだからじゃないかなぁ関数型パーサーが．)</p>
 <h2 id="前提">前提</h2>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li>Haskellの実行環境はある</li>
 <li>Haskellの基本構文は分かる
 <ul>
@@ -111,7 +111,7 @@
 <p>vi (<strong>Vim ではない</strong>) のようなコマンドベースのエディタを作る．</p>
 <p>取りあえず，コマンドは<a href="https://docs.oracle.com/cd/E19253-01/816-3946/6ma6m5bnv/index.html">このサイト</a>を参考にします．</p>
 <h3 id="注意点">注意点</h3>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li>効率や速度はほぼ考えない
 <ul>
 <li>最初から考えて設計すると難しくなる</li>
@@ -137,7 +137,7 @@
 </ol>
 <h3 id="今回の目標">今回の目標</h3>
 <p>以下の手順でコマンドを処理する部分を作る</p>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li>型を考える</li>
 <li>大枠を作る(ループは考えない)</li>
 <li>コマンドを読み込む</li>
@@ -246,7 +246,7 @@ defg
 <h2 id="コマンドを読み込む">3. コマンドを読み込む</h2>
 <p>次に <code>readCmd</code> を実装する．</p>
 <p><code>readCmd</code> は2ステップで処理を考えることが出来る．</p>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li>標準入力から文字列を読み取る</li>
 <li>文字列を <code>Cmd</code> 型に変換</li>
 </ol>
@@ -304,7 +304,7 @@ a
 <h3 id="edit-関数の処理を分ける"><code>edit</code> 関数の処理を分ける</h3>
 <p><code>edit</code> 関数自体で，<code>Cmd</code> 関数をパターンマッチしても良いが，(ぼくが)うまく頭を整理できないので，<code>edit</code> 関数の処理を分けることにする．</p>
 <p>処理を分けるとは，<code>EState</code> の何と何を変更する可能性があるかということだ． ぼくが考えるに</p>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li>カーソルの位置を更新(移動)</li>
 <li>ファイルの中身を更新(編集)</li>
 </ol>
