@@ -21,8 +21,6 @@ extra-deps:
 - hs-bibutils-5.5
 - hslua-0.5.0
 - HsSyck-0.53
-- pandoc-1.19.2.1
-- pandoc-citeproc-0.10.5.1
 - rfc5051-0.1.0.3
 - yaml-light-0.1.4
 
