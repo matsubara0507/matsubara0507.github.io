@@ -155,7 +155,7 @@
 <p><a href="https://hackage.haskell.org/package/req"><code>req</code></a> パッケージでリクエストパラメータにするには次のように <a href="https://hackage.haskell.org/package/base-4.10.0.0/docs/Data-Monoid.html#t:Monoid"><code>Monoid</code></a> 型クラスで合成していく．</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">param <span class="fu">=</span> <span class="st">&quot;price&quot;</span> <span class="fu">=:</span> (<span class="dv">24</span><span class="ot"> ::</span> <span class="dt">Int</span>)
      <span class="fu">&lt;&gt;</span> <span class="st">&quot;mmember&quot;</span> <span class="fu">=:</span> (<span class="st">&quot;hoge&quot;</span><span class="ot"> ::</span> <span class="dt">Text</span>)</code></pre></div>
-<p>この数を書くのはだるいでよね… そこで <code>extensible</code> ですよ！</p>
+<p>この数を書くのはだるいよね… そこで <code>extensible</code> ですよ！</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">ToParam</span> a <span class="kw">where</span>
 <span class="ot">  toParam ::</span> (<span class="dt">QueryParam</span> param, <span class="dt">Monoid</span> param) <span class="ot">=&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> param
 
