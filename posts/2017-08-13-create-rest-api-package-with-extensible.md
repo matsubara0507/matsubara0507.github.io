@@ -108,7 +108,7 @@ param = "price" =: (24 :: Int)
      <> "mmember" =: ("hoge" :: Text)
 ```
 
-この数を書くのはだるいでよね...
+この数を書くのはだるいよね...
 そこで `extensible` ですよ！
 
 ```Haskell
