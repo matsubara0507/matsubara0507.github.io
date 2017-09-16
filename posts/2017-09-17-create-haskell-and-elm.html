@@ -1,0 +1,411 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="Haskell × Elm のサンプルアプリケーションを書いてみた" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+    <meta property="og:image" content="/assets/create-haskell-and-elm/sample.jpg" />
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        Haskell × Elm のサンプルアプリケーションを書いてみた
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Haskell × Elm のサンプルアプリケーションを書いてみた</h1>
+    <p class="post-meta">
+      <time datetime="2017-09-17" itemprop="datePublished">
+        Sep 17, 2017
+      </time>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>Haskell と Elm を使った Web アプリケーションのサンプルコードを書いてみたので，それについてイロイロとメモ書き．</p>
+<p>最終的なコードは<a href="https://github.com/matsubara0507/haskell-and-elm">こちら</a>．</p>
+<h2 id="いきさつ">いきさつ</h2>
+<p>現在とあるアルバイトで，Elixir × ELm での社内ツールを作ってる(もうクローズドの本番実装に移行したけど，<a href="https://github.com/matsubara0507/patissier-test">テスト実装はオープンにしてる</a>)．</p>
+<p>バックエンド(Elixir/Phoenix)とフロント(Elm)で API による情報のやり取りをしているのだが，API の関数が Elixir と Elm で対応が取れているかどうかは，完全に手実装なので何の保証もない． 凄く悲しい． もしかしたら Haskell であれば Elm のコードを自動生成してくれるパッケージがあるのではないか，と思ったらあった(笑) なので，試しに Haslell × Elm で適当な Web アプリケーションを実装してみることにした．</p>
+<h2 id="section"></h2>
+<p>ちなみに，Elixir で書いたツールを Haskell で置き換える野望は無いです(笑) バイトが終わった後に誰もメンテナンスが出来なくなっちゃうから(これは言い過ぎかもだけど，少なくとも学習コストが増す)．</p>
+<h2 id="仕組み">仕組み</h2>
+<p>使ったのは以下のパッケージ</p>
+<ul>
+<li><a href="https://github.com/krisajenkins/elm-export">krisajenkins/elm-export: Create Elm types and JSON decoders from Haskell source.</a></li>
+<li><a href="https://github.com/mattjbray/servant-elm">mattjbray/servant-elm: Automatically derive Elm functions to query servant webservices</a></li>
+</ul>
+<p><code>elm-export</code> は Haskell で定義した型に対応する Elm の型を生成してくれてる． <code>servant-elm</code> は Haskell のサーバーサイドの Web フレームワークのひとつである <a href="http://haskell-servant.readthedocs.io/en/stable/"><code>servant</code></a> の API の定義から Elm の API の関数を生成してくれる． そのため，今回はWebフレームワークには <code>servant</code> を用いる．</p>
+<h2 id="section-1"></h2>
+<p>余談だけど，Haskell には意外と<a href="https://wiki.haskell.org/Web/Frameworks">イロんなWebフレームワークがある</a>． ボクはあんま詳しくないけど(<code>servant</code> しか使ったことない)．</p>
+<h2 id="section-2"></h2>
+<p>あと注意点として，全ての Haskell の型が Elm の型に対応しているわけではない． しかし，<code>elm-export</code> はその点を型レベルで完全に保証しているわけではないようだ(以下 <a href="https://github.com/krisajenkins/elm-export/blob/94b939bb95ec4a86ae634e785ee93b66c3c1c7e6/README.md#status">README</a> より)．</p>
+<blockquote>
+<p>There are some Haskell datatypes that cannot be represented in Elm. Obviously we will not support those. But there are some which are legal Haskell and legal Elm, but we do not yet generate.</p>
+</blockquote>
+<h2 id="作る">作る</h2>
+<p>ここからが本題</p>
+<h3 id="何を作るか">何を作るか</h3>
+<p>考えるのが面倒だったので，以下の記事のサンプルアプリを Elm を用いて作ることにした．</p>
+<ul>
+<li><a href="http://qiita.com/lotz/items/883b41fa79f060e59efa">【型レベルWeb DSL】 Servantの紹介 - Qiita</a></li>
+</ul>
+<p>ToDo リストを書いたり消したりって感じ． 最終的にはこんな感じの見た目になりました．</p>
+<p><img src="../assets/create-haskell-and-elm/sample.jpg" /></p>
+<p>参考記事と違って ToDo の追加と削除もフロント側からできる． DBは使わず，ToDo リストは愚直にハッシュマップで保持してる(ここは参考記事でそうしてるからそうした)． なので，プログラムを落とせばデータは消える．</p>
+<h3 id="todo-の型を書く">ToDo の型を書く</h3>
+<p>というか参考記事からの基本的にコピペですね．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE DataKinds     #-}</span>
+<span class="ot">{-# LANGUAGE DeriveGeneric #-}</span>
+<span class="ot">{-# LANGUAGE TypeOperators #-}</span>
+
+<span class="kw">module</span> <span class="dt">Todo</span> <span class="kw">where</span>
+
+<span class="kw">import </span><span class="dt">Data.Aeson</span> (<span class="dt">FromJSON</span>, <span class="dt">ToJSON</span>)
+<span class="kw">import </span><span class="dt">Data.Proxy</span> (<span class="dt">Proxy</span> (..))
+<span class="kw">import </span><span class="dt">Elm</span> (<span class="dt">ElmType</span>)
+<span class="kw">import </span><span class="dt">GHC.Generics</span> (<span class="dt">Generic</span>)
+<span class="kw">import </span><span class="dt">Servant.API</span>
+<span class="kw">import </span><span class="dt">Web.Internal.FormUrlEncoded</span> (<span class="dt">FromForm</span>)
+
+<span class="kw">data</span> <span class="dt">Todo</span> <span class="fu">=</span> <span class="dt">Todo</span>
+  {<span class="ot"> todoId ::</span> <span class="dt">Int</span>
+  ,<span class="ot"> title  ::</span> <span class="dt">String</span>
+  ,<span class="ot"> done   ::</span> <span class="dt">Bool</span>
+  } <span class="kw">deriving</span> (<span class="dt">Generic</span>, <span class="dt">Show</span>)
+
+<span class="kw">instance</span> <span class="dt">FromJSON</span> <span class="dt">Todo</span>
+<span class="kw">instance</span> <span class="dt">ToJSON</span> <span class="dt">Todo</span>
+<span class="kw">instance</span> <span class="dt">FromForm</span> <span class="dt">Todo</span> <span class="co">-- (1)</span>
+<span class="kw">instance</span> <span class="dt">ElmType</span> <span class="dt">Todo</span>  <span class="co">-- (2)</span>
+
+<span class="kw">type</span> <span class="dt">CRUD</span> <span class="fu">=</span> <span class="st">&quot;todos&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">'[JSON] [Todo]</span>
+       <span class="fu">:&lt;|&gt;</span> <span class="st">&quot;todos&quot;</span> <span class="fu">:&gt;</span> <span class="dt">ReqBody</span> <span class="ch">'[JSON, FormUrlEncoded] Todo :&gt; Post '</span>[<span class="dt">JSON</span>] <span class="dt">Todo</span>
+       <span class="fu">:&lt;|&gt;</span> <span class="st">&quot;todos&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Capture</span> <span class="st">&quot;id&quot;</span> <span class="dt">Int</span> <span class="fu">:&gt;</span> <span class="dt">ReqBody</span> <span class="ch">'[JSON, FormUrlEncoded] Todo :&gt; Put '</span>[<span class="dt">JSON</span>] ()
+       <span class="fu">:&lt;|&gt;</span> <span class="st">&quot;todos&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Capture</span> <span class="st">&quot;id&quot;</span> <span class="dt">Int</span> <span class="fu">:&gt;</span> <span class="dt">Delete</span> <span class="ch">'[JSON] ()</span>
+
+<span class="ot">crud ::</span> <span class="dt">Proxy</span> <span class="dt">CRUD</span>
+crud <span class="fu">=</span> <span class="dt">Proxy</span></code></pre></div>
+<p>変更点は2つ． ひとつは <a href="https://hackage.haskell.org/package/http-api-data-0.3.7.1/docs/Web-FormUrlEncoded.html#t:FromForm"><code>FromForm</code></a> 型クラスのインスタンスにしてる点((1)の行)． 参考記事では手作業で <code>FromFormUrlEncoded</code> 型クラスのインスタンスにしてるが，現在の <a href="https://hackage.haskell.org/package/http-api-data-0.3.7.1"><code>http-api-data</code></a> にはもうこの型クラスは無く，代わりに <code>FromForm</code> 型クラスを使うしかないようだ．</p>
+<p>もうひとつは，<a href="https://github.com/krisajenkins/elm-export/blob/94b939bb95ec4a86ae634e785ee93b66c3c1c7e6/src/Elm/Type.hs#L61"><code>ElmType</code></a> 型クラスのインスタンスにしてる点((2)の行)． お察しの通り，この型クラスのインスタンスにした型を Elm の型にすることが出来るようになる．</p>
+<p>どちらも <code>Generics</code> をサポートしてるので，簡単にインスタンス化できますね．</p>
+<h3 id="サーバーの-main-関数を書く">サーバーの <code>main</code> 関数を書く</h3>
+<p>こっちは完全にコピペです． 多少整形してあるのと，初期値 <code>initTodoList</code> を使ってるぐらい．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE DataKinds         #-}</span>
+<span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
+<span class="ot">{-# LANGUAGE TypeOperators     #-}</span>
+
+<span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span>
+
+<span class="kw">import </span><span class="dt">Control.Arrow</span> (second)
+<span class="kw">import </span><span class="dt">Control.Concurrent.STM</span> (<span class="dt">TVar</span>, atomically, modifyTVar, newTVar, readTVar, writeTVar)
+<span class="kw">import </span><span class="dt">Control.Monad.IO.Class</span> (liftIO)
+<span class="kw">import </span><span class="dt">Data.Aeson</span>
+<span class="kw">import </span><span class="dt">Data.IntMap</span> (<span class="dt">IntMap</span>)
+<span class="kw">import qualified</span> <span class="dt">Data.IntMap</span> <span class="kw">as</span> <span class="dt">IntMap</span>
+<span class="kw">import </span><span class="dt">Data.Proxy</span> (<span class="dt">Proxy</span> (..))
+<span class="kw">import qualified</span> <span class="dt">Network.Wai.Handler.Warp</span>  <span class="kw">as</span> <span class="dt">Warp</span>
+<span class="kw">import </span><span class="dt">Servant.API</span> ((:&lt;|&gt;) (..), (:&gt;), <span class="dt">Get</span>, <span class="dt">Raw</span>)
+<span class="kw">import </span><span class="dt">Servant.EDE</span> (<span class="dt">HTML</span>, loadTemplates)
+<span class="kw">import </span><span class="dt">Servant.Server</span> (<span class="dt">Server</span>, serve)
+<span class="kw">import </span><span class="dt">Servant.Utils.StaticFiles</span> (serveDirectoryFileServer)
+<span class="kw">import </span><span class="dt">Todo</span> (<span class="dt">Todo</span> (..))
+<span class="kw">import qualified</span> <span class="dt">Todo</span>
+
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+main <span class="fu">=</span> <span class="kw">do</span>
+  db <span class="ot">&lt;-</span> atomically <span class="fu">$</span> newTVar (length initTodoList, IntMap.fromList initTodoList)
+  _ <span class="ot">&lt;-</span> loadTemplates api [] <span class="st">&quot;.&quot;</span>
+  putStrLn <span class="st">&quot;Listening on port 8080&quot;</span>
+  Warp.run <span class="dv">8080</span> <span class="fu">$</span> serve api (server db)
+
+<span class="kw">type</span> <span class="dt">API</span> <span class="fu">=</span> <span class="dt">Get</span> <span class="ch">'[HTML &quot;index.html&quot;] Object</span>
+      <span class="fu">:&lt;|&gt;</span> <span class="st">&quot;static&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Raw</span>
+      <span class="fu">:&lt;|&gt;</span> <span class="dt">Todo.CRUD</span>
+
+<span class="ot">api ::</span> <span class="dt">Proxy</span> <span class="dt">API</span>
+api <span class="fu">=</span> <span class="dt">Proxy</span>
+
+<span class="ot">server ::</span> <span class="dt">TVar</span> (<span class="dt">Int</span>, <span class="dt">IntMap</span> <span class="dt">Todo</span>) <span class="ot">-&gt;</span> <span class="dt">Server</span> <span class="dt">API</span>
+server db <span class="fu">=</span> index
+       <span class="fu">:&lt;|&gt;</span> serveDirectoryFileServer <span class="st">&quot;static&quot;</span>
+       <span class="fu">:&lt;|&gt;</span> getTodos
+       <span class="fu">:&lt;|&gt;</span> postTodo
+       <span class="fu">:&lt;|&gt;</span> putTodoId
+       <span class="fu">:&lt;|&gt;</span> deleteTodoId
+  <span class="kw">where</span>
+    index <span class="fu">=</span> pure mempty
+    getTodos <span class="fu">=</span> liftIO <span class="fu">$</span> IntMap.elems <span class="fu">.</span> snd <span class="fu">&lt;$&gt;</span> atomically (readTVar db)
+    postTodo todo <span class="fu">=</span> liftIO <span class="fu">.</span> atomically <span class="fu">$</span> <span class="kw">do</span>
+      (maxId, m) <span class="ot">&lt;-</span> readTVar db
+      <span class="kw">let</span>
+        newId <span class="fu">=</span> maxId <span class="fu">+</span> <span class="dv">1</span>
+        newTodo <span class="fu">=</span> todo { todoId <span class="fu">=</span> newId }
+      writeTVar db (newId, IntMap.insert newId newTodo m)
+      pure newTodo
+    putTodoId tid todo <span class="fu">=</span>
+      liftIO <span class="fu">.</span> atomically <span class="fu">.</span> modifyTVar db <span class="fu">.</span> second <span class="fu">$</span> IntMap.insert tid todo
+    deleteTodoId tid   <span class="fu">=</span>
+      liftIO <span class="fu">.</span> atomically <span class="fu">.</span> modifyTVar db <span class="fu">.</span> second <span class="fu">$</span> IntMap.delete tid
+
+<span class="ot">initTodoList ::</span> [(<span class="dt">Int</span>, <span class="dt">Todo</span>)]
+initTodoList <span class="fu">=</span>
+  [ (<span class="dv">1</span>, <span class="dt">Todo</span> <span class="dv">1</span> <span class="st">&quot;アドベントカレンダーを書く&quot;</span> <span class="dt">True</span>)
+  , (<span class="dv">2</span>, <span class="dt">Todo</span> <span class="dv">2</span> <span class="st">&quot;Haskellで仕事する&quot;</span> <span class="dt">False</span>)
+  , (<span class="dv">3</span>, <span class="dt">Todo</span> <span class="dv">3</span> <span class="st">&quot;寝る&quot;</span> <span class="dt">False</span>)
+  ]</code></pre></div>
+<h3 id="elm-コードジェネレーターの-main-関数を書く">Elm コードジェネレーターの <code>main</code> 関数を書く</h3>
+<p>こっちは <code>servant-elm</code> の<a href="https://github.com/mattjbray/servant-elm/blob/4e27dcc8c135a3c2ced3f6d2de74133532dcd743/examples/books/generate.hs">サンプルコード</a>を参考にした．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
+
+<span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span>
+
+<span class="kw">import </span><span class="dt">Data.Proxy</span>  (<span class="dt">Proxy</span> (..))
+<span class="kw">import </span><span class="dt">Elm</span>
+<span class="kw">import </span><span class="dt">Servant.Elm</span>
+<span class="kw">import </span><span class="dt">Shelly</span> (run_, shelly)
+<span class="kw">import </span><span class="dt">Todo</span> (<span class="dt">CRUD</span>, <span class="dt">Todo</span>)
+
+<span class="ot">elmOpts ::</span> <span class="dt">ElmOptions</span>
+elmOpts <span class="fu">=</span>
+  defElmOptions
+    { urlPrefix <span class="fu">=</span> <span class="dt">Static</span> <span class="st">&quot;http://localhost:8080&quot;</span> }
+
+<span class="ot">spec ::</span> <span class="dt">Spec</span>
+spec <span class="fu">=</span> <span class="dt">Spec</span> [<span class="st">&quot;Generated&quot;</span>, <span class="st">&quot;TodoAPI&quot;</span>]
+            (defElmImports
+             <span class="fu">:</span> toElmTypeSource    (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">Todo</span>)
+             <span class="fu">:</span> toElmDecoderSource (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">Todo</span>)
+             <span class="fu">:</span> toElmEncoderSource (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">Todo</span>)
+             <span class="fu">:</span> generateElmForAPIWith elmOpts  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">CRUD</span>))
+
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+main <span class="fu">=</span> <span class="kw">do</span>
+  specsToDir [spec] <span class="st">&quot;elm-src&quot;</span>
+  shelly <span class="fu">$</span>
+    run_ <span class="st">&quot;elm-make&quot;</span> [<span class="st">&quot;elm-src/Main.elm&quot;</span>, <span class="st">&quot;--output=static/main.js&quot;</span>]</code></pre></div>
+<p>違うのは一番最後に <a href="https://hackage.haskell.org/package/shelly"><code>shelly</code></a> (shell コードを実行するためのパッケージ)を使って，Elm のビルドも行っている点．</p>
+<p>できれば，<code>stack build</code> で Elm コードの生成とビルドもやりたかった． なので，この <code>main</code> 関数をテストとして Cabal ファイル(正確には <a href="https://github.com/matsubara0507/haskell-and-elm/blob/97354ff7ad8cba37baead2393ea744dc2f3fa931/package.yaml">package.json</a>) に書いた．</p>
+<pre class="cabal"><code>test-suite generate
+  type: exitcode-stdio-1.0
+  main-is: Generate.hs
+  hs-source-dirs:
+      app
+  ghc-options: -Wall
+  build-depends:
+      aeson
+    , base &gt;= 4.7 &amp;&amp; &lt; 5
+    , elm-export
+    , servant
+    , servant-elm
+    , servant-server
+    , haskell-and-elm
+    , shelly
+  default-language: Haskell2010</code></pre>
+<p>こうすることで，<code>stack build --test</code> とすることで全部やってくれる．</p>
+<p>ちなみに，生成されたコードは<a href="https://github.com/matsubara0507/haskell-and-elm/blob/97354ff7ad8cba37baead2393ea744dc2f3fa931/elm-src/Generated/TodoAPI.elm">こんな感じ</a>(長いので載せない)．</p>
+<h3 id="elm-コードを書く">Elm コードを書く</h3>
+<p>あんまり本質的ではないので載せないけど，<a href="https://github.com/matsubara0507/haskell-and-elm/blob/97354ff7ad8cba37baead2393ea744dc2f3fa931/elm-src/Main.elm">ここ</a>を見て．</p>
+<p>ちなみに，<a href="http://primercss.io/">Primer CSS</a> を使って，少しだけ見た目を綺麗にしてる．</p>
+<h2 id="実行">実行</h2>
+<p>一番最初に <code>elm package install</code> して Elm の依存パッケージをインストールする． 後は <code>stack build --test</code> とすると，Haskell のビルド，Elm コードの生成，Elm のビルドの順に実行してくれる． 後は，<code>stack exec server</code> とすることで，<code>localhost:8080</code> にWebアプリがたつ．</p>
+<h2 id="おまけ">おまけ</h2>
+<p>Elm 側で <code>todo.todoId</code> で <code>Todo</code> 型のフィールドにアクセスしなければいけないの悲しいよね． Elm は Haskell のレコード型と違って，フィールドの get 関数がグローバルのネームスペースを侵さないので，平気で <code>id</code> とかいうフィールド名を付けることが出来る．</p>
+<pre class="elm"><code>type alias Todo =
+    { id : Int
+    , title : String
+    , done : Bool
+    }</code></pre>
+<p>Haskell でそんなことしたら〇されてしまう…</p>
+<p>そこで <strong>拡張可能レコード</strong> ですよ！！</p>
+<p>なのでココからは頑張って <code>Todo</code> 型を拡張可能レコードに変更してみる！ (本音はココからが本題)</p>
+<h3 id="todo-型"><code>Todo</code> 型</h3>
+<p>こうなる</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Todo</span> <span class="fu">=</span> <span class="dt">Record</span>
+  <span class="ch">'[ &quot;id&quot; &gt;: Int</span>
+   , <span class="st">&quot;title&quot;</span> <span class="fu">&gt;:</span> <span class="dt">String</span>
+   , <span class="st">&quot;done&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Bool</span>
+   ]</code></pre></div>
+<h3 id="各型クラスのインスタンス">各型クラスのインスタンス</h3>
+<p>拡張可能レコードは拡張可能レコード全体をひとつの型としてインスタンスを定義する．</p>
+<p><code>FromJSON</code> 型クラスと <code>ToJSON</code> 型クラスのインスタンス定義は <code>fumieval/extensible</code> リポジトリに<a href="https://github.com/fumieval/extensible/blob/57ee2f5babfc2007a16568c0769d29e914ffb794/examples/aeson.hs">例</a>としてあるので，それをコピペした．</p>
+<p><code>FromForm</code> 型クラスは <code>FromJSON</code> 型クラスを参考に次のように定義した．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Forall</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">FromHttpApiData</span>) xs <span class="ot">=&gt;</span> <span class="dt">FromForm</span> (<span class="dt">Record</span> xs) <span class="kw">where</span>
+  fromForm f <span class="fu">=</span> hgenerateFor (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">FromHttpApiData</span>))
+    <span class="fu">$</span> \m <span class="ot">-&gt;</span> <span class="kw">let</span> k <span class="fu">=</span> symbolVal (proxyAssocKey m) <span class="kw">in</span> <span class="dt">Field</span> <span class="fu">&lt;$&gt;</span> parseUnique (fromString k) f
+
+<span class="kw">instance</span> <span class="dt">FromHttpApiData</span> a <span class="ot">=&gt;</span> <span class="dt">FromHttpApiData</span> (<span class="dt">Identity</span> a) <span class="kw">where</span>
+  parseUrlPiece <span class="fu">=</span> fmap <span class="dt">Identity</span> <span class="fu">.</span> parseUrlPiece</code></pre></div>
+<h3 id="拡張可能レコードと-elmtype-型クラス">拡張可能レコードと <code>ElmType</code> 型クラス</h3>
+<p>問題は <code>ElmType</code> 型クラス． <code>ElmType</code> 型クラスは次のようになっている。</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">ElmType</span> a <span class="kw">where</span>
+<span class="ot">  toElmType ::</span> a <span class="ot">-&gt;</span> <span class="dt">ElmDatatype</span>
+
+<span class="kw">data</span> <span class="dt">ElmDatatype</span>
+  <span class="fu">=</span> <span class="dt">ElmDatatype</span> <span class="dt">Text</span> <span class="dt">ElmConstructor</span>
+  <span class="fu">|</span> <span class="dt">ElmPrimitive</span> <span class="dt">ElmPrimitive</span>
+  <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)
+
+<span class="kw">data</span> <span class="dt">ElmConstructor</span>
+  <span class="fu">=</span> <span class="dt">NamedConstructor</span> <span class="dt">Text</span> <span class="dt">ElmValue</span>
+  <span class="fu">|</span> <span class="dt">RecordConstructor</span> <span class="dt">Text</span> <span class="dt">ElmValue</span>
+  <span class="fu">|</span> <span class="dt">MultipleConstructors</span> [<span class="dt">ElmConstructor</span>]
+  <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)
+
+<span class="kw">data</span> <span class="dt">ElmValue</span>
+  <span class="fu">=</span> <span class="dt">ElmRef</span> <span class="dt">Text</span>
+  <span class="fu">|</span> <span class="dt">ElmEmpty</span>
+  <span class="fu">|</span> <span class="dt">ElmPrimitiveRef</span> <span class="dt">ElmPrimitive</span>
+  <span class="fu">|</span> <span class="dt">Values</span> <span class="dt">ElmValue</span> <span class="dt">ElmValue</span>
+  <span class="fu">|</span> <span class="dt">ElmField</span> <span class="dt">Text</span> <span class="dt">ElmValue</span>
+  <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</code></pre></div>
+<p><code>ElmDatatype</code> 型の <code>ElmPrimitive</code> 値コンストラクタは名前の通り，<code>Int</code> や <code>String</code> のような Elm のプリミティブ型を表現し，<code>ElmDatatype</code> 値コンストラクタはユーザー定義型を表現している． <code>ElmDatatype</code> 値コンストラクタの一引数目(<code>Text</code>)は型名である． つまり， <strong>型名のが決まっていない型の定義ができない</strong> のである．</p>
+<p>何を当たり前のことを…と思うかもしれないが，拡張可能レコードのインスタンスの定義のときには名前がまだ無い… この時点で定義できるのは，<code>ElmValue</code> 型までだ． なので，<code>ElmValue</code> 型に変換する型クラスを定義しよう．</p>
+<h2 id="section-3"></h2>
+<p>ちなみに，レコード型は次のような <code>ElmDatatype</code> 型になる．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;&gt;</span> <span class="fu">:</span>set <span class="fu">-</span><span class="dt">XDeriveGeneric</span> <span class="fu">-</span><span class="dt">XDeriveAnyClass</span>
+<span class="fu">&gt;&gt;</span> <span class="kw">data</span> <span class="dt">Hoge</span> <span class="fu">=</span> <span class="dt">Hoge</span> {<span class="ot"> xxx ::</span> <span class="dt">Int</span>,<span class="ot"> yyy ::</span> <span class="dt">String</span> } <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Generic</span>, <span class="dt">ElmType</span>)
+<span class="fu">&gt;&gt;</span> toElmType (undefined<span class="ot"> ::</span> <span class="dt">Hoge</span>)
+<span class="dt">ElmDatatype</span> <span class="st">&quot;Hoge&quot;</span> (<span class="dt">RecordConstructor</span> <span class="st">&quot;Hoge&quot;</span> (<span class="dt">Values</span> (<span class="dt">ElmField</span> <span class="st">&quot;xxx&quot;</span> (<span class="dt">ElmPrimitiveRef</span> <span class="dt">EInt</span>)) (<span class="dt">ElmField</span> <span class="st">&quot;yyy&quot;</span> (<span class="dt">ElmPrimitiveRef</span> (<span class="dt">EList</span> (<span class="dt">ElmPrimitive</span> <span class="dt">EChar</span>))))))</code></pre></div>
+<h3 id="toelmvalue-型クラス"><code>ToElmValue</code> 型クラス</h3>
+<p>なんて雑な名前だろうか．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">ToElmValue</span> a <span class="kw">where</span>
+<span class="ot">  toElmValue ::</span> a <span class="ot">-&gt;</span> <span class="dt">ElmValue</span></code></pre></div>
+<p>拡張可能レコードのインスタンスを，<code>ToJSON</code> 型クラスを参考に定義する．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Forall</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">ElmType</span>) xs <span class="ot">=&gt;</span> <span class="dt">ToElmValue</span> (<span class="dt">Record</span> xs) <span class="kw">where</span>
+  toElmValue rec <span class="fu">=</span> hfoldMap getConst'
+    <span class="fu">$</span> hzipWith (\(<span class="dt">Comp</span> <span class="dt">Dict</span>) v <span class="ot">-&gt;</span> <span class="dt">Const'</span>
+        <span class="fu">$</span> <span class="dt">ElmField</span> (fromString <span class="fu">.</span> symbolVal <span class="fu">$</span> proxyAssocKey v) (elmTypeToElmValue <span class="fu">.</span> toElmType <span class="fu">$</span> getField v))
+      (<span class="ot">library ::</span> <span class="dt">Comp</span> <span class="dt">Dict</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">ElmType</span>) <span class="fu">:*</span> xs) rec
+
+<span class="kw">instance</span> <span class="dt">ElmType</span> a <span class="ot">=&gt;</span> <span class="dt">ElmType</span> (<span class="dt">Identity</span> a) <span class="kw">where</span>
+  toElmType (<span class="dt">Identity</span> a) <span class="fu">=</span> toElmType a
+
+<span class="ot">elmTypeToElmValue ::</span> <span class="dt">ElmDatatype</span> <span class="ot">-&gt;</span> <span class="dt">ElmValue</span>
+elmTypeToElmValue (<span class="dt">ElmDatatype</span> name _) <span class="fu">=</span> <span class="dt">ElmRef</span> name
+elmTypeToElmValue (<span class="dt">ElmPrimitive</span> prim)  <span class="fu">=</span> <span class="dt">ElmPrimitiveRef</span> prim</code></pre></div>
+<p>そしてこれを用いて <code>ElmType</code> 型クラスの <code>Todo</code> 型のインスタンスを定義する．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE TypeSynonymInstances #-}</span>
+
+<span class="kw">instance</span> <span class="dt">ElmType</span> <span class="dt">Todo</span> <span class="kw">where</span>
+  toElmType <span class="fu">=</span> toElmRecordType <span class="st">&quot;Todo&quot;</span>
+
+<span class="ot">toElmRecordType ::</span> <span class="dt">ToElmValue</span> a <span class="ot">=&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">ElmDatatype</span>
+toElmRecordType name <span class="fu">=</span> <span class="dt">ElmDatatype</span> name <span class="fu">.</span> <span class="dt">RecordConstructor</span> name <span class="fu">.</span> toElmValue</code></pre></div>
+<p><code>TypeSynonymInstances</code> が嫌だったら，<code>newtype</code> でラップした型を定義すると良いでしょう．</p>
+<h2 id="section-4"></h2>
+<p>ちなみに，<code>newtype A = A (Record xs)</code> かつ <code>Record xs</code> が <code>ToElmValue</code> 型クラスのインスタンスなら必ず <code>ElmType</code> 型クラスのインスタンスにできるはずなので，そのようなインスタンスを定義しようとしたが，うまくいかなかった． Haskell-JP で <code>newtype</code> であることを保証する型クラスは無いかとか聞いて，そのおかげで <code>newtype</code> であることと，対応する型を取り出すことはできたのだが，型名を取り出すのにうまくいかなかった． またそのうち挑戦します．</p>
+<h3 id="最後の罠">最後の罠</h3>
+<p>これで意気揚々と Elm コード生成プログラムを実行したら実行時エラーになってしまった(ビルドは通る)． 原因は以下のせい．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;&gt;</span> toElmType (undefined<span class="ot"> ::</span> <span class="dt">Todo</span>)
+<span class="dt">ElmDatatype</span> <span class="st">&quot;Todo&quot;</span> (<span class="dt">RecordConstructor</span> <span class="st">&quot;Todo&quot;</span> <span class="fu">***</span> <span class="dt">Exception</span><span class="fu">:</span> Prelude.undefined
+<span class="dt">CallStack</span> (from <span class="dt">HasCallStack</span>)<span class="fu">:</span>
+  error, called at libraries\base\<span class="dt">GHC</span>\Err.hs<span class="fu">:</span><span class="dv">79</span><span class="fu">:</span><span class="dv">14</span> <span class="kw">in</span> base<span class="fu">:</span><span class="dt">GHC.Err</span>
+  undefined, called at <span class="fu">&lt;</span>interactive<span class="fu">&gt;:</span><span class="dv">15</span><span class="fu">:</span><span class="dv">12</span> <span class="kw">in</span> interactive<span class="fu">:</span><span class="dt">Ghci1</span></code></pre></div>
+<p>要するに，<code>undefined</code> や <code>Proxy</code> のような中身の無い状態では拡張可能レコードのインスタンスメソッドを実行できないのだ． そりゃ冷静に考えてみればそうだと言う感じだ(値から正確な型を読み取っているのだから)．</p>
+<p>なので，以下のような例の値を定義し．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">example ::</span> <span class="dt">Todo</span>
+example <span class="fu">=</span> <span class="fu">#</span>id <span class="fu">@=</span> <span class="dv">1</span>
+       <span class="fu">&lt;:</span> <span class="fu">#</span>title <span class="fu">@=</span> <span class="st">&quot;hoge&quot;</span>
+       <span class="fu">&lt;:</span> <span class="fu">#</span>done <span class="fu">@=</span> <span class="dt">True</span>
+       <span class="fu">&lt;:</span> emptyRecord</code></pre></div>
+<p>生成プログラムのコードを次のように書き換える．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">spec ::</span> <span class="dt">Spec</span>
+spec <span class="fu">=</span> <span class="dt">Spec</span> [<span class="st">&quot;Generated&quot;</span>, <span class="st">&quot;TodoAPI&quot;</span>]
+            (defElmImports
+             <span class="fu">:</span> toElmTypeSource    example <span class="co">-- here</span>
+             <span class="fu">:</span> toElmDecoderSource example <span class="co">-- here</span>
+             <span class="fu">:</span> toElmEncoderSource example <span class="co">-- here</span>
+             <span class="fu">:</span> generateElmForAPIWith elmOpts  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">CRUD</span>))</code></pre></div>
+<p>これでうまく実行できるはず．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>拡張可能レコード化するのに3日ぐらい悩んでしまった． この手の問題は難しいですねやっぱり．</p>
+<p>今後は積極的にこの組み合わせを使っていこうかしら．</p>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+  <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+    <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+      <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+    </a>
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>

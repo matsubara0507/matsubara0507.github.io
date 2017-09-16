@@ -110,10 +110,8 @@
 <li>自然変換(natural transformation)</li>
 </ul></li>
 <li>圏(Category)の定義
-<ul>
-<li><ol type="i">
-<li>対象(Object)がある</li>
-</ol>
+<ol type="i">
+<li>対象(Object)がある
 <ul>
 <li><strong>集合である必要は無い</strong></li>
 <li>構成要素は関係ない</li>
@@ -122,54 +120,44 @@
 <li>集合である必要は無いのでエンドポイント的なイメージ</li>
 </ul></li>
 </ul></li>
-<li><ol start="2" type="i">
-<li>射(Arrow)がある</li>
-</ol>
+<li>射(Arrow)がある
 <ul>
 <li>対象から対象へのなんらかの写像のようなモノ</li>
 <li>対象 a から b への射が複数あってよい</li>
 <li>圏にとってもっとも中心的な構成要素</li>
 </ul></li>
-<li><ol start="3" type="i">
-<li>合成(composite)が定義可能</li>
-</ol>
+<li>合成(composite)が定義可能
 <ul>
 <li><code>f : a -&gt; b</code>, <code>g : b' -&gt; c</code> のとき <code>b = b'</code> ならば <code>g . f : a -&gt; c</code> (合成射)</li>
 <li>対象の等価性は対象ごとで</li>
 </ul></li>
-<li><ol start="4" type="i">
-<li>結合律が成り立つ</li>
-</ol>
+<li>結合律が成り立つ
 <ul>
 <li><code>h . (g . f) = (h . g) . f</code></li>
 </ul></li>
-<li><ol start="22" type="a">
-<li>恒等射が定義できる</li>
-</ol>
+<li>恒等射が定義できる
 <ul>
 <li><code>f = f . id_a</code></li>
 </ul></li>
-</ul></li>
+</ol></li>
 <li>関手(Functor)の定義
 <ul>
 <li>関手 <code>F</code> はある圏の射をある圏の射に写像する
 <ul>
 <li><code>f : a -&gt; b</code>, <code>Ff : Fa -&gt; Fb</code> ならば <code>F(f) = Ff</code></li>
 </ul></li>
-<li><ol type="i">
-<li>共変関手と反変換手</li>
-</ol>
+</ul>
+<ol type="i">
+<li>共変関手と反変換手
 <ul>
 <li>共変性: <code>F(g . f) = F(g) . F(f)</code></li>
 <li>反変性: <code>F(g . f) = F(f) . F(g)</code></li>
 </ul></li>
-<li><ol start="2" type="i">
-<li>恒等射を保存する</li>
-</ol>
+<li>恒等射を保存する
 <ul>
 <li><code>F(id_a) = id_Fa</code></li>
 </ul></li>
-</ul></li>
+</ol></li>
 <li>自然変換(natural transformation)の定義
 <ul>
 <li>特定の圏間にある2つの共変関手を写像する <code>t : F -&gt; F'</code></li>
