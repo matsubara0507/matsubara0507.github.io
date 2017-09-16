@@ -51,19 +51,19 @@ Ruby は好きです．
     - NG ワード
         - 当然 普通 当たり前
         - **とても成長できる友達たちなんだ！**
-    - 1. issue を終わらせる
+    1. issue を終わらせる
         - issue を作るだけではダメ
-    - 2. ペア作業の習慣
+    2. ペア作業の習慣
         - 若手同士でも組ませてみる
             - 近いので質問・話しやすい
-    - 3. デプロイ方法の統一
+    3. デプロイ方法の統一
         - Jenkins
             - でもJenkinsおじさんは要らない
-    - 4. 開発環境の統一
+    4. 開発環境の統一
         - [RubyMine](https://www.jetbrains.com/ruby/)
         - [rspec](http://rspec.info/)
         - [rubocop](https://github.com/bbatsov/rubocop)
-    - 5. ドキュメンテーション
+    5. ドキュメンテーション
         - 多少冗長でも
 - ぺろぺろ
     - 社内用に作った GitHub のプルリクにフックして動作する Bot フレームワーク(Slack で使ってるらしい)， [prpr](https://github.com/mzp/prpr) の紹介
