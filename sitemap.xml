@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
     <url>
+        <loc>https://matsubara0507.github.io/posts/2017-10-01-create-thank-you-stars-ver-elixir.html</loc>
+        <changefreq>never</changefreq>
+        <lastmod>2017-10-01</lastmod>
+        <priority>0.8</priority>
+    </url>
+
+    <url>
         <loc>https://matsubara0507.github.io/posts/2017-09-17-create-haskell-and-elm.html</loc>
         <changefreq>never</changefreq>
         <lastmod>2017-09-17</lastmod>
