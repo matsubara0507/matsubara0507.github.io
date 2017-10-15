@@ -7,7 +7,7 @@ title: req を使って REST API Haskell パッケージを作る その２
 
 とある事情で，[ChatWork API](http://developer.chatwork.com/) の Haskell パッケージを [`req`](https://hackage.haskell.org/package/req) ライブラリを使って作ったので，その過程を残しておく．
 
-[前回](/posts/2017-08-09-create-rest-api-package-with-req-part2.html)で，基本的なエンドポイント関数は作れた．
+[前回](/posts/2017-08-07-create-rest-api-package-with-req-part1.html)で，基本的なエンドポイント関数は作れた．
 今回は，エラー用の JSON が返ってきたときの処理の追加と，(自分流の)テストの追加を書こうと思う．
 
 ちなみに，完成品は[ココ](https://github.com/matsubara0507/chatwork)にある．
