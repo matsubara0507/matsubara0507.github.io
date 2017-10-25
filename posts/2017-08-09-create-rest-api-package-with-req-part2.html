@@ -82,7 +82,7 @@
   <div class="post-content" itemprop="articleBody">
     <p>こういう名前は正しくないかもしれないが，ここでは REST API パッケージ(ライブラリ)とは，既存の REST API を走査するための Haskell パッケージのことを指してる． 例えば，既にあるものだと，<a href="https://developer.github.com/v3/">GitHub API</a> の <a href="http://hackage.haskell.org/package/github"><code>github</code></a> や <a href="https://api.slack.com/">Slack API</a> の <a href="https://hackage.haskell.org/package/slack-api"><code>slack-api</code></a> などがある．</p>
 <p>とある事情で，<a href="http://developer.chatwork.com/">ChatWork API</a> の Haskell パッケージを <a href="https://hackage.haskell.org/package/req"><code>req</code></a> ライブラリを使って作ったので，その過程を残しておく．</p>
-<p><a href="../posts/2017-08-09-create-rest-api-package-with-req-part2.html">前回</a>で，基本的なエンドポイント関数は作れた． 今回は，エラー用の JSON が返ってきたときの処理の追加と，(自分流の)テストの追加を書こうと思う．</p>
+<p><a href="../posts/2017-08-07-create-rest-api-package-with-req-part1.html">前回</a>で，基本的なエンドポイント関数は作れた． 今回は，エラー用の JSON が返ってきたときの処理の追加と，(自分流の)テストの追加を書こうと思う．</p>
 <p>ちなみに，完成品は<a href="https://github.com/matsubara0507/chatwork">ココ</a>にある．</p>
 <h2 id="作る">作る</h2>
 <h3 id="エラー用の-json-への処理の追加">エラー用の JSON への処理の追加</h3>

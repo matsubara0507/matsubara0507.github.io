@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="Elm × Haskell × Kotlin で Android + Web アプリケーションを作った" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+    <meta property="og:image" content="/assets/create-anaqram/scoreboard.jpg" />
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        Elm × Haskell × Kotlin で Android + Web アプリケーションを作った
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Elm × Haskell × Kotlin で Android + Web アプリケーションを作った</h1>
+    <p class="post-meta">
+      <time datetime="2017-10-23" itemprop="datePublished">
+        Oct 23, 2017
+      </time>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>ちょっと珍しい組み合わせでアプリを作ったので，そのメモ．</p>
+<h2 id="いきさつ">いきさつ</h2>
+<p>去年，母校の学園祭用に <a href="https://iggg.github.io/2016/10/18/create-anaqram/">AnaQRam という Android アプリ(ゲーム)を Java で作った</a>． 今年，このアプリを</p>
+<ol type="1">
+<li>Kotlin に変換</li>
+<li>サーバーサイドにスコアランキングを追加</li>
+<li>データを DB で管理</li>
+</ol>
+<p>することにした． サーバーサイドは Haskell の Servant で組み立てて，ランキングを表示する Web ページを Elm で書く．</p>
+<p>結果，Elm × Haskell × Kotlin という珍しい組み合わせのプロジェクトが出来上がった(笑)</p>
+<h2 id="section"></h2>
+<p>最終的なリポジトリは<a href="https://github.com/matsubara0507/anaqram-server">ココ</a>．</p>
+<h2 id="作る">作る</h2>
+<h3 id="anaqram">AnaQRam</h3>
+<p>AnaQRam というアプリについて少しだけ説明すると，子供(小学校低学年以下)でも遊べる簡易的なゲームで，基本的には所謂アナグラムというパズル． ただ，そのパズルのピース(文字)をQRコードをスキャンして集める必要がある．</p>
+<h3 id="kotlin-に変換">Kotlin に変換</h3>
+<p>実はすごい簡単． Android Studio のナビゲーションメニューにある <code>Convert Java File to Kotlin File</code> をクリックするだけで <strong>概ね完了する</strong>．</p>
+<ul>
+<li>参照: <a href="https://qiita.com/HIkaruSato/items/4a5a7906761b19217370">Androidアプリ(Java)をKotlinに全変換 - Qiita</a></li>
+</ul>
+<p>しかし，恐らくこんな感じのエラーが出る．</p>
+<pre><code>Error:(24, 20) Type mismatch: inferred type is Array&lt;CharBox?&gt; but Array&lt;CharBox&gt; was expected</code></pre>
+<p>だいたい Nullable のせい． Kotlin では <code>null</code> をとり得る任意の型 <code>A</code> は <code>A?</code> と書く必要がある．</p>
+<p>ラムダ式の無い Java で配列を動的に初期化するには以下のように書くしかなかった(Javaマスターでは無いので実は裏技があったかも)．</p>
+<div class="sourceCode"><pre class="sourceCode java"><code class="sourceCode java"><span class="kw">private</span> CharBox[] <span class="fu">getCurrentCharBoxes</span>() {
+    CharBox[] current = <span class="kw">new</span> CharBox[buttons.<span class="fu">length</span>];
+    <span class="kw">for</span> (<span class="dt">int</span> i = <span class="dv">0</span>; i &lt; buttons.<span class="fu">length</span>; i++)
+        current[i] = charBoxes.<span class="fu">get</span>(buttons[i]);
+    <span class="kw">return</span> current;
+}</code></pre></div>
+<p>これの自動変換は以下のようになる．</p>
+<div class="sourceCode"><pre class="sourceCode kotlin"><code class="sourceCode kotlin"><span class="kw">private</span> <span class="kw">val</span> <span class="va">currentCharBoxes</span>: Array&lt;CharBox&gt;
+    <span class="kw">get</span>() {
+        <span class="kw">val</span> <span class="va">current</span> = arrayOfNulls&lt;CharBox&gt;(buttons.size)
+        <span class="cf">for</span> (i <span class="kw">in</span> buttons.indices)
+            current[i] = charBoxes[buttons[i]]
+        <span class="kw">return</span> current
+    }</code></pre></div>
+<p>返り値は <code>Array&lt;CharBox&gt;</code> となっているが，<code>arrayOfNulls&lt;CharBox&gt;(size)</code> が返す型は <code>Array&lt;CharBox?&gt;</code> なのである(<code>null</code> で埋めた配列を返してるせい)． ここで，返り値の型を <code>Array&lt;CharBox?&gt;</code> としてもエラーは消える(しわ寄せされる)．</p>
+<p>ラムダ式とかでうまく置き換えても良いが，取りあえずはこれでゴリゴリエラーを消していった．</p>
+<h2 id="section-1"></h2>
+<p>あとは，Nullable でない引数に Nullable な変数を渡す場合には変数の前に <code>?</code> を書き足す必要がある(<code>?</code> は <code>null</code> が返ってきた場合には以降を実行ぜず <code>null</code> を返す)．</p>
+<div class="sourceCode"><pre class="sourceCode kotlin"><code class="sourceCode kotlin">charBoxes = HashMap(buttons.size)
+<span class="cf">for</span> (i <span class="kw">in</span> buttons.indices) {
+    <span class="co">// charBoxes.put(buttons.get(i), cbs[i])</span>
+    buttons[i]?.let { charBoxes.put(it, cbs[i]) }  
+}</code></pre></div>
+<p>最悪 <code>!!</code> を変数の前に書き足すことで全部無視できる(<code>!!</code> は <code>null</code> の例外が返ること許容する)．</p>
+<div class="sourceCode"><pre class="sourceCode kotlin"><code class="sourceCode kotlin"><span class="co">// CharBoxMapper(activity: Activity, charBoxes: Array&lt;CharBox?&gt;)</span>
+<span class="co">// gameManager.getCharBoxes() は Nullable</span>
+charBoxMapper = CharBoxMapper(<span class="kw">this</span>, gameManager!!.getCharBoxes())</code></pre></div>
+<p>ホントは全部 <code>!!</code> を足すだけで良かったりする．</p>
+<h3 id="kotlin-らしく">Kotlin らしく</h3>
+<p>Kotlinマスターでも無いので「Kotlin らしさ」なんてわからないけど，とりあえず便利そうなモノだけでも使ってみた．</p>
+<h4 id="ラムダ式を使う">ラムダ式を使う</h4>
+<p>Java でもできるんだけど，Android のバージョンの関係で，Java8 が使えない． しかし，Kotlin は JDK6 をサポートしてるため，Android のどのバージョンでも動く(らしい)．</p>
+<ul>
+<li>参考: <a href="https://developer.android.com/kotlin/faq.html">Kotlin on Android FAQ | Android Developers</a></li>
+</ul>
+<blockquote>
+<p>Which versions of Android does Kotlin support? All of them! Kotlin is compatible with JDK 6, so apps with Kotlin safely run on older Android versions.</p>
+</blockquote>
+<p>なので，ラムダ式やら高階関数が使い放題で大助かりだ．</p>
+<h4 id="スコープ関数を使う">スコープ関数を使う</h4>
+<p>Kotlin 1.1 で追加された関数群らしい．</p>
+<ul>
+<li>参照: <a href="http://tomoima525.hatenablog.com/entry/2017/08/04/154434">Kotlinの標準ライブラリ(let, apply, with etc)を何となく使うから卒業する - tomoima525’s blog</a></li>
+</ul>
+<p>コレらを使うと，いい感じにメソッドチェーンが書ける．</p>
+<div class="sourceCode"><pre class="sourceCode kotlin"><code class="sourceCode kotlin">Toast(<span class="kw">this</span>)
+       .apply { setGravity(Gravity.CENTER, x, y) }
+       .apply { duration = Toast.LENGTH_LONG }
+       .also { toast -&gt;
+           toast.view = TextView(<span class="kw">this</span>)
+               .also {
+                   it.text = message
+                   it.textSize = 50f
+                   it.setTextColor(Color.WHITE)
+                   it.setBackgroundColor(ContextCompat.getColor(<span class="kw">this</span>, R.color.colorPrimary))
+               }
+       }.show()</code></pre></div>
+<h3 id="サーバーサイドプログラムを書く">サーバーサイドプログラムを書く</h3>
+<p>Haskell Servant で API サーバーを立てて，Elm で Web UI を作る． この組み合わせは前に記事にした．</p>
+<ul>
+<li>参考: <a href="../posts/2017-09-17-create-haskell-and-elm.html">Haskell × Elm のサンプルアプリケーションを書いてみた - ひげメモ</a></li>
+</ul>
+<p>実はこのときに作ったプログラムを改良しただけ． <code>Todo</code> 型を <code>Score</code> 型とし，API を GET と POST だけにした．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Score</span> <span class="fu">=</span> <span class="dt">Score</span>
+  {<span class="ot"> textLength ::</span> <span class="dt">Int</span>
+  ,<span class="ot"> clearTime  ::</span> <span class="dt">Int</span>
+  ,<span class="ot"> swapCount  ::</span> <span class="dt">Int</span>
+  } <span class="kw">deriving</span> (<span class="dt">Generic</span>, <span class="dt">Show</span>)
+
+<span class="kw">type</span> <span class="dt">CRUD</span> <span class="fu">=</span> <span class="st">&quot;scores&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">'[JSON] [Score]</span>
+       <span class="fu">:&lt;|&gt;</span> <span class="st">&quot;scores&quot;</span> <span class="fu">:&gt;</span> <span class="dt">ReqBody</span> <span class="ch">'[JSON, FormUrlEncoded] Score :&gt; Post '</span>[<span class="dt">JSON</span>] <span class="dt">Score</span></code></pre></div>
+<p>Elm は頑張って書いてこんな感じのデザインにした．</p>
+<p><img src="../assets/create-anaqram/scoreboard.jpg" /></p>
+<p>意外と機能があって</p>
+<ul>
+<li>1分毎ごとに自動更新するかのチェックボックス</li>
+<li>「文字数」とか「クリアタイム」とかをクリックするとそれを最優先にしてソート</li>
+<li>「AnaQRam ランキング!!」をクリックするとソートの優先度を保持したまま更新</li>
+</ul>
+<p>このときのリポジトリツリーは<a href="https://github.com/matsubara0507/anaqram-server/tree/e48b9b82e4bec8361ec5f2870246b9be5c9a3b7a">コレ</a>．</p>
+<h2 id="section-2"></h2>
+<p>あと，今回で初めて気づいたのアだが，愛用している <a href="http://primercss.io/">Primer CSS</a> が <a href="https://cdnjs.com/libraries/Primer">cdnjs にあがっていた</a>． これで，CSS のリポジトリじゃなくなる．</p>
+<h3 id="gke-にデプロイする">GKE にデプロイする</h3>
+<p>Google Container Registry に，このサーバーサイドプログラムのイメージをあげて，そこから Google Container Engine にデプロイする．</p>
+<p>Haskell Stack には Docker Intagration という機能があって，このおかげで簡単にプロジェクトのイメージを作成できる．</p>
+<p>(この辺りの定義は曖昧なので間違ってるかもしれないけど) Docker Integration の機能は主に２つ．</p>
+<ol type="1">
+<li>任意の Docker イメージをベースにして <code>stack build</code> や <code>stack exec</code> を行える</li>
+<li><code>stack image container</code> というコマンドで <code>stack build</code> 生成されるバイナリを含んだ Docker イメージを生成する</li>
+</ol>
+<p>いちいち Docker を起動してゴニョゴニョして Docker イメージを作る必要が無いので便利． 問題は極めてドキュメントが少ない点． とくに <code>image container</code> の公式ドキュメントはほぼない．</p>
+<ul>
+<li>参考:
+<ul>
+<li><a href="https://docs.haskellstack.org/en/stable/docker_integration/">Docker integration - The Haskell Tool Stack</a></li>
+<li><a href="https://github.com/commercialhaskell/stack/issues/1959">Make <code>stack image container</code> documentation for discoverable · Issue #1959 · commercialhaskell/stack</a></li>
+</ul></li>
+</ul>
+<p><code>stack.yaml</code> に次のように書くと，<a href="https://hub.docker.com/r/fpco/stack-build/"><code>fpco/stack-build</code></a> をベースイメージにして，<code>config</code>, <code>data</code>, <code>script</code>, <code>static</code> ディレクトリを生成するイメージの対応するディレクトリにコピーして，<code>entrypoint.sh</code> を実行する Docker イメージが <code>stack image container</code> で出来上がる．</p>
+<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">image:</span>
+  <span class="fu">container:</span>
+    <span class="fu">name:</span><span class="at"> </span><span class="st">&quot;anaqram&quot;</span>
+    <span class="fu">base:</span><span class="at"> </span><span class="st">&quot;fpco/stack-build&quot;</span>
+    <span class="fu">add:</span>
+      <span class="fu">config:</span><span class="at"> /app/config</span>
+      <span class="fu">data:</span><span class="at"> /app</span>
+      <span class="fu">script:</span><span class="at"> /usr/local/bin/</span>
+      <span class="fu">static:</span><span class="at"> /app/static</span>
+    <span class="fu">entrypoints:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;entrypoint.sh&quot;</span><span class="kw">]</span></code></pre></div>
+<p>あとは，このイメージのタグを GCR のモノに変えて，<code>gcloud docker push</code> するだけ．</p>
+<h2 id="section-3"></h2>
+<p>GKE の設定は Google CLoud のコンソールから <strong>めちゃくちゃ適当に</strong> やった． ちゃんと YAML にしていないので，いずれやらないと… kubernetes は要素が多くて難しい…</p>
+<p>適当にやっても，簡単なものならデプロイできちゃうのはすごいけど．</p>
+<h3 id="db-の追加">DB の追加</h3>
+<p>上記まででは，集計したスコアデータをただの配列で保持していた． つまりプログラムが落ちるとすべて消える． なので，Google Cloud SQL と連携して，スコアデータを外部に保存することにした．</p>
+<p>Haskell の ORM みたいなパッケージには <a href="https://hackage.haskell.org/package/persistent">Persistent</a> を使うことにした． Persistent は Template Haskell を利用して任意の型に対し簡単に型安全な ORM を定義してくれる，かなり強力なパッケージである．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">share [mkPersist sqlSettings, mkMigrate <span class="st">&quot;migrateAll&quot;</span>] [persistLowerCase|
+ScoreData
+    textLength Int
+    clearTime  Int
+    swapCount  Int
+    deriving Show
+|]</code></pre></div>
+<p>と書くだけで，<code>Migration</code> や <code>insert</code> や <code>select</code> をする関数を自動生成してくれる．</p>
+<h2 id="section-4"></h2>
+<p>ただ，すでにある型(<code>Score</code> 型)に対し，それらの関数を自動生成する方法がわからなかった． なので，上記の <code>ScoreData</code> 型と元の <code>Score</code> 型を相互変換する関数を用意して補った．</p>
+<p>もちろんもっと良い方法はあると思う．</p>
+<h2 id="section-5"></h2>
+<p>ちなみに，このパッケージは <sub>悪名高い</sub> 最強の Haskell 製 Web フレームワーク <a href="https://www.yesodweb.com/">Yesod</a> の一部らしい． なので，こんなちっぽけなプログラムに使うには強力すぎるか？とも思ったが，他に良さげなのが見つからなかったので使った．</p>
+<h3 id="cloud-sql-と-gke-の接続">Cloud SQL と GKE の接続</h3>
+<p><a href="https://cloud.google.com/sql/docs/mysql/connect-container-engine?hl=ja">チュートリアル</a>にある，Cloud SQL Ploxy を参考に設定した． しかし，このとおりにやってもうまくいかず</p>
+<pre><code>couldn't connect to &quot;****:asia-northeast1:****&quot;: Post https://www.googleapis.com/sql/v1beta4/projects/*****/instances/****/createEphemeral?alt=json: oauth2: cannot fetch token: Post https://accounts.google.com/o/oauth2/token: dial tcp: i/o timeout</code></pre>
+<p>と言った感じのエラーがログに書き出される． イロイロ試した結果，<code>Deployment</code> のインスタンスの設定に <code>hostNetwork: true</code> を追加したらうまく動いた．</p>
+<p>ここが一番時間かかった…インフラ系は苦手です…</p>
+<h2 id="完成">完成</h2>
+<p>ちなみに，21日に，これを Nexus7 にインストールして実際に子供たちに遊んでもらってきた． まぁあんまりランキングの効果は無かったけど(笑) 作るの楽しかったからこれで良いのです．</p>
+<p>その時の改善点を <a href="https://github.com/matsubara0507/AnaQRam/issues">AnaQRam リポジトリの Issue</a> に書き出した． GitHub 便利ですね．</p>
+<h3 id="思うところ">思うところ</h3>
+<p>Elm はやっぱり楽だ． Web UI とか全然できなかったんだけど，いいサブウェポンができた気分．</p>
+<p>Kotlin は良くできてると思うが，Nullable はなんというか… ボクは <code>Optional</code> や <code>Maybe</code> の方がいいと思うんだけどなぁ． 古い Java で Android アプリを書くぐらいなら Kotlin を使うべきと感じた．</p>
+<p>Haskell もなんの問題も無くサクッと書けた． Servant も Persistent も中身は複雑だが，軽く使う分には簡単に使える． すごい巨人の肩に乗ってる気分だけど．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>実は，Kotlin の API を叩くクラスも Haskell から自動生成している． 次回はそのことについてまとめようかな．</p>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+  <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+    <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+      <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+    </a>
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>
