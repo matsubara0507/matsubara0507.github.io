@@ -1,27 +1,14 @@
-resolver: nightly-2017-08-10
+resolver: nightly-2017-11-13
 
 packages:
 - '.'
 - location:
     git: https://github.com/matsubara0507/hakyll
-    commit: 4c2c499213750d622250f8277533eafb5ec1dc94
-  extra-dep: true
-- location:
-    git: https://github.com/jgm/pandoc
-    commit: f4bff5d3599d0b6874c6b6604fb11016f8e038a9
-  extra-dep: true
-- location:
-      git: https://github.com/matsubara0507/pandoc-citeproc.git
-      commit: 2a232dd33eb42ba73653a9661288a0026179c50f
+    commit: 95b933f08d2b73c6f681c944608d7cc72109721d
   extra-dep: true
 
 extra-deps:
-- cmark-gfm-0.1.3
-- haddock-library-1.4.3
-- hs-bibutils-5.5
-- hslua-0.5.0
 - HsSyck-0.53
-- rfc5051-0.1.0.3
 - yaml-light-0.1.4
 
 flags: {}
