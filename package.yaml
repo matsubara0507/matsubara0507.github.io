@@ -1,0 +1,21 @@
+name:                matsubara0507-ghpages
+version:             0.2.0.1
+homepage:            https://matsubara0507.github.io
+license:             MIT
+author:              MATSUBARA Nobutada
+category:            Web
+
+ghc-options:
+  - -Wall
+
+executables:
+  site:
+    main: site.hs
+    ghc-options:
+      - -threaded
+    dependencies:
+      - base == 4.*
+      - hakyll
+      - highlighting-kate
+      - yaml-light
+      - utf8-string
