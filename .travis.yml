@@ -38,7 +38,7 @@ before_install:
 install:
 - echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
 - if [ -f configure.ac ]; then autoreconf -i; fi
-- stack install cabal -j 1
+- stack build -j 1 pandoc
 - |
   set -ex
   stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
