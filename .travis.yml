@@ -9,12 +9,6 @@ cache:
   - $HOME/.cabal
   - $HOME/.stack
 
-matrix:
-  include:
-  - env: BUILD=stack ARGS=""
-    compiler: ": #stack 8.2.1"
-    addons: {apt: {packages: [libgmp-dev]}}
-
 before_install:
 # Using compiler above sets CC to an invalid value, so unset it
 - unset CC
@@ -46,43 +40,10 @@ install:
 - if [ -f configure.ac ]; then autoreconf -i; fi
 - |
   set -ex
-  case "$BUILD" in
-    stack)
-      stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
-      ;;
-    cabal)
-      cabal --version
-      travis_retry cabal update
-      # Get the list of packages from the stack.yaml file
-      PACKAGES=$(stack --install-ghc query locals | grep '^ *path' | sed 's@^ *path:@@')
-      cabal install --only-dependencies --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
-      ;;
-  esac
+  stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies -j 1
   set +ex
 script:
 - |
   set -ex
-  case "$BUILD" in
-    stack)
-      stack --no-terminal $ARGS test --bench --no-run-benchmarks --no-haddock-deps
-      ;;
-    cabal)
-      cabal install --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
-      ORIGDIR=$(pwd)
-      for dir in $PACKAGES
-      do
-        cd $dir
-        cabal check || [ "$CABALVER" == "1.16" ]
-        cabal sdist
-        PKGVER=$(cabal info . | awk '{print $2;exit}')
-        SRC_TGZ=$PKGVER.tar.gz
-        cd dist
-        tar zxfv "$SRC_TGZ"
-        cd "$PKGVER"
-        cabal configure --enable-tests
-        cabal build
-        cd $ORIGDIR
-      done
-      ;;
-  esac
+  stack --no-terminal $ARGS test --bench --no-run-benchmarks --no-haddock-deps
   set +ex
