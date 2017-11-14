@@ -6,6 +6,10 @@ packages:
     git: https://github.com/matsubara0507/hakyll
     commit: 95b933f08d2b73c6f681c944608d7cc72109721d
   extra-dep: true
+- location:
+    git: https://github.com/yesodweb/Shelly.hs
+    commit: 45878323ef4c0d1cdb64b7c89e83df9aad01c0fc
+  extra-dep: true
 
 extra-deps:
 - HsSyck-0.53
