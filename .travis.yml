@@ -38,7 +38,7 @@ before_install:
 install:
 - echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
 - if [ -f configure.ac ]; then autoreconf -i; fi
-- stack build --install-ghc --fast pandoc
+- stack build --no-terminal --install-ghc --fast pandoc
 - |
   set -ex
   stack --no-terminal test --bench --only-dependencies
