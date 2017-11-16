@@ -40,7 +40,7 @@ install:
 - if [ -f configure.ac ]; then autoreconf -i; fi
 - |
   set -ex
-  stack --no-terminal test --install-ghc --bench --only-dependencies
+  stack --no-terminal test --install-ghc --bench --only-dependencies --fast
   set +ex
 script:
 - |
