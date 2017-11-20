@@ -36,4 +36,4 @@ linkStatus :: Text -> IO Status
 linkStatus url = do
   manager <- newManager tlsManagerSettings
   request <- parseRequest $ unpack url
-  responseStatus <$> httpNoBody request manager
+  responseStatus <$> httpNoBody (request {requestHeaders = ("User-Agent", "")}) manager
