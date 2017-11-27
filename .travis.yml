@@ -9,6 +9,9 @@ cache:
   - $HOME/.cabal
   - $HOME/.stack
 
+branches:
+  except: master
+
 before_install:
 # Using compiler above sets CC to an invalid value, so unset it
 - unset CC
