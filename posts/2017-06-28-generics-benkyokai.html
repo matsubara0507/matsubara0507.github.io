@@ -102,7 +102,7 @@
 </ul>
 <p>内容は大きく分けて2つ，前半が Rust と Java を例にした，各々のジェネリックス(パラメトリック多相)の話で，後半はジェネリックスの双対(裏)ということで存在型の話だった． 前半の話は単純にジェネリックスの使い方とかそういうレベルではなくて，裏側でどう動いてるかを話してくれた．</p>
 <p>前半はさらに3つの話題</p>
-<ol type="1">
+<ol style="list-style-type: decimal">
 <li>ジェネリクスの2つの実装方式: ポインタ方式(Java)とテンプレート方式(Rust)
 <ul>
 <li>便宜上の名前らしい</li>
@@ -140,7 +140,10 @@
 <p>発表資料は探しても見つからなかった．</p>
 <h2 id="section-1"></h2>
 <p>内容は2部構成(？)だった． 前半は「ジェネリクスプログラミングとはなにか」というモノ． きっと，トップバッター <strong>だった</strong> ので，導入的な内容にしてくれたのだろう． 後半は <a href="http://www.java-users.jp/ccc2016fall/">JJUG-CCC 2016 Fall</a> でのスライドを用いて(時間の許す限り)掻い摘んでイロイロと話してくれた．</p>
-<p><img src="../assets/generics-benkyokai/jjug-ccc-nagise.jpg" /></p>
+<div class="figure">
+<img src="../assets/generics-benkyokai/jjug-ccc-nagise.jpg" />
+
+</div>
 <p>サンプルコードなどが置いてある <a href="https://github.com/nagise/JJUG-CCC-2016-FALL/wiki">GitHub リポジトリ</a>なら見つけた．</p>
 <h2 id="section-2"></h2>
 <p>前半・後半通してあがったキーワードとして「<a href="https://ja.wikipedia.org/wiki/%E3%83%AA%E3%82%B9%E3%82%B3%E3%83%95%E3%81%AE%E7%BD%AE%E6%8F%9B%E5%8E%9F%E5%89%87">リスコフの置換原則</a>」があった． ざっくり言うと，(OOP の継承に置いて)子オブジェクトは親オブジェクトが満たす性質を全て満たさないとダメ，というモノである．</p>
@@ -343,7 +346,7 @@ a[<span class="dv">0</span>] = <span class="kw">new</span> <span class="fu">Pare
 <p>ジェネリクスよりかなり膨大なコードになってしまうが，すごい．</p>
 <h2 id="section-17"></h2>
 <p>ちなみに，これにいったいどんなメリットがあるかという問いに対して</p>
-<ol type="1">
+<ol style="list-style-type: decimal">
 <li>理論的基盤がシンプルになる</li>
 <li>実装を抽象型メンバーのみで済ませられる</li>
 <li>趣味</li>

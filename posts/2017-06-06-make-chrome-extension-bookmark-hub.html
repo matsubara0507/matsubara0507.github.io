@@ -87,7 +87,10 @@
 <p>なんか作業してるとタブがたまってしょうがない(あとで記事でも書こうかなと思うと尚更)のでずっと欲しかった． まぁ車輪の再発明の可能性あるけど，まぁいいや．</p>
 <h2 id="作った">作った</h2>
 <p>こんな感じ．</p>
-<p><img src="../assets/make-chrome-extension-bookmark-hub/bookmark-hub.jpg" /></p>
+<div class="figure">
+<img src="../assets/make-chrome-extension-bookmark-hub/bookmark-hub.jpg" />
+
+</div>
 <p>一応<a href="https://chrome.google.com/webstore/detail/bookmark-using-github/aoicnpaoijbcdgcailchgfmfiefpmpjm?hl=ja">公開</a>してみたけど，<strong>バグは残ってそう</strong>． ごめんなさい．</p>
 <p><a href="https://github.com/matsubara0507/bookmark-hub">ソースコードはコチラ</a>．</p>
 <p>見た目は <a href="http://primercss.io/">Primer.css</a> っていう GitHub 公式の CSS ツールキットを用いて寄せた． あとは，リポジトリとブランチを既存のを取ってきて選択できるようにした．</p>
@@ -98,7 +101,7 @@
 </ul>
 <h3 id="vs-github-api">vs GitHub API</h3>
 <p>最初は，<a href="../posts/2017-05-03-make-githubapi-lib-for-gas.html">前作った日記 Bot</a> を参考にしながら</p>
-<ol type="1">
+<ol style="list-style-type: decimal">
 <li>コミットしたいブランチの情報を取得(既存のブランチに紐づけないならいらない)</li>
 <li>blobオブジェクトを作成(ファイル単位のオブジェクト)</li>
 <li>treeオブジェクトを作成(ディレクトリ単位のオブジェクト)</li>
@@ -176,7 +179,7 @@
 <p>が，ぼくは Windows なので，ちとつらい． このためだけに <code>node</code> いれるのもだるかったので，Docker でビルドして持ってこようと考えた(どーせ css を生成するだけだろーし)．</p>
 <p>しかし，<a href="https://github.com/primer/primer-css/blob/master/README.md">ドキュメント</a>にあるとおりに，クローンして <code>npm run build</code> とやったのに，<code>Error: File to import not found or unreadable: primer-core/index.scss</code> とでたり，<a href="https://www.npmjs.com/package/primer-module-build"><code>primer-module-build</code></a> が無いといわれたり，なかなかすんなりいかなかった．</p>
 <p>最終的には，</p>
-<ol type="1">
+<ol style="list-style-type: decimal">
 <li><code>docker run --rm -it -v /c/Users/username/tekitounatokoro:/mnt node /bin/bash</code> って感じに適当なところを適当なとこにマウントし</li>
 <li><code>/root</code> で</li>
 <li><code>npm install --save primer-module-build</code> し</li>
@@ -184,14 +187,14 @@
 <li><code>/root/node_modules</code> 以下にあるビルド済み <code>prime-css</code> の中から生成された CSS ファイルを</li>
 <li>マウント先にコピーして取ってきた</li>
 </ol>
-<p>あとはこ <a href="http://primercss.io/scaffolding/">Primer.css のドキュメント</a>に従って，いい感じにデザインを変えていった．</p>
+<p>あとはこの <a href="http://primercss.io/archive/scaffolding/">Primer.css のドキュメント</a>に従って，いい感じにデザインを変えていった．</p>
 <h3 id="vs-javascript">vs Javascript</h3>
 <p>意外な挙動がいくつか．</p>
 <h4 id="日時のフォーマット">日時のフォーマット</h4>
 <p>まず，日時のフォーマットをするメソッドが無かったので<a href="http://kuroeveryday.blogspot.jp/2016/06/format-to-ISO8601.html">調べて</a>作った． まぁこれは最終的には使ってないんだが(コミットするときに必要だった)．</p>
 <div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">formatISO8601</span>(date) <span class="op">{</span>
   <span class="kw">var</span> offset <span class="op">=</span> (<span class="kw">function</span> (d) <span class="op">{</span>
-    <span class="kw">var</span> o <span class="op">=</span> <span class="va">d</span>.<span class="at">getTimezoneOffset</span>() / <span class="dv">-60</span><span class="op">;</span>
+    <span class="kw">var</span> o <span class="op">=</span> <span class="va">d</span>.<span class="at">getTimezoneOffset</span>() / <span class="op">-</span><span class="dv">60</span><span class="op">;</span>
     <span class="cf">return</span> ((<span class="dv">0</span> <span class="op">&lt;</span> o) <span class="op">?</span> <span class="st">'+'</span> : <span class="st">'-'</span>)(<span class="st">'00'</span><span class="va">Math</span>.<span class="at">abs</span>(o)).<span class="at">substr</span>(<span class="op">-</span><span class="dv">2</span>)<span class="st">':00'</span><span class="op">;</span>
   <span class="op">}</span>)(date)<span class="op">;</span>
   <span class="cf">return</span> [
@@ -256,7 +259,7 @@
   <span class="va">console</span>.<span class="at">log</span>(<span class="kw">typeof</span> i)<span class="op">;</span></code></pre></div>
 <p>とやると <code>string</code> が変える． <code>i === xs.length - 1</code> が必ず <code>false</code> になるので気づいた． 文字列を数値に変換するだけなので，直すのは簡単．</p>
 <p>ちなみに，なんでこうなってるのかとトゥートしてみたら．</p>
-<p>https://qiitadon.com/<span class="citation" data-cites="okadahiroshi/37851">@okadahiroshi/37851</span></p>
+<p>https://qiitadon.com/<span class="citation">@okadahiroshi/37851</span></p>
 <blockquote>
 <p>javascript の for in はあくまでオブジェクトのプロパティー<em>名</em> に対して列挙するので、文字列になる。</p>
 </blockquote>
@@ -267,9 +270,18 @@
 <li><a href="http://qiita.com/otchy/items/e29bf2e377c5b7ddc2f7">超最低限の Chrome エクステンションを開発しウェブストアで公開するまでの手順 - Qiita</a></li>
 </ul>
 <h2 id="使う">使う</h2>
-<p><img src="../assets/make-chrome-extension-bookmark-hub/bookmark-hub-run1.jpg" /></p>
-<p><img src="../assets/make-chrome-extension-bookmark-hub/bookmark-hub-run2.jpg" /></p>
-<p><img src="../assets/make-chrome-extension-bookmark-hub/bookmark-hub-run3.jpg" /></p>
+<div class="figure">
+<img src="../assets/make-chrome-extension-bookmark-hub/bookmark-hub-run1.jpg" />
+
+</div>
+<div class="figure">
+<img src="../assets/make-chrome-extension-bookmark-hub/bookmark-hub-run2.jpg" />
+
+</div>
+<div class="figure">
+<img src="../assets/make-chrome-extension-bookmark-hub/bookmark-hub-run3.jpg" />
+
+</div>
 <h2 id="おしまい">おしまい</h2>
 <p>出来たのはうれしいけど，その場しのぎでサクッと作ったのでもやぁぁっとしますね． javascript の勉強もしたいなぁ． あと，再現性の低いバグがなぁ…</p>
   </div>

@@ -110,10 +110,16 @@
 <span class="kw">RUN</span> stack config set system-ghc --global true
 <span class="kw">ENV</span> PATH /opt/ghc/8.0.2/bin:$PATH</code></pre></div>
 <p>次のような階層構造になる．</p>
-<p><img src="../assets/want-to-make-docker-merge/layer.jpg" /></p>
+<div class="figure">
+<img src="../assets/want-to-make-docker-merge/layer.jpg" />
+
+</div>
 <p>要するに，直列にどんどん乗っけていくことは可能なのだ．</p>
 <p>対して，ベースが同じ Dockerfile がふたつあったとき，それをいい感じに並列に繋げることはできない．</p>
-<p><img src="../assets/want-to-make-docker-merge/merge-layer.jpg" /></p>
+<div class="figure">
+<img src="../assets/want-to-make-docker-merge/merge-layer.jpg" />
+
+</div>
 <p>上図の赤枠のレイヤーは同一である． 上ふたつずつが異なる． なので，ふたつの Dockerfile を前半の共通部分をまず実行し，つぎに異なる部分を実行するような階層構造にしてほしい．</p>
 <p>こうすることで，独立した Dockerfile，例えば Ruby をインストールする Dockerfile と Haskell をインストールする Dockerfile を別々に作成・テストし，それを組み合わせて(マージして)，Ruby と Haskell をインストールする Dockerfile を作りたい．</p>
 <p>と<a href="../posts/2017-03-30-write-lightweight-dockerfile.html">前回の記事</a>の最後で言った(つもり)．</p>
@@ -122,9 +128,10 @@
 <p>もちろん Haskell (ぶれない)．</p>
 <p>そもそも，パーサーが必要なので Haskell が向いてるに決まってる(暴論)．</p>
 <p>というかあるんじゃないか？と思った(パーサーが)．</p>
-<figure>
-<img src="../assets/want-to-make-docker-merge/google-haskell-dockerfile-parser.jpg" alt="あった" /><figcaption>あった</figcaption>
-</figure>
+<div class="figure">
+<img src="../assets/want-to-make-docker-merge/google-haskell-dockerfile-parser.jpg" alt="あった" />
+<p class="caption">あった</p>
+</div>
 <p>流石，Haskeller 達は抜かりない．</p>
 <ul>
 <li><a href="https://hackage.haskell.org/package/language-dockerfile">language-dockerfile: Dockerfile linter, parser, pretty-printer and embedded DSL</a></li>

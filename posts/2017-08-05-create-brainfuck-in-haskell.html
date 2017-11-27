@@ -83,7 +83,10 @@
     <p>何番煎じだよって感じのネタですが，久々に Brainf*ck のコードを見かけたので，久々に書いてみたくなりました．</p>
 <h2 id="いきさつ">いきさつ</h2>
 <p>先日，<a href="https://builderscon.io/tokyo/2017">builderscon in tokyo 2017</a> というイベントに行ってきた． そこのフリードリンクコーナーにこんな紙コップが…</p>
-<p><img src="../assets/create-brainfuck-in-haskell/braincup.jpg" /></p>
+<div class="figure">
+<img src="../assets/create-brainfuck-in-haskell/braincup.jpg" />
+
+</div>
 <p>一流のプログラマであれば，Brainf*ck 程度の単純な処理系ぐらい目実行しろってことだろうが，ボクは3流程度のプログラマなので，<a href="http://e-words.jp/p/r-ascii.html">ASCIIコード表</a>が片手にないと実行できなかった…orz</p>
 <p>まぁ内容はわかったのだが，せっかくだから久々にサクッと書いてみようと思ったわけです．</p>
 <h2 id="brainfck">Brainf*ck</h2>
@@ -96,7 +99,7 @@
 <li>プログラムはテープの数値の変更や読み取りができる</li>
 </ul>
 <p>といった感じ． 具体的には以下の通り(<a href="https://ja.wikipedia.org/wiki/Brainfuck">Wikipedia</a>より)．</p>
-<ol type="1">
+<ol style="list-style-type: decimal">
 <li><code>&gt;</code> ポインタをインクリメント，ポインタを <code>ptr</code> とすると，C言語の <code>ptr++</code> に相当</li>
 <li><code>&lt;</code> ポインタをデクリメント，C言語の <code>ptr--</code> に相当</li>
 <li><code>+</code> ポインタが指す値をインクリメント，C言語の <code>(*ptr)++</code> に相当</li>
@@ -159,7 +162,7 @@ fin <span class="fu">=</span> <span class="dt">Nothing</span></code></pre></div>
 <span class="dt">Machine</span> {programOf <span class="fu">=</span> <span class="dt">Tape</span> {front <span class="fu">=</span> [], current <span class="fu">=</span> <span class="dt">Just</span> <span class="ch">'+'</span>, back <span class="fu">=</span> [<span class="dt">Just</span> <span class="ch">'['</span>,<span class="dt">Just</span> <span class="ch">'-'</span>,<span class="dt">Just</span> <span class="ch">']'</span>,<span class="dt">Nothing</span>]}, memOf <span class="fu">=</span> <span class="dt">Tape</span> {front <span class="fu">=</span> [], current <span class="fu">=</span> <span class="dv">0</span>, back <span class="fu">=</span> []}}</code></pre></div>
 <h3 id="実行する関数">実行する関数</h3>
 <p>基本の動作は</p>
-<ol type="1">
+<ol style="list-style-type: decimal">
 <li>一文字分を読み込んで</li>
 <li>対応する処理をし</li>
 <li>次の文字へ移動</li>

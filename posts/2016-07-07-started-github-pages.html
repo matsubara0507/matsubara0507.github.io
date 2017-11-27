@@ -117,7 +117,7 @@ _site/
 <h3 id="hakyll-のセットアップ">3. Hakyll のセットアップ</h3>
 <p>ココからは公式サイトの<a href="https://jaspervdj.be/hakyll/tutorials/01-installation.html">チュートリアル</a>に従う．</p>
 <p>ちなみに，source ブランチに居ると仮定してる(正直どっちでもいいんだけど)．</p>
-<ol type="1">
+<ol style="list-style-type: decimal">
 <li><p>Hakyll をインストール</p>
 <pre><code>$ stack install hakyll</code></pre></li>
 <li><p>Hakyll プロジェクトの作成</p>
@@ -136,7 +136,7 @@ $ stack exec site build</code></pre></li>
 <p><strong><em>Note</em></strong>: ちなみに，<code>stack exec site build</code> で一度こけた場合，<code>stack exec site clean</code> をしてから再ビルドをするとよい．</p>
 <h3 id="デプロイ">4. デプロイ</h3>
 <p>source ブランチに居て，既に <code>stack exec site build</code> が済んでいると仮定する．</p>
-<ol type="1">
+<ol style="list-style-type: decimal">
 <li>まず，現在の変更を全てコミットするかスタッシュする．このとき，<code>.gitignore</code> に <code>_site/</code> が書いてあるので，<code>_site/</code> は残るはず．</li>
 <li>master ブランチにチェックアウト</li>
 <li><p><code>_site/</code> の中身をカレントディレクトリにコピぺ</p>
@@ -178,12 +178,12 @@ config <span class="fu">=</span> defaultConfiguration
 </ul>
 <p>自動デプロイはその後かなぁ．</p>
 <h2 id="おしまい">おしまい</h2>
-<section class="footnotes">
+<div class="footnotes">
 <hr />
 <ol>
-<li id="fn1"><p><a href="https://www.staticgen.com/" class="uri">https://www.staticgen.com/</a><a href="#fnref1" class="footnoteBack">↩</a></p></li>
+<li id="fn1"><p><a href="https://www.staticgen.com/" class="uri">https://www.staticgen.com/</a><a href="#fnref1">↩</a></p></li>
 </ol>
-</section>
+</div>
   </div>
 </div>
 </article>

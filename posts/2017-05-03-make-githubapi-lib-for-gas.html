@@ -108,7 +108,7 @@
 <li><a href="http://qiita.com/ngs/items/34e51186a485c705ffdb">GitHub API v3 でリポジトリを作成して、ファイルをコミットする - Qiita</a></li>
 </ul>
 <p>「ファイルをコミットする」といっても実際には複数の処理に分かれているようだ(<code>git-commit</code> もそうなのかな？)．</p>
-<ol type="1">
+<ol style="list-style-type: decimal">
 <li>コミットしたいブランチの情報を取得(既存のブランチに紐づけないならいらない)</li>
 <li>blobオブジェクトを作成(ファイル単位のオブジェクト)</li>
 <li>treeオブジェクトを作成(ディレクトリ単位のオブジェクト)
@@ -277,7 +277,10 @@
   <span class="va">Logger</span>.<span class="at">log</span>(result)<span class="op">;</span>
 <span class="op">}</span></code></pre></div>
 <p>こんな感じのコミットがされる．</p>
-<p><img src="../assets/make-githubapi-lib-for-gas/commit.jpg" /></p>
+<div class="figure">
+<img src="../assets/make-githubapi-lib-for-gas/commit.jpg" />
+
+</div>
 <h2 id="todo">ToDo</h2>
 <ul>
 <li>他のAPIを追加

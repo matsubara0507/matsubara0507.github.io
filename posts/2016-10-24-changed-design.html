@@ -153,14 +153,14 @@ $endfor$</code></pre></div>
                 (siteCtx <span class="ot">`mappend`</span> defaultContext)    <span class="co">-- (4)</span>
     <span class="fu">&gt;&gt;=</span> relativizeUrls                                <span class="co">-- (5)</span></code></pre></div>
 <p>これは，<code>about.md</code> ファイルを使って <code>about.html</code> ファイルを生成している． 各手続きを説明すると</p>
-<ol type="1">
+<ol style="list-style-type: decimal">
 <li>拡張子を <code>html</code> に変更</li>
 <li>pandoc で MD から HTML にコンパイル</li>
 <li><code>page.html</code> の <code>$body$</code> に 変換した <code>about.html</code> を挿入</li>
 <li><code>default.html</code> の <code>$body$</code> に変換した <code>about.html</code> を挿入</li>
 <li>URL を相対化</li>
 </ol>
-<ol start="3" type="1">
+<ol start="3" style="list-style-type: decimal">
 <li>の “変換した <code>about.html</code>” とは，pandoc でコンパイルまでしたものを指し，(4) のは (3) の挿入までのものを指している．</li>
 </ol>
 <p>ココでの，<code>siteCtx</code> や <code>defaultContext</code> が定義された環境変数のリストである． 例えば次のようなものが書ける．</p>
@@ -220,12 +220,12 @@ mkSiteCtx <span class="fu">=</span> mconcat <span class="fu">.</span> fmap mkSit
 <h2 id="今後の展望">今後の展望</h2>
 <p>当分はこのデザインで使っていこうと思う． しかし，このデザインではタグやカテゴリによる管理ができないので対応させるか，対応した Jekyll のテーマをまた移植したい．</p>
 <h2 id="おしまい">おしまい</h2>
-<section class="footnotes">
+<div class="footnotes">
 <hr />
 <ol>
-<li id="fn1"><p><code>site.hs</code> に書くかどうか自体も自分でいじれる<a href="#fnref1" class="footnoteBack">↩</a></p></li>
+<li id="fn1"><p><code>site.hs</code> に書くかどうか自体も自分でいじれる<a href="#fnref1">↩</a></p></li>
 </ol>
-</section>
+</div>
   </div>
 </div>
 </article>

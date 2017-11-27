@@ -85,7 +85,7 @@
     <p>ちょっと珍しい組み合わせでアプリを作ったので，そのメモ．</p>
 <h2 id="いきさつ">いきさつ</h2>
 <p>去年，母校の学園祭用に <a href="https://iggg.github.io/2016/10/18/create-anaqram/">AnaQRam という Android アプリ(ゲーム)を Java で作った</a>． 今年，このアプリを</p>
-<ol type="1">
+<ol style="list-style-type: decimal">
 <li>Kotlin に変換</li>
 <li>サーバーサイドにスコアランキングを追加</li>
 <li>データを DB で管理</li>
@@ -178,7 +178,10 @@ charBoxMapper = CharBoxMapper(<span class="kw">this</span>, gameManager!!.getCha
 <span class="kw">type</span> <span class="dt">CRUD</span> <span class="fu">=</span> <span class="st">&quot;scores&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">'[JSON] [Score]</span>
        <span class="fu">:&lt;|&gt;</span> <span class="st">&quot;scores&quot;</span> <span class="fu">:&gt;</span> <span class="dt">ReqBody</span> <span class="ch">'[JSON, FormUrlEncoded] Score :&gt; Post '</span>[<span class="dt">JSON</span>] <span class="dt">Score</span></code></pre></div>
 <p>Elm は頑張って書いてこんな感じのデザインにした．</p>
-<p><img src="../assets/create-anaqram/scoreboard.jpg" /></p>
+<div class="figure">
+<img src="../assets/create-anaqram/scoreboard.jpg" />
+
+</div>
 <p>意外と機能があって</p>
 <ul>
 <li>1分毎ごとに自動更新するかのチェックボックス</li>
@@ -192,7 +195,7 @@ charBoxMapper = CharBoxMapper(<span class="kw">this</span>, gameManager!!.getCha
 <p>Google Container Registry に，このサーバーサイドプログラムのイメージをあげて，そこから Google Container Engine にデプロイする．</p>
 <p>Haskell Stack には Docker Intagration という機能があって，このおかげで簡単にプロジェクトのイメージを作成できる．</p>
 <p>(この辺りの定義は曖昧なので間違ってるかもしれないけど) Docker Integration の機能は主に２つ．</p>
-<ol type="1">
+<ol style="list-style-type: decimal">
 <li>任意の Docker イメージをベースにして <code>stack build</code> や <code>stack exec</code> を行える</li>
 <li><code>stack image container</code> というコマンドで <code>stack build</code> 生成されるバイナリを含んだ Docker イメージを生成する</li>
 </ol>

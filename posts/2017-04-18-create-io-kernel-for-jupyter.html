@@ -95,7 +95,7 @@
 <h2 id="作る">作る</h2>
 <p><a href="http://jupyter-client.readthedocs.io/en/latest/kernels.html#making-kernels-for-jupyter">作り方は大きく分けて2つあるらしい</a>．</p>
 <blockquote>
-<ol type="1">
+<ol style="list-style-type: decimal">
 <li>You can reuse the IPython kernel machinery to handle the communications, and just describe how to execute your code. This is much simpler if the target language can be driven from Python. See Making simple Python wrapper kernels for details.</li>
 <li>You can implement the kernel machinery in your target language. This is more work initially, but the people using your kernel might be more likely to contribute to it if it’s in the language they know.</li>
 </ol>
@@ -119,7 +119,7 @@
 <h3 id="dockerfile-を作る">Dockerfile を作る</h3>
 <p>前述したとおり，Jupyter + Io が必要．</p>
 <p>いくつかのやり方が考えられる．</p>
-<ol type="1">
+<ol style="list-style-type: decimal">
 <li><a href="https://hub.docker.com/r/jupyter/notebook/">Jupyter のイメージ</a> + Io をインストール</li>
 <li><a href="https://github.com/matsubara0507/seven-languages-in-seven-weeks/blob/docker/Dockerfiles/io/Dockerfile">Io のイメージ</a> + Jupyter をインストール</li>
 <li><a href="https://hub.docker.com/_/python/">Python のイメージ</a> + Jupyter と Io をインストール</li>
@@ -252,8 +252,14 @@ crlf_pat <span class="op">=</span> re.<span class="bu">compile</span>(<span clas
 <p>これを，適当な名前のディレクトリ(今回は <code>./iokernel/</code>)の下に置く． で，<code>/root/iio</code> で <code>jupyter kernelspec install kernel.json</code> を実行すると，Io の Kernel が Jupyter notebook に登録される．</p>
 <h2 id="実行">実行</h2>
 <p>Docker 内で <code>jupyter notebook --no-browser --allow-root --ip='0.0.0.0'</code> と実行し，設定されている IP アドレスにアクセスすると Jupyter が起動し，右上の New に Io が追加されているはず．</p>
-<p><img src="../assets/create-io-kernel-for-jupyter/iio1.jpg" /></p>
-<p><img src="../assets/create-io-kernel-for-jupyter/iio2.png" /></p>
+<div class="figure">
+<img src="../assets/create-io-kernel-for-jupyter/iio1.jpg" />
+
+</div>
+<div class="figure">
+<img src="../assets/create-io-kernel-for-jupyter/iio2.png" />
+
+</div>
 <h2 id="dockerイメージ化">Dockerイメージ化</h2>
 <p><code>./iokernel.py</code> と <code>./iokernel/kernel.json</code> をマウントしたり，<code>jupyter kernelspec install</code> を実行したりを追加する．</p>
 <p>前に書いた Dockerfile の <code>EXPOSE</code> の行の前に以下を追加した．</p>
