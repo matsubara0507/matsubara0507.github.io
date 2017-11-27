@@ -4,9 +4,10 @@ homepage:            https://matsubara0507.github.io
 license:             MIT
 author:              MATSUBARA Nobutada
 category:            Web
-
 ghc-options:
   - -Wall
+dependencies:
+  - base == 4.*
 
 executables:
   site:
@@ -14,8 +15,19 @@ executables:
     ghc-options:
       - -threaded
     dependencies:
-      - base == 4.*
       - hakyll
       - highlighting-kate
       - yaml-light
       - utf8-string
+
+tests:
+  check-links:
+    main: test/check-links/Main.hs
+    dependencies:
+      - http-client
+      - http-client-tls
+      - http-types
+      - hspec
+      - scalpel-core
+      - shelly
+      - text

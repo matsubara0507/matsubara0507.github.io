@@ -1,11 +1,7 @@
-resolver: nightly-2017-11-13
+resolver: lts-8.5
 
 packages:
 - '.'
-- location:
-    git: https://github.com/matsubara0507/hakyll
-    commit: 95b933f08d2b73c6f681c944608d7cc72109721d
-  extra-dep: true
 
 extra-deps:
 - HsSyck-0.53

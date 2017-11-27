@@ -102,6 +102,7 @@ config = defaultConfiguration
                       " --filter='P _cache/' --filter='P .git/'" `mappend`
                       " --filter='P .stack-work' --filter='P .gitignore'" `mappend`
                       " --filter='P .draft/'" `mappend`
+                      " --filter='P matsubara0507-ghpages.cabal'" `mappend`
                       " --delete-excluded _site/ ." `mappend`
                       "&& cp -a _site/. ." `mappend`
                       "&& git add -A" `mappend`

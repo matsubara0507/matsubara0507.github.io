@@ -163,7 +163,7 @@ $('#result').text($('#result').text()` : 1 ${JSON.stringify(data)}`);
 5. `/root/node_modules` 以下にあるビルド済み `prime-css` の中から生成された CSS ファイルを
 6. マウント先にコピーして取ってきた
 
-あとはこ [Primer.css のドキュメント](http://primercss.io/scaffolding/)に従って，いい感じにデザインを変えていった．
+あとはこの [Primer.css のドキュメント](http://primercss.io/archive/scaffolding/)に従って，いい感じにデザインを変えていった．
 
 ### vs Javascript
 

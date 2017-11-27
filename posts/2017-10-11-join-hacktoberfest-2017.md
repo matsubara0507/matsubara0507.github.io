@@ -63,7 +63,7 @@ Twitter サーフィンをしてる時に．
 - [lpil/exfmt#89](https://github.com/lpil/exfmt/pull/89)
 - [lpil/exfmt#90](https://github.com/lpil/exfmt/pull/90)
 - [lpil/exfmt#91](https://github.com/lpil/exfmt/pull/91)
-- [edgurgel/tentacat](https://github.com/edgurgel/tentacat/pull/)
+- [edgurgel/tentacat](https://github.com/edgurgel/tentacat/pull/125)
 - [sporto/elm-tutorial#189](https://github.com/sporto/elm-tutorial/pull/189)
 
 ほとんど 8,9月に「出そうかなぁ」とだけ思って放置してたモノなので，半分ズルですね．
