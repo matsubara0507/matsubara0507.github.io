@@ -86,8 +86,11 @@
 <p>このアドベントカレンダーは，ネタを何でもありにしたかったので 〇iita では無く，<a href="https://adventar.org/">ADVENTAR</a> という Web サービスで作った． 残念なことに， ADVENTAR には 〇iita とは異なり RSS などの更新を通知機能が無い． なので，スクレイピングして更新を通知する LINE Bot を作った．</p>
 <p>実は ADVENTAR が React.js で作られてるおかげで，スクレイピングも一筋縄ではいかず大変だったのだが，その話は後日別の記事で書く(別のアドベントカレンダーのせいで前後する…)． この記事ではスクレイピングを除いた，LINE Bot まわりの話を書く．</p>
 <h2 id="section"></h2>
-<p>ちなみに，Slack などではなく，LINE を使った理由は，18新卒向けの Slack が <strong>当時は無かった</strong> ためである． LINE だったらみんな使っとるやろ～なんて軽い気持ちで作った(が今回のユースケースではあんまり適切では無さそう…)． だいたいLINE Bot が出来上がったころに，18新卒の Slack が出来た…</p>
+<p><strong>[追記]</strong></p>
+<p>ADVENTAR にも RSS 機能があった(笑) URL の末尾に <code>.rss</code> を付ければ良いらしい． まぁ細かい通知はできないみたいだから，作った意味はあったかな(?)</p>
 <h2 id="section-1"></h2>
+<p>ちなみに，Slack などではなく，LINE を使った理由は，18新卒向けの Slack が <strong>当時は無かった</strong> ためである． LINE だったらみんな使っとるやろ～なんて軽い気持ちで作った(が今回のユースケースではあんまり適切では無さそう…)． だいたいLINE Bot が出来上がったころに，18新卒の Slack が出来た…</p>
+<h2 id="section-2"></h2>
 <p>最終的なコードは<a href="https://github.com/matsubara0507/adventar-line-bot">このリポジトリ</a>にある．</p>
 <h2 id="戦略">戦略</h2>
 <p>だいたいどういう感じにやるかと言うと</p>
@@ -100,7 +103,7 @@
 <p>これを Google Compute Engine 上で cron しようかなと考えていた． 問題は (3) で，LINE Messaging API には <strong>友達登録しているユーザーの一覧を取得するような API が無い</strong> のである． つまり，友達登録をしてもらったとき(<code>follow</code> というメッセージが飛ぶ)に，LINE の ID を保存しておく必要がある．</p>
 <p>なので，その部分のプログラムを Google Cloud Functions (AWS Lambda の GCP 版)で書いて，ID を Google Cloud Datastore に保存することにした．</p>
 <p>(ちなみに，なぜ AWS じゃなく GCP なのかというと，入社までに GCP の勉強する！と言ったせい)</p>
-<h2 id="section-2"></h2>
+<h2 id="section-3"></h2>
 <p>全体をまとめると以下のようになる．</p>
 <div class="figure">
 <img src="../assets/adventar-line-bot/design.jpg" />
@@ -156,7 +159,7 @@
 <li><a href="https://matsubara0507.github.io/posts/2017-02-22-curry-howard-linebot.html">Haskell で LINE Bot を作った - ひげメモ</a></li>
 </ul>
 <p>ちゃんと API のバージョンアップも追っていた． 流石中の人製(笑) いっそのこと<a href="https://developers.line.me/ja/docs/messaging-api/reference/">公式の一覧</a>にも書けばいいのに．</p>
-<h2 id="section-3"></h2>
+<h2 id="section-4"></h2>
 <p>今回は Push するだけで，webhook 用のサーバーを立てる必要が無いので，<a href="https://hackage.haskell.org/package/wai"><code>wai</code></a> や <a href="https://hackage.haskell.org/package/scotty"><code>scotty</code></a> は必要ない． こんな感じの関数を書くだけ，簡単ですね．</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">pushMessage ::</span> <span class="dt">ChannelAccessToken</span> <span class="ot">-&gt;</span> <span class="dt">ID</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Either</span> <span class="dt">APIError</span> ())
 pushMessage token mid message <span class="fu">=</span>
@@ -164,7 +167,7 @@ pushMessage token mid message <span class="fu">=</span>
 <h3 id="cloud-datastore-から-id-をとってくる">Cloud Datastore から ID をとってくる</h3>
 <p>鬼門その１ Haskell から GCP 系の操作をするには <a href="https://hackage.haskell.org/package/gogol"><code>gogol</code></a> というパッケージを使うのだが，<strong>高度に型レベルプログラミングになってて難しいにも拘わらずサンプルが少ない</strong> ので大変だった．</p>
 <p>高度とはいえ，イロイロと遊んでいるおかげで型レベルプログラミングには慣れてるから，分かれば普通に使えた． 寧ろよくこんなライブラリ作ったなって感想です(笑)</p>
-<h2 id="section-4"></h2>
+<h2 id="section-5"></h2>
 <p>gogol で定義されているデータ構造は全て，スマートコンストラクタから Lens のセッターを用いて書き換えて定義する(何言ってるか分からないよね…)． しかも，Datastore の API の関係で値をセットしなくちゃいけないフィールドや，片方セットしたら他方はセットしちゃいけないフィールドがあったりで，しかも型エラーにならないし…(全部かは分からないけど)．</p>
 <p>しかも，こういう良く分からないモノ使うと，エラーの問題がどこにあるかがわからなくて困るよね？ 例えば</p>
 <ol style="list-style-type: decimal">
@@ -215,7 +218,7 @@ runBot jsonPath htmlUrl token (projectId, dsKind) <span class="fu">=</span> <spa
 <h3 id="cron-で回す">cron で回す</h3>
 <p>鬼門その２ まぁこっちの鬼門は自分が cron を知らな過ぎただけなんですけどね．</p>
 <p>今回は実行用の f1-micro の GCE を Ubuntu16.04 で立てて，その中で cron を回すことにした． f1-micro の US レージョンひとつなら，<a href="https://cloud.google.com/free/?hl=ja">無料枠</a>らしいから，起動しっぱなしでも大丈夫だよね？？</p>
-<h2 id="section-5"></h2>
+<h2 id="section-6"></h2>
 <p>cron は <code>crontab -e</code> ってコマンドを使って設定ファイルを編集する． まぁ詳しくは適当に<a href="https://qiita.com/katsukii/items/d5f90a6e4592d1414f99">調べて</a>欲しい．</p>
 <p>ファイルの権限いじるのめんどくさくて <code>sudu su</code> で root に入り，今回のリポジトリをクローンした(cron は root で実行されるので出力ファイルとかを root の所有権にしておかないといけない)． で，イロイロ試して最終的には以下の設定にした．</p>
 <pre><code>MAILTO=&quot;&quot;
@@ -230,7 +233,7 @@ TIME=15
 0 * * * * (docker-compose -f /root/adventar-line-bot/docker-compose.yml run --rm bot ; docker-compose -f /root/adventar-line-bot/docker-compose.yml stop) &gt;&gt; /root/test.log 2&gt;&gt; /root/error.log</code></pre>
 <p><code>MAILTO=&quot;&quot;</code> しておかないと，メールを送信する用の何かが無くてエラーで落ちる． <code>PATH</code> もデフォルトだと全然ないので，とりあえず一般ユーザー時と同じだけ与えといた．</p>
 <p><code>docker-compose</code> の設定は<a href="https://github.com/matsubara0507/adventar-line-bot/blob/master/docker-compose.yml">コレ</a>を見てください． 今回は説明を割愛． ただ，<code>TIME</code> というのは，selenium のコンテナが起動し終わるまで bot の起動を待ってもらう時間を設定する環境変数． インスタンスが雑魚過ぎて，15秒も必要だった(普段は2~3秒とかでいい)</p>
-<h2 id="section-6"></h2>
+<h2 id="section-7"></h2>
 <p>cron の何がしんどかったかと言うと，エラーが出てこないこと． <code>2&gt;&gt; /root/error.log</code> とかして，自前でエラーメッセージをファイルに書き出しておかないと，そもそも動いているのかもよくわからない． 普段こういうことしないのでまぁまぁ困った．</p>
 <h2 id="実行">実行</h2>
 <p>いい感じ</p>
