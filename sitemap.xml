@@ -9,6 +9,13 @@
     </url>
 
     <url>
+        <loc>https://matsubara0507.github.io/posts/2017-12-09-extensible-effects-step-by-step.html</loc>
+        <changefreq>never</changefreq>
+        <lastmod>2017-12-09</lastmod>
+        <priority>0.8</priority>
+    </url>
+
+    <url>
         <loc>https://matsubara0507.github.io/posts/2017-12-06-create-dlisp.html</loc>
         <changefreq>never</changefreq>
         <lastmod>2017-12-06</lastmod>
