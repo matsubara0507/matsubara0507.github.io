@@ -1,0 +1,476 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="Haskell Backpack 覚え書き" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        Haskell Backpack 覚え書き
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Haskell Backpack 覚え書き</h1>
+    <p class="post-meta">
+      <time datetime="2017-12-12" itemprop="datePublished">
+        Dec 12, 2017
+      </time>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p><a href="https://qiita.com/advent-calendar/2017/haskell3">Haskell アドベントカレンダー 2017 (その３)</a> の12日目の記事です．</p>
+<h2 id="section"></h2>
+<p>GHC 8.2 より新しく追加された Backpack というモジュールシステムを知ってますか？ Backpack は個人的にすごい注目してる機能なんですけど，いかんせん日本語ドキュメントが皆無なんで，イロイロ調べたことを書いておこうと思います．</p>
+<p>ただ，英語雑魚勢なので勘違いしてる部分もあるかもしれないので，その時は指摘してください 人</p>
+<h2 id="section-1"></h2>
+<p>基本的には <a href="https://github.com/matsubara0507/awesome-backpack">matsubara0507/awesome-backpack</a> リポジトリにまとめてます(コッチの方が新しいこと書いてあるかも)．</p>
+<p>ちなみに，今回の記事は11月の頭に作った以下スライドをベースに書きます．</p>
+<iframe src="//www.slideshare.net/slideshow/embed_code/key/nkfPRoekJfs5dl" width="595" height="485" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen>
+</iframe>
+<h2 id="注意-実は-backpack-は2つある">注意: 実は Backpack は2つある</h2>
+<p>Backpack は何年も前から学術的に研究されていた機能で，その研究過程には少なくとも2段階ありました．</p>
+<ol style="list-style-type: decimal">
+<li>Backpack’14:
+<ul>
+<li>Scott Kilpatrick 氏が<a href="http://plv.mpi-sws.org/backpack/">提案</a>(POPL 2014)</li>
+<li>MixIn を利用して弱いモジュール言語に強いモジュール性を組み込む</li>
+</ul></li>
+<li>Backpack’17:
+<ul>
+<li>Edward Z. Yang 氏が<a href="https://github.com/ezyang/thesis/releases">提案</a>(彼の博士論文？)</li>
+<li>既存の GHC に組み込めるように Backpack’14 をリファクタリング</li>
+<li>GHC8.2 や Cabal2.0 に組み込まれたのはコッチ</li>
+</ul></li>
+</ol>
+<p>概念的な解説が多い(と感じた)のは ’14 の方ですが，最終的に GHC に導入されたのは ’17 です． なので，前半は ’14 について説明します． もちろん ’17 は ’14 をベースにしてますが，どこまで概念的な背景まで継承しているかはよくわからなかったので，前半の説明が ’17 にとっては間違っている可能性もあります． すいません(ちゃんと論文を全部読めればいいんだけど…長い….)．</p>
+<h2 id="backpack-14">Backpack ’14</h2>
+<p>前述したとおり，’14 は Backpack の基本概念の話だけで，実際に GHC には組み込まれていない． なので，「具体的な用途だけくれ」派の人は飛ばして ’17 から読めばいいと思う．</p>
+<h2 id="section-2"></h2>
+<p>以降は以下のスライドをベースにしている．</p>
+<ul>
+<li><a href="http://plv.mpi-sws.org/backpack/backpack-popl.pdf">Backpack: Retrofitting Haskell with Interfaces</a></li>
+</ul>
+<p>何度も言うが，’14 は GHC に導入されてない． 即ち，以下の記法は正式ではないので注意してください．</p>
+<h3 id="haskell-のモジュール性は弱い">Haskell のモジュール性は弱い</h3>
+<p>そもそも，なんで Backpack という新しいモジュールシステムを導入する必要があるのか． 理由は簡単で，<strong>Haskell のモジュール性は弱い</strong> からだ．</p>
+<h4 id="弱いモジュール性">弱いモジュール性</h4>
+<p>例えば，あるモジュール A があるモジュール B に(構造的に)依存しているとする． モジュール A の実装がモジュール B の実装に依存する場合にはモジュール性が弱いという(らしい)． 要するに弱いモジュール性の場合，<strong>モジュールの実装を定義するときには依存する全てのモジュールの実装が決まっている</strong> 必要がある．</p>
+<p>おそらく，インターフェースの依存性より <strong>弱い</strong> って意味っぽい．</p>
+<p>そして，この定義で言うと，Haskell の既存のモジュールシステムと既存のパッケージシステムは弱いモジュール性で実装されている．</p>
+<h4 id="強いモジュール性">強いモジュール性</h4>
+<p>逆に強いモジュール性であるということは，インターフェースの実装が何に依存しているかとは <strong>独立</strong> にモジュールを型検査することが出来る(インターフェースの依存性より <strong>強い</strong> モジュール性)．</p>
+<p>そして強いモジュール性を持つと以下のことを可能にするそうだ(具体的には後述する)</p>
+<ol style="list-style-type: decimal">
+<li>インターフェースとなるモジュール</li>
+<li>リンクへのモジュールの再利用</li>
+<li>モジュールの再帰的なリンク</li>
+</ol>
+<p>ココで言うリンクはインターフェースを利用しているモジュールに，そのインターフェースの実装を与えること．</p>
+<p>しかし，Haskell は弱いモジュール性…</p>
+<h3 id="そこで-backpack-14">そこで Backpack ’14</h3>
+<p>以下の方法で Haskell に強いモジュール性を導入する．</p>
+<ul>
+<li>パッケージレベルでの設計
+<ul>
+<li>新しくシグネチャを導入(モジュールの型みたいなもの)</li>
+<li>パッケージはシグネチャとモジュールを持てる</li>
+</ul></li>
+<li>シンプルな MixIn デザインを採用
+<ul>
+<li>ベースは <a href="https://github.com/rossberg/mixml">MixML</a></li>
+<li>いくつか問題があたので Haskell に対応させた</li>
+</ul></li>
+<li>ジェネリックな設計なので他の弱いモジュール性を持つ言語でも機能する(だろう)</li>
+</ul>
+<p>ちなみに，誰もが羨むモジュールシステム(要出典)ML系のファンクターではダメだったのかというと</p>
+<ul>
+<li>再帰的なリンクができない</li>
+<li>弱いモジュール性に組み込む方法は不明</li>
+<li>分割コンパイルに適していない</li>
+</ul>
+<p>ためだと書いてあった．</p>
+<h4 id="例えば">例えば</h4>
+<p>以下のような Haskell の Modules を考える．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- Socket.hs</span>
+<span class="kw">module</span> <span class="dt">Socket</span> <span class="kw">where</span>
+  <span class="kw">data</span> <span class="dt">SocketT</span> <span class="fu">=</span> <span class="fu">...</span>
+  open <span class="fu">=</span> <span class="fu">...</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- Server.hs</span>
+<span class="kw">module</span> <span class="dt">Server</span> <span class="kw">where</span>
+  <span class="kw">import </span><span class="dt">Socket</span>
+  <span class="kw">data</span> <span class="dt">ServerT</span> <span class="fu">=</span> <span class="fu">...</span> <span class="dt">SocketT</span> <span class="fu">...</span></code></pre></div>
+<p><code>Server</code> モジュールが <code>Socket</code> モジュールに依存している．</p>
+<p>これを Backpack’14 だと次のように書ける</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">package complete<span class="fu">-</span>server <span class="kw">where</span>
+  <span class="dt">Socket</span> <span class="fu">=</span> [
+    <span class="kw">data</span> <span class="dt">SocketT</span> <span class="fu">=</span> <span class="fu">...</span>
+    open <span class="fu">=</span> <span class="fu">...</span>
+  ]
+  <span class="dt">Server</span> <span class="fu">=</span> [
+    <span class="kw">import </span><span class="dt">Socket</span>
+    <span class="kw">data</span> <span class="dt">ServerT</span> <span class="fu">=</span> <span class="fu">...</span> <span class="dt">SocketT</span> <span class="fu">...</span>
+  ]</code></pre></div>
+<p>もちろん，この時点ではただまとめただけ…</p>
+<p>これにシグネチャを導入する． <strong>シグネチャはモジュールの型みたいなもので，インターフェースの役割を持つ</strong> (1つ目の利点)． シグネチャには実装の無い型定義と関数の型を書ける．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">package partial<span class="fu">-</span>server <span class="kw">where</span>
+  <span class="dt">Socket</span><span class="ot"> ::</span> [
+    <span class="kw">data</span> <span class="dt">SocketT</span>
+<span class="ot">    open ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">SocketT</span>
+  ]
+  <span class="dt">Server</span> <span class="fu">=</span> [
+    <span class="kw">import </span><span class="dt">Socket</span>
+    <span class="kw">data</span> <span class="dt">ServerT</span> <span class="fu">=</span> <span class="fu">...</span> <span class="dt">SocketT</span> <span class="fu">...</span>
+  ]</code></pre></div>
+<p><code>Socket</code> シグネチャをインポートして <code>Server</code> モジュールの実装を書くとき，<code>Socket</code> シグネチャ内の関数の実装が決まっている必要は無い．</p>
+<p>また，パッケージを別々に定義してインクルードすることもできる．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">package socketsig <span class="kw">where</span>
+  <span class="dt">Socket</span><span class="ot"> ::</span> [
+    <span class="kw">data</span> <span class="dt">SocketT</span>
+<span class="ot">    open ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">SocketT</span>
+  ]
+
+package partial<span class="fu">-</span>server <span class="kw">where</span>
+  include socketsig
+  <span class="dt">Server</span> <span class="fu">=</span> [
+    <span class="kw">import </span><span class="dt">Socket</span>
+    <span class="kw">data</span> <span class="dt">ServerT</span> <span class="fu">=</span> <span class="fu">...</span> <span class="dt">SocketT</span> <span class="fu">...</span>
+  ]</code></pre></div>
+<p>無論，これらの <code>partial-server</code> パッケージは <code>Socket</code> シグネチャの実装が無いためアプリケーションとして呼び出すことはできない． 呼び出すためにはシグネチャを持つパッケージに，その実装を持つパッケージを <strong>リンク</strong> する必要がある．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">package socketimpl <span class="kw">where</span>
+  <span class="dt">Socket</span> <span class="fu">=</span> [
+    <span class="kw">data</span> <span class="dt">SocketT</span> <span class="fu">=</span> <span class="fu">...</span>
+    open <span class="fu">=</span> <span class="fu">...</span>
+  ]
+
+package main <span class="kw">where</span>
+  include partial<span class="fu">-</span>server
+  include socketimpl</code></pre></div>
+<p>もちろん <code>partial-server</code> パッケージは <strong>複数の実装パッケージに対し再利用できる</strong> (2つ目の利点)．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">package server<span class="fu">-</span>linked<span class="fu">-</span><span class="dv">1</span> <span class="kw">where</span>
+  include partial<span class="fu">-</span>server
+  include socketimpl<span class="fu">-</span><span class="dv">1</span>
+
+package server<span class="fu">-</span>linked<span class="fu">-</span><span class="dv">2</span> <span class="kw">where</span>
+  include partial<span class="fu">-</span>server
+  include socketimpl<span class="fu">-</span><span class="dv">2</span></code></pre></div>
+<p>つまり，良くある文字列系ライブラリに対し <code>String</code> 用と <code>Text</code> 用と <code>ByteString</code> 用と…って複数のライブラリを作る必要が無くなる． 例えば正規表現ライブラリ <code>regex</code> で考える． 文字列型シグネチャパッケージ <code>str-sig</code> があり，<code>regex</code> は <code>str-sig</code> を用いて書かれているとする(そのため <code>regex</code> 単体ではアプリケーションに利用できない)． <code>str-sig</code> の実装パッケージである，<code>str-string</code> や <code>str-text</code>, <code>str-bytestring</code> があったとする． <code>regex</code> の利用者は正規表現を <code>String</code> で使いたければ <code>str-string</code> を， <code>Text</code> で使いたければ <code>str-text</code> をリンクするだけで良い． ライブラリ提供者がわざわざ複数の実装を用意する必要が無い！ すばらしい！！</p>
+<h2 id="section-3"></h2>
+<p>しかし，<code>str-string</code> と <code>str-text</code> をインクルードしたモノを同時に使いたい場合はどうするか． 安心してほしい，そういった構文も考えてある．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">package multi <span class="kw">where</span>
+  <span class="dt">A</span>    <span class="fu">=</span> { include server<span class="fu">-</span>linked<span class="fu">-</span><span class="dv">1</span> }
+  <span class="dt">B</span>    <span class="fu">=</span> { include server<span class="fu">-</span>linked<span class="fu">-</span><span class="dv">2</span> }
+  <span class="dt">Main</span> <span class="fu">=</span> [
+    <span class="kw">import qualified</span> <span class="dt">A.Server</span>
+    <span class="kw">import qualified</span> <span class="dt">B.Server</span>
+    <span class="fu">...</span>
+  ]</code></pre></div>
+<p>さらに，<strong>相互再帰みたいなリンクも提案されている</strong> (3つ目の利点)．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">package ab<span class="fu">-</span>sigs <span class="kw">where</span>
+  <span class="dt">A</span><span class="ot"> ::</span> [ <span class="dt">S_A</span> ]
+  <span class="dt">B</span><span class="ot"> ::</span> [ <span class="dt">S_B</span> ]
+
+package b<span class="fu">-</span>from<span class="fu">-</span>a <span class="kw">where</span>
+  include ab<span class="fu">-</span>sigs
+  <span class="dt">B</span> <span class="fu">=</span> [ inport <span class="dt">A</span> ; <span class="fu">...</span> ]
+package a<span class="fu">-</span>from<span class="fu">-</span>b <span class="kw">where</span>
+  include ab<span class="fu">-</span>sigs
+  <span class="dt">A</span> <span class="fu">=</span> [ inport <span class="dt">B</span> ; <span class="fu">...</span> ]
+
+package ab<span class="fu">-</span>rec<span class="fu">-</span>sep <span class="kw">where</span>
+  include a<span class="fu">-</span>form<span class="fu">-</span>b
+  include b<span class="fu">-</span>form<span class="fu">-</span>a</code></pre></div>
+<p><code>ab-sigs</code> には <code>A</code> と <code>B</code> の2つのシグネチャが定義されている． <code>b-from-a</code> では シグネチャ <code>A</code> を用いつつ <code>B</code> の実装を与えており，<code>a-from-b</code> では シグネチャ <code>B</code> を用いつつ <code>A</code> の実装を与えている． すごいね．</p>
+<h4 id="しかし残念なことに">しかし…残念なことに…</h4>
+<p>Backpack’14 では GHC での実装はできなかった…</p>
+<p>何故かというと</p>
+<ul>
+<li>Backpack’14 の意味論は Haskell の意味論と密接に結びついている</li>
+<li>そのため，GHC と Cabal を切り離して実装することが出来なかった</li>
+</ul>
+<p>Backpack’14 はコンパイラとパッケージマネージャー間の <strong>抽象化の障壁</strong> (abstraction barrier) を壊してしまうらしい(用語が良く分からないけど)． 要するに，Backpack’14 はパッケージレベルに設計したため，コンパイラ(GHC)とパッケージマネージャー(Cabal)とを分けている現在主流の Haskell 処理系に組み込むには，せっかく分けている2つを合体させる必要があり，それが認められなかったのだ．</p>
+<h2 id="section-4"></h2>
+<p>ちなみに，最近の処理系では必ずしもこの抽象化の障壁が守られているわけではないよね，ってハナシが Backpack’17 の論文の最後の方に書いてあった気がする． 例えば Go とか Elm とかは処理系そのものにパッケージマネージャが組み込まれているよねって(まぁこれらのパッケージマネージャーはお粗末な印象があるけど…)．</p>
+<p>閑話休題</p>
+<h2 id="backpack-17">Backpack ’17</h2>
+<p>さて，お察しの通り <strong>抽象化の壁に関する問題を取り払ったのが，我らがヒーロー Backpack’17 ですよ！</strong></p>
+<ul>
+<li>Backpack’14 を実用的に改良</li>
+<li>コンパイラとパッケージマネージャーの障壁(バリア)を保持</li>
+<li>GHC8.2 と Cabal 2.0 に導入された
+<ul>
+<li>我らがヒーロー Stack 様はまだ対応できてない…</li>
+</ul></li>
+</ul>
+<p>ちなみに，パッケージシステムが変わったため現状の Hackage は使えず，代わりに Hackage をフォークした <a href="http://next.hackage.haskell.org:8080/">next.hackage</a> を用いるらしい． また，<a href="https://github.com/ezyang/ghc-proposals/blob/backpack/proposals/0000-backpack.rst#unresolved-questions">既知の未解決問題</a>として，(3) の再帰的リンクは実現できていないそうだ． 残念(面白いけども有用か？と言われると分からんし困らない気はする)．</p>
+<h3 id="ghc8.2-だけで試す">GHC8.2 だけで試す</h3>
+<p>詳しくは以下の記事を参照してください．</p>
+<ul>
+<li><a href="http://blog.ezyang.com/2016/10/try-backpack-ghc-backpack/">Try Backpack: ghc –backpack : Inside 245-5D</a></li>
+</ul>
+<ol style="list-style-type: decimal">
+<li><code>*.bkp</code> というファイルを作る</li>
+<li><code>ghc --backpack xxx.bkp</code> と打つだけ</li>
+</ol>
+<p><code>*.bkp</code> は <code>*.hs</code> に比べて <code>unit</code> と言う階層ができた(Backpack’14 の構文で言う <code>package</code> みたいなもの)．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">unit main <span class="kw">where</span>
+  <span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span>
+    main <span class="fu">=</span> putStrLn <span class="st">&quot;Hello world!&quot;</span></code></pre></div>
+<p>ひとつの <code>*.bkp</code> ファイルに <code>unit</code> は複数書いて良い． <code>unit</code> の中には従来の <code>module</code> と新しく <code>signature</code> が書ける．</p>
+<h4 id="例-正規表現">例: 正規表現</h4>
+<p>細かいところは割愛してある(元記事には全部書いてあるよ)．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- regex.bkp</span>
+unit regex<span class="fu">-</span>types <span class="kw">where</span>
+  <span class="kw">module</span> <span class="dt">Regex.Types</span> <span class="kw">where</span>
+    <span class="kw">data</span> <span class="dt">Reg</span> <span class="fu">=</span> <span class="fu">...</span>
+
+unit regex<span class="fu">-</span>indef <span class="kw">where</span>
+  dependency regex<span class="fu">-</span>types
+  signature <span class="dt">Str</span> <span class="kw">where</span>
+    <span class="kw">data</span> <span class="dt">Str</span>
+    <span class="kw">instance</span> <span class="dt">Eq</span> <span class="dt">Str</span>
+<span class="ot">    splits ::</span> <span class="dt">Str</span> <span class="ot">-&gt;</span> [(<span class="dt">Str</span>, <span class="dt">Str</span>)]
+    <span class="fu">...</span>
+  <span class="kw">module</span> <span class="dt">Regex</span> <span class="kw">where</span>
+    <span class="kw">import </span><span class="dt">Str</span>
+    <span class="kw">import </span><span class="dt">Regex.Types</span>
+<span class="ot">    accept ::</span> <span class="dt">Reg</span> <span class="ot">-&gt;</span> <span class="dt">Str</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span>
+    accept <span class="fu">=</span> <span class="fu">...</span> <span class="co">-- use split etc..</span>
+
+unit str<span class="fu">-</span>bytestring <span class="kw">where</span>
+  <span class="kw">module</span> <span class="dt">Str</span>(<span class="kw">module</span> <span class="dt">Data.ByteString.Char8</span>, <span class="kw">module</span> <span class="dt">Str</span>) <span class="kw">where</span>
+    <span class="kw">import </span><span class="dt">Data.ByteString.Char8</span>
+    <span class="kw">import </span><span class="dt">Data.ByteString</span>
+    <span class="kw">type</span> <span class="dt">Str</span> <span class="fu">=</span> <span class="dt">ByteString</span>
+<span class="ot">    splits ::</span> <span class="dt">Str</span> <span class="ot">-&gt;</span> [(<span class="dt">Str</span>, <span class="dt">Str</span>)]
+    splits s <span class="fu">=</span> fmap (\n <span class="ot">-&gt;</span> splitAt n s) [<span class="dv">0</span><span class="fu">..</span>length s]
+    <span class="fu">...</span>
+
+unit str<span class="fu">-</span>string <span class="kw">where</span>
+  <span class="kw">module</span> <span class="dt">Str</span> <span class="kw">where</span>
+    <span class="kw">import qualified</span> <span class="dt">Prelude</span> <span class="kw">as</span> <span class="dt">P</span>
+    <span class="kw">type</span> <span class="dt">Str</span> <span class="fu">=</span> <span class="dt">String</span>
+<span class="ot">    splits ::</span> <span class="dt">Str</span> <span class="ot">-&gt;</span> [(<span class="dt">Str</span>, <span class="dt">Str</span>)]
+    splits [] <span class="fu">=</span> [([], [])]
+    splits (c<span class="fu">:</span>cs) <span class="fu">=</span> ([], c<span class="fu">:</span>cs)<span class="fu">:</span>[(c<span class="fu">:</span>s1,s2) <span class="fu">|</span> (s1,s2) <span class="ot">&lt;-</span> splits cs]
+    <span class="fu">...</span>
+
+unit main <span class="kw">where</span>
+  dependency regex<span class="fu">-</span>types
+  dependency regex<span class="fu">-</span>indef[<span class="dt">Str</span><span class="fu">=</span>str<span class="fu">-</span>string<span class="fu">:</span><span class="dt">Str</span>]     (<span class="dt">Regex</span> as <span class="dt">Regex.String</span>)
+  dependency regex<span class="fu">-</span>indef[<span class="dt">Str</span><span class="fu">=</span>str<span class="fu">-</span>bytestring<span class="fu">:</span><span class="dt">Str</span>] (<span class="dt">Regex</span> as <span class="dt">Regex.ByteString</span>)
+  <span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span>
+    <span class="kw">import </span><span class="dt">Regex.Types</span>
+    <span class="kw">import qualified</span> <span class="dt">Regex.String</span>
+    <span class="kw">import qualified</span> <span class="dt">Regex.ByteString</span>
+    <span class="fu">...</span></code></pre></div>
+<h3 id="cabal-2.0-で試す">Cabal 2.0 で試す</h3>
+<p>詳しくは以下の記事を参照してください．</p>
+<ul>
+<li><a href="http://blog.ezyang.com/2017/01/try-backpack-cabal-packages">Try Backpack: Cabal packages : Inside 245-5D</a></li>
+</ul>
+<ol style="list-style-type: decimal">
+<li><code>bkp</code> ファイルを <code>unit</code> ごとに分けて(<code>*.hs</code> と <code>*.hsig</code>)</li>
+<li><code>cabal</code> ファイルで依存関係を定義し</li>
+</ol>
+<p>再構築するイメージ(たぶん)．</p>
+<p>さっきの例のリポジトリがあるので，それを見た方が速い．</p>
+<ul>
+<li><a href="https://github.com/ezyang/backpack-regex-example">ezyang/backpack-regex-example - GitHub</a></li>
+</ul>
+<p><code>source-only</code> ブランチは，<code>unit</code> ごとにディレクトリを分けてモジュールとシグネチャごとにファイルに分けただけ． これらのディレクトリ間の依存関係を，<code>.bkp</code> ファイルの代わりに <code>cabal</code> ファイルへ記述するのだ．</p>
+<h2 id="section-5"></h2>
+<p>実はやり方は大きく分けて2つある．</p>
+<ol style="list-style-type: decimal">
+<li>単一のパッケージで管理する場合
+<ul>
+<li><a href="https://github.com/ezyang/backpack-regex-example/tree/single-package"><code>single-package</code></a>ブランチや</li>
+<li><a href="https://github.com/ezyang/backpack-regex-example/tree/better-single-package"><code>better-single-package</code></a>ブランチ</li>
+<li><code>cabal build</code> でビルドできる</li>
+</ul></li>
+<li>分割してパッケージを管理する場合
+<ul>
+<li><a href="https://github.com/ezyang/backpack-regex-example/tree/multiple-packages"><code>multiple-packages</code></a></li>
+<li><code>cabal new-build</code> でビルドする</li>
+</ul></li>
+</ol>
+<p>単一のパッケージ(<code>cabal</code> ファイルがひとつ)の場合はパッケージでカプセル化される(要するにシグネチャと言う曖昧なものが外に出てこない)ため，<code>cabal-build</code> でうまく動作する(らしい)． しかし，各 <code>unit</code> を別々のパッケージとして公開する場合は，シグネチャを持つようなパッケージも個別にインスタンスする必要があり，それができるのは <code>cabal-new-build</code> だけだそうだ(この辺りはうっすらイメージできるぐらいで，自分も良く分かってない…)．</p>
+<h2 id="section-6"></h2>
+<p>ちなみに，参照記事の最後に「(1) であれば Stack と <code>cabal-install</code> でもビルド可能」という感じの文言があるが，これはおそらく Backpack で書いたパッケージを <code>cabal-install</code> して Stack で利用するという意味で， Backpack パッケージをビルドすることはできない．</p>
+<h4 id="実際に試す">実際に試す</h4>
+<p>試しに <a href="https://github.com/ezyang/backpack-regex-example">ezyang/backpack-regex-example</a> リポジトリの <code>better-single-package</code> ブランチをビルドしてみる． stack ではできないが，代わりに Haskell の Docker イメージではできる．</p>
+<ul>
+<li><a href="https://hub.docker.com/_/haskell/">library/haskell - Docker Hub</a></li>
+</ul>
+<pre><code>$ docker run -it --name test-backpack haskell /bin/bash
+# git clone https://github.com/ezyang/backpack-regex-example.git
+...
+# cd backpack-regex-example
+# git checkout better-single-package
+# cabal run
+Warning: The package list for 'hackage.haskell.org' does not exist. Run 'cabal
+update' to download it.
+Resolving dependencies...
+Configuring regex-example-0.1.0.0...
+Warning: Packages using 'cabal-version: &gt;= 1.10' must specify the
+'default-language' field for each component (e.g. Haskell98 or Haskell2010).
+If a component uses different languages in different modules then list the
+other ones in the 'other-languages' field.
+Preprocessing library 'str-impls' for regex-example-0.1.0.0..
+Building library 'str-impls' for regex-example-0.1.0.0..
+[1 of 2] Compiling Str.ByteString   ( str-impls/Str/ByteString.hs, dist/build/str-impls/Str/ByteString.o )
+[2 of 2] Compiling Str.String       ( str-impls/Str/String.hs, dist/build/str-impls/Str/String.o )
+Preprocessing library 'regex-types' for regex-example-0.1.0.0..
+Building library 'regex-types' for regex-example-0.1.0.0..
+[1 of 1] Compiling Regex.Types      ( regex-types/Regex/Types.hs, dist/build/regex-types/Regex/Types.o )
+Preprocessing library 'regex-indef' for regex-example-0.1.0.0..
+Building library 'regex-indef' instantiated with Str = &lt;Str&gt;
+for regex-example-0.1.0.0..
+[1 of 2] Compiling Str[sig]         ( regex-indef/Str.hsig, nothing )
+[2 of 2] Compiling Regex            ( regex-indef/Regex.hs, nothing )
+Preprocessing library 'regex-indef' for regex-example-0.1.0.0..
+Building library 'regex-indef' instantiated with
+  Str = regex-example-0.1.0.0-5fan9UmrI8c9D3SR3eJshp-str-impls:Str.ByteString
+for regex-example-0.1.0.0..
+[1 of 2] Compiling Str[sig]         ( regex-indef/Str.hsig, dist/build/regex-example-0.1.0.0-5fan9UmrI8c9D3SR3eJshp-regex-indef+DlrkqhaqfnHLeraBne3U6J/Str.o )
+[2 of 2] Compiling Regex            ( regex-indef/Regex.hs, dist/build/regex-example-0.1.0.0-5fan9UmrI8c9D3SR3eJshp-regex-indef+DlrkqhaqfnHLeraBne3U6J/Regex.o )
+Preprocessing library 'regex-indef' for regex-example-0.1.0.0..
+Building library 'regex-indef' instantiated with
+  Str = regex-example-0.1.0.0-5fan9UmrI8c9D3SR3eJshp-str-impls:Str.String
+for regex-example-0.1.0.0..
+[1 of 2] Compiling Str[sig]         ( regex-indef/Str.hsig, dist/build/regex-example-0.1.0.0-5fan9UmrI8c9D3SR3eJshp-regex-indef+FIqipABuofnDXePvW6rl2w/Str.o )
+[2 of 2] Compiling Regex            ( regex-indef/Regex.hs, dist/build/regex-example-0.1.0.0-5fan9UmrI8c9D3SR3eJshp-regex-indef+FIqipABuofnDXePvW6rl2w/Regex.o )
+Preprocessing executable 'regex-example' for regex-example-0.1.0.0..
+Building executable 'regex-example' for regex-example-0.1.0.0..
+[1 of 1] Compiling Main             ( regex-example/Main.hs, dist/build/regex-example/regex-example-tmp/Main.o ) [Regex.ByteString changed]
+Linking dist/build/regex-example/regex-example ...
+Running regex-example...
+True
+True</code></pre>
+<h2 id="結局なにがうれしいのか">結局なにがうれしいのか</h2>
+<p>ちゃんと論文読んでないので，ぼくが思うところですけど</p>
+<ul>
+<li>本質的には関係ない実装を利用者側で選択できる
+<ul>
+<li><code>A</code> パッケージの文字列に <code>Text</code> を使うか <code>ByteString</code> を使うかは利用者の自由</li>
+<li><code>A-text</code> とか <code>A-bytestring</code> とか別に作る必要が無い</li>
+</ul></li>
+<li>型クラスに無理やり突っ込んでたモノが解決
+<ul>
+<li>モジュールレベルにアドホック多相ができる(たぶん)</li>
+</ul></li>
+<li><strong>面白い</strong></li>
+</ul>
+<h2 id="おまけ-stack-と-backpack">おまけ: stack と Backpack</h2>
+<p>結果だけ先に言えば，Backpack は stack では今のところ動きません． 対応に向けて現状どうなのかと言うと，なんと1年前から <a href="https://github.com/commercialhaskell/stack/issues/2540">Issue</a> がありました．</p>
+<p><a href="https://github.com/commercialhaskell/stack/issues/2540#issuecomment-319570811">IRCで議論してロードマップはできてる</a>ようです．</p>
+<ol style="list-style-type: decimal">
+<li>Stack が Cabal2.0 をサポート(済)</li>
+<li>Stack をコンポーネントごとのビルドプランに切り替える(see <a href="https://github.com/haskell/cabal/issues/2802">haskell/cabal#2802</a>)
+<ul>
+<li>一番エキサイティングなところらしい(?)</li>
+</ul></li>
+<li>Cabal2.0前後でビルドプランを切り替える(難題)</li>
+</ol>
+<p>で，stack の何が問題なのかと言うと</p>
+<ul>
+<li>Stack Project 単位でモジュール群を持っていた</li>
+<li>しかし Backpack はモジュール(コンポーネント)ごとに管理する必要がある
+<ul>
+<li>モジュールごとに依存関係が異なるため</li>
+</ul></li>
+<li>従ってモジュール群の管理方法を変える事が必要</li>
+</ul>
+<p><a href="https://github.com/commercialhaskell/stack/issues/2540#issuecomment-323256870">コレ</a>曰く，インターナルライブラリをサポートするのが一つの方法で，foreign libraries で既に採用済みとのこと．</p>
+<p><a href="https://github.com/commercialhaskell/stack/pull/3430">最新のアクティビティ</a>がソレについてなので，その方向でやるんですかね？</p>
+<h2 id="おしまい">おしまい</h2>
+<p>なんか具体例を示したかったけど，丁度良いのを思いつかなった + 時間不足です，すいません． バイトでは丁度 Backpack が欲しいユースケースがあったんだけど，表に出してよいコードに落とせなかった． 文量も文量だし，そのうち別の記事にします．</p>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+  <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+    <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+      <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+    </a>
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>
