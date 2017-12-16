@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="Re: ゼロから作る ADVENTAR の Slack Bot (GAS 編)" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+    <meta property="og:image" content="/assets/re-adventar-slack-bot/run-with-gas.jpg" />
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        Re: ゼロから作る ADVENTAR の Slack Bot (GAS 編)
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Re: ゼロから作る ADVENTAR の Slack Bot (GAS 編)</h1>
+    <p class="post-meta">
+      <time datetime="2017-12-16" itemprop="datePublished">
+        Dec 16, 2017
+      </time>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p><a href="https://adventar.org/calendars/2300">IGGG アドベントカレンダー 2017</a> の16日目の記事です．</p>
+<h2 id="section"></h2>
+<p>前後編で終わると言ったが，あれはウソだ！</p>
+<ul>
+<li><a href="../posts/2017-12-02-re-adventar-slack-bot-part1.html">Re: ゼロから作る ADVENTAR の Slack Bot (Haskell 編) - ひげメモ</a></li>
+<li><a href="../posts/2017-12-09-re-adventar-slack-bot-part2.html">Re: ゼロから作る ADVENTAR の Slack Bot (CircleCI 編) - ひげメモ</a></li>
+</ul>
+<p>ADVENTAR の更新を通知する Slack Bot を Haskell で作って，Circle CI で回すとこまでは話した． 一応話はそこでお終いだが「<strong>Bot なんだから Slack 側からのアクションも受け取れろよ！</strong>」みたいな圧力を受けた(嘘)ので，今回はそこら辺を何とかした話です．</p>
+<h2 id="戦略">戦略</h2>
+<p>もちろん，弊サークルは貧者なので Google Apps Script を使う． 戦略は簡単，<strong>GAS から GitHub に向けて空コミットを送る</strong> だけ． そのコミットで CircleCI が動き出す (完)</p>
+<div class="figure">
+<img src="../assets/re-adventar-slack-bot/run-with-gas.jpg" />
+
+</div>
+<h2 id="作る">作る</h2>
+<h3 id="gas-で-slack-bot">GAS で Slack Bot</h3>
+<p>Slack から受け取るときは <a href="https://api.slack.com/custom-integrations/outgoing-webhooks">Outgoing Webhooks</a> を使う． 適当にトリガーワードを決める(今回は <code>update?</code>)． そのワードが設定したチャンネルで打たれると，空コミットを送るのだ．</p>
+<h2 id="section-1"></h2>
+<p>ただ，打ってから結果を CircleCI が返すまで1分ほどかかるので「ちょっと待って」って感じのメッセージを送ることにしよう． そこで，いつものやつ．</p>
+<ul>
+<li><a href="http://qiita.com/soundTricker/items/43267609a870fc9c7453">Slack BotをGASでいい感じで書くためのライブラリを作った - Qiita</a></li>
+</ul>
+<p>こんな感じ</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">doPost</span>(e) <span class="op">{</span>
+  <span class="kw">var</span> prop <span class="op">=</span> <span class="va">PropertiesService</span>.<span class="at">getScriptProperties</span>().<span class="at">getProperties</span>()<span class="op">;</span>
+
+  <span class="cf">if</span> (<span class="va">prop</span>.<span class="at">VERIFY_TOKEN</span> <span class="op">!=</span> <span class="va">e</span>.<span class="va">parameter</span>.<span class="at">token</span>) <span class="op">{</span>
+    <span class="cf">throw</span> <span class="kw">new</span> <span class="at">Error</span>(<span class="st">'invalid token.'</span>)<span class="op">;</span>
+  <span class="op">}</span>
+
+  <span class="co">/* for Slack */</span>
+  <span class="kw">var</span> slackApp <span class="op">=</span> <span class="va">SlackApp</span>.<span class="at">create</span>(<span class="va">prop</span>.<span class="at">SLACK_API_TOKEN</span>)<span class="op">;</span>
+
+  <span class="kw">const</span> BOT_NAME <span class="op">=</span> <span class="st">'gunmer'</span><span class="op">;</span>
+  <span class="kw">const</span> BOT_ICON <span class="op">=</span> <span class="st">'http://drive.google.com/uc?export=view&amp;id='</span> <span class="op">+</span> <span class="va">prop</span>.<span class="at">ICON_ID</span><span class="op">;</span>
+  <span class="kw">var</span> option <span class="op">=</span> <span class="op">{</span> <span class="dt">username </span><span class="op">:</span> BOT_NAME<span class="op">,</span> <span class="dt">icon_url </span><span class="op">:</span> BOT_ICON<span class="op">,</span> <span class="dt">link_names </span><span class="op">:</span> <span class="dv">1</span> <span class="op">};</span>
+  <span class="kw">var</span> channelName <span class="op">=</span> <span class="va">e</span>.<span class="va">parameter</span>.<span class="at">channel_name</span><span class="op">;</span>
+
+  <span class="va">Logger</span>.<span class="at">log</span>(<span class="va">slackApp</span>.<span class="at">postMessage</span>(channelName<span class="op">,</span> <span class="st">'just a moment...'</span><span class="op">,</span> option))<span class="op">;</span>
+<span class="op">}</span></code></pre></div>
+<p>ちなみに，<code>doPost</code> 関数を呼び出す関数を用意して，テストではそいつを実行するとデバッグがはかどる．</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">test</span>() <span class="op">{</span>
+  <span class="kw">var</span> prop <span class="op">=</span> <span class="va">PropertiesService</span>.<span class="at">getScriptProperties</span>().<span class="at">getProperties</span>()<span class="op">;</span>
+  <span class="kw">var</span> e <span class="op">=</span> <span class="op">{</span>
+    <span class="dt">parameter</span><span class="op">:</span> <span class="op">{</span>
+      <span class="dt">token</span><span class="op">:</span> <span class="va">prop</span>.<span class="at">VERIFY_TOKEN</span><span class="op">,</span>
+      <span class="dt">text</span><span class="op">:</span> <span class="st">'update?'</span><span class="op">,</span>
+      <span class="dt">channel_name</span><span class="op">:</span> <span class="st">'bot-test'</span>
+    <span class="op">}</span>
+  <span class="op">}</span>
+  <span class="at">doPost</span>(e)<span class="op">;</span>
+<span class="op">}</span></code></pre></div>
+<h3 id="gas-で-github-api">GAS で GitHub API</h3>
+<p>GitHub に任意のコミットを出すためには，GitHub API の <a href="https://developer.github.com/v3/git">Git Data</a> を使う．</p>
+<p>GitHub API を GAS で簡単に扱うために昔作った<a href="https://github.com/matsubara0507/gasdump/tree/githubapi/GitHubAPI">ライブラリ</a>があるので，コレを使えば良い(ググったら他にも<a href="https://github.com/soundTricker/gas-github">あった</a>けど，Git Data は未実装っぽい)． 昔のオレ Good job !</p>
+<p>使い方については<a href="https://matsubara0507.github.io/posts/2017-05-03-make-githubapi-lib-for-gas.html">昔書いた記事</a>を参考にして．</p>
+<p>取りあえずは，こんな感じにすれば準備OK．</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">doPost</span>(e) <span class="op">{</span>
+  <span class="kw">var</span> prop <span class="op">=</span> <span class="va">PropertiesService</span>.<span class="at">getScriptProperties</span>().<span class="at">getProperties</span>()<span class="op">;</span>
+
+  <span class="cf">if</span> (<span class="va">prop</span>.<span class="at">VERIFY_TOKEN</span> <span class="op">!=</span> <span class="va">e</span>.<span class="va">parameter</span>.<span class="at">token</span>) <span class="op">{</span>
+    <span class="cf">throw</span> <span class="kw">new</span> <span class="at">Error</span>(<span class="st">'invalid token.'</span>)<span class="op">;</span>
+  <span class="op">}</span>
+
+  <span class="co">/* push empty commit */</span>  
+  <span class="kw">var</span> option <span class="op">=</span> <span class="op">{</span> <span class="dt">name</span><span class="op">:</span> <span class="va">prop</span>.<span class="at">NAME</span><span class="op">,</span> <span class="dt">email</span><span class="op">:</span> <span class="va">prop</span>.<span class="at">EMAIL</span> <span class="op">};</span>
+  <span class="kw">var</span> github <span class="op">=</span> <span class="kw">new</span> <span class="va">GitHubAPI</span>.<span class="at">GitHubAPI</span>(<span class="va">prop</span>.<span class="at">GITHUB_USERNAME</span><span class="op">,</span> <span class="va">prop</span>.<span class="at">GITHUB_REPO</span><span class="op">,</span> <span class="va">prop</span>.<span class="at">GITHUB_TOKEN</span><span class="op">,</span> option)<span class="op">;</span>
+
+  ...
+<span class="op">}</span></code></pre></div>
+<p>Commit 用の名前(<code>prop.NAME</code>)とメールアドレス(<code>prop.EMAIL</code>)に，API を叩くためのトークン(<code>prop.GITHUB_TOKEN</code>)と，API を叩く先のアカウント(<code>prop.GITHUB_USERNAME</code>)とリポジトリ(<code>prop.GITHUB_REPO</code>)をスクリプトのプロパティに定義してある(直接書いたって良い)．</p>
+<h3 id="空コミットを出す">空コミットを出す</h3>
+<p>Git は <code>blob</code>, <code>tree</code>, <code>commit</code>， <code>tag</code> の4つのオブジェクト(ファイル)を使って過去のデータなどを管理している． <code>blob</code> はファイルそのもの，<code>tree</code> はディレクトリ構造，<code>commit</code> と <code>tag</code> は名前の通りコミットとタグを表している． また，どの種類のオブジェクトも SHA-1 ハッシュ値で名前付けされている．</p>
+<p>コミットを出すには，<code>commit</code> オブジェクトを作る必要があり，その中には親コミットと <code>tree</code> オブジェクトの SHA-1 が書かれている． では空コミットの場合はどうなるのか． 簡単だ，<strong>親コミットと同じ <code>tree</code> オブジェクトを中に書けばよい</strong> ．</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">doPost</span>(e) <span class="op">{</span>
+  ...
+  <span class="kw">var</span> github <span class="op">=</span> <span class="kw">new</span> <span class="va">GitHubAPI</span>.<span class="at">GitHubAPI</span>(<span class="va">prop</span>.<span class="at">GITHUB_USERNAME</span><span class="op">,</span> <span class="va">prop</span>.<span class="at">GITHUB_REPO</span><span class="op">,</span> <span class="va">prop</span>.<span class="at">GITHUB_TOKEN</span><span class="op">,</span> option)<span class="op">;</span>
+
+  <span class="kw">var</span> branch <span class="op">=</span> <span class="va">github</span>.<span class="at">getBranch</span>(<span class="va">prop</span>.<span class="at">GITHUB_BRANCH</span>)<span class="op">;</span>
+  <span class="kw">var</span> pcommit <span class="op">=</span> branch[<span class="st">'commit'</span>][<span class="st">'sha'</span>]<span class="op">;</span>
+  <span class="kw">var</span> ptree <span class="op">=</span> branch[<span class="st">'commit'</span>][<span class="st">'commit'</span>][<span class="st">'tree'</span>][<span class="st">'sha'</span>]<span class="op">;</span>
+  <span class="kw">var</span> commit <span class="op">=</span> <span class="va">github</span>.<span class="at">createCommit</span>(<span class="st">'empty!'</span><span class="op">,</span> ptree<span class="op">,</span> pcommit)<span class="op">;</span>
+  <span class="va">github</span>.<span class="at">updateReference</span>(<span class="va">prop</span>.<span class="at">GITHUB_BRANCH</span><span class="op">,</span> commit[<span class="st">'sha'</span>])
+
+  ...
+<span class="op">}</span></code></pre></div>
+<p>最後にしてるのは，ブランチ指しているコミットの更新である．</p>
+<h2 id="完成">完成</h2>
+<div class="figure">
+<img src="../assets/re-adventar-slack-bot/adventar-bot-2.jpg" />
+
+</div>
+<h2 id="おしまい">おしまい</h2>
+<p>今回は少なめ． というかすごく簡単にできた． 昔のオレ Good job !!</p>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+  <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+    <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+      <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+    </a>
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>
