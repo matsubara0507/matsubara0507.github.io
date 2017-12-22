@@ -1,0 +1,582 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="Elm でマークダウンプレゼンテーションエディタを作ってみた (その２)" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+    <meta property="og:image" content="/assets/create-elmdeck/elmdeck-electron.jpg" />
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        Elm でマークダウンプレゼンテーションエディタを作ってみた (その２)
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Elm でマークダウンプレゼンテーションエディタを作ってみた (その２)</h1>
+    <p class="post-meta">
+      <time datetime="2017-12-22" itemprop="datePublished">
+        Dec 22, 2017
+      </time>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p><a href="https://qiita.com/advent-calendar/2017/electron">Electron Advent Calendar 2017</a> の22日目の記事です．</p>
+<p><a href="https://qiita.com/advent-calendar/2017/elm2">Elm2 アドカレ</a>で 「Elm でマークダウンプレゼンテーションエディタを作るハナシ」を書いたのですが，長くなったので分けました． 前半は<a href="../posts/2017-12-18-create-elmdeck-part1.html">コチラ</a>(前半は Electron 関係ないけどね)．</p>
+<h2 id="section"></h2>
+<p>今回はローカルファイルの読み書きをするために Electron を導入します(Elm もといブラウザでいい感じにする方法が分からなかった)． 今回のコードは以下のリポジトリにあります．</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/elmdeck/tree/electron">matsubara0507/elmdeck - GitHub</a></li>
+</ul>
+<h2 id="elm-と-electron">Elm と Electron</h2>
+<p>結構いろんな人が挑戦してて，資料は豊富にある． ぼくは以下のリポジトリを参考にした．</p>
+<ul>
+<li><a href="https://github.com/yasuyuky/elmtrn">yasuyuky/elmtrn - GitHub</a></li>
+</ul>
+<p>アナログ時計を表示する Electron プログラムだったはず．</p>
+<h2 id="つくる">つくる</h2>
+<p>少しずつ拡張していく．</p>
+<h3 id="electron-化">Electron 化</h3>
+<p>まずは Electron 化する． <a href="https://github.com/matsubara0507/elmdeck/tree/6ff0520f65080c9a94ac85c99fc01e0374ca250e">もともと</a>は次のような構成だった(<code>main.js</code> は Elm ファイル群から生成)．</p>
+<pre class="txt"><code>/
+ |-- elm-package.json
+ |-- index.html
+ |-- src/
+ |    |-- Main.elm
+ |    \-- ..
+ \-- js/
+      |-- main.js
+      \-- highlight.js</code></pre>
+<p>これ，elmtrn を参考に次のような構成に変更した．</p>
+<pre class="txt"><code>/
+ |-- elm-package.json
+ |-- gulpfile.js
+ |-- package.json
+ \-- app
+      |-- index.html
+      |-- src/
+      |    |-- Main.elm
+      |    \-- ..
+      \-- js/
+           |-- app.js
+           |-- main.js
+           \-- ..</code></pre>
+<p><a href="https://github.com/matsubara0507/elmdeck/blob/97607bc1c2f069101d7d6012dcd46470d3a2d3fe/package.json">package.json</a> は elmtrn をほぼそのまんま(<code>main</code> の場所だけ違う)． gulp を使って，Elm のコードを監視・コンパイルし，生成した JS コードを Electron から呼び出す． elmtrn の gulpfile.js の設定では，各 Elm ファイルに対しひとつの JS ファイルを生成していたが，自分はひとまとめにした JS を生成したかったので，次のように gulpfile.js を書き換えた．</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="kw">const</span> g <span class="op">=</span> <span class="at">require</span>(<span class="st">'gulp'</span>)<span class="op">;</span>
+<span class="kw">const</span> electron <span class="op">=</span> <span class="at">require</span>(<span class="st">'electron-connect'</span>).<span class="va">server</span>.<span class="at">create</span>()<span class="op">;</span>
+<span class="kw">const</span> packager <span class="op">=</span> <span class="at">require</span>(<span class="st">'electron-packager'</span>)<span class="op">;</span>
+<span class="kw">const</span> $ <span class="op">=</span> <span class="at">require</span>(<span class="st">'gulp-load-plugins'</span>)()<span class="op">;</span>
+<span class="kw">const</span> packageJson <span class="op">=</span> <span class="at">require</span>(<span class="st">'./package.json'</span>)<span class="op">;</span>
+<span class="kw">const</span> extend <span class="op">=</span> <span class="at">require</span>(<span class="st">'util'</span>).<span class="at">_extend</span><span class="op">;</span>
+
+<span class="va">g</span>.<span class="at">task</span>(<span class="st">'watch'</span><span class="op">,</span> () <span class="op">=&gt;</span> <span class="op">{</span>
+  <span class="va">g</span>.<span class="at">watch</span>([<span class="st">'app/src/**/*.elm'</span>]<span class="op">,</span>[<span class="st">'elm'</span>])<span class="op">;</span>
+  <span class="va">electron</span>.<span class="at">start</span>()<span class="op">;</span>
+  <span class="va">g</span>.<span class="at">watch</span>([<span class="st">'app/js/*.js'</span><span class="op">,</span> <span class="st">'app/index.html'</span>]<span class="op">,</span> <span class="va">electron</span>.<span class="at">restart</span>)<span class="op">;</span>
+  <span class="va">g</span>.<span class="at">watch</span>([]<span class="op">,</span> <span class="va">electron</span>.<span class="at">reload</span>)<span class="op">;</span>
+<span class="op">}</span>)
+
+<span class="va">g</span>.<span class="at">task</span>(<span class="st">'elm'</span><span class="op">,</span> () <span class="op">=&gt;{</span>
+  <span class="va">g</span>.<span class="at">src</span>([<span class="st">'app/src/**/*.elm'</span>])
+    .<span class="at">pipe</span>(<span class="va">$</span>.<span class="at">logger</span>())
+    .<span class="at">pipe</span>(<span class="va">$</span>.<span class="at">plumber</span>())
+    .<span class="at">pipe</span>(<span class="va">$</span>.<span class="va">elm</span>.<span class="at">bundle</span>(<span class="st">'main.js'</span><span class="op">,</span> debug<span class="op">=</span><span class="kw">true</span>))
+    .<span class="at">pipe</span>(<span class="va">g</span>.<span class="at">dest</span>(<span class="st">&quot;app/js&quot;</span>))<span class="op">;</span>
+<span class="op">}</span>)
+
+<span class="va">g</span>.<span class="at">task</span>(<span class="st">'default'</span><span class="op">,</span> [<span class="st">'watch'</span>])</code></pre></div>
+<p><a href="https://github.com/philopon/gulp-elm">philopon/gulp-elm の README</a> が参考になった．</p>
+<h2 id="section-1"></h2>
+<p>あとは，次のように elmtrn の app.js を適当に書き直した．</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="kw">const</span> <span class="op">{</span>app<span class="op">,</span> BrowserWindow<span class="op">}</span> <span class="op">=</span> <span class="at">require</span>(<span class="st">'electron'</span>)<span class="op">;</span>
+<span class="kw">var</span> mainWindow <span class="op">=</span> <span class="kw">null</span><span class="op">;</span>
+
+<span class="va">app</span>.<span class="at">on</span>(<span class="st">'window-all-closed'</span><span class="op">,</span> <span class="kw">function</span>() <span class="op">{</span>
+    <span class="va">app</span>.<span class="at">quit</span>()<span class="op">;</span>
+<span class="op">}</span>)<span class="op">;</span>
+
+<span class="va">app</span>.<span class="at">on</span>(<span class="st">'ready'</span><span class="op">,</span> <span class="kw">function</span>() <span class="op">{</span>
+  mainWindow <span class="op">=</span> <span class="kw">new</span> <span class="at">BrowserWindow</span>(<span class="op">{</span>
+    <span class="st">&quot;frame&quot;</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span>
+    <span class="st">&quot;always-on-top&quot;</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span>
+    <span class="st">&quot;resizable&quot;</span><span class="op">:</span> <span class="kw">true</span>
+  <span class="op">}</span>)<span class="op">;</span>
+  <span class="va">mainWindow</span>.<span class="at">maximize</span>()<span class="op">;</span>
+  <span class="va">mainWindow</span>.<span class="at">loadURL</span>(<span class="st">'file://'</span> <span class="op">+</span> __dirname <span class="op">+</span> <span class="st">'/../index.html'</span>)<span class="op">;</span>
+  <span class="va">mainWindow</span>.<span class="at">on</span>(<span class="st">'closed'</span><span class="op">,</span> <span class="kw">function</span>() <span class="op">{</span>
+    mainWindow <span class="op">=</span> <span class="kw">null</span><span class="op">;</span>
+  <span class="op">}</span>)<span class="op">;</span>
+<span class="op">}</span>)<span class="op">;</span></code></pre></div>
+<p>これで <code>gulp</code> を実行すればブラウザ版 elmdeck がそのまんま electron で実行できる． やったぁ．</p>
+<h3 id="ファイルの読み込み">ファイルの読み込み</h3>
+<p>ココからが本番．</p>
+<p>設計として，デスクトップでよくある感じに，左上の <code>File</code> から <code>Open</code> とかしたい． こんな感じ(これは Atom だけど)．</p>
+<div class="figure">
+<img src="../assets/create-elmdeck/atom-file-open.jpg" />
+
+</div>
+<p>Electron でファイルの呼び出しをする方法は以下の記事を参考にした．</p>
+<ul>
+<li><a href="https://qiita.com/_takwat/items/6544342fd4141345bb19">Electronでファイルやフォルダの選択 - Qiita</a></li>
+</ul>
+<p>Node の fs ライブラリを使えばよいようだ(Electron に限らないハナシかな)． <a href="https://nodejs.org/api/fs.html">fs の公式ドキュメント</a>とにらめっこして <a href="https://nodejs.org/api/fs.html#fs_fs_readfile_path_options_callback"><code>fs.readFile</code></a> を呼び出せば良いみたいなのは分かった． 取りあえず，次のような <code>files.js</code> ファイルを書いた．</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="st">'use strict'</span><span class="op">;</span>
+
+<span class="kw">const</span> <span class="op">{</span>remote<span class="op">}</span> <span class="op">=</span> <span class="at">require</span>(<span class="st">'electron'</span>)<span class="op">;</span>
+<span class="kw">const</span> <span class="op">{</span>dialog<span class="op">,</span> BrowserWindow<span class="op">}</span> <span class="op">=</span> remote<span class="op">;</span>
+<span class="kw">const</span> fs <span class="op">=</span> <span class="at">require</span>(<span class="st">'fs'</span>)<span class="op">;</span>
+
+<span class="va">module</span>.<span class="at">exports</span> <span class="op">=</span> <span class="op">{</span>
+  <span class="dt">readFile</span><span class="op">:</span> <span class="kw">function</span> (app) <span class="op">{</span>
+    <span class="va">dialog</span>.<span class="at">showOpenDialog</span>(<span class="kw">null</span><span class="op">,</span> <span class="op">{</span>
+        <span class="dt">properties</span><span class="op">:</span> [<span class="st">'openFile'</span>]<span class="op">,</span>
+        <span class="dt">title</span><span class="op">:</span> <span class="st">'File'</span><span class="op">,</span>
+        <span class="dt">defaultPath</span><span class="op">:</span> <span class="st">'.'</span><span class="op">,</span>
+        <span class="dt">filters</span><span class="op">:</span> [
+            <span class="op">{</span><span class="dt">name</span><span class="op">:</span> <span class="st">'マークダウン'</span><span class="op">,</span> <span class="dt">extensions</span><span class="op">:</span> [<span class="st">'md'</span><span class="op">,</span> <span class="st">'markdown'</span>]<span class="op">},</span>
+        ]
+    <span class="op">},</span> (fileNames) <span class="op">=&gt;</span> <span class="op">{</span>
+        <span class="va">fs</span>.<span class="at">readFile</span>(fileNames[<span class="dv">0</span>]<span class="op">,</span> <span class="st">'utf8'</span><span class="op">,</span> (err<span class="op">,</span> data) <span class="op">=&gt;</span> <span class="op">{</span>
+          <span class="cf">if</span> (err) <span class="va">console</span>.<span class="at">log</span>(err)<span class="op">;</span>
+          <span class="va">console</span>.<span class="at">log</span>(data)<span class="op">;</span>
+        <span class="op">}</span>)
+    <span class="op">}</span>)<span class="op">;</span>
+  <span class="op">}</span>
+<span class="op">}</span></code></pre></div>
+<p>次にこれをメニューバーから呼べるようにする． Electron のメニューバーを拡張するには <a href="https://electronjs.org/docs/api/menu"><code>Menu</code> クラス</a>を使えば良いらしい． サンプルやらを参考にしながらイロイロ試行錯誤してみた結果，次のような <code>menuItems.js</code> ファイルを書き，</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="kw">const</span> <span class="op">{</span>app<span class="op">,</span> Menu<span class="op">,</span> dialog<span class="op">}</span> <span class="op">=</span> <span class="at">require</span>(<span class="st">'electron'</span>)<span class="op">;</span>
+
+<span class="kw">const</span> template <span class="op">=</span> [
+  <span class="op">{</span>
+    <span class="dt">label</span><span class="op">:</span> <span class="st">'Edit'</span><span class="op">,</span>
+    <span class="dt">submenu</span><span class="op">:</span> [
+      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">'undo'</span><span class="op">},</span>
+      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">'redo'</span><span class="op">},</span>
+      <span class="op">{</span><span class="dt">type</span><span class="op">:</span> <span class="st">'separator'</span><span class="op">},</span>
+      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">'cut'</span><span class="op">},</span>
+      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">'copy'</span><span class="op">},</span>
+      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">'paste'</span><span class="op">},</span>
+      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">'pasteandmatchstyle'</span><span class="op">},</span>
+      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">'delete'</span><span class="op">},</span>
+      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">'selectall'</span><span class="op">}</span>
+    ]
+  <span class="op">},</span>
+  <span class="op">{</span>
+    <span class="dt">label</span><span class="op">:</span> <span class="st">'View'</span><span class="op">,</span>
+    <span class="dt">submenu</span><span class="op">:</span> [
+      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">'reload'</span><span class="op">},</span>
+      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">'forcereload'</span><span class="op">},</span>
+      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">'toggledevtools'</span><span class="op">},</span>
+      <span class="op">{</span><span class="dt">type</span><span class="op">:</span> <span class="st">'separator'</span><span class="op">},</span>
+      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">'resetzoom'</span><span class="op">},</span>
+      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">'zoomin'</span><span class="op">},</span>
+      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">'zoomout'</span><span class="op">},</span>
+      <span class="op">{</span><span class="dt">type</span><span class="op">:</span> <span class="st">'separator'</span><span class="op">},</span>
+      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">'togglefullscreen'</span><span class="op">},</span>
+      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">'toggledevtools'</span><span class="op">}</span>
+    ]
+  <span class="op">},</span>
+  <span class="op">{</span>
+    <span class="dt">role</span><span class="op">:</span> <span class="st">'window'</span><span class="op">,</span>
+    <span class="dt">submenu</span><span class="op">:</span> [
+      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">'minimize'</span><span class="op">},</span>
+      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">'close'</span><span class="op">}</span>
+    ]
+  <span class="op">},</span>
+  <span class="op">{</span>
+    <span class="dt">role</span><span class="op">:</span> <span class="st">'help'</span><span class="op">,</span>
+    <span class="dt">submenu</span><span class="op">:</span> [
+      <span class="op">{</span>
+        <span class="dt">label</span><span class="op">:</span> <span class="st">'Learn More'</span><span class="op">,</span>
+        <span class="at">click</span> () <span class="op">{</span> <span class="at">require</span>(<span class="st">'electron'</span>).<span class="va">shell</span>.<span class="at">openExternal</span>(<span class="st">'https://electron.atom.io'</span>) <span class="op">}</span>
+      <span class="op">}</span>
+    ]
+  <span class="op">}</span>
+]
+
+<span class="kw">const</span> items <span class="op">=</span> <span class="va">template</span>.<span class="at">map</span>( option <span class="op">=&gt;</span> <span class="op">{</span> <span class="cf">return</span> <span class="kw">new</span> <span class="at">MenuItem</span>(option) <span class="op">}</span>)<span class="op">;</span>
+
+<span class="va">module</span>.<span class="at">exports</span> <span class="op">=</span> <span class="op">{</span>
+  <span class="dt">get</span><span class="op">:</span> () <span class="op">=&gt;</span> <span class="op">{</span> <span class="cf">return</span> items<span class="op">;</span> <span class="op">}</span>
+<span class="op">}</span></code></pre></div>
+<p>これ(module exports した <code>get</code> 関数のコト)を <code>index.html</code> で次のように呼び出した．</p>
+<div class="sourceCode"><pre class="sourceCode html"><code class="sourceCode html"><span class="kw">&lt;script&gt;</span>
+  <span class="kw">const</span> <span class="op">{</span>remote<span class="op">}</span> <span class="op">=</span> <span class="at">require</span>(<span class="st">'electron'</span>)<span class="op">;</span>
+  <span class="kw">const</span> <span class="op">{</span>Menu<span class="op">,</span> MenuItem<span class="op">}</span> <span class="op">=</span> remote<span class="op">;</span>
+  <span class="kw">const</span> files <span class="op">=</span> <span class="at">require</span>(<span class="st">'./js/files'</span>)<span class="op">;</span>
+  <span class="kw">const</span> menuItems <span class="op">=</span> <span class="at">require</span>(<span class="st">'./js/menuItems'</span>)
+
+  <span class="kw">var</span> node <span class="op">=</span> <span class="va">document</span>.<span class="at">getElementById</span>(<span class="st">'main'</span>)<span class="op">;</span>
+  <span class="cf">while</span> (<span class="va">node</span>.<span class="at">firstChild</span>) <span class="op">{</span>
+    <span class="va">node</span>.<span class="at">removeChild</span>(<span class="va">node</span>.<span class="at">firstChild</span>)<span class="op">;</span>
+  <span class="op">}</span>
+  <span class="kw">var</span> app <span class="op">=</span> <span class="va">module</span>.<span class="va">exports</span>.<span class="va">Main</span>.<span class="at">embed</span>(node)<span class="op">;</span>
+
+  <span class="kw">var</span> menuvar <span class="op">=</span> <span class="kw">new</span> <span class="at">Menu</span>()<span class="op">;</span>
+  <span class="va">menuvar</span>.<span class="at">append</span>(<span class="kw">new</span> <span class="at">MenuItem</span>(
+    <span class="op">{</span>
+      <span class="dt">label</span><span class="op">:</span> <span class="st">'File'</span><span class="op">,</span>
+      <span class="dt">submenu</span><span class="op">:</span> [
+        <span class="op">{</span>
+          <span class="dt">label</span><span class="op">:</span> <span class="st">'Open'</span><span class="op">,</span>
+          <span class="at">click</span>() <span class="op">{</span> <span class="va">files</span>.<span class="at">readFile</span>(app) <span class="op">}</span>
+        <span class="op">}</span>
+      ]
+    <span class="op">}</span>
+  ))<span class="op">;</span>
+  <span class="va">menuItems</span>.<span class="at">get</span>().<span class="at">forEach</span>( item <span class="op">=&gt;</span> <span class="op">{</span> <span class="va">menuvar</span>.<span class="at">append</span>(item) <span class="op">}</span> )<span class="op">;</span>
+  <span class="va">Menu</span>.<span class="at">setApplicationMenu</span>(menuvar)
+<span class="kw">&lt;/script&gt;</span></code></pre></div>
+<p><code>var menuvar = new Menu();</code> 以下からがキモです． どーしても，動的に処理を定義しない部分(<code>Edit</code> とか <code>View</code> とか)を別ファイル(<code>menuItems.js</code>)にまとめたうえで，<code>File</code> を先頭に突っ込みたかったのでこうなった． JS は全然詳しくないのでアンチパターンかもしれないけどね．</p>
+<h4 id="elm-に繋げる">Elm に繋げる</h4>
+<p>ここまでで</p>
+<ol style="list-style-type: decimal">
+<li>上部にあるメニューバーの <code>File</code> -&gt; <code>Open</code> を押して</li>
+<li>ファイルをダイアログで選択し</li>
+<li>コンソールに内容を吐き出す</li>
+</ol>
+<p>までは書けた． ここからは (3) が「Elm に渡して input エリアに書き出す」になるようにする．</p>
+<p>Elm と JS を繋ぐには方法がいくつかあるが，今回は <code>Port</code> を使ってみる(前回はお行儀の悪い <code>Native</code> モジュールを使ったけど)． 次の記事が本当に参考になった．</p>
+<ul>
+<li><a href="https://qiita.com/jooex/items/5ff2d3b86563cf5dbd84">ElmのPortでJSを使う。 - Qiita</a></li>
+</ul>
+<p>マークダウンファイルの中身を JS から Elm に投げるので Elm で次のような <code>ports</code> 関数を定義した．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- src/Port/FS.elm</span>
+port <span class="kw">module</span> <span class="dt">Port.FS</span> exposing (<span class="fu">..</span>)
+
+port readFile <span class="fu">:</span> (<span class="dt">String</span> <span class="ot">-&gt;</span> msg) <span class="ot">-&gt;</span> <span class="dt">Sub</span> msg</code></pre></div>
+<p>これを <code>Main.elm</code> で次のように呼び出す．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> alias <span class="dt">Model</span> <span class="fu">=</span>
+  { textarea <span class="fu">:</span> <span class="dt">String</span>
+  , window <span class="fu">:</span> <span class="dt">Window.Size</span>
+  }
+
+<span class="kw">type</span> <span class="dt">Msg</span>
+  <span class="fu">=</span> <span class="dt">TextAreaInput</span> <span class="dt">String</span>
+  <span class="fu">|</span> <span class="dt">SizeUpdated</span> <span class="dt">Window.Size</span>
+
+main <span class="fu">:</span> <span class="dt">Program</span> <span class="dt">Never</span> <span class="dt">Model</span> <span class="dt">Msg</span>
+main <span class="fu">=</span>
+  Html.program
+    { init <span class="fu">=</span> init model
+    , view <span class="fu">=</span> view
+    , update <span class="fu">=</span> update
+    , subscriptions <span class="fu">=</span> subscriptions
+    }
+
+subscriptions <span class="fu">:</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> <span class="dt">Sub</span> <span class="dt">Msg</span>
+subscriptions model <span class="fu">=</span>
+  Sub.batch
+    [ Window.resizes <span class="dt">SizeUpdated</span>
+    , FS.readFile <span class="dt">TextAreaInput</span>
+    ]
+
+update <span class="fu">:</span> <span class="dt">Msg</span> <span class="ot">-&gt;</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> ( <span class="dt">Model</span>, <span class="dt">Cmd</span> <span class="dt">Msg</span> )
+update msg model <span class="fu">=</span>
+  <span class="kw">case</span> msg <span class="kw">of</span>
+    <span class="dt">TextAreaInput</span> str <span class="ot">-&gt;</span>
+      ( { model <span class="fu">|</span> textarea <span class="fu">=</span> str }, Cmd.none )
+    <span class="dt">SizeUpdated</span> size <span class="ot">-&gt;</span>
+      ( { model <span class="fu">|</span> window <span class="fu">=</span> size }, Cmd.none )        </code></pre></div>
+<p><code>Window.Size</code> とか <code>SizeUpdated</code> はブラウザやアプリのウィンドウサイズに合わせて，スライドのサイズを変更するためのサブスクリプションなので気にしないで． <code>TextAreaInput</code> は input エリアにテキストを書き込んだ時にも使っている． 同じ型なので使いまわした．</p>
+<p>あとは <code>files.js</code> の <code>console.log(data);</code> としていた部分を <code>app.ports.readFile.send(data);</code> と<a href="https://github.com/matsubara0507/elmdeck/blob/a102ae0d82b162a3f219b7d33f9875c080ff6be9/app/js/files.js#L19">書き換える</a>だけ．</p>
+<div class="figure">
+<img src="../assets/create-elmdeck/openfile.gif" />
+
+</div>
+<p>うまくいった．</p>
+<h3 id="ファイルの書き込み">ファイルの書き込み</h3>
+<p>さて次はファイルの保存を実装する．</p>
+<h4 id="ファイルパスも投げておく">ファイルパスも投げておく</h4>
+<p>ファイルを保存するには開いてるファイルのファイルパスがあった方が良いだろう(上書き保存とかするなら)． なのでまずは，読み込み時の処理をファイルパスも投げるように書き換える．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- src/Port/FS.elm</span>
+port <span class="kw">module</span> <span class="dt">Port.FS</span> exposing (<span class="fu">..</span>)
+
+<span class="kw">type</span> alias <span class="dt">File</span> <span class="fu">=</span>
+  { path <span class="fu">:</span> <span class="dt">String</span>
+  , body <span class="fu">:</span> <span class="dt">String</span>
+  }
+
+port readFile <span class="fu">:</span> (<span class="dt">File</span> <span class="ot">-&gt;</span> msg) <span class="ot">-&gt;</span> <span class="dt">Sub</span> msg</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> alias <span class="dt">Model</span> <span class="fu">=</span>
+  { textarea <span class="fu">:</span> <span class="dt">String</span>
+  , window <span class="fu">:</span> <span class="dt">Window.Size</span>
+  , filepath <span class="fu">:</span> <span class="dt">String</span>
+  }
+
+<span class="kw">type</span> <span class="dt">Msg</span>
+  <span class="fu">=</span> <span class="dt">TextAreaInput</span> <span class="dt">String</span>
+  <span class="fu">|</span> <span class="dt">SizeUpdated</span> <span class="dt">Window.Size</span>
+  <span class="fu">|</span> <span class="dt">ReadFile</span> <span class="dt">FS.File</span>
+
+update <span class="fu">:</span> <span class="dt">Msg</span> <span class="ot">-&gt;</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> ( <span class="dt">Model</span>, <span class="dt">Cmd</span> <span class="dt">Msg</span> )
+update msg model <span class="fu">=</span>
+  <span class="kw">case</span> msg <span class="kw">of</span>
+    <span class="dt">TextAreaInput</span> str <span class="ot">-&gt;</span>
+      ( { model <span class="fu">|</span> textarea <span class="fu">=</span> str }, Cmd.none )
+    <span class="dt">SizeUpdated</span> size <span class="ot">-&gt;</span>
+      ( { model <span class="fu">|</span> window <span class="fu">=</span> size }, Cmd.none )
+    <span class="dt">ReadFile</span> file <span class="ot">-&gt;</span>
+      ( { model <span class="fu">|</span> textarea <span class="fu">=</span> file<span class="fu">.</span>body, filepath <span class="fu">=</span> file<span class="fu">.</span>path }, Cmd.none )
+
+subscriptions <span class="fu">:</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> <span class="dt">Sub</span> <span class="dt">Msg</span>
+subscriptions model <span class="fu">=</span>
+  Sub.batch
+    [ Window.resizes <span class="dt">SizeUpdated</span>
+    , FS.readFile <span class="dt">ReadFile</span>
+    ]</code></pre></div>
+<p>レコード型を JS から Elm に投げるには普通のオブジェクトを使えばよいらしい(最初はタプルを使おうとして良くわからなくなり諦めた…)．</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="co">// js/files.js</span>
+<span class="va">module</span>.<span class="at">exports</span> <span class="op">=</span> <span class="op">{</span>
+  <span class="dt">readFile</span><span class="op">:</span> <span class="kw">function</span> (app) <span class="op">{</span>
+    <span class="va">dialog</span>.<span class="at">showOpenDialog</span>(<span class="kw">null</span><span class="op">,</span> <span class="op">{</span>
+        <span class="dt">properties</span><span class="op">:</span> [<span class="st">'openFile'</span>]<span class="op">,</span>
+        <span class="dt">title</span><span class="op">:</span> <span class="st">'File'</span><span class="op">,</span>
+        <span class="dt">defaultPath</span><span class="op">:</span> <span class="st">'.'</span><span class="op">,</span>
+        <span class="dt">filters</span><span class="op">:</span> [
+            <span class="op">{</span><span class="dt">name</span><span class="op">:</span> <span class="st">'マークダウン'</span><span class="op">,</span> <span class="dt">extensions</span><span class="op">:</span> [<span class="st">'md'</span><span class="op">,</span> <span class="st">'markdown'</span>]<span class="op">},</span>
+        ]
+    <span class="op">},</span> (fileNames) <span class="op">=&gt;</span> <span class="op">{</span>
+        <span class="va">fs</span>.<span class="at">readFile</span>(fileNames[<span class="dv">0</span>]<span class="op">,</span> <span class="st">'utf8'</span><span class="op">,</span> (err<span class="op">,</span> data) <span class="op">=&gt;</span> <span class="op">{</span>
+          <span class="cf">if</span> (err) <span class="va">console</span>.<span class="at">log</span>(err)<span class="op">;</span>
+          <span class="va">app</span>.<span class="va">ports</span>.<span class="va">readFile</span>.<span class="at">send</span>(<span class="op">{</span> <span class="dt">path</span><span class="op">:</span> fileNames[<span class="dv">0</span>]<span class="op">,</span> <span class="dt">body</span><span class="op">:</span> data <span class="op">}</span>)<span class="op">;</span>
+        <span class="op">}</span>)
+    <span class="op">}</span>)<span class="op">;</span>
+  <span class="op">}</span>
+<span class="op">}</span></code></pre></div>
+<h4 id="いよいよ書き出し">いよいよ書き出し</h4>
+<p>保存するとき，データは Elm 側から投げられるが保存ボタンは Electron 側(JS側)から始めたい． なので</p>
+<ol style="list-style-type: decimal">
+<li>保存ボタンを押したら何らかの値を JS から Elm に送信</li>
+<li>それを受けたら Elm から JS にマークダウンのデータを送信</li>
+</ol>
+<p>というお手製同期通信を行うことにした(これもアンチパターンかも…)． 上書き保存のときは <code>null</code> (Elm 側では <code>Nothing</code>) を JS から送り，新規保存ならファイル名を送ることにする．</p>
+<h2 id="section-2"></h2>
+<p>まずは Elm 側で，以上の戦略から次のような <code>port</code> を書いた．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">port writeFileHook <span class="fu">:</span> (<span class="dt">Maybe</span> <span class="dt">String</span> <span class="ot">-&gt;</span> msg) <span class="ot">-&gt;</span> <span class="dt">Sub</span> msg
+port writeFile <span class="fu">:</span> <span class="dt">File</span> <span class="ot">-&gt;</span> <span class="dt">Cmd</span> msg</code></pre></div>
+<p>次は JS 側に移る． ファイルの書き出しには <a href="https://nodejs.org/api/fs.html#fs_fs_writefile_file_data_options_callback"><code>fs.writeFile</code></a> 関数を用いた． 前述した <code>port</code> も使って，次のような関数を <code>files.js</code> に追加した．</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">writeFileTo</span>(fileName<span class="op">,</span> data) <span class="op">{</span>
+  <span class="cf">if</span> (fileName) <span class="op">{</span>
+    <span class="va">fs</span>.<span class="at">writeFile</span>(fileName<span class="op">,</span> data<span class="op">,</span> (err) <span class="op">=&gt;</span> <span class="op">{</span>
+      <span class="cf">if</span> (err) <span class="op">{</span>
+        <span class="va">console</span>.<span class="at">log</span>(err)<span class="op">;</span>
+        <span class="va">dialog</span>.<span class="at">showErrorBox</span>(<span class="st">'Can not save fiel: '</span> <span class="op">+</span> fileName<span class="op">,</span> err)<span class="op">;</span>
+      <span class="op">}</span>
+    <span class="op">}</span>)
+  <span class="op">}</span>
+<span class="op">}</span>
+
+<span class="va">module</span>.<span class="at">exports</span> <span class="op">=</span> <span class="op">{</span>
+  <span class="dt">readFile</span><span class="op">:</span> <span class="kw">function</span> (app) <span class="op">{</span>
+    ...
+  <span class="op">},</span>
+  <span class="dt">writeFile</span><span class="op">:</span> <span class="kw">function</span> (app) <span class="op">{</span>
+    <span class="va">app</span>.<span class="va">ports</span>.<span class="va">writeFileHook</span>.<span class="at">send</span>(<span class="kw">null</span>)<span class="op">;</span>
+    <span class="va">app</span>.<span class="va">ports</span>.<span class="va">writeFile</span>.<span class="at">subscribe</span>(args <span class="op">=&gt;</span> <span class="op">{</span> <span class="at">writeFileTo</span>(args[<span class="st">'path'</span>]<span class="op">,</span> args[<span class="st">'body'</span>]) <span class="op">}</span>)<span class="op">;</span>
+  <span class="op">},</span>
+  <span class="dt">writeFileAs</span><span class="op">:</span> <span class="kw">function</span> (app) <span class="op">{</span>
+    <span class="va">dialog</span>.<span class="at">showSaveDialog</span>(<span class="kw">null</span><span class="op">,</span> <span class="op">{</span>
+        <span class="dt">properties</span><span class="op">:</span> [<span class="st">'openFile'</span>]<span class="op">,</span>
+        <span class="dt">title</span><span class="op">:</span> <span class="st">'File'</span><span class="op">,</span>
+        <span class="dt">defaultPath</span><span class="op">:</span> <span class="st">'.'</span><span class="op">,</span>
+        <span class="dt">filters</span><span class="op">:</span> [
+            <span class="op">{</span><span class="dt">name</span><span class="op">:</span> <span class="st">'Markdown'</span><span class="op">,</span> <span class="dt">extensions</span><span class="op">:</span> [<span class="st">'md'</span><span class="op">,</span> <span class="st">'markdown'</span>]<span class="op">},</span>
+        ]
+    <span class="op">},</span> (fileName) <span class="op">=&gt;</span> <span class="op">{</span>
+        <span class="cf">if</span> (fileName <span class="op">==</span> <span class="kw">undefined</span>) <span class="op">{</span>
+          <span class="va">console</span>.<span class="at">log</span>(fileName)<span class="op">;</span>
+          <span class="va">dialog</span>.<span class="at">showErrorBox</span>(<span class="st">'Can not save fiel: '</span><span class="op">,</span> <span class="st">'Please select file.'</span>)<span class="op">;</span>
+          <span class="cf">return</span>
+        <span class="op">}</span>
+        <span class="va">app</span>.<span class="va">ports</span>.<span class="va">writeFileHook</span>.<span class="at">send</span>(fileName)<span class="op">;</span>
+        <span class="va">app</span>.<span class="va">ports</span>.<span class="va">writeFile</span>.<span class="at">subscribe</span>(args <span class="op">=&gt;</span> <span class="op">{</span> <span class="at">writeFileTo</span>(args[<span class="st">'path'</span>]<span class="op">,</span> args[<span class="st">'body'</span>]) <span class="op">}</span>)<span class="op">;</span>
+    <span class="op">}</span>)<span class="op">;</span>
+  <span class="op">}</span>
+<span class="op">}</span></code></pre></div>
+<p>上書き保存 <code>writeFile</code> と新しく保存 <code>writeFileAs</code> を用意し，共通部分は <code>writeFileTo</code> 関数として書き出した．</p>
+<p>これをメニューバーに追加する．</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="kw">var</span> menuvar <span class="op">=</span> <span class="kw">new</span> <span class="at">Menu</span>()<span class="op">;</span>
+<span class="va">menuvar</span>.<span class="at">append</span>(<span class="kw">new</span> <span class="at">MenuItem</span>(
+  <span class="op">{</span>
+    <span class="dt">label</span><span class="op">:</span> <span class="st">'File'</span><span class="op">,</span>
+    <span class="dt">submenu</span><span class="op">:</span> [
+      <span class="op">{</span>
+        <span class="dt">label</span><span class="op">:</span> <span class="st">'Open'</span><span class="op">,</span>
+        <span class="at">click</span>() <span class="op">{</span> <span class="va">files</span>.<span class="at">readFile</span>(app) <span class="op">}</span>
+      <span class="op">},</span>
+      <span class="op">{</span>
+        <span class="dt">label</span><span class="op">:</span> <span class="st">'Save'</span><span class="op">,</span>
+        <span class="at">click</span>() <span class="op">{</span> <span class="va">files</span>.<span class="at">writeFile</span>(app) <span class="op">}</span>
+      <span class="op">},</span>
+      <span class="op">{</span>
+        <span class="dt">label</span><span class="op">:</span> <span class="st">'Save As'</span><span class="op">,</span>
+        <span class="at">click</span>() <span class="op">{</span> <span class="va">files</span>.<span class="at">writeFileAs</span>(app) <span class="op">}</span>
+      <span class="op">}</span>
+    ]
+  <span class="op">}</span>
+))<span class="op">;</span></code></pre></div>
+<p>最後に Elm 側に処理を追加した．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- app/src/Main.elm</span>
+<span class="kw">type</span> <span class="dt">Msg</span>
+  <span class="fu">=</span> <span class="dt">TextAreaInput</span> <span class="dt">String</span>
+  <span class="fu">|</span> <span class="dt">SizeUpdated</span> <span class="dt">Window.Size</span>
+  <span class="fu">|</span> <span class="dt">ReadFile</span> <span class="dt">FS.File</span>
+  <span class="fu">|</span> <span class="dt">WriteFileHook</span> (<span class="dt">Maybe</span> <span class="dt">String</span>)
+
+update <span class="fu">:</span> <span class="dt">Msg</span> <span class="ot">-&gt;</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> ( <span class="dt">Model</span>, <span class="dt">Cmd</span> <span class="dt">Msg</span> )
+update msg model <span class="fu">=</span>
+  <span class="kw">case</span> msg <span class="kw">of</span>
+    <span class="dt">TextAreaInput</span> str <span class="ot">-&gt;</span>
+      ( { model <span class="fu">|</span> textarea <span class="fu">=</span> str }, Cmd.none )
+    <span class="dt">SizeUpdated</span> size <span class="ot">-&gt;</span>
+      ( { model <span class="fu">|</span> window <span class="fu">=</span> size }, Cmd.none )
+    <span class="dt">ReadFile</span> file <span class="ot">-&gt;</span>
+      ( { model <span class="fu">|</span> textarea <span class="fu">=</span> file<span class="fu">.</span>body, filepath <span class="fu">=</span> file<span class="fu">.</span>path }, Cmd.none )
+    <span class="dt">WriteFileHook</span> (<span class="dt">Just</span> filepath) <span class="ot">-&gt;</span>
+      ( { model <span class="fu">|</span> filepath <span class="fu">=</span> filepath }, FS.writeFile { path <span class="fu">=</span> filepath, body <span class="fu">=</span> model<span class="fu">.</span>textarea } )
+    <span class="dt">WriteFileHook</span> <span class="dt">Nothing</span> <span class="ot">-&gt;</span>
+      ( model, FS.writeFile { path <span class="fu">=</span> model<span class="fu">.</span>filepath, body <span class="fu">=</span> model<span class="fu">.</span>textarea } )
+
+subscriptions <span class="fu">:</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> <span class="dt">Sub</span> <span class="dt">Msg</span>
+subscriptions model <span class="fu">=</span>
+  Sub.batch
+    [ Window.resizes <span class="dt">SizeUpdated</span>
+    , FS.readFile <span class="dt">ReadFile</span>
+    , FS.writeFileHook <span class="dt">WriteFileHook</span>
+    ]</code></pre></div>
+<p>これでうまく動作するはずだ．</p>
+<div class="figure">
+<img src="../assets/create-elmdeck/savefile.gif" />
+
+</div>
+<h3 id="ショートカット">ショートカット</h3>
+<p>最後にショートカットだ． 次の記事が参考になった．</p>
+<ul>
+<li><a href="https://qiita.com/okaxaki/items/8b8942b0c4e13ac67739">Electronに開発用メニューとショートカットを付ける - Qiita</a></li>
+</ul>
+<p><a href="https://electronjs.org/docs/api/accelerator"><code>Accelerator</code></a> というのを使えばよいらしい．</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="kw">var</span> menuvar <span class="op">=</span> <span class="kw">new</span> <span class="at">Menu</span>()<span class="op">;</span>
+<span class="va">menuvar</span>.<span class="at">append</span>(<span class="kw">new</span> <span class="at">MenuItem</span>(
+  <span class="op">{</span>
+    <span class="dt">label</span><span class="op">:</span> <span class="st">'File'</span><span class="op">,</span>
+    <span class="dt">submenu</span><span class="op">:</span> [
+      <span class="op">{</span>
+        <span class="dt">label</span><span class="op">:</span> <span class="st">'Open'</span><span class="op">,</span>
+        <span class="dt">accelerator</span><span class="op">:</span> <span class="st">'Ctrl+O'</span><span class="op">,</span>
+        <span class="at">click</span>() <span class="op">{</span> <span class="va">files</span>.<span class="at">readFile</span>(app) <span class="op">}</span>
+      <span class="op">},</span>
+      <span class="op">{</span>
+        <span class="dt">label</span><span class="op">:</span> <span class="st">'Save'</span><span class="op">,</span>
+        <span class="dt">accelerator</span><span class="op">:</span> <span class="st">'Ctrl+S'</span><span class="op">,</span>
+        <span class="at">click</span>() <span class="op">{</span> <span class="va">files</span>.<span class="at">writeFile</span>(app) <span class="op">}</span>
+      <span class="op">},</span>
+      <span class="op">{</span>
+        <span class="dt">label</span><span class="op">:</span> <span class="st">'Save As'</span><span class="op">,</span>
+        <span class="dt">accelerator</span><span class="op">:</span> <span class="st">'Ctrl+Shift+S'</span><span class="op">,</span>
+        <span class="at">click</span>() <span class="op">{</span> <span class="va">files</span>.<span class="at">writeFileAs</span>(app) <span class="op">}</span>
+      <span class="op">}</span>
+    ]
+  <span class="op">}</span>
+))<span class="op">;</span></code></pre></div>
+<p>これで目的のモノはできた！</p>
+<h2 id="懸念">懸念</h2>
+<p>なんか Electron のファイル IO にはセキュリティ的に甘いところがあるらしい…</p>
+<ul>
+<li><a href="http://utf-8.jp/public/2016/0307/electron.pdf">Electron の倒し方</a></li>
+</ul>
+<p>個人で使う分にはいいんだけど…対策しなきゃかなぁ… Elm を介してレンダラしたマークダウンを貼り付けてるので問題ないのだろうか… 良く分からない．</p>
+<h2 id="思うところ">思うところ</h2>
+<p>結局 JS は結構書いてるなーと思った(笑) JS 絶対書きたくないマンは Elm でできることは，まだ制限される印象だ． JS の知識も多少ないとキツソウだし．</p>
+<p>まぁ綺麗に分離できるのがうれしいんだけどね．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>頑張って作っていくぞ．</p>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+  <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+    <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+      <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+    </a>
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>
