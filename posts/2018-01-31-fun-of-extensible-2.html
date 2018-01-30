@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="拡張可能直和型を引数に取る関数の定義 (Haskell)" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        拡張可能直和型を引数に取る関数の定義 (Haskell)
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">拡張可能直和型を引数に取る関数の定義 (Haskell)</h1>
+    <p class="post-meta">
+      <time datetime="2018-01-31" itemprop="datePublished">
+        Jan 31, 2018
+      </time>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>「<a href="https://hackage.haskell.org/package/extensible"><code>extensible</code></a> パッケージの楽しみ その２」です．</p>
+<p>拡張可能レコードやら Extensible Effect やら，Haskell の Extensible なものを全て統一された仕組みで提供する化け物パッケージ <a href="https://hackage.haskell.org/package/extensible-0.4.7.1"><code>extensible</code></a> について，割とドキュメントには無い(？)ネタを書いておくシリーズ第二弾です． ぼく自身は作者ではないし，間違っているかもなのでこの記事を完全には当てにしないでください．</p>
+<p>また，現在の最新バージョンは 0.4.7.1 です(そのバージョンでハナシをしてる)．</p>
+<h2 id="section"></h2>
+<p><a href="../posts/2017-11-28-fun-of-extensible-1.html">前回</a>は拡張可能レコードの拡縮の話を書きました． その最後の方に，おまけとして拡張可能直和型の話を書きました． 実際に自分のプログラムで，この拡張可能直和型を使おうとしてみたんですが，パターンマッチが分からず分岐が出来なかったので調べました，ってのが今回のハナシ．</p>
+<p>今回の Haskell コードは基本的に<a href="https://github.com/matsubara0507/test-extensible/blob/master/src/Sample/Variant.hs">コレ</a>．</p>
+<h2 id="拡張可能直和型">拡張可能直和型</h2>
+<p>ここでは，Haskell の代数的データ型において</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Color</span>
+  <span class="fu">=</span> <span class="dt">RGB</span> <span class="dt">Int</span> <span class="dt">Int</span> <span class="dt">Int</span>
+  <span class="fu">|</span> <span class="dt">CMYK</span> <span class="dt">Int</span> <span class="dt">Int</span> <span class="dt">Int</span> <span class="dt">Int</span></code></pre></div>
+<p>のように複数の値コンストラクタをとり得る型を直和型ということにします(あんまり一般的ではない？)． このようなデータ型を extensible を使って書くと次のようになる．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Color</span> <span class="fu">=</span> <span class="dt">Variant</span>
+  <span class="ch">'[ &quot;rgb&quot;  &gt;: (Int,Int,Int)</span>
+   , <span class="st">&quot;cmyk&quot;</span> <span class="fu">&gt;:</span> (<span class="dt">Int</span>,<span class="dt">Int</span>,<span class="dt">Int</span>,<span class="dt">Int</span>)
+   ]</code></pre></div>
+<p>これが拡張可能直和型である(と呼んでいる)． 例えば次のような，<code>Color</code> 型の構造的に部分型である <code>RGB</code> 型の値を <a href="https://hackage.haskell.org/package/extensible-0.4.7.1/docs/Data-Extensible-Inclusion.html#v:spread"><code>spread</code></a> という関数を使って持ち上げることが出来る．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">ghci<span class="fu">&gt;</span> <span class="kw">type</span> <span class="dt">RGB</span> <span class="fu">=</span> <span class="dt">Variant</span> <span class="ch">'[ &quot;rgb&quot; &gt;: (Int,Int,Int) ]</span>
+ghci<span class="fu">&gt;</span> color1 <span class="fu">=</span> embedAssoc <span class="fu">$</span> <span class="fu">#</span>rgb <span class="fu">@=</span> (<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>)<span class="ot"> ::</span> <span class="dt">RGB</span>
+ghci<span class="fu">&gt;</span> color2 <span class="fu">=</span> spread<span class="ot"> color1 ::</span> <span class="dt">Color</span></code></pre></div>
+<p>ちなみに「拡張可能直和型」って単語は，ほぼほぼ造語です(すいません)． 作者さんは <strong>Extensible Variants</strong> と書いているので，正確には拡張可能バリアント型ですかね． ML 系では「バリアント型」って単語は良く使われてますが，Haskell では馴染みが無いので「直和型」って単語を用います．</p>
+<h2 id="パターンマッチ">パターンマッチ</h2>
+<p>ここからが本題． 例として次のような図形の型を用いる．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Shape</span>
+  <span class="fu">=</span> <span class="dt">Circle</span> <span class="dt">Point</span> <span class="dt">Double</span>
+  <span class="fu">|</span> <span class="dt">Rect</span> <span class="dt">Point</span> <span class="dt">Point</span>
+<span class="kw">type</span> <span class="dt">Point</span> <span class="fu">=</span> (<span class="dt">Double</span>, <span class="dt">Double</span>)</code></pre></div>
+<p><code>Circle</code> が円で中心点の座標と半径を持ち，<code>Rect</code> が矩形で左下と右上の座標を持つ． 例えば，図形の面積を求める関数 <code>area</code> を書くときはパターンマッチを用いて次のように書きますよね．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">area ::</span> <span class="dt">Shape</span> <span class="ot">-&gt;</span> <span class="dt">Double</span>
+area (<span class="dt">Circle</span> _ r) <span class="fu">=</span> pi <span class="fu">*</span> (r <span class="fu">^</span> <span class="dv">2</span>)
+area (<span class="dt">Rect</span> (x1,y1) (x2,y2)) <span class="fu">=</span> abs (x2 <span class="fu">-</span> x1) <span class="fu">*</span> abs (y2 <span class="fu">-</span> y1)</code></pre></div>
+<p>では，この <code>Shape</code> 型を拡張可能直和型で書いてみる．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Shape</span> <span class="fu">=</span> <span class="dt">Variant</span>
+  <span class="ch">'[ &quot;circle&quot; &gt;: Circle</span>
+   , <span class="st">&quot;rect&quot;</span>   <span class="fu">&gt;:</span> <span class="dt">Rect</span>
+   ]
+
+<span class="kw">type</span> <span class="dt">Point</span> <span class="fu">=</span> <span class="dt">Record</span> <span class="ch">'[ &quot;x&quot; &gt;: Double, &quot;y&quot; &gt;: Double ]</span>
+<span class="kw">newtype</span> <span class="dt">Circle</span> <span class="fu">=</span>
+  <span class="dt">Circle</span> (<span class="dt">Record</span> <span class="ch">'[ &quot;mid&quot; &gt;: Point, &quot;r&quot; &gt;: Double ]) deriving (Show, Eq)</span>
+<span class="kw">newtype</span> <span class="dt">Rect</span> <span class="fu">=</span>
+  <span class="dt">Rect</span> (<span class="dt">Record</span> <span class="ch">'[ &quot;ll&quot; &gt;: Point, &quot;ur&quot; &gt;: Point ]) deriving (Show, Eq)</span></code></pre></div>
+<p><code>Record</code> は拡張可能レコードだ． 後の話の流れのために <code>newtype</code> で <code>Circle</code> 型と <code>Rect</code> 型を定義したが，別に型エイリアスでもいい．</p>
+<p>問題はココからで，どうやって <code>area</code> 関数を定義するか． (作者さんに聞いてしまえば早いんだけど)パッケージを漁ってたらそれらしい関数 <a href="https://hackage.haskell.org/package/extensible-0.4.7.1/docs/Data-Extensible-Match.html#v:match"><code>match</code></a> があった． イロイロ試した結果，<code>match</code> よりも <a href="https://hackage.haskell.org/package/extensible-0.4.7.1/docs/Data-Extensible-Field.html#v:matchField"><code>matchField</code></a> の方が使いやすかったので，こっちを使って次のように書ける．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">area ::</span> <span class="dt">Shape</span> <span class="ot">-&gt;</span> <span class="dt">Double</span>
+area <span class="fu">=</span> matchField
+    <span class="fu">$</span> <span class="fu">#</span>circle <span class="fu">@=</span> (\(<span class="dt">Circle</span> s) <span class="ot">-&gt;</span> pi <span class="fu">*</span> (s <span class="fu">^.</span> <span class="fu">#</span>r) <span class="fu">^</span> <span class="dv">2</span>)
+   <span class="fu">&lt;:</span> <span class="fu">#</span>rect   <span class="fu">@=</span> ((<span class="fu">*</span>) <span class="fu">&lt;$&gt;</span> width <span class="fu">&lt;*&gt;</span> height)
+   <span class="fu">&lt;:</span> nil
+
+width,<span class="ot"> height ::</span> <span class="dt">Rect</span> <span class="ot">-&gt;</span> <span class="dt">Double</span>
+width  (<span class="dt">Rect</span> s) <span class="fu">=</span> abs <span class="fu">$</span> s <span class="fu">^.</span> <span class="fu">#</span>ur <span class="fu">^.</span> <span class="fu">#</span>x <span class="fu">-</span> s <span class="fu">^.</span> <span class="fu">#</span>ll <span class="fu">^.</span> <span class="fu">#</span>x
+height (<span class="dt">Rect</span> s) <span class="fu">=</span> abs <span class="fu">$</span> s <span class="fu">^.</span> <span class="fu">#</span>ur <span class="fu">^.</span> <span class="fu">#</span>y <span class="fu">-</span> s <span class="fu">^.</span> <span class="fu">#</span>ll <span class="fu">^.</span> <span class="fu">#</span>y</code></pre></div>
+<p>意外と簡単にできた！</p>
+<p>(なんでこれでうまくいくかを説明しようと思ったけど，ぼくには説明するのが難しすぎてやめた．) (ちなみに，すごい簡潔に書けるのは <a href="https://hackage.haskell.org/package/extensible-0.4.7.1/docs/Data-Extensible-Wrapper.html#t:Wrapper"><code>Wrapper</code></a> 型クラスのおかげだと思う．)</p>
+<h2 id="型クラスを使う">型クラスを使う</h2>
+<p>ここからが拡張可能直和型のすごいところ(パターンマッチしかできないなら普通の直和型でもいいもんね…)． 型クラスを用いて次のようにも <code>area</code> 関数を定義できる．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Area</span> a <span class="kw">where</span>
+<span class="ot">  area ::</span> a <span class="ot">-&gt;</span> <span class="dt">Double</span>
+
+<span class="kw">instance</span> <span class="dt">Area</span> <span class="dt">Circle</span> <span class="kw">where</span>
+  area (<span class="dt">Circle</span> s) <span class="fu">=</span> pi <span class="fu">*</span> (s <span class="fu">^.</span> <span class="fu">#</span>r) <span class="fu">^</span> <span class="dv">2</span>
+
+<span class="kw">instance</span> <span class="dt">Area</span> <span class="dt">Rect</span> <span class="kw">where</span>
+  area <span class="fu">=</span> (<span class="fu">*</span>) <span class="fu">&lt;$&gt;</span> width <span class="fu">&lt;*&gt;</span> height
+
+<span class="kw">instance</span> <span class="dt">Forall</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">Area</span>) xs <span class="ot">=&gt;</span> <span class="dt">Area</span> (<span class="dt">Variant</span> xs) <span class="kw">where</span>
+  area <span class="fu">=</span> matchField <span class="fu">$</span>
+    htabulateFor (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">Area</span>)) <span class="fu">$</span>
+      \_ <span class="ot">-&gt;</span> <span class="dt">Field</span> (<span class="dt">Match</span> <span class="fu">$</span> area <span class="fu">.</span> runIdentity)</code></pre></div>
+<p><code>Forall (KeyValue KnownSymbol Area) xs</code> という型制約の直観的な解釈は，型レベルリスト <code>xs</code> の全ての要素 <code>k &gt;: v</code> が <code>KnownSymbol k</code> と <code>Area v</code> を満たす，という意味だ． 即ち，拡張可能直和型の全ての要素が <code>Area</code> 型クラスのインスタンスであれば，その拡張可能直和型は <code>Area</code> 型クラスのインスタンスになり得るのだ． ちゃんと次のように動作する．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">ghci<span class="fu">&gt;</span> shape1
+<span class="dt">EmbedAt</span> <span class="fu">$</span>(mkMembership <span class="dv">0</span>) (circle <span class="fu">@=</span> <span class="dt">Circle</span> (mid <span class="fu">@=</span> (x <span class="fu">@=</span> <span class="fl">1.0</span> <span class="fu">&lt;:</span> y <span class="fu">@=</span> <span class="fl">2.0</span> <span class="fu">&lt;:</span> nil) <span class="fu">&lt;:</span> r <span class="fu">@=</span> <span class="fl">2.0</span> <span class="fu">&lt;:</span> nil))
+ghci<span class="fu">&gt;</span> <span class="fu">:</span>t shape1
+<span class="ot">shape1 ::</span> <span class="dt">Shape</span>
+ghci<span class="fu">&gt;</span> area shape1
+<span class="fl">12.566370614359172</span></code></pre></div>
+<p>これの何がすごいかと言うと，例えば次のように <code>Shape</code> 型を拡張しよう．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">Triangle</span> <span class="fu">=</span>
+  <span class="dt">Triangle</span> (<span class="dt">Point</span>, <span class="dt">Point</span>, <span class="dt">Point</span>) <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)
+
+<span class="kw">type</span> <span class="dt">Shape</span> <span class="fu">=</span> <span class="dt">Variant</span>
+  <span class="ch">'[ &quot;circle&quot; &gt;: Circle</span>
+   , <span class="st">&quot;rect&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Rect</span>
+   , <span class="st">&quot;triangle&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Triangle</span>
+   ]</code></pre></div>
+<p>一般的な直和型の場合は，<code>Shape</code> 型のパターンマッチしている部分を全て増やさないといけない． しかし，型クラスを用いた拡張可能直和型の関数であれば，次のようにインスタンスを増やすだけで良い．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Area</span> <span class="dt">Triangle</span> <span class="kw">where</span>
+  area (<span class="dt">Triangle</span> (p1, p2, p3)) <span class="fu">=</span>
+    abs ((p1 <span class="fu">^.</span> <span class="fu">#</span>x <span class="fu">-</span> p3 <span class="fu">^.</span> <span class="fu">#</span>x) <span class="fu">*</span> (p2 <span class="fu">^.</span> <span class="fu">#</span>y <span class="fu">-</span> p3 <span class="fu">^.</span> <span class="fu">#</span>y) <span class="fu">-</span> (p2 <span class="fu">^.</span> <span class="fu">#</span>x <span class="fu">-</span> p3 <span class="fu">^.</span> <span class="fu">#</span>x) <span class="fu">*</span> (p1 <span class="fu">^.</span> <span class="fu">#</span>y <span class="fu">-</span> p3 <span class="fu">^.</span> <span class="fu">#</span>y)) <span class="fu">/</span> <span class="dv">2</span></code></pre></div>
+<p>書き込んでる行数は大差ないかもしれないが，例えばファイルを分けたりなど，より柔軟に関数を定義できる！</p>
+<h2 id="おしまい">おしまい</h2>
+<p>ちなみに，<code>area</code> 関数は <code>a -&gt; Double</code> で返り値の型が <code>Double</code> だったから楽だった． これが，例えば座標移動をする <code>nudge :: a -&gt; Point -&gt; a</code> のように，返り値が <code>a</code> なものは <code>Variant</code> のインスタンスを定義するのが大変(<a href="https://github.com/matsubara0507/test-extensible/blob/d5e58f59ad4b1a2f4809bbecd79eeffbe04eec51/src/Sample/Variant.hs#L94">頑張った</a>)．</p>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+  <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+    <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+      <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+    </a>
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>
