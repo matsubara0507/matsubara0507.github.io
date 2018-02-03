@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="「積み木の水槽」問題の Haskell での回答を読み解く" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+    <meta property="og:image" content="/assets/water-towers-hs/water-tank.jpg" />
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        「積み木の水槽」問題の Haskell での回答を読み解く
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">「積み木の水槽」問題の Haskell での回答を読み解く</h1>
+    <p class="post-meta">
+      <time datetime="2018-02-04" itemprop="datePublished">
+        Feb 4, 2018
+      </time>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>今朝，バイト先で<a href="http://nabetani.sakura.ne.jp/hena/ord13blocktup/">「積み木の水槽」問題</a>の <a href="https://rosettacode.org/wiki/Water_collected_between_towers#Haskell">Haskell での回答</a>について話題になりました． リンク先の解答を見ると，恐ろしいことに，一行で書けてしまいます(正しくは，この解答では <code>nabetani</code> さんの問題は解けませんが…)．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- 2 == solve [1,5,3,7,2]</span>
+solve <span class="fu">=</span> sum <span class="fu">.</span> filter (<span class="fu">&gt;</span> <span class="dv">0</span>) <span class="fu">.</span> (zipWith (<span class="fu">-</span>) <span class="fu">=&lt;&lt;</span> (zipWith min <span class="fu">.</span> scanl1 max <span class="fu">&lt;*&gt;</span> scanr1 max))</code></pre></div>
+<p>普通の Haskeller であれば，これぐらい目コンパイルして振る舞いを読み解くのは朝飯前でしょうが，Haskell 初学者のために簡単な解説を残しておこうかなと思います．</p>
+<h2 id="手直し">手直し</h2>
+<p>前述したとおり，そもそもこれでは <code>nabetani</code> さんの問題は解けないので，解けるように手直しします． もちろん <strong>1行で</strong> ．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">solve <span class="fu">=</span> sum <span class="fu">.</span> fmap (sum <span class="fu">.</span> (zipWith (<span class="fu">-</span>) <span class="fu">=&lt;&lt;</span> (zipWith min <span class="fu">.</span> scanl1 max <span class="fu">&lt;*&gt;</span> scanr1 max)) <span class="fu">.</span> fmap (read <span class="fu">.</span> (<span class="fu">:</span> []))) <span class="fu">.</span> words <span class="fu">.</span> fmap (bool <span class="ch">' '</span> <span class="fu">&lt;*&gt;</span> (<span class="fu">/=</span>) <span class="ch">'0'</span>)</code></pre></div>
+<p><code>Data.List</code> と <code>Data.Bool</code> を <code>import</code> してる前提だが，一応一行で書けた． 雑に直したのでもう少し短くできるような気もしますが，まぁそもそも本質的なところでないので勘弁してください．</p>
+<p>ちなみに，そもそもなんで元のコードでは解けないのかというと，<code>nabetani</code> さんの問題には <code>0</code> が含むからだ． しかし，<code>0</code> で水槽を切り分けてあげて，元の解答を <code>map</code> してあげれば良いだけなのでコアのところはそのまんま(<code>filter (&gt; 0)</code> は要らない気がしたので消したけど)．</p>
+<h2 id="読み解く">読み解く</h2>
+<p>手直しした最終的なコードはテストコードと共に<a href="https://gist.github.com/matsubara0507/10a44fb2a9676bde9658c3eeec456676">ココ</a>にあげた．</p>
+<h3 id="トップダウンに">トップダウンに</h3>
+<p>順に読み解く． Haskell でプログラミングするとき(というか関数型プログラミング)はトップダウンに書いていくのが基本なので，読み解くときも上から順に切り分けてく．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">solve ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>
+solve <span class="fu">=</span> sum <span class="fu">.</span> fmap countWater <span class="fu">.</span> splitTank
+
+<span class="ot">splitTank ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> [<span class="dt">String</span>]
+splitTank <span class="fu">=</span>  words <span class="fu">.</span> fmap (bool <span class="ch">' '</span> <span class="fu">&lt;*&gt;</span> (<span class="fu">/=</span>) <span class="ch">'0'</span>)
+
+<span class="ot">countWater ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>
+countWater <span class="fu">=</span> sum <span class="fu">.</span> (zipWith (<span class="fu">-</span>) <span class="fu">=&lt;&lt;</span> (zipWith min <span class="fu">.</span> scanl1 max <span class="fu">&lt;*&gt;</span> scanr1 max)) <span class="fu">.</span> fmap (read <span class="fu">.</span> (<span class="fu">:</span> []))</code></pre></div>
+<p><code>splitTank</code> 関数は <code>0</code> を区切り文字として文字列を切り分けてるだけだ． 悲しいことに，Haskell (というか GHC)の標準モジュールには「任意の文字で文字列を切り分ける」関数がない． なので，<code>0</code> だけを空白 <code>' '</code> に置換してから，<code>words</code> で切り分けている(空白で切り分ける関数 <code>words</code> は何故か標準にある)．</p>
+<p><code>countWater</code> 関数が各水槽の水の数を数え上げており，それを最後に総和 <code>sum</code> しているだけだ．</p>
+<h3 id="fmap-はわかるよね"><code>fmap</code> はわかるよね？</h3>
+<p>ちなみに，さっきから出てきている <code>fmap</code> という関数はわかりますよね？ 多くの言語でも導入されている，リストや配列の各要素に関数を適用する関数(あるいはメソッド) <code>map :: (a -&gt; b) -&gt; [a] -&gt; [b]</code> をより一般化したものだ． 今回はリストにしか使わないので <code>map</code> と同義だと考えてくれていい(hlint で注意されるので，<code>fmap</code> と書く癖がついた)．</p>
+<h3 id="コアの部分">コアの部分</h3>
+<p>さて，本題でもある <code>countWater</code> 関数を読み解く． まずは切り分けよう．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">countWater ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>
+countWater <span class="fu">=</span> sum <span class="fu">.</span> toWaterLine <span class="fu">.</span> toInts
+
+<span class="ot">toInts ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> [<span class="dt">Int</span>]
+toInts <span class="fu">=</span> fmap (read <span class="fu">.</span> (<span class="fu">:</span> []))
+
+<span class="ot">toWaterLine ::</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> [<span class="dt">Int</span>]
+toWaterLine <span class="fu">=</span> zipWith (<span class="fu">-</span>) <span class="fu">=&lt;&lt;</span> (zipWith min <span class="fu">.</span> scanl1 max <span class="fu">&lt;*&gt;</span> scanr1 max)</code></pre></div>
+<p><code>toInts</code> 関数は数列の文字列から数値のリストに変換している． Haskell で文字列を任意の型に変換するには <code>read :: String -&gt; a</code> 関数を使う． Haskell において <code>String = [Char]</code> なので，<code>fmap (: [])</code> をして <code>String</code> のリストに変換し，各文字列を <code>read</code> をしているというわけだ(<code>singleton</code> みたいな関数が標準にあればいいのに)．</p>
+<p><code>toWaterLine</code> 関数が水槽の各列の水の量を計算し，<code>sum</code> で総和している． なので，重要なのは <code>toWaterLine</code> 関数だ． <code>(&lt;*&gt;)</code> 演算子や <code>(=&lt;&lt;)</code> 演算子などがあって意味不明かもしれないが，この辺りはポイントフリーにするためのツールみたいなもので，アルゴリズムの本質的な部分ではないよ．</p>
+<h3 id="関数も-monad-型クラスのインスタンス">関数も <code>Monad</code> 型クラスのインスタンス</h3>
+<p><code>(&lt;*&gt;)</code> 演算子や <code>(=&lt;&lt;)</code> 演算子が何をしているかと言うのは <strong>関数型 <code>(-&gt;) a</code> も <code>Monad</code> 型クラスのインスタンス</strong> だという事実を知っていれば簡単に読めますね． Haskell 界隈では常識(要出典)なので，説明しなくても良いかもしれないが，初学者のために念のためしておく．</p>
+<p>それぞれの演算子の型は以下の通り(めんどいので <code>Monad</code> で統一)．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">(&lt;*&gt;) ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> m (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> m a <span class="ot">-&gt;</span> m b
+<span class="ot">(=&lt;&lt;) ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> m a <span class="ot">-&gt;</span> m b</code></pre></div>
+<p>で，前述したとおり，関数型 <code>(c -&gt;)</code> も <code>Monad</code> 型クラスのインスタンスなので，<code>m = (c -&gt;)</code> と置き換えれる．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">(&lt;*&gt;) ::</span> (c <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> b)
+<span class="ot">(=&lt;&lt;) ::</span> (a <span class="ot">-&gt;</span> c <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> b)</code></pre></div>
+<p>便利そうなコンビネーターになった． なので，<code>toWaterLine</code> 関数のこれらの演算子を同様のラムダ式で置き換えてあげよう．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">toWaterLine ::</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> [<span class="dt">Int</span>]
+toWaterLine
+  <span class="fu">=</span> \xs <span class="ot">-&gt;</span> zipWith (<span class="fu">-</span>) ((\ys <span class="ot">-&gt;</span> (zipWith min <span class="fu">.</span> scanl1 max <span class="fu">$</span> ys) (scanr1 max ys)) xs) xs
+  <span class="fu">=</span> \xs <span class="ot">-&gt;</span> zipWith (<span class="fu">-</span>) ((\ys <span class="ot">-&gt;</span> zipWith min (scanl1 max ys) (scanr1 max ys)) xs) xs
+  <span class="fu">=</span> \xs <span class="ot">-&gt;</span> zipWith (<span class="fu">-</span>) (zipWith min (scanl1 max xs) (scanr1 max xs)) xs</code></pre></div>
+<p>ついでに，他の言語の人では分かりにくい演算子も置き換えたので，これでどの言語の人でも読めるはずだ．</p>
+<h3 id="アルゴリズム">アルゴリズム</h3>
+<p>ここからは Haskell 関係ない． ひとつひとつ見ていこう．</p>
+<p><code>scanl :: (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; [b]</code> 関数は左畳み込み関数 <code>foldl :: (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; b</code> の途中経過もリストで残したような関数だ． つまり <code>foldl f x xs = last $ scanl f x xs</code> が成り立つ． <code>scanl1 :: (a -&gt; a -&gt; a) -&gt; [a] -&gt; [a]</code> 関数は初期値を無くしたバージョンだ． <code>scanr1</code> は <code>scanl1</code> の右畳み込みバージョン．</p>
+<h2 id="section"></h2>
+<p><code>scanl max xs</code> は左から順に，水槽の高さを比較して高い方を残しているので，各列の最も高い左側が残る． <code>scanr1 max xs</code> は各列の最も高い右側が残る．</p>
+<div class="figure">
+<img src="../assets/water-towers-hs/water1.gif" />
+
+</div>
+<p>そして，それらの低い方を残して，もとの高さを引く．</p>
+<div class="figure">
+<img src="../assets/water-towers-hs/water2.gif" />
+
+</div>
+<p>すごいできた！</p>
+<h2 id="試しに">試しに</h2>
+<p>次のテストコードを走らせてみた．</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- WalterTowers.hs</span>
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+main <span class="fu">=</span> print <span class="fu">$</span> all ((<span class="fu">==</span>) <span class="fu">&lt;$&gt;</span> snd <span class="fu">&lt;*&gt;</span> (show <span class="fu">.</span> solve <span class="fu">.</span> fst)) testSet
+
+solve <span class="fu">=</span> <span class="fu">...</span>
+
+<span class="ot">testSet ::</span> [(<span class="dt">String</span>, <span class="dt">String</span>)]
+testSet <span class="fu">=</span>
+  [ (<span class="st">&quot;83141310145169154671122&quot;</span>, <span class="st">&quot;24&quot;</span>)
+  , (<span class="st">&quot;923111128&quot;</span>, <span class="st">&quot;45&quot;</span>)
+  , (<span class="st">&quot;923101128&quot;</span>, <span class="st">&quot;1&quot;</span>)
+  , (<span class="st">&quot;903111128&quot;</span>, <span class="st">&quot;9&quot;</span>)
+  , (<span class="st">&quot;3&quot;</span>, <span class="st">&quot;0&quot;</span>)
+  , (<span class="st">&quot;31&quot;</span>, <span class="st">&quot;0&quot;</span>)
+  , (<span class="st">&quot;412&quot;</span>, <span class="st">&quot;1&quot;</span>)
+  , (<span class="st">&quot;3124&quot;</span>, <span class="st">&quot;3&quot;</span>)
+  , (<span class="st">&quot;11111&quot;</span>, <span class="st">&quot;0&quot;</span>)
+  , (<span class="st">&quot;222111&quot;</span>, <span class="st">&quot;0&quot;</span>)
+  , (<span class="st">&quot;335544&quot;</span>, <span class="st">&quot;0&quot;</span>)
+  , (<span class="st">&quot;1223455321&quot;</span>, <span class="st">&quot;0&quot;</span>)
+  , (<span class="st">&quot;000&quot;</span>, <span class="st">&quot;0&quot;</span>)
+  , (<span class="st">&quot;000100020003121&quot;</span>, <span class="st">&quot;1&quot;</span>)
+  , (<span class="st">&quot;1213141516171819181716151413121&quot;</span>, <span class="st">&quot;56&quot;</span>)
+  , (<span class="st">&quot;712131415161718191817161514131216&quot;</span>, <span class="st">&quot;117&quot;</span>)
+  , (<span class="st">&quot;712131405161718191817161514031216&quot;</span>, <span class="st">&quot;64&quot;</span>)
+  , (<span class="st">&quot;03205301204342100&quot;</span>, <span class="st">&quot;1&quot;</span>)
+  , (<span class="st">&quot;0912830485711120342&quot;</span>, <span class="st">&quot;18&quot;</span>)
+  , (<span class="st">&quot;1113241120998943327631001&quot;</span>, <span class="st">&quot;20&quot;</span>)
+  , (<span class="st">&quot;7688167781598943035023813337019904732&quot;</span>, <span class="st">&quot;41&quot;</span>)
+  , (<span class="st">&quot;2032075902729233234129146823006063388&quot;</span>, <span class="st">&quot;79&quot;</span>)
+  , (<span class="st">&quot;8323636570846582397534533&quot;</span>, <span class="st">&quot;44&quot;</span>)
+  , (<span class="st">&quot;2142555257761672319599209190604843&quot;</span>, <span class="st">&quot;41&quot;</span>)
+  , (<span class="st">&quot;06424633785085474133925235&quot;</span>, <span class="st">&quot;51&quot;</span>)
+  , (<span class="st">&quot;503144400846933212134&quot;</span>, <span class="st">&quot;21&quot;</span>)
+  , (<span class="st">&quot;1204706243676306476295999864&quot;</span>, <span class="st">&quot;21&quot;</span>)
+  , (<span class="st">&quot;050527640248767717738306306596466224&quot;</span>, <span class="st">&quot;29&quot;</span>)
+  , (<span class="st">&quot;5926294098216193922825&quot;</span>, <span class="st">&quot;65&quot;</span>)
+  , (<span class="st">&quot;655589141599534035&quot;</span>, <span class="st">&quot;29&quot;</span>)
+  , (<span class="st">&quot;7411279689677738&quot;</span>, <span class="st">&quot;34&quot;</span>)
+  , (<span class="st">&quot;268131111165754619136819109839402&quot;</span>, <span class="st">&quot;102&quot;</span>)
+  ]</code></pre></div>
+<p><code>stack runghc</code> で走らせると．</p>
+<pre><code>$ stack runghc WalterTowers.hs
+True</code></pre>
+<h2 id="おしまい">おしまい</h2>
+<p>こういうのを自分で思いつけるようになりたいね…</p>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+  <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+    <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+      <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+    </a>
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>
