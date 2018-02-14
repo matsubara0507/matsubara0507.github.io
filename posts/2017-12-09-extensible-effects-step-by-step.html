@@ -92,7 +92,7 @@
 <h3 id="extensible-effects">Extensible Effects</h3>
 <p>とは何かについては特に言及しません． <a href="http://fumieval.hatenablog.com/entry/2017/08/02/230422">extensible の作者さんの記事</a>やググるなりしてください．</p>
 <h2 id="概要">概要</h2>
-<p>上述した記事を参考にして，extensible effects によつモンドスタックをステップバイステップに構築してみる． 最終的には， エラー処理(<code>Either</code>)，環境渡し(<code>Reader</code>)，状態(<code>State</code>)，ログ(<code>Writer</code>)，入出力(<code>IO</code>)といった機能をモナドスタックに積む．</p>
+<p>上述した記事を参考にして，extensible effects によるモナドスタックをステップバイステップに構築してみる． 最終的には， エラー処理(<code>Either</code>)，環境渡し(<code>Reader</code>)，状態(<code>State</code>)，ログ(<code>Writer</code>)，入出力(<code>IO</code>)といった機能をモナドスタックに積む．</p>
 <p>ちなみに，モナドトランスフォーマーと extensible effects を比較したりは基本的にしない． そもそも，オリジナルなモナドを導入しない限りは(パフォーマンス以外に)大きな差は生まれないと思う(たぶん)．</p>
 <h2 id="section-1"></h2>
 <p>あと，必要なモジュールについては基本的に省く． (おまけを除く)全てのコードは以下のリポジトリに置いたので適宜参照してください．</p>
@@ -349,7 +349,7 @@ eval5 (<span class="dt">App</span> e1 e2)   <span class="fu">=</span> <span clas
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> runEval5 Map.empty <span class="dv">0</span> <span class="fu">$</span> eval5 exampleExp
 ((<span class="dt">Right</span> (<span class="dt">IntVal</span> <span class="dv">18</span>),[<span class="st">&quot;x&quot;</span>]),<span class="dv">8</span>)</code></pre></div>
 <h3 id="step-6.-ioはどうすんの">Step 6. IOはどうすんの？</h3>
-<p>さぁ最後は <code>IO</code> だ． 実は <code>IO</code> の <code>Eff</code> 版は用意されていない． しかし，<a href="https://hackage.haskell.org/package/extensible-0.4.6/docs/Data-Extensible-Effect-Default.html"><code>Data.Extensible.Effect.Data</code></a> モジュールの中を見てみると，一番下の <code>Orphan instances</code> のところに <code>MonadIO</code> もある． 定義より，次のようにすれば，<code>MonadIO</code> のインスタンスとなり <code>liftIO</code> が使えるようになる．</p>
+<p>さぁ最後は <code>IO</code> だ． 実は <code>IO</code> の <code>Eff</code> 版は用意されていない． しかし，<a href="https://hackage.haskell.org/package/extensible-0.4.6/docs/Data-Extensible-Effect-Default.html"><code>Data.Extensible.Effect.Default</code></a> モジュールの中を見てみると，一番下の <code>Orphan instances</code> のところに <code>MonadIO</code> もある． 定義より，次のようにすれば，<code>MonadIO</code> のインスタンスとなり <code>liftIO</code> が使えるようになる．</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Eval6</span> a <span class="fu">=</span>
     <span class="dt">Eff</span> <span class="ch">'[ ReaderDef Env, EitherDef String, WriterDef [String], StateDef Integer, &quot;IO&quot; &gt;: IO ] a</span>
 

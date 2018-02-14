@@ -284,7 +284,7 @@ scrapeUrl <span class="fu">=</span>
 notHidden <span class="fu">=</span> notP <span class="fu">$</span> <span class="st">&quot;hidden&quot;</span> <span class="fu">@=</span> <span class="st">&quot;&quot;</span></code></pre></div>
 <p>基本的には何となく読めるだろう(正直，関数として小分けにする必要は無いが，分けておくと <code>ghci</code> とかでデバッグしやすいのだ)． ちなみに，<code>notHidden</code> は <code>hidden</code> 属性が付いていない場合に取得してくるという意味だ． 何故かというと，記事を先に登録しておくと，その日になるまで <code>hidden</code> でブラウザでは見れないだけで，DOM には書いてあるためだ． 記事を先に登録して置いたら，通知で見えてしまっては嫌でしょ？(笑)</p>
 <h3 id="json">JSON</h3>
-<p>Haskell で JSON を扱うのは簡単． aeson というライブラリが，ほぼほぼデファクトスタンダードとなっている． aeson は任意の型を <code>FromJSON</code> 型クラスや <code>ToJSON</code> 型クラスのインスタンスにしてあげるだけで，デコーダーとエンコーダーを実装してくれる． しかも，Generics という機能を使えば，一行で終わる．</p>
+<p>Haskell で JSON を扱うのは簡単． <a href="https://hackage.haskell.org/package/aeson-1.2.3.0">aeson</a> というライブラリが，ほぼほぼデファクトスタンダードとなっている． aeson は任意の型を <code>FromJSON</code> 型クラスや <code>ToJSON</code> 型クラスのインスタンスにしてあげるだけで，デコーダーとエンコーダーを実装してくれる． しかも，Generics という機能を使えば，一行で終わる．</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Entry</span> <span class="fu">=</span> <span class="dt">Entry</span>
   {<span class="ot"> user    ::</span> <span class="dt">Text</span>
   ,<span class="ot"> comment ::</span> <span class="dt">Text</span>

@@ -513,7 +513,7 @@ init model <span class="fu">=</span>
 fetchTodos <span class="fu">:</span> <span class="dt">Cmd</span> <span class="dt">Msg</span>
 fetchTodos <span class="fu">=</span>
     Http.send <span class="dt">FetchTodos</span> API.getTodos</code></pre></div>
-<p>まず最初に ToDo タスクを全て取得してくる必要があるので，<code>http/localhost:8080/todos</code> を叩く HTTP リクエストを呼んでいる．</p>
+<p>まず最初に ToDo タスクを全て取得してくる必要があるので，<code>http://localhost:8080/todos</code> を叩く HTTP リクエストを呼んでいる．</p>
 <p><code>view</code> 関数は泥臭くなるので割愛(<a href="https://github.com/matsubara0507/haskell-and-elm/blob/unuse-extensible/elm-src/Main.elm#L50">コードを見てね</a>)．</p>
 <p><code>update</code> 関数は次のようになる</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">update <span class="fu">:</span> <span class="dt">Msg</span> <span class="ot">-&gt;</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> ( <span class="dt">Model</span>, <span class="dt">Cmd</span> <span class="dt">Msg</span> )
