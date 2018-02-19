@@ -89,10 +89,7 @@
 <p>Marp はマークダウン記法のファイルからスライドを生成してくれるソフトウェアです． 最近はやりの <a href="http://electron.atom.io/">Electron</a> で書かれているため，各プラットフォームで動作することができます．</p>
 <p>ソースコードは全て <a href="https://github.com/yhatt/marp">GitHub で公開</a>されており，MIT ライセンスのため，自由に改良して使うことができるはずです．</p>
 <p>開発経緯等は作者 <a href="http://technica-blog.jp/entry/2016/07/14/204951">yhatt さんのブログ</a>にまとめられているので，そちらを参照してください．</p>
-<div class="figure">
-<img src="../assets/recommend-marp/editing_marp.jpg" />
-
-</div>
+<p><img src="../assets/recommend-marp/editing_marp.jpg" /></p>
 <h3 id="なぜ-marp-か">なぜ Marp か</h3>
 <p>卒論発表するとか，学会発表するとかそういうレベルのものはパワポなりキーノートなり使ってしっかり作れば良いと思います． が，ただの LT や輪講や進捗報告の資料なんかは基本的に</p>
 <ul>
@@ -190,10 +187,7 @@
 $ npm start</code></pre>
 <p>とするだけで，デバッグモードで起動できます．</p>
 <p>デバッグモードの場合，ツールバーに <code>Dev</code> とあるはずなので，それをクリックするとブラウザの開発者モードのようなものを使うことができます． これさへあれば，簡単に CSS を変更して試せますよね．</p>
-<div class="figure">
-<img src="../assets/recommend-marp/dev_marp.jpg" />
-
-</div>
+<p><img src="../assets/recommend-marp/dev_marp.jpg" /></p>
 <h3 id="css-を書く">CSS を書く</h3>
 <p><code>/sass/themes/</code> に適当な名前(例えば <code>hoge.sass</code>)で <a href="http://sass-lang.com/">Sass</a> のファイルを作ります． あとは，元々ある <code>gaia.sass</code> などを参考にして自由に書いてください．</p>
 <pre class="sass"><code>&amp;[data-template~=&quot;invert&quot;]
@@ -204,9 +198,9 @@ $ npm start</code></pre>
 <p>って感じにすることでカラスキームを好きなだけ追加できます(<code>$text-color</code> とか <code>bg-color</code> は <code>gaia.sass</code> の上の方で定義されてる)．</p>
 <h3 id="coffeescript-を修正">CoffeeScript を修正</h3>
 <p><code>/coffee/classes/mds_md_setting.coffee</code> の32行目にある</p>
-<div class="sourceCode"><pre class="sourceCode coffeescript"><code class="sourceCode coffee">  <span class="kw">return</span> <span class="kw">if</span> basename <span class="kw">in</span> <span class="kw">[</span><span class="st">'default'</span><span class="kw">,</span> <span class="st">'gaia'</span><span class="kw">]</span> <span class="kw">then</span> <span class="st">&quot;css/themes/</span><span class="ch">#{</span>basename<span class="ch">}</span><span class="st">.css&quot;</span> <span class="kw">else</span> <span class="ot">null</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode coffeescript"><code class="sourceCode coffee"><a class="sourceLine" id="cb3-1" data-line-number="1">  <span class="kw">return</span> <span class="kw">if</span> basename <span class="kw">in</span> <span class="kw">[</span><span class="st">'default'</span><span class="kw">,</span> <span class="st">'gaia'</span><span class="kw">]</span> <span class="kw">then</span> <span class="st">&quot;css/themes/</span><span class="ch">#{</span>basename<span class="ch">}</span><span class="st">.css&quot;</span> <span class="kw">else</span> <span class="ot">null</span></a></code></pre></div>
 <p>の <code>['default', 'gaia']</code> の部分に自分で作ったテーマを追加する．</p>
-<div class="sourceCode"><pre class="sourceCode coffeescript"><code class="sourceCode coffee">  <span class="kw">return</span> <span class="kw">if</span> basename <span class="kw">in</span> <span class="kw">[</span><span class="st">'default'</span><span class="kw">,</span> <span class="st">'gaia'</span><span class="kw">,</span> <span class="st">'hoge'</span><span class="kw">]</span> <span class="kw">then</span> <span class="st">&quot;css/themes/</span><span class="ch">#{</span>basename<span class="ch">}</span><span class="st">.css&quot;</span> <span class="kw">else</span> <span class="ot">null</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode coffeescript"><code class="sourceCode coffee"><a class="sourceLine" id="cb4-1" data-line-number="1">  <span class="kw">return</span> <span class="kw">if</span> basename <span class="kw">in</span> <span class="kw">[</span><span class="st">'default'</span><span class="kw">,</span> <span class="st">'gaia'</span><span class="kw">,</span> <span class="st">'hoge'</span><span class="kw">]</span> <span class="kw">then</span> <span class="st">&quot;css/themes/</span><span class="ch">#{</span>basename<span class="ch">}</span><span class="st">.css&quot;</span> <span class="kw">else</span> <span class="ot">null</span></a></code></pre></div>
 <h3 id="後は使うだけ">後は使うだけ</h3>
 <p>マークダウンで <code>&lt;!-- $theme: hoge --&gt;</code> とか書けば使えます．</p>
 <h3 id="リリース">リリース</h3>

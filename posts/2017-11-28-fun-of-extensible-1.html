@@ -95,32 +95,32 @@
 <li><a href="https://github.com/lotz84/haskell/blob/master/docs/extensible-record.md#標準のレコードが持つ問題点">標準のレコードが持つ問題点 - lotz84/haskell</a></li>
 </ul>
 <p>型システム的には「2. 部分的である」が一番致命的だと思うが，実用的には「1. 名前問題が解決できていない」が本当につらい． 例えば，なんかのユーザーアカウントを管理するために，ユーザーアカウントの型 <code>User</code> を次のように定義したとする．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">User</span> <span class="fu">=</span>
-  {<span class="ot"> id ::</span> <span class="dt">ID</span>
-  ,<span class="ot"> name ::</span> <span class="dt">Text</span>
-  ,<span class="ot"> age ::</span> <span class="dt">Int</span>
-  }</code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">data</span> <span class="dt">User</span> <span class="fu">=</span></a>
+<a class="sourceLine" id="cb1-2" data-line-number="2">  {<span class="ot"> id ::</span> <span class="dt">ID</span></a>
+<a class="sourceLine" id="cb1-3" data-line-number="3">  ,<span class="ot"> name ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb1-4" data-line-number="4">  ,<span class="ot"> age ::</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb1-5" data-line-number="5">  }</a></code></pre></div>
 <p>このとき，<code>id</code> や <code>name</code> はタダの関数として定義されるので，<code>id :: a -&gt; a</code> 関数などと <strong>名前が衝突してしまう</strong> ． なので，<code>userId</code> とか <code>userName</code> にしないといけない… OOP 言語でのクラスフィールドはクラスの中で名前空間が閉じているので，フィールド名を気にする必要が無いのだが，Haskell のレコード型は非常に残念な仕様だ…</p>
 <h2 id="section"></h2>
 <p>そこで利用するのが拡張可能レコード． (lotz氏のまとめによると)いろんな実装があるみたいだが，今回取り上げるのは <code>extensible</code> というパッケージ． このパッケージでは <strong>型レベル文字列と任意の型のタプルを型レベルリストで保持してレコードを表現している</strong> とイメージである．</p>
 <p>さっきの <code>User</code> 型を <code>extensible</code> の拡張可能レコードで書くと次のようになる．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">User</span> <span class="fu">=</span> <span class="dt">Record</span>
-  <span class="ch">'[ &quot;id&quot; &gt;: ID</span>
-   , <span class="st">&quot;name&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span>
-   , <span class="st">&quot;age&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Int</span>
-   ]</code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw">type</span> <span class="dt">User</span> <span class="fu">=</span> <span class="dt">Record</span></a>
+<a class="sourceLine" id="cb2-2" data-line-number="2">  <span class="ch">'[ &quot;id&quot; &gt;: ID</span></a>
+<a class="sourceLine" id="cb2-3" data-line-number="3">   , <span class="st">&quot;name&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb2-4" data-line-number="4">   , <span class="st">&quot;age&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb2-5" data-line-number="5">   ]</a></code></pre></div>
 <p>ちなみに，型レベルリストや型レベル文字列を使うのに <code>DataKinds</code> 拡張が，型演算子 <code>(&gt;:)</code> を使うのに <code>TypeOperators</code> 拡張が要る． この型の値は次のように定義できる．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">user1 ::</span> <span class="dt">User</span>
-user1
-   <span class="fu">=</span> <span class="fu">#</span>id <span class="fu">@=</span> <span class="st">&quot;U123456789&quot;</span>
-  <span class="fu">&lt;:</span> <span class="fu">#</span>name <span class="fu">@=</span> <span class="st">&quot;Alice&quot;</span>
-  <span class="fu">&lt;:</span> <span class="fu">#</span>age <span class="fu">@=</span> <span class="dv">24</span>
-  <span class="fu">&lt;:</span> emptyRecord</code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="ot">user1 ::</span> <span class="dt">User</span></a>
+<a class="sourceLine" id="cb3-2" data-line-number="2">user1</a>
+<a class="sourceLine" id="cb3-3" data-line-number="3">   <span class="fu">=</span> <span class="fu">#</span>id <span class="fu">@=</span> <span class="st">&quot;U123456789&quot;</span></a>
+<a class="sourceLine" id="cb3-4" data-line-number="4">  <span class="fu">&lt;:</span> <span class="fu">#</span>name <span class="fu">@=</span> <span class="st">&quot;Alice&quot;</span></a>
+<a class="sourceLine" id="cb3-5" data-line-number="5">  <span class="fu">&lt;:</span> <span class="fu">#</span>age <span class="fu">@=</span> <span class="dv">24</span></a>
+<a class="sourceLine" id="cb3-6" data-line-number="6">  <span class="fu">&lt;:</span> emptyRecord</a></code></pre></div>
 <p>ちなみに，<code>#id</code> などを使うのには <code>OverloadedLabels</code> 拡張が必要． フィールドにアクセスするには <a href="https://hackage.haskell.org/package/lens-4.15.4"><code>lens</code></a> パッケージの <a href="https://hackage.haskell.org/package/lens-4.15.4/docs/Control-Lens-Getter.html#v:-94-."><code>(^.)</code></a> などを用いる．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">ghci<span class="fu">&gt;</span> user1 <span class="fu">^.</span> <span class="fu">#</span>id
-<span class="st">&quot;U123456789&quot;</span>
-ghci<span class="fu">&gt;</span> user1 <span class="fu">^.</span> <span class="fu">#</span>age
-<span class="dv">24</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1">ghci<span class="fu">&gt;</span> user1 <span class="fu">^.</span> <span class="fu">#</span>id</a>
+<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="st">&quot;U123456789&quot;</span></a>
+<a class="sourceLine" id="cb4-3" data-line-number="3">ghci<span class="fu">&gt;</span> user1 <span class="fu">^.</span> <span class="fu">#</span>age</a>
+<a class="sourceLine" id="cb4-4" data-line-number="4"><span class="dv">24</span></a></code></pre></div>
 <h2 id="レコード型を拡張する">レコード型を拡張する</h2>
 <p>ココからが本題．</p>
 <p>以前こんなツイートを見かけた．</p>
@@ -128,117 +128,117 @@ ghci<span class="fu">&gt;</span> user1 <span class="fu">^.</span> <span class="f
 <p lang="ja" dir="ltr">
 Scala のケースクラス（というより値型一般）マジでめんどくせえな。どうにかならないものか……。
 </p>
-— 藻 (<span class="citation">@bromne</span>) <a href="https://twitter.com/bromne/status/933914833132519425?ref_src=twsrc%5Etfw">2017年11月24日</a>
+— 藻 (<span class="citation" data-cites="bromne">@bromne</span>) <a href="https://twitter.com/bromne/status/933914833132519425?ref_src=twsrc%5Etfw">2017年11月24日</a>
 </blockquote>
 <blockquote class="twitter-tweet" data-lang="ja">
 <p lang="ja" dir="ltr">
 　そのときに、A2の中ではA1のフィールドが展開されているように見えることを期待する、という感じでしょうか？
 </p>
-— 水島宏太（本気ダイエット中） (<span class="citation">@kmizu</span>) <a href="https://twitter.com/kmizu/status/933922819557113856?ref_src=twsrc%5Etfw">2017年11月24日</a>
+— 水島宏太（本気ダイエット中） (<span class="citation" data-cites="kmizu">@kmizu</span>) <a href="https://twitter.com/kmizu/status/933922819557113856?ref_src=twsrc%5Etfw">2017年11月24日</a>
 </blockquote>
 <blockquote class="twitter-tweet" data-lang="ja">
 <p lang="ja" dir="ltr">
 　それは確かに難しいですね。ただ、それが簡単に実現できる言語というのもまた希少な気がしますが。
 </p>
-— 水島宏太（本気ダイエット中） (<span class="citation">@kmizu</span>) <a href="https://twitter.com/kmizu/status/933923489228009477?ref_src=twsrc%5Etfw">2017年11月24日</a>
+— 水島宏太（本気ダイエット中） (<span class="citation" data-cites="kmizu">@kmizu</span>) <a href="https://twitter.com/kmizu/status/933923489228009477?ref_src=twsrc%5Etfw">2017年11月24日</a>
 </blockquote>
 <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 <p>そう思う(便乗)．</p>
 <p>これ，何を言ってるかと言うと，前に定義した <code>User</code> 型を更に拡張した <code>User'</code> 型を次のように定義したとする．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">User'</span> <span class="fu">=</span> <span class="dt">Record</span>
-  <span class="ch">'[ &quot;id&quot; &gt;: ID</span>
-   , <span class="st">&quot;name&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span>
-   , <span class="st">&quot;age&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Int</span>
-   , <span class="st">&quot;address&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span>
-   ]</code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="kw">type</span> <span class="dt">User'</span> <span class="fu">=</span> <span class="dt">Record</span></a>
+<a class="sourceLine" id="cb5-2" data-line-number="2">  <span class="ch">'[ &quot;id&quot; &gt;: ID</span></a>
+<a class="sourceLine" id="cb5-3" data-line-number="3">   , <span class="st">&quot;name&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb5-4" data-line-number="4">   , <span class="st">&quot;age&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb5-5" data-line-number="5">   , <span class="st">&quot;address&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb5-6" data-line-number="6">   ]</a></code></pre></div>
 <p>で，前の <code>User</code> 型の値 <code>user1</code> に <code>address</code> フィールドを加えただけで <code>User'</code> 型の値を定義できないか？というハナシ(たぶんね)． もちろん，バニラな Haskell ではできないでしょう．</p>
 <p>しかし，<code>extensible</code> パッケージならどうなの？？という話になりまして． 最初は無理なんかなぁと思ったけど，ちゃんと調べてみたらできた． 流石 <code>extensible</code> ．</p>
 <h3 id="フィールドの順序">フィールドの順序</h3>
 <p>なんで最初は無理なのかと思ったかと言うと，<strong>型レベルリストは順序も大事</strong> だからです． そりゃ集合じゃなくてリストなんだからそうだよね． 以下の二つの型は違う．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">A</span> <span class="fu">=</span> <span class="dt">Record</span> <span class="ch">'[ &quot;foo&quot; &gt;: Text, &quot;bar&quot; &gt;: Text ]</span>
-<span class="kw">type</span> <span class="dt">B</span> <span class="fu">=</span> <span class="dt">Record</span> <span class="ch">'[ &quot;bar&quot; &gt;: Text, &quot;foo&quot; &gt;: Text ]</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">type</span> <span class="dt">A</span> <span class="fu">=</span> <span class="dt">Record</span> <span class="ch">'[ &quot;foo&quot; &gt;: Text, &quot;bar&quot; &gt;: Text ]</span></a>
+<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="kw">type</span> <span class="dt">B</span> <span class="fu">=</span> <span class="dt">Record</span> <span class="ch">'[ &quot;bar&quot; &gt;: Text, &quot;foo&quot; &gt;: Text ]</span></a></code></pre></div>
 <p>試しに <code>Proxy</code> を使って比較すると</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">ghci<span class="fu">&gt;</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">A</span>) <span class="fu">==</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">A</span>)
-<span class="dt">True</span>
-ghci<span class="fu">&gt;</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">B</span>) <span class="fu">==</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">B</span>)
-<span class="dt">True</span>
-ghci<span class="fu">&gt;</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">A</span>) <span class="fu">==</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">B</span>)
-<span class="fu">&lt;</span>interactive<span class="fu">&gt;:</span><span class="dv">11</span><span class="fu">:</span><span class="dv">24</span><span class="fu">:</span> error<span class="fu">:</span>
-    • <span class="dt">Couldn't</span> match <span class="kw">type</span> ‘<span class="st">&quot;bar&quot;</span>’ with ‘<span class="st">&quot;foo&quot;</span>’
-      <span class="dt">Expected</span> <span class="kw">type</span><span class="fu">:</span> <span class="dt">Proxy</span> <span class="dt">A</span>
-        <span class="dt">Actual</span> <span class="kw">type</span><span class="fu">:</span> <span class="dt">Proxy</span> <span class="dt">B</span>
-    • <span class="dt">In</span> the second argument <span class="kw">of</span> ‘(<span class="fu">==</span>)’, namely ‘(<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">B</span>)’
-      <span class="dt">In</span> the expression<span class="fu">:</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">A</span>) <span class="fu">==</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">B</span>)
-      <span class="dt">In</span> an equation for ‘it’<span class="fu">:</span>
-          it <span class="fu">=</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">A</span>) <span class="fu">==</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">B</span>)</code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1">ghci<span class="fu">&gt;</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">A</span>) <span class="fu">==</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">A</span>)</a>
+<a class="sourceLine" id="cb7-2" data-line-number="2"><span class="dt">True</span></a>
+<a class="sourceLine" id="cb7-3" data-line-number="3">ghci<span class="fu">&gt;</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">B</span>) <span class="fu">==</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">B</span>)</a>
+<a class="sourceLine" id="cb7-4" data-line-number="4"><span class="dt">True</span></a>
+<a class="sourceLine" id="cb7-5" data-line-number="5">ghci<span class="fu">&gt;</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">A</span>) <span class="fu">==</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">B</span>)</a>
+<a class="sourceLine" id="cb7-6" data-line-number="6"><span class="fu">&lt;</span>interactive<span class="fu">&gt;:</span><span class="dv">11</span><span class="fu">:</span><span class="dv">24</span><span class="fu">:</span> error<span class="fu">:</span></a>
+<a class="sourceLine" id="cb7-7" data-line-number="7">    • <span class="dt">Couldn't</span> match <span class="kw">type</span> ‘<span class="st">&quot;bar&quot;</span>’ with ‘<span class="st">&quot;foo&quot;</span>’</a>
+<a class="sourceLine" id="cb7-8" data-line-number="8">      <span class="dt">Expected</span> <span class="kw">type</span><span class="fu">:</span> <span class="dt">Proxy</span> <span class="dt">A</span></a>
+<a class="sourceLine" id="cb7-9" data-line-number="9">        <span class="dt">Actual</span> <span class="kw">type</span><span class="fu">:</span> <span class="dt">Proxy</span> <span class="dt">B</span></a>
+<a class="sourceLine" id="cb7-10" data-line-number="10">    • <span class="dt">In</span> the second argument <span class="kw">of</span> ‘(<span class="fu">==</span>)’, namely ‘(<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">B</span>)’</a>
+<a class="sourceLine" id="cb7-11" data-line-number="11">      <span class="dt">In</span> the expression<span class="fu">:</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">A</span>) <span class="fu">==</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">B</span>)</a>
+<a class="sourceLine" id="cb7-12" data-line-number="12">      <span class="dt">In</span> an equation for ‘it’<span class="fu">:</span></a>
+<a class="sourceLine" id="cb7-13" data-line-number="13">          it <span class="fu">=</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">A</span>) <span class="fu">==</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">B</span>)</a></code></pre></div>
 <p>で，これを一緒にすることが出来るのが <a href="https://hackage.haskell.org/package/extensible-0.4.6/docs/Data-Extensible-Inclusion.html#v:shrink"><code>shrink</code></a> という関数．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">ghci<span class="fu">&gt;</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">A</span>) <span class="fu">==</span> fmap shrink (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">B</span>)
-<span class="dt">True</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1">ghci<span class="fu">&gt;</span> (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">A</span>) <span class="fu">==</span> fmap shrink (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">B</span>)</a>
+<a class="sourceLine" id="cb8-2" data-line-number="2"><span class="dt">True</span></a></code></pre></div>
 <p>あら不思議，一致しました．</p>
 <h3 id="種明かし">種明かし</h3>
 <p>型を見てみると</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">shrink ::</span> xs ⊆ ys <span class="ot">=&gt;</span> (h <span class="fu">:*</span> ys) <span class="ot">-&gt;</span> h <span class="fu">:*</span> xs</code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="ot">shrink ::</span> xs ⊆ ys <span class="ot">=&gt;</span> (h <span class="fu">:*</span> ys) <span class="ot">-&gt;</span> h <span class="fu">:*</span> xs</a></code></pre></div>
 <p>なんですよ． お察しの通り，キモは <code>xs ⊆ ys</code> という型クラス(<code>h :* xs</code> はレコード型そのもので，<code>xs</code> はフィールドの型レベルリストだと思って欲しい)． 細かい定義は抜きにして，この意味は「<strong><code>ys</code> は <code>xs</code> が持つフィールドをすべて持ってる</strong>」って感じだと思う． あくまで持っているかなので，順番は関係なく，変換後の <code>xs</code> の順番にしてくれる． すごいね．</p>
 <p>(ちなみにこのあたりの話は「<a href="http://fumieval.hatenablog.com/entry/2015/01/21/175227">ぼくのかんがえた最強の拡張可能レコード - モナドとわたしとコモナド</a>」の最後にチロっと書いてあった)</p>
 <h3 id="順番があっていれば簡単">順番があっていれば簡単</h3>
 <p>で，話を戻すと． もし，<code>User'</code> 型が次のような定義なら，ものすごーーーく話が簡単になる．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">User''</span> <span class="fu">=</span> <span class="dt">Record</span>
-  <span class="ch">'[ &quot;address&quot; &gt;: Text</span>
-   , <span class="st">&quot;id&quot;</span> <span class="fu">&gt;:</span> <span class="dt">ID</span>
-   , <span class="st">&quot;name&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span>
-   , <span class="st">&quot;age&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Int</span>
-   ]</code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw">type</span> <span class="dt">User''</span> <span class="fu">=</span> <span class="dt">Record</span></a>
+<a class="sourceLine" id="cb10-2" data-line-number="2">  <span class="ch">'[ &quot;address&quot; &gt;: Text</span></a>
+<a class="sourceLine" id="cb10-3" data-line-number="3">   , <span class="st">&quot;id&quot;</span> <span class="fu">&gt;:</span> <span class="dt">ID</span></a>
+<a class="sourceLine" id="cb10-4" data-line-number="4">   , <span class="st">&quot;name&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb10-5" data-line-number="5">   , <span class="st">&quot;age&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb10-6" data-line-number="6">   ]</a></code></pre></div>
 <p>リストなんだから先頭にコンスしてやればよい．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">ghci<span class="fu">&gt;</span> <span class="fu">#</span>address <span class="fu">@=</span> <span class="st">&quot;Japan&quot;</span> <span class="fu">&lt;:</span><span class="ot"> user1 ::</span> <span class="dt">User''</span>
-address <span class="fu">@=</span> <span class="st">&quot;Japan&quot;</span> <span class="fu">&lt;:</span> id <span class="fu">@=</span> <span class="st">&quot;U123456789&quot;</span> <span class="fu">&lt;:</span> name <span class="fu">@=</span> <span class="st">&quot;Alice&quot;</span> <span class="fu">&lt;:</span> age <span class="fu">@=</span> <span class="dv">24</span> <span class="fu">&lt;:</span> nil</code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" data-line-number="1">ghci<span class="fu">&gt;</span> <span class="fu">#</span>address <span class="fu">@=</span> <span class="st">&quot;Japan&quot;</span> <span class="fu">&lt;:</span><span class="ot"> user1 ::</span> <span class="dt">User''</span></a>
+<a class="sourceLine" id="cb11-2" data-line-number="2">address <span class="fu">@=</span> <span class="st">&quot;Japan&quot;</span> <span class="fu">&lt;:</span> id <span class="fu">@=</span> <span class="st">&quot;U123456789&quot;</span> <span class="fu">&lt;:</span> name <span class="fu">@=</span> <span class="st">&quot;Alice&quot;</span> <span class="fu">&lt;:</span> age <span class="fu">@=</span> <span class="dv">24</span> <span class="fu">&lt;:</span> nil</a></code></pre></div>
 <p>もちろん，<code>User'</code> 型なら怒られる</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">ghci<span class="fu">&gt;</span> <span class="fu">#</span>address <span class="fu">@=</span> <span class="st">&quot;Japan&quot;</span> <span class="fu">&lt;:</span><span class="ot"> user1 ::</span> <span class="dt">User'</span>
-<span class="fu">&lt;</span>interactive<span class="fu">&gt;:</span><span class="dv">37</span><span class="fu">:</span><span class="dv">1</span><span class="fu">:</span> error<span class="fu">:</span>
-    • <span class="dt">Couldn't</span> match <span class="kw">type</span> ‘<span class="ch">'Missing &quot;address&quot;’</span>
-                     with ‘<span class="ch">'Expecting (n0 '</span><span class="fu">Data.Extensible.:&gt;</span> v20)’
-        arising from the overloaded label ‘<span class="fu">#</span>address’
-    • <span class="dt">In</span> the first argument <span class="kw">of</span> ‘(<span class="fu">@=</span>)’, namely ‘<span class="fu">#</span>address’
-      <span class="dt">In</span> the first argument <span class="kw">of</span> ‘(<span class="fu">&lt;:</span>)’, namely ‘<span class="fu">#</span>address <span class="fu">@=</span> <span class="st">&quot;Japan&quot;</span>’
-      <span class="dt">In</span> the expression<span class="fu">:</span> <span class="fu">#</span>address <span class="fu">@=</span> <span class="st">&quot;Japan&quot;</span> <span class="fu">&lt;:</span><span class="ot"> user1 ::</span> <span class="dt">User'</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" data-line-number="1">ghci<span class="fu">&gt;</span> <span class="fu">#</span>address <span class="fu">@=</span> <span class="st">&quot;Japan&quot;</span> <span class="fu">&lt;:</span><span class="ot"> user1 ::</span> <span class="dt">User'</span></a>
+<a class="sourceLine" id="cb12-2" data-line-number="2"><span class="fu">&lt;</span>interactive<span class="fu">&gt;:</span><span class="dv">37</span><span class="fu">:</span><span class="dv">1</span><span class="fu">:</span> error<span class="fu">:</span></a>
+<a class="sourceLine" id="cb12-3" data-line-number="3">    • <span class="dt">Couldn't</span> match <span class="kw">type</span> ‘<span class="ch">'Missing &quot;address&quot;’</span></a>
+<a class="sourceLine" id="cb12-4" data-line-number="4">                     with ‘<span class="ch">'Expecting (n0 '</span><span class="fu">Data.Extensible.:&gt;</span> v20)’</a>
+<a class="sourceLine" id="cb12-5" data-line-number="5">        arising from the overloaded label ‘<span class="fu">#</span>address’</a>
+<a class="sourceLine" id="cb12-6" data-line-number="6">    • <span class="dt">In</span> the first argument <span class="kw">of</span> ‘(<span class="fu">@=</span>)’, namely ‘<span class="fu">#</span>address’</a>
+<a class="sourceLine" id="cb12-7" data-line-number="7">      <span class="dt">In</span> the first argument <span class="kw">of</span> ‘(<span class="fu">&lt;:</span>)’, namely ‘<span class="fu">#</span>address <span class="fu">@=</span> <span class="st">&quot;Japan&quot;</span>’</a>
+<a class="sourceLine" id="cb12-8" data-line-number="8">      <span class="dt">In</span> the expression<span class="fu">:</span> <span class="fu">#</span>address <span class="fu">@=</span> <span class="st">&quot;Japan&quot;</span> <span class="fu">&lt;:</span><span class="ot"> user1 ::</span> <span class="dt">User'</span></a></code></pre></div>
 <h3 id="魔法の-shrink">魔法の <code>shrink</code></h3>
 <p>まぁあとはお察しの通り，<code>shrink</code> を適用してやればよい</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">ghci<span class="fu">&gt;</span> shrink <span class="fu">$</span> <span class="fu">#</span>address <span class="fu">@=</span> (<span class="st">&quot;Japan&quot;</span><span class="ot"> ::</span> <span class="dt">Text</span>) <span class="fu">&lt;:</span><span class="ot"> user1 ::</span> <span class="dt">User'</span>
-id <span class="fu">@=</span> <span class="st">&quot;U123456789&quot;</span> <span class="fu">&lt;:</span> name <span class="fu">@=</span> <span class="st">&quot;Alice&quot;</span> <span class="fu">&lt;:</span> age <span class="fu">@=</span> <span class="dv">24</span> <span class="fu">&lt;:</span> address <span class="fu">@=</span> <span class="st">&quot;Japan&quot;</span> <span class="fu">&lt;:</span> nil</code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" data-line-number="1">ghci<span class="fu">&gt;</span> shrink <span class="fu">$</span> <span class="fu">#</span>address <span class="fu">@=</span> (<span class="st">&quot;Japan&quot;</span><span class="ot"> ::</span> <span class="dt">Text</span>) <span class="fu">&lt;:</span><span class="ot"> user1 ::</span> <span class="dt">User'</span></a>
+<a class="sourceLine" id="cb13-2" data-line-number="2">id <span class="fu">@=</span> <span class="st">&quot;U123456789&quot;</span> <span class="fu">&lt;:</span> name <span class="fu">@=</span> <span class="st">&quot;Alice&quot;</span> <span class="fu">&lt;:</span> age <span class="fu">@=</span> <span class="dv">24</span> <span class="fu">&lt;:</span> address <span class="fu">@=</span> <span class="st">&quot;Japan&quot;</span> <span class="fu">&lt;:</span> nil</a></code></pre></div>
 <p>型注釈を加えてやらないといけないが，目的のことができた(<code>Bool</code> 型のように値が多相的じゃなければ型注釈は必要ないはず)．</p>
 <h2 id="レコード型を縮小する">レコード型を縮小する</h2>
 <p><code>shrink</code> の名前や <code>xs ⊆ ys</code> の見た目からわかるように，本来は縮小するのに用いる． 仮に次のような <code>User'''</code> 型を定義する．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">User'''</span> <span class="fu">=</span> <span class="dt">Record</span>
-  <span class="ch">'[ &quot;name&quot; &gt;: Text</span>
-   , <span class="st">&quot;age&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Int</span>
-   ]</code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="kw">type</span> <span class="dt">User'''</span> <span class="fu">=</span> <span class="dt">Record</span></a>
+<a class="sourceLine" id="cb14-2" data-line-number="2">  <span class="ch">'[ &quot;name&quot; &gt;: Text</span></a>
+<a class="sourceLine" id="cb14-3" data-line-number="3">   , <span class="st">&quot;age&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb14-4" data-line-number="4">   ]</a></code></pre></div>
 <p><code>User'''</code> 型よりフィールドの種類が多い <code>User</code> 型の値 <code>user1</code> から，<code>User'''</code> 型の値を生成するには，単純に <code>shrink</code> 関数を適用するだけで良い．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;&gt;</span> shrink<span class="ot"> user1 ::</span> <span class="dt">User'''</span>
-name <span class="fu">@=</span> <span class="st">&quot;Alice&quot;</span> <span class="fu">&lt;:</span> age <span class="fu">@=</span> <span class="dv">24</span> <span class="fu">&lt;:</span> nil</code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" data-line-number="1"><span class="fu">&gt;&gt;</span> shrink<span class="ot"> user1 ::</span> <span class="dt">User'''</span></a>
+<a class="sourceLine" id="cb15-2" data-line-number="2">name <span class="fu">@=</span> <span class="st">&quot;Alice&quot;</span> <span class="fu">&lt;:</span> age <span class="fu">@=</span> <span class="dv">24</span> <span class="fu">&lt;:</span> nil</a></code></pre></div>
 <p>すごいね．</p>
 <h2 id="おまけ-拡張可能直和型">おまけ: 拡張可能直和型</h2>
 <p><code>shrink</code> の定義の下に，<a href="https://hackage.haskell.org/package/extensible-0.4.6/docs/Data-Extensible-Inclusion.html#v:spread"><code>spread</code></a> と言う関数があり，名前や型から察するに <code>shrink</code> の逆っぽい．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">spread ::</span> xs ⊆ ys <span class="ot">=&gt;</span> (h <span class="fu">:|</span> xs) <span class="ot">-&gt;</span> h <span class="fu">:|</span> ys</code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" data-line-number="1"><span class="ot">spread ::</span> xs ⊆ ys <span class="ot">=&gt;</span> (h <span class="fu">:|</span> xs) <span class="ot">-&gt;</span> h <span class="fu">:|</span> ys</a></code></pre></div>
 <p><code>(:|)</code> が違う． <code>shrink</code> は <code>(:*)</code> だった． 実は，<code>(:*)</code> は直積型，<code>(:|)</code> は直和型を表している． <code>(:|)</code> をラップした(ような)型が <a href="https://hackage.haskell.org/package/extensible-0.4.6/docs/Data-Extensible-Field.html#t:Variant"><code>Variant</code></a> 型である．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Color</span> <span class="fu">=</span> <span class="dt">Variant</span>
-  <span class="ch">'[ &quot;rgb&quot; &gt;: (Int,Int,Int)</span>
-   , <span class="st">&quot;cmyk&quot;</span> <span class="fu">&gt;:</span> (<span class="dt">Int</span>,<span class="dt">Int</span>,<span class="dt">Int</span>,<span class="dt">Int</span>)
-   ]</code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" data-line-number="1"><span class="kw">type</span> <span class="dt">Color</span> <span class="fu">=</span> <span class="dt">Variant</span></a>
+<a class="sourceLine" id="cb17-2" data-line-number="2">  <span class="ch">'[ &quot;rgb&quot; &gt;: (Int,Int,Int)</span></a>
+<a class="sourceLine" id="cb17-3" data-line-number="3">   , <span class="st">&quot;cmyk&quot;</span> <span class="fu">&gt;:</span> (<span class="dt">Int</span>,<span class="dt">Int</span>,<span class="dt">Int</span>,<span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb17-4" data-line-number="4">   ]</a></code></pre></div>
 <p>これは <code>data Color = RGB Int Int Int | CMYK Int Int Int Int</code> を拡張可能にした感じである．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">ghci<span class="fu">&gt;</span> color1 <span class="fu">=</span> embed <span class="fu">$</span> <span class="fu">#</span>rgb <span class="fu">@=</span> (<span class="dv">0</span><span class="ot"> ::</span> <span class="dt">Int</span>, <span class="dv">0</span><span class="ot"> ::</span> <span class="dt">Int</span>, <span class="dv">0</span><span class="ot"> ::</span> <span class="dt">Int</span>)<span class="ot"> ::</span> <span class="dt">Color</span>
-ghci<span class="fu">&gt;</span> color1
-<span class="dt">EmbedAt</span> <span class="fu">$</span>(mkMembership <span class="dv">0</span>) (rgb <span class="fu">@=</span> (<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>))
-ghci<span class="fu">&gt;</span> color2 <span class="fu">=</span> embedAssoc <span class="fu">$</span> <span class="fu">#</span>cmyk <span class="fu">@=</span> (<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>)<span class="ot"> ::</span> <span class="dt">Color</span>
-ghci<span class="fu">&gt;</span> color2
-<span class="dt">EmbedAt</span> <span class="fu">$</span>(mkMembership <span class="dv">1</span>) (cmyk <span class="fu">@=</span> (<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>))</code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb18-1" data-line-number="1">ghci<span class="fu">&gt;</span> color1 <span class="fu">=</span> embed <span class="fu">$</span> <span class="fu">#</span>rgb <span class="fu">@=</span> (<span class="dv">0</span><span class="ot"> ::</span> <span class="dt">Int</span>, <span class="dv">0</span><span class="ot"> ::</span> <span class="dt">Int</span>, <span class="dv">0</span><span class="ot"> ::</span> <span class="dt">Int</span>)<span class="ot"> ::</span> <span class="dt">Color</span></a>
+<a class="sourceLine" id="cb18-2" data-line-number="2">ghci<span class="fu">&gt;</span> color1</a>
+<a class="sourceLine" id="cb18-3" data-line-number="3"><span class="dt">EmbedAt</span> <span class="fu">$</span>(mkMembership <span class="dv">0</span>) (rgb <span class="fu">@=</span> (<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>))</a>
+<a class="sourceLine" id="cb18-4" data-line-number="4">ghci<span class="fu">&gt;</span> color2 <span class="fu">=</span> embedAssoc <span class="fu">$</span> <span class="fu">#</span>cmyk <span class="fu">@=</span> (<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>)<span class="ot"> ::</span> <span class="dt">Color</span></a>
+<a class="sourceLine" id="cb18-5" data-line-number="5">ghci<span class="fu">&gt;</span> color2</a>
+<a class="sourceLine" id="cb18-6" data-line-number="6"><span class="dt">EmbedAt</span> <span class="fu">$</span>(mkMembership <span class="dv">1</span>) (cmyk <span class="fu">@=</span> (<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>))</a></code></pre></div>
 <p><code>embed</code> 関数を使って KeyValue <code>#rgb @= (0,0,0)</code> を <code>Color</code> 型のひとつ目の要素に持ち上げている． ただし，<code>Int</code> がうまく推論できないようなので，型注釈を加えてやる必要がある． <code>embedAssoc</code> 関数なら，<code>Color</code> 型の KeyValue から推論してくれるようだ．</p>
 <h4 id="魔法の-spread">魔法の <code>spread</code></h4>
 <p>もうわかる通り，<code>spread</code> 関数は直和型のサブセットしかない直和型を拡張する関数だ．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;&gt;</span> <span class="kw">type</span> <span class="dt">RGB</span> <span class="fu">=</span> <span class="dt">Variant</span> <span class="ch">'[ &quot;rgb&quot; &gt;: (Int,Int,Int) ]</span>
-<span class="fu">&gt;&gt;</span> <span class="kw">type</span> <span class="dt">CMYK</span> <span class="fu">=</span> <span class="dt">Variant</span> <span class="ch">'[ &quot;cmyk&quot; &gt;: (Int,Int,Int,Int) ]</span>
-<span class="fu">&gt;&gt;</span> color3 <span class="fu">=</span> embed <span class="fu">$</span> <span class="fu">#</span>rgb <span class="fu">@=</span> (<span class="dv">0</span><span class="ot"> ::</span> <span class="dt">Int</span>, <span class="dv">0</span><span class="ot"> ::</span> <span class="dt">Int</span>, <span class="dv">0</span><span class="ot"> ::</span> <span class="dt">Int</span>)<span class="ot"> ::</span> <span class="dt">RGB</span>
-<span class="fu">&gt;&gt;</span> color4 <span class="fu">=</span> embedAssoc <span class="fu">$</span> <span class="fu">#</span>cmyk <span class="fu">@=</span> (<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>)<span class="ot"> ::</span> <span class="dt">CMYK</span>
-<span class="fu">&gt;&gt;</span> color1' <span class="fu">=</span> spread<span class="ot"> color3 ::</span> <span class="dt">Color</span>
-<span class="fu">&gt;&gt;</span> color2' <span class="fu">=</span> spread<span class="ot"> color4 ::</span> <span class="dt">Color</span></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb19-1" data-line-number="1"><span class="fu">&gt;&gt;</span> <span class="kw">type</span> <span class="dt">RGB</span> <span class="fu">=</span> <span class="dt">Variant</span> <span class="ch">'[ &quot;rgb&quot; &gt;: (Int,Int,Int) ]</span></a>
+<a class="sourceLine" id="cb19-2" data-line-number="2"><span class="fu">&gt;&gt;</span> <span class="kw">type</span> <span class="dt">CMYK</span> <span class="fu">=</span> <span class="dt">Variant</span> <span class="ch">'[ &quot;cmyk&quot; &gt;: (Int,Int,Int,Int) ]</span></a>
+<a class="sourceLine" id="cb19-3" data-line-number="3"><span class="fu">&gt;&gt;</span> color3 <span class="fu">=</span> embed <span class="fu">$</span> <span class="fu">#</span>rgb <span class="fu">@=</span> (<span class="dv">0</span><span class="ot"> ::</span> <span class="dt">Int</span>, <span class="dv">0</span><span class="ot"> ::</span> <span class="dt">Int</span>, <span class="dv">0</span><span class="ot"> ::</span> <span class="dt">Int</span>)<span class="ot"> ::</span> <span class="dt">RGB</span></a>
+<a class="sourceLine" id="cb19-4" data-line-number="4"><span class="fu">&gt;&gt;</span> color4 <span class="fu">=</span> embedAssoc <span class="fu">$</span> <span class="fu">#</span>cmyk <span class="fu">@=</span> (<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>)<span class="ot"> ::</span> <span class="dt">CMYK</span></a>
+<a class="sourceLine" id="cb19-5" data-line-number="5"><span class="fu">&gt;&gt;</span> color1' <span class="fu">=</span> spread<span class="ot"> color3 ::</span> <span class="dt">Color</span></a>
+<a class="sourceLine" id="cb19-6" data-line-number="6"><span class="fu">&gt;&gt;</span> color2' <span class="fu">=</span> spread<span class="ot"> color4 ::</span> <span class="dt">Color</span></a></code></pre></div>
 <p>すごいね(笑)</p>
 <h2 id="おしまい">おしまい</h2>
 <p>なんども言うけど，ぼくが作ったわけではないからね．</p>

@@ -90,84 +90,84 @@
 <h2 id="移植">移植</h2>
 <h3 id="jekyll-と-hakyll">Jekyll と Hakyll</h3>
 <p>Jekyll も Hakyll も HTML に HTML を挿入したり，環境変数みたいのを使えたり，<code>if</code> や <code>for</code> の制御構文が使えたり，かなり共通項が多い． 以下に対応を書いてみた．</p>
-<div class="sourceCode"><pre class="sourceCode html"><code class="sourceCode html"><span class="co">&lt;!-- 比較 : 上 Jekyll 下 Hakyll --&gt;</span>
-
-<span class="co">&lt;!-- HTMLの挿入 --&gt;</span>
-
-{% include header.html %}
-
-$partial(&quot;includes/header.html&quot;)$
-
-<span class="co">&lt;!-- 制御構文 if --&gt;</span>
-{% if page.title %}
-  {{ page.title | escape }}
-{% else %}
-  {{ site.title | escape }}
-{% endif %}
-
-$if(title)$
-  $title$
-$else$
-  $site_title$
-$endif$
-
-<span class="co">&lt;!-- 制御構文 for --&gt;</span>
-
-{% for post in site.posts %}
-  <span class="kw">&lt;li&gt;</span>
-    <span class="kw">&lt;span</span><span class="ot"> class=</span><span class="st">&quot;post-meta&quot;</span><span class="kw">&gt;</span>{{ post.date | date: &quot;%b %-d, %Y&quot; }}<span class="kw">&lt;/span&gt;</span>
-    <span class="kw">&lt;a</span><span class="ot"> class=</span><span class="st">&quot;post-link&quot;</span><span class="ot"> href=</span><span class="st">&quot;{{ post.url | prepend: site.baseurl }}&quot;</span><span class="kw">&gt;</span>{{ post.title }}<span class="kw">&lt;/a&gt;</span>            
-  <span class="kw">&lt;/li&gt;</span>
-{% endfor %}
-
-$for(posts)$
-  <span class="kw">&lt;li&gt;</span>
-    <span class="kw">&lt;span</span><span class="ot"> class=</span><span class="st">&quot;post-meta&quot;</span><span class="kw">&gt;</span>$date$<span class="kw">&lt;/span&gt;</span>
-    <span class="kw">&lt;a</span><span class="ot"> class=</span><span class="st">&quot;post-link&quot;</span><span class="ot"> href=</span><span class="st">&quot;$url$&quot;</span><span class="kw">&gt;</span>$title$<span class="kw">&lt;/a&gt;</span>
-  <span class="kw">&lt;/li&gt;</span>
-$endfor$</code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode html"><code class="sourceCode html"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="co">&lt;!-- 比較 : 上 Jekyll 下 Hakyll --&gt;</span></a>
+<a class="sourceLine" id="cb1-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb1-3" data-line-number="3"><span class="co">&lt;!-- HTMLの挿入 --&gt;</span></a>
+<a class="sourceLine" id="cb1-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb1-5" data-line-number="5">{% include header.html %}</a>
+<a class="sourceLine" id="cb1-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb1-7" data-line-number="7">$partial(&quot;includes/header.html&quot;)$</a>
+<a class="sourceLine" id="cb1-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb1-9" data-line-number="9"><span class="co">&lt;!-- 制御構文 if --&gt;</span></a>
+<a class="sourceLine" id="cb1-10" data-line-number="10">{% if page.title %}</a>
+<a class="sourceLine" id="cb1-11" data-line-number="11">  {{ page.title | escape }}</a>
+<a class="sourceLine" id="cb1-12" data-line-number="12">{% else %}</a>
+<a class="sourceLine" id="cb1-13" data-line-number="13">  {{ site.title | escape }}</a>
+<a class="sourceLine" id="cb1-14" data-line-number="14">{% endif %}</a>
+<a class="sourceLine" id="cb1-15" data-line-number="15"></a>
+<a class="sourceLine" id="cb1-16" data-line-number="16">$if(title)$</a>
+<a class="sourceLine" id="cb1-17" data-line-number="17">  $title$</a>
+<a class="sourceLine" id="cb1-18" data-line-number="18">$else$</a>
+<a class="sourceLine" id="cb1-19" data-line-number="19">  $site_title$</a>
+<a class="sourceLine" id="cb1-20" data-line-number="20">$endif$</a>
+<a class="sourceLine" id="cb1-21" data-line-number="21"></a>
+<a class="sourceLine" id="cb1-22" data-line-number="22"><span class="co">&lt;!-- 制御構文 for --&gt;</span></a>
+<a class="sourceLine" id="cb1-23" data-line-number="23"></a>
+<a class="sourceLine" id="cb1-24" data-line-number="24">{% for post in site.posts %}</a>
+<a class="sourceLine" id="cb1-25" data-line-number="25">  <span class="kw">&lt;li&gt;</span></a>
+<a class="sourceLine" id="cb1-26" data-line-number="26">    <span class="kw">&lt;span</span><span class="ot"> class=</span><span class="st">&quot;post-meta&quot;</span><span class="kw">&gt;</span>{{ post.date | date: &quot;%b %-d, %Y&quot; }}<span class="kw">&lt;/span&gt;</span></a>
+<a class="sourceLine" id="cb1-27" data-line-number="27">    <span class="kw">&lt;a</span><span class="ot"> class=</span><span class="st">&quot;post-link&quot;</span><span class="ot"> href=</span><span class="st">&quot;{{ post.url | prepend: site.baseurl }}&quot;</span><span class="kw">&gt;</span>{{ post.title }}<span class="kw">&lt;/a&gt;</span>            </a>
+<a class="sourceLine" id="cb1-28" data-line-number="28">  <span class="kw">&lt;/li&gt;</span></a>
+<a class="sourceLine" id="cb1-29" data-line-number="29">{% endfor %}</a>
+<a class="sourceLine" id="cb1-30" data-line-number="30"></a>
+<a class="sourceLine" id="cb1-31" data-line-number="31">$for(posts)$</a>
+<a class="sourceLine" id="cb1-32" data-line-number="32">  <span class="kw">&lt;li&gt;</span></a>
+<a class="sourceLine" id="cb1-33" data-line-number="33">    <span class="kw">&lt;span</span><span class="ot"> class=</span><span class="st">&quot;post-meta&quot;</span><span class="kw">&gt;</span>$date$<span class="kw">&lt;/span&gt;</span></a>
+<a class="sourceLine" id="cb1-34" data-line-number="34">    <span class="kw">&lt;a</span><span class="ot"> class=</span><span class="st">&quot;post-link&quot;</span><span class="ot"> href=</span><span class="st">&quot;$url$&quot;</span><span class="kw">&gt;</span>$title$<span class="kw">&lt;/a&gt;</span></a>
+<a class="sourceLine" id="cb1-35" data-line-number="35">  <span class="kw">&lt;/li&gt;</span></a>
+<a class="sourceLine" id="cb1-36" data-line-number="36">$endfor$</a></code></pre></div>
 <p>基本的に <code>{{ ... }}</code> や <code>{% ... %}</code> が <code>$ ... $</code> に変わっただけのように見える．</p>
 <p>実は環境変数(みたいなの)の設定に関する点で大きく異なる．</p>
 <p>Jekyll の場合，環境変数はディレクトリやファイルから自動で設定される． 対して Hakyll は Haskell プログロムを書いて，自分で設定する必要がある．</p>
-<p>例えば，for 文の <code>posts</code> という変数には，Jekyll の場合 <code>_posts</code> ディレクトリがそのまま対応している． 対して，Hakyll の場合，<code>posts</code> ディレクトリが対応することを次のように <code>site.hs</code> に<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>書いてやる必要がある．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">create [<span class="st">&quot;archive.html&quot;</span>] <span class="fu">$</span> <span class="kw">do</span>
-  route idRoute
-  compile <span class="fu">$</span> <span class="kw">do</span>
-      posts <span class="ot">&lt;-</span> recentFirst <span class="fu">=&lt;&lt;</span> loadAll <span class="st">&quot;posts/*&quot;</span> <span class="co">-- ココと</span>
-      <span class="kw">let</span> archiveCtx <span class="fu">=</span>
-            listField <span class="st">&quot;posts&quot;</span> postCtx (return posts) <span class="ot">`mappend`</span> <span class="co">-- ココ</span>
-            constField <span class="st">&quot;title&quot;</span> <span class="st">&quot;Archives&quot;</span> <span class="ot">`mappend`</span>
-            siteCtx <span class="ot">`mappend`</span>
-            defaultContext</code></pre></div>
+<p>例えば，for 文の <code>posts</code> という変数には，Jekyll の場合 <code>_posts</code> ディレクトリがそのまま対応している． 対して，Hakyll の場合，<code>posts</code> ディレクトリが対応することを次のように <code>site.hs</code> に<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>書いてやる必要がある．</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1">create [<span class="st">&quot;archive.html&quot;</span>] <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb2-2" data-line-number="2">  route idRoute</a>
+<a class="sourceLine" id="cb2-3" data-line-number="3">  compile <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb2-4" data-line-number="4">      posts <span class="ot">&lt;-</span> recentFirst <span class="fu">=&lt;&lt;</span> loadAll <span class="st">&quot;posts/*&quot;</span> <span class="co">-- ココと</span></a>
+<a class="sourceLine" id="cb2-5" data-line-number="5">      <span class="kw">let</span> archiveCtx <span class="fu">=</span></a>
+<a class="sourceLine" id="cb2-6" data-line-number="6">            listField <span class="st">&quot;posts&quot;</span> postCtx (return posts) <span class="ot">`mappend`</span> <span class="co">-- ココ</span></a>
+<a class="sourceLine" id="cb2-7" data-line-number="7">            constField <span class="st">&quot;title&quot;</span> <span class="st">&quot;Archives&quot;</span> <span class="ot">`mappend`</span></a>
+<a class="sourceLine" id="cb2-8" data-line-number="8">            siteCtx <span class="ot">`mappend`</span></a>
+<a class="sourceLine" id="cb2-9" data-line-number="9">            defaultContext</a></code></pre></div>
 <p>要するに，Hakyll の方が面倒だが自由度が高いのだ．</p>
 <p>なので，この違いを手作業で食ってやる必要があった．</p>
 <h3 id="環境変数を定義">環境変数を定義</h3>
 <p>上述した通り，Hakyll の場合はどこでどんな環境変数を使えるかを自前で全部定義してあげる必要がある．</p>
 <p>Hakyll では <code>match</code> や <code>create</code> という関数を用いることで，HTML ファイルの <code>$ ... $</code> 中身を置き換えたり，ファイル自体を生成したりできる． 例えば，次のようなコードを書ける．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">match <span class="st">&quot;about.md&quot;</span> <span class="fu">$</span> <span class="kw">do</span>
-  route   <span class="fu">$</span> setExtension <span class="st">&quot;html&quot;</span>                       <span class="co">-- (1)</span>
-  compile <span class="fu">$</span> pandocCompiler                            <span class="co">-- (2)</span>
-    <span class="fu">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/page.html&quot;</span>     
-                (siteCtx <span class="ot">`mappend`</span> defaultContext)    <span class="co">-- (3)</span>
-    <span class="fu">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/default.html&quot;</span>
-                (siteCtx <span class="ot">`mappend`</span> defaultContext)    <span class="co">-- (4)</span>
-    <span class="fu">&gt;&gt;=</span> relativizeUrls                                <span class="co">-- (5)</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1">match <span class="st">&quot;about.md&quot;</span> <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb3-2" data-line-number="2">  route   <span class="fu">$</span> setExtension <span class="st">&quot;html&quot;</span>                       <span class="co">-- (1)</span></a>
+<a class="sourceLine" id="cb3-3" data-line-number="3">  compile <span class="fu">$</span> pandocCompiler                            <span class="co">-- (2)</span></a>
+<a class="sourceLine" id="cb3-4" data-line-number="4">    <span class="fu">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/page.html&quot;</span>     </a>
+<a class="sourceLine" id="cb3-5" data-line-number="5">                (siteCtx <span class="ot">`mappend`</span> defaultContext)    <span class="co">-- (3)</span></a>
+<a class="sourceLine" id="cb3-6" data-line-number="6">    <span class="fu">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/default.html&quot;</span></a>
+<a class="sourceLine" id="cb3-7" data-line-number="7">                (siteCtx <span class="ot">`mappend`</span> defaultContext)    <span class="co">-- (4)</span></a>
+<a class="sourceLine" id="cb3-8" data-line-number="8">    <span class="fu">&gt;&gt;=</span> relativizeUrls                                <span class="co">-- (5)</span></a></code></pre></div>
 <p>これは，<code>about.md</code> ファイルを使って <code>about.html</code> ファイルを生成している． 各手続きを説明すると</p>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li>拡張子を <code>html</code> に変更</li>
 <li>pandoc で MD から HTML にコンパイル</li>
 <li><code>page.html</code> の <code>$body$</code> に 変換した <code>about.html</code> を挿入</li>
 <li><code>default.html</code> の <code>$body$</code> に変換した <code>about.html</code> を挿入</li>
 <li>URL を相対化</li>
 </ol>
-<ol start="3" style="list-style-type: decimal">
+<ol start="3" type="1">
 <li>の “変換した <code>about.html</code>” とは，pandoc でコンパイルまでしたものを指し，(4) のは (3) の挿入までのものを指している．</li>
 </ol>
 <p>ココでの，<code>siteCtx</code> や <code>defaultContext</code> が定義された環境変数のリストである． 例えば次のようなものが書ける．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">siteCtx ::</span> <span class="dt">Context</span> <span class="dt">String</span>
-siteCtx <span class="fu">=</span>
-  dateField <span class="st">&quot;site_title&quot;</span> <span class="st">&quot;My Haskell Blog&quot;</span> <span class="ot">`mappend`</span>
-  dateField <span class="st">&quot;github_account&quot;</span> <span class="st">&quot;ilovehaskell&quot;</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="ot">siteCtx ::</span> <span class="dt">Context</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb4-2" data-line-number="2">siteCtx <span class="fu">=</span></a>
+<a class="sourceLine" id="cb4-3" data-line-number="3">  dateField <span class="st">&quot;site_title&quot;</span> <span class="st">&quot;My Haskell Blog&quot;</span> <span class="ot">`mappend`</span></a>
+<a class="sourceLine" id="cb4-4" data-line-number="4">  dateField <span class="st">&quot;github_account&quot;</span> <span class="st">&quot;ilovehaskell&quot;</span></a></code></pre></div>
 <p>このような <code>siteCtx</code> を定義して，上記した <code>match &quot;about.md&quot; $ do ...</code> を実行すると，<code>page.html</code> や <code>default.html</code> 内の <code>$site_title$</code> が “My Haskell Blog” に置き換えられる．</p>
 <p>基本的にはこの点をチマチマと書き換えてた．</p>
 <h3 id="sass">sass</h3>
@@ -176,56 +176,56 @@ siteCtx <span class="fu">=</span>
 <p>そのうち自動化したい．</p>
 <h3 id="日付と時間">日付と時間</h3>
 <p>Jekyll の場合，与えた環境変数(みたいなの)のフォーマットを後から指定できる．</p>
-<div class="sourceCode"><pre class="sourceCode html"><code class="sourceCode html"><span class="kw">&lt;p</span><span class="ot"> class=</span><span class="st">&quot;post-meta&quot;</span><span class="kw">&gt;</span>
-  <span class="kw">&lt;time</span><span class="ot"> datetime=</span><span class="st">&quot;{{ page.date | date_to_xmlschema }}&quot;</span><span class="ot"> itemprop=</span><span class="st">&quot;datePublished&quot;</span><span class="kw">&gt;</span>
-    {{ page.date | date: &quot;%b %-d, %Y&quot; }}
-  <span class="kw">&lt;/time&gt;</span>
-  ...
-<span class="kw">&lt;/p&gt;</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode html"><code class="sourceCode html"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="kw">&lt;p</span><span class="ot"> class=</span><span class="st">&quot;post-meta&quot;</span><span class="kw">&gt;</span></a>
+<a class="sourceLine" id="cb5-2" data-line-number="2">  <span class="kw">&lt;time</span><span class="ot"> datetime=</span><span class="st">&quot;{{ page.date | date_to_xmlschema }}&quot;</span><span class="ot"> itemprop=</span><span class="st">&quot;datePublished&quot;</span><span class="kw">&gt;</span></a>
+<a class="sourceLine" id="cb5-3" data-line-number="3">    {{ page.date | date: &quot;%b %-d, %Y&quot; }}</a>
+<a class="sourceLine" id="cb5-4" data-line-number="4">  <span class="kw">&lt;/time&gt;</span></a>
+<a class="sourceLine" id="cb5-5" data-line-number="5">  ...</a>
+<a class="sourceLine" id="cb5-6" data-line-number="6"><span class="kw">&lt;/p&gt;</span></a></code></pre></div>
 <p>2行目と3行目の <code>page.date</code> 形式を別々に指定している． Hakyll ではこれができない…(ちゃんと調べてないのでもしかしたらできるかも…)．</p>
 <p>フォーマットは <code>COntext String</code> を作ったときに指定する必要がある． そのため，今回は別々の変数を与えることにした．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">postCtx ::</span> <span class="dt">Context</span> <span class="dt">String</span>
-postCtx <span class="fu">=</span>
-  dateField <span class="st">&quot;time&quot;</span> <span class="st">&quot;%Y-%m-%dT%H:%M:%S%Z&quot;</span> <span class="ot">`mappend`</span>
-  dateField <span class="st">&quot;date&quot;</span> <span class="st">&quot;%b %-d, %Y&quot;</span> <span class="ot">`mappend`</span>
-  defaultContext</code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="ot">postCtx ::</span> <span class="dt">Context</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb6-2" data-line-number="2">postCtx <span class="fu">=</span></a>
+<a class="sourceLine" id="cb6-3" data-line-number="3">  dateField <span class="st">&quot;time&quot;</span> <span class="st">&quot;%Y-%m-%dT%H:%M:%S%Z&quot;</span> <span class="ot">`mappend`</span></a>
+<a class="sourceLine" id="cb6-4" data-line-number="4">  dateField <span class="st">&quot;date&quot;</span> <span class="st">&quot;%b %-d, %Y&quot;</span> <span class="ot">`mappend`</span></a>
+<a class="sourceLine" id="cb6-5" data-line-number="5">  defaultContext</a></code></pre></div>
 <h3 id="シンタックスハイライト">シンタックスハイライト</h3>
 <p>Jekyll のシンタックスハイライトを Haskell では使うことができなかった． たぶん Jekyll と Haskell の MD から HTML へのトランスレータが違うせいだろう． 現に，Jekyll の場合，下記のようにコードを書く．</p>
-<div class="sourceCode"><pre class="sourceCode html"><code class="sourceCode html">{% highlight ruby %}
-def print_hi(name)
-  puts &quot;Hi, #{name}&quot;
-end
-print_hi('Tom')
-#=&gt; prints 'Hi, Tom' to STDOUT.
-{% endhighlight %}</code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode html"><code class="sourceCode html"><a class="sourceLine" id="cb7-1" data-line-number="1">{% highlight ruby %}</a>
+<a class="sourceLine" id="cb7-2" data-line-number="2">def print_hi(name)</a>
+<a class="sourceLine" id="cb7-3" data-line-number="3">  puts &quot;Hi, #{name}&quot;</a>
+<a class="sourceLine" id="cb7-4" data-line-number="4">end</a>
+<a class="sourceLine" id="cb7-5" data-line-number="5">print_hi('Tom')</a>
+<a class="sourceLine" id="cb7-6" data-line-number="6">#=&gt; prints 'Hi, Tom' to STDOUT.</a>
+<a class="sourceLine" id="cb7-7" data-line-number="7">{% endhighlight %}</a></code></pre></div>
 <p>仕方がないので， パッケージを使うことにした． このやり方は <a href="https://imokuri123.com/blog/2015/12/how-to-create-blog-with-hakyll-part4.html#シンタックスハイライト">このページ</a> を参照した．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">create [<span class="st">&quot;css/highlight.css&quot;</span>] <span class="fu">$</span> <span class="kw">do</span>
-  route   idRoute
-  compile <span class="fu">$</span> makeItem (compressCss <span class="fu">$</span> styleToCss pygments)</code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1">create [<span class="st">&quot;css/highlight.css&quot;</span>] <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-2" data-line-number="2">  route   idRoute</a>
+<a class="sourceLine" id="cb8-3" data-line-number="3">  compile <span class="fu">$</span> makeItem (compressCss <span class="fu">$</span> styleToCss pygments)</a></code></pre></div>
 <p>こうすることで，Hakyll でも使える <code>highlight.css</code> を作れる．</p>
 <h3 id="config-ファイル">Config ファイル</h3>
 <p>Jekyll は <code>_config.yml</code> で書いた環境変数(みたいなの)を取り込むことができる．</p>
 <p>Hakyll も新しいバージョンでは <code>meta.html</code> でできんことも無いみたいだけど，良くわからないかったので，自前で組み込んだ．</p>
 <p>Haskell の Yaml パッケージは <a href="https://hackage.haskell.org/package/yaml">yaml</a> が有名だが，これは既に決まっている構造の Yaml ファイル読み込むことはできるが，構造が決まってない Yaml を文字列の連想配列みたいのに落とすことはできない． それを行うには <a href="http://hackage.haskell.org/package/HsSyck">HsSync</a> というパッケージをラップした <a href="https://hackage.haskell.org/package/yaml-light">yaml-light</a> を使う．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">main <span class="fu">=</span> <span class="kw">do</span>
-  configYaml <span class="ot">&lt;-</span> parseYamlFile <span class="st">&quot;config.yaml&quot;</span>
-  <span class="kw">let</span> siteCtx <span class="fu">=</span> mkSiteCtx configYaml
-  hakyllWith config <span class="fu">$</span> <span class="kw">do</span> <span class="fu">...</span>
-
-<span class="ot">mkSiteCtx ::</span> <span class="dt">YamlLight</span> <span class="ot">-&gt;</span> <span class="dt">Context</span> <span class="dt">String</span>
-mkSiteCtx <span class="fu">=</span> mconcat <span class="fu">.</span> fmap mkSiteCtx' <span class="fu">.</span> getTerminalsKeys
-  <span class="kw">where</span>
-    mkSiteCtx' (val, [<span class="dt">YStr</span> key]) <span class="fu">=</span> constField (toString key) (toString val)
-    mkSiteCtx' _ <span class="fu">=</span> mempty</code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1">main <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb9-2" data-line-number="2">  configYaml <span class="ot">&lt;-</span> parseYamlFile <span class="st">&quot;config.yaml&quot;</span></a>
+<a class="sourceLine" id="cb9-3" data-line-number="3">  <span class="kw">let</span> siteCtx <span class="fu">=</span> mkSiteCtx configYaml</a>
+<a class="sourceLine" id="cb9-4" data-line-number="4">  hakyllWith config <span class="fu">$</span> <span class="kw">do</span> <span class="fu">...</span></a>
+<a class="sourceLine" id="cb9-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb9-6" data-line-number="6"><span class="ot">mkSiteCtx ::</span> <span class="dt">YamlLight</span> <span class="ot">-&gt;</span> <span class="dt">Context</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb9-7" data-line-number="7">mkSiteCtx <span class="fu">=</span> mconcat <span class="fu">.</span> fmap mkSiteCtx' <span class="fu">.</span> getTerminalsKeys</a>
+<a class="sourceLine" id="cb9-8" data-line-number="8">  <span class="kw">where</span></a>
+<a class="sourceLine" id="cb9-9" data-line-number="9">    mkSiteCtx' (val, [<span class="dt">YStr</span> key]) <span class="fu">=</span> constField (toString key) (toString val)</a>
+<a class="sourceLine" id="cb9-10" data-line-number="10">    mkSiteCtx' _ <span class="fu">=</span> mempty</a></code></pre></div>
 <h2 id="今後の展望">今後の展望</h2>
 <p>当分はこのデザインで使っていこうと思う． しかし，このデザインではタグやカテゴリによる管理ができないので対応させるか，対応した Jekyll のテーマをまた移植したい．</p>
 <h2 id="おしまい">おしまい</h2>
-<div class="footnotes">
+<section class="footnotes">
 <hr />
 <ol>
-<li id="fn1"><p><code>site.hs</code> に書くかどうか自体も自分でいじれる<a href="#fnref1">↩</a></p></li>
+<li id="fn1"><p><code>site.hs</code> に書くかどうか自体も自分でいじれる<a href="#fnref1" class="footnote-back">↩</a></p></li>
 </ol>
-</div>
+</section>
   </div>
 </div>
 </article>

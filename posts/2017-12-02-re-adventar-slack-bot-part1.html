@@ -97,16 +97,13 @@
 <p><a href="../posts/2017-12-09-re-adventar-slack-bot-part2.html">後編はコチラ</a>．</p>
 <h2 id="原因">原因</h2>
 <p>で，原因はというと，コードをよく見ると <strong>React.js を使った</strong> ようになっていた点である．</p>
-<div class="figure">
-<img src="../assets/re-adventar-slack-bot/adventar-source.jpg" />
-
-</div>
+<p><img src="../assets/re-adventar-slack-bot/adventar-source.jpg" /></p>
 <p>つまり，静的な DOM が生成されない！ もともとは，その静的な DOM から Web Scraping して更新を確認していたのだ．</p>
 <p>そうなってくると，解決方法はひとつしかない(ひとつかどうかは知らん)…そう最近流行り(要出典)の <strong>Headless Browser</strong> である． Headless Browser とは，ざっくり言うと，画面の無いブラウザである． これを使うと API を叩いてブラウザの動作を再現し，それによって動的に取得できる DOM をプログラム内で用いることが出来る． 動的に DOM を生成する場合にも Web Scraping をできるようになるし，もともとはブラウザアプリのテストに使われてたのかな？</p>
 <p>ここまでくると，Google Apps Script では手に負えないので，<strong>Haskell で記述し，そのプログラム Dockerize し，CircleCI から実行するという荒業</strong> をすることにした． CircleCI なら cron できるようになったし(TravisCI もできるけど，個人的には CircleCI の config の方が書きやすい)．</p>
 <p>(※ Haskell を使う理由は，完全に個人の趣味です)</p>
 <h2 id="設計">設計</h2>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li>Headless Browser を介して DOM を取得</li>
 <li>DOM を Web Scraping</li>
 <li>前の情報を書いておいた JSON ファイルを読み込む</li>
@@ -114,10 +111,7 @@
 <li>比較結果を Slack に通知</li>
 <li>無事通知できてかつ差分があれば JSON を更新</li>
 </ol>
-<div class="figure">
-<img src="../assets/re-adventar-slack-bot/bot-net.jpg" />
-
-</div>
+<p><img src="../assets/re-adventar-slack-bot/bot-net.jpg" /></p>
 <p>ちなみに，特に意味は無いのだが，各手続きの関数を別々のファイルに書いた．</p>
 <ul>
 <li><a href="https://github.com/IGGG/adventar-bot/blob/dd6e5aa214a4a845a5ffc271be411bd7706f0748/src/Html.hs">Html.hs</a> : (1) の Headless Browser の関数</li>
@@ -130,248 +124,248 @@
 <h2 id="作る">作る</h2>
 <p>さぁ皆さんお待ちかねの Haskell のターンです！！</p>
 <h3 id="scraper">Scraper</h3>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li>の Headless Browser は後回しにして，まずは Scraper を定義する． 実際に Headless Browser は Haskell でうまく動くかよくわからなかったので，<code>chrome --headless</code> を使って取ってきた DOM をファイルにコピペして，それで試しながら先に Headless Browser 以外を実装していった．</li>
 </ol>
 <h4 id="ライブラリ">ライブラリ</h4>
 <p>Haskell の Scraper ライブラリは意外とたくさんある． バイト先では <a href="https://hackage.haskell.org/package/hxt">HXT</a> というのを使っていたが，少し直感的でないし更新が最近無いので，人気そうな <a href="https://hackage.haskell.org/package/scalpel">scalpel</a> を使うことにした．</p>
 <p>こいつの特徴は関数型パーサーのように Scraper を記述できる点である． 例えば，以下のような HTML から</p>
-<div class="sourceCode"><pre class="sourceCode html"><code class="sourceCode html"><span class="kw">&lt;html&gt;</span>
-  <span class="kw">&lt;body&gt;</span>
-    <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">'comments'</span><span class="kw">&gt;</span>
-      <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">'comment container'</span><span class="kw">&gt;</span>
-        <span class="kw">&lt;span</span><span class="ot"> class=</span><span class="st">'comment author'</span><span class="kw">&gt;</span>Sally<span class="kw">&lt;/span&gt;</span>
-        <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">'comment text'</span><span class="kw">&gt;</span>Woo hoo!<span class="kw">&lt;/div&gt;</span>
-      <span class="kw">&lt;/div&gt;</span>
-      <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">'comment container'</span><span class="kw">&gt;</span>
-        <span class="kw">&lt;span</span><span class="ot"> class=</span><span class="st">'comment author'</span><span class="kw">&gt;</span>Bill<span class="kw">&lt;/span&gt;</span>
-        <span class="kw">&lt;img</span><span class="ot"> class=</span><span class="st">'comment image'</span><span class="ot"> src=</span><span class="st">'http://example.com/cat.gif'</span> <span class="kw">/&gt;</span>
-      <span class="kw">&lt;/div&gt;</span>
-      <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">'comment container'</span><span class="kw">&gt;</span>
-        <span class="kw">&lt;span</span><span class="ot"> class=</span><span class="st">'comment author'</span><span class="kw">&gt;</span>Susan<span class="kw">&lt;/span&gt;</span>
-        <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">'comment text'</span><span class="kw">&gt;</span>WTF!?!<span class="kw">&lt;/div&gt;</span>
-      <span class="kw">&lt;/div&gt;</span>
-    <span class="kw">&lt;/div&gt;</span>
-  <span class="kw">&lt;/body&gt;</span>
-<span class="kw">&lt;/html&gt;</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode html"><code class="sourceCode html"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">&lt;html&gt;</span></a>
+<a class="sourceLine" id="cb1-2" data-line-number="2">  <span class="kw">&lt;body&gt;</span></a>
+<a class="sourceLine" id="cb1-3" data-line-number="3">    <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">'comments'</span><span class="kw">&gt;</span></a>
+<a class="sourceLine" id="cb1-4" data-line-number="4">      <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">'comment container'</span><span class="kw">&gt;</span></a>
+<a class="sourceLine" id="cb1-5" data-line-number="5">        <span class="kw">&lt;span</span><span class="ot"> class=</span><span class="st">'comment author'</span><span class="kw">&gt;</span>Sally<span class="kw">&lt;/span&gt;</span></a>
+<a class="sourceLine" id="cb1-6" data-line-number="6">        <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">'comment text'</span><span class="kw">&gt;</span>Woo hoo!<span class="kw">&lt;/div&gt;</span></a>
+<a class="sourceLine" id="cb1-7" data-line-number="7">      <span class="kw">&lt;/div&gt;</span></a>
+<a class="sourceLine" id="cb1-8" data-line-number="8">      <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">'comment container'</span><span class="kw">&gt;</span></a>
+<a class="sourceLine" id="cb1-9" data-line-number="9">        <span class="kw">&lt;span</span><span class="ot"> class=</span><span class="st">'comment author'</span><span class="kw">&gt;</span>Bill<span class="kw">&lt;/span&gt;</span></a>
+<a class="sourceLine" id="cb1-10" data-line-number="10">        <span class="kw">&lt;img</span><span class="ot"> class=</span><span class="st">'comment image'</span><span class="ot"> src=</span><span class="st">'http://example.com/cat.gif'</span> <span class="kw">/&gt;</span></a>
+<a class="sourceLine" id="cb1-11" data-line-number="11">      <span class="kw">&lt;/div&gt;</span></a>
+<a class="sourceLine" id="cb1-12" data-line-number="12">      <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">'comment container'</span><span class="kw">&gt;</span></a>
+<a class="sourceLine" id="cb1-13" data-line-number="13">        <span class="kw">&lt;span</span><span class="ot"> class=</span><span class="st">'comment author'</span><span class="kw">&gt;</span>Susan<span class="kw">&lt;/span&gt;</span></a>
+<a class="sourceLine" id="cb1-14" data-line-number="14">        <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">'comment text'</span><span class="kw">&gt;</span>WTF!?!<span class="kw">&lt;/div&gt;</span></a>
+<a class="sourceLine" id="cb1-15" data-line-number="15">      <span class="kw">&lt;/div&gt;</span></a>
+<a class="sourceLine" id="cb1-16" data-line-number="16">    <span class="kw">&lt;/div&gt;</span></a>
+<a class="sourceLine" id="cb1-17" data-line-number="17">  <span class="kw">&lt;/body&gt;</span></a>
+<a class="sourceLine" id="cb1-18" data-line-number="18"><span class="kw">&lt;/html&gt;</span></a></code></pre></div>
 <p><code>class='comment'</code> の <code>div</code> 要素を次のような型の値として保持したいとする．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Author</span> <span class="fu">=</span> <span class="dt">String</span>
-
-<span class="kw">data</span> <span class="dt">Comment</span>
-    <span class="fu">=</span> <span class="dt">TextComment</span> <span class="dt">Author</span> <span class="dt">String</span>
-    <span class="fu">|</span> <span class="dt">ImageComment</span> <span class="dt">Author</span> <span class="dt">URL</span>
-    <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw">type</span> <span class="dt">Author</span> <span class="fu">=</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb2-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb2-3" data-line-number="3"><span class="kw">data</span> <span class="dt">Comment</span></a>
+<a class="sourceLine" id="cb2-4" data-line-number="4">    <span class="fu">=</span> <span class="dt">TextComment</span> <span class="dt">Author</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb2-5" data-line-number="5">    <span class="fu">|</span> <span class="dt">ImageComment</span> <span class="dt">Author</span> <span class="dt">URL</span></a>
+<a class="sourceLine" id="cb2-6" data-line-number="6">    <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</a></code></pre></div>
 <p>(<code>type</code> 宣言はただの型エイリアスで，<code>data</code> 宣言は新しい型を定義してる)</p>
 <p>そうすると，次のような Scraper を書くのだ．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">allComments ::</span> <span class="dt">IO</span> (<span class="dt">Maybe</span> [<span class="dt">Comment</span>])
-allComments <span class="fu">=</span> scrapeURL <span class="st">&quot;http://example.com/article.html&quot;</span> comments
-  <span class="kw">where</span>
-<span class="ot">    comments ::</span> <span class="dt">Scraper</span> <span class="dt">String</span> [<span class="dt">Comment</span>]
-    comments <span class="fu">=</span> chroots (<span class="st">&quot;div&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;container&quot;</span>]) comment
-
-<span class="ot">    comment ::</span> <span class="dt">Scraper</span> <span class="dt">String</span> <span class="dt">Comment</span>
-    comment <span class="fu">=</span> textComment <span class="fu">&lt;|&gt;</span> imageComment
-
-<span class="ot">    textComment ::</span> <span class="dt">Scraper</span> <span class="dt">String</span> <span class="dt">Comment</span>
-    textComment <span class="fu">=</span> <span class="kw">do</span>
-      author      <span class="ot">&lt;-</span> text <span class="fu">$</span> <span class="st">&quot;span&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;author&quot;</span>]
-      commentText <span class="ot">&lt;-</span> text <span class="fu">$</span> <span class="st">&quot;div&quot;</span>  <span class="fu">@:</span> [hasClass <span class="st">&quot;text&quot;</span>]
-      return <span class="fu">$</span> <span class="dt">TextComment</span> author commentText
-
-<span class="ot">    imageComment ::</span> <span class="dt">Scraper</span> <span class="dt">String</span> <span class="dt">Comment</span>
-    imageComment <span class="fu">=</span> <span class="kw">do</span>
-      author   <span class="ot">&lt;-</span> text       <span class="fu">$</span> <span class="st">&quot;span&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;author&quot;</span>]
-      imageURL <span class="ot">&lt;-</span> attr <span class="st">&quot;src&quot;</span> <span class="fu">$</span> <span class="st">&quot;img&quot;</span>  <span class="fu">@:</span> [hasClass <span class="st">&quot;image&quot;</span>]
-      return <span class="fu">$</span> <span class="dt">ImageComment</span> author imageURL</code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="ot">allComments ::</span> <span class="dt">IO</span> (<span class="dt">Maybe</span> [<span class="dt">Comment</span>])</a>
+<a class="sourceLine" id="cb3-2" data-line-number="2">allComments <span class="fu">=</span> scrapeURL <span class="st">&quot;http://example.com/article.html&quot;</span> comments</a>
+<a class="sourceLine" id="cb3-3" data-line-number="3">  <span class="kw">where</span></a>
+<a class="sourceLine" id="cb3-4" data-line-number="4"><span class="ot">    comments ::</span> <span class="dt">Scraper</span> <span class="dt">String</span> [<span class="dt">Comment</span>]</a>
+<a class="sourceLine" id="cb3-5" data-line-number="5">    comments <span class="fu">=</span> chroots (<span class="st">&quot;div&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;container&quot;</span>]) comment</a>
+<a class="sourceLine" id="cb3-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb3-7" data-line-number="7"><span class="ot">    comment ::</span> <span class="dt">Scraper</span> <span class="dt">String</span> <span class="dt">Comment</span></a>
+<a class="sourceLine" id="cb3-8" data-line-number="8">    comment <span class="fu">=</span> textComment <span class="fu">&lt;|&gt;</span> imageComment</a>
+<a class="sourceLine" id="cb3-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb3-10" data-line-number="10"><span class="ot">    textComment ::</span> <span class="dt">Scraper</span> <span class="dt">String</span> <span class="dt">Comment</span></a>
+<a class="sourceLine" id="cb3-11" data-line-number="11">    textComment <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb3-12" data-line-number="12">      author      <span class="ot">&lt;-</span> text <span class="fu">$</span> <span class="st">&quot;span&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;author&quot;</span>]</a>
+<a class="sourceLine" id="cb3-13" data-line-number="13">      commentText <span class="ot">&lt;-</span> text <span class="fu">$</span> <span class="st">&quot;div&quot;</span>  <span class="fu">@:</span> [hasClass <span class="st">&quot;text&quot;</span>]</a>
+<a class="sourceLine" id="cb3-14" data-line-number="14">      return <span class="fu">$</span> <span class="dt">TextComment</span> author commentText</a>
+<a class="sourceLine" id="cb3-15" data-line-number="15"></a>
+<a class="sourceLine" id="cb3-16" data-line-number="16"><span class="ot">    imageComment ::</span> <span class="dt">Scraper</span> <span class="dt">String</span> <span class="dt">Comment</span></a>
+<a class="sourceLine" id="cb3-17" data-line-number="17">    imageComment <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb3-18" data-line-number="18">      author   <span class="ot">&lt;-</span> text       <span class="fu">$</span> <span class="st">&quot;span&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;author&quot;</span>]</a>
+<a class="sourceLine" id="cb3-19" data-line-number="19">      imageURL <span class="ot">&lt;-</span> attr <span class="st">&quot;src&quot;</span> <span class="fu">$</span> <span class="st">&quot;img&quot;</span>  <span class="fu">@:</span> [hasClass <span class="st">&quot;image&quot;</span>]</a>
+<a class="sourceLine" id="cb3-20" data-line-number="20">      return <span class="fu">$</span> <span class="dt">ImageComment</span> author imageURL</a></code></pre></div>
 <p>Scraper 自身は <code>comments</code> という関数だ． <code>Scraper str a</code> という型は，なんかの文字列型(e.g. <code>String</code>, <code>Text</code>)を受け取り，<code>a</code> 型を返す Scraper というのを表している． <code>Scrape str</code> はモナドになっているため，関数型パーサーっぽく書けるのだ． ただし，関数型パーサーと違って，<code>bind</code> をつなげても入力を消費しない点に注意(例えば <code>textComment</code> 関数の1行目と2行目は同じ入力文字列に対して実行している)． Scraper を入れ子に適用するには <code>croot</code> 関数や <code>croots</code> 関数を用いるのだ(これ以上は割愛)．</p>
 <h4 id="今回の型">今回の型</h4>
 <p>で，今回は次のような DOM から</p>
-<div class="sourceCode"><pre class="sourceCode html"><code class="sourceCode html"><span class="kw">&lt;body&gt;</span>
-    <span class="kw">&lt;table</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList&quot;</span><span class="kw">&gt;</span>
-        <span class="kw">&lt;tbody&gt;</span>
-            <span class="kw">&lt;tr</span><span class="ot"> class=</span><span class="st">&quot;&quot;</span><span class="ot"> id=</span><span class="st">&quot;list-2017-12-01&quot;</span><span class="kw">&gt;</span>
-                <span class="kw">&lt;th</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-date&quot;</span><span class="kw">&gt;</span>12/01<span class="kw">&lt;/th&gt;</span>
-                <span class="kw">&lt;td</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-user&quot;</span><span class="kw">&gt;</span>
-                    <span class="kw">&lt;a</span><span class="ot"> class=</span><span class="st">&quot;mod-userLink&quot;</span><span class="ot"> href=</span><span class="st">&quot;/users/11644&quot;</span><span class="kw">&gt;</span>
-                        <span class="kw">&lt;img</span><span class="ot"> class=</span><span class="st">&quot;mod-userIcon&quot;</span><span class="ot"> src=</span><span class="st">&quot;http://pbs.twimg.com/profile_images/3164994798/6d931b645bef5a659f7f58562d094aaf_normal.png&quot;</span><span class="ot"> width=</span><span class="st">&quot;23&quot;</span><span class="ot"> height=</span><span class="st">&quot;23&quot;</span><span class="kw">&gt;</span>
-                        <span class="kw">&lt;span&gt;</span>atpons<span class="kw">&lt;/span&gt;</span>
-                    <span class="kw">&lt;/a&gt;</span>
-                <span class="kw">&lt;/td&gt;</span>
-                <span class="kw">&lt;td</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-body&quot;</span><span class="kw">&gt;</span>
-                    <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-comment&quot;</span><span class="kw">&gt;</span>まだコンピューティングルームにいるの？&lt;/div&gt;
-                    <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-title&quot;</span><span class="ot"> hidden=</span><span class="st">&quot;&quot;</span><span class="kw">&gt;&lt;/div&gt;</span>
-                    <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-url&quot;</span><span class="ot"> hidden=</span><span class="st">&quot;&quot;</span><span class="kw">&gt;</span>
-                        <span class="kw">&lt;a</span><span class="ot"> href=</span><span class="st">&quot;&quot;</span><span class="ot"> target=</span><span class="st">&quot;_blank&quot;</span><span class="kw">&gt;&lt;/a&gt;</span>
-                    <span class="kw">&lt;/div&gt;</span>
-                <span class="kw">&lt;/td&gt;</span>
-            <span class="kw">&lt;/tr&gt;</span>
-            <span class="kw">&lt;tr</span><span class="ot"> class=</span><span class="st">&quot;&quot;</span><span class="ot"> id=</span><span class="st">&quot;list-2017-12-06&quot;</span><span class="kw">&gt;</span>
-                <span class="kw">&lt;th</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-date&quot;</span><span class="kw">&gt;</span>12/06<span class="kw">&lt;/th&gt;</span>
-                <span class="kw">&lt;td</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-user&quot;</span><span class="kw">&gt;</span>
-                    <span class="kw">&lt;a</span><span class="ot"> class=</span><span class="st">&quot;mod-userLink&quot;</span><span class="ot"> href=</span><span class="st">&quot;/users/8528&quot;</span><span class="kw">&gt;</span>
-                        <span class="kw">&lt;img</span><span class="ot"> class=</span><span class="st">&quot;mod-userIcon&quot;</span><span class="ot"> src=</span><span class="st">&quot;https://www.gravatar.com/avatar/6491e85d52916cfb063372cec9edb6cc?size=50</span><span class="dv">&amp;amp;</span><span class="st">d=mm&quot;</span><span class="ot"> width=</span><span class="st">&quot;23&quot;</span><span class="ot"> height=</span><span class="st">&quot;23&quot;</span><span class="kw">&gt;</span>
-                        <span class="kw">&lt;span&gt;</span>ひげ<span class="kw">&lt;/span&gt;</span>
-                    <span class="kw">&lt;/a&gt;</span>
-                <span class="kw">&lt;/td&gt;</span>
-                <span class="kw">&lt;td</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-body&quot;</span><span class="kw">&gt;</span>
-                    <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-comment&quot;</span><span class="kw">&gt;</span>ADVENTAR Slack Bot をパワーアップしたい<span class="kw">&lt;/div&gt;</span>
-                    <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-title&quot;</span><span class="kw">&gt;</span>ADVENTAR Slack Bot 2 using Haskell on Circle CI<span class="kw">&lt;/div&gt;</span>
-                    <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-url&quot;</span><span class="kw">&gt;</span>
-                        <span class="kw">&lt;a</span><span class="ot"> href=</span><span class="st">&quot;https://matsubara0507.github.io&quot;</span><span class="ot"> target=</span><span class="st">&quot;_blank&quot;</span><span class="kw">&gt;</span>https://matsubara0507.github.io<span class="kw">&lt;/a&gt;</span>
-                    <span class="kw">&lt;/div&gt;</span>
-                <span class="kw">&lt;/td&gt;</span>
-            <span class="kw">&lt;/tr&gt;</span>
-        <span class="kw">&lt;/tbody&gt;</span>
-    <span class="kw">&lt;/table&gt;</span>
-<span class="kw">&lt;/body&gt;</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode html"><code class="sourceCode html"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">&lt;body&gt;</span></a>
+<a class="sourceLine" id="cb4-2" data-line-number="2">    <span class="kw">&lt;table</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList&quot;</span><span class="kw">&gt;</span></a>
+<a class="sourceLine" id="cb4-3" data-line-number="3">        <span class="kw">&lt;tbody&gt;</span></a>
+<a class="sourceLine" id="cb4-4" data-line-number="4">            <span class="kw">&lt;tr</span><span class="ot"> class=</span><span class="st">&quot;&quot;</span><span class="ot"> id=</span><span class="st">&quot;list-2017-12-01&quot;</span><span class="kw">&gt;</span></a>
+<a class="sourceLine" id="cb4-5" data-line-number="5">                <span class="kw">&lt;th</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-date&quot;</span><span class="kw">&gt;</span>12/01<span class="kw">&lt;/th&gt;</span></a>
+<a class="sourceLine" id="cb4-6" data-line-number="6">                <span class="kw">&lt;td</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-user&quot;</span><span class="kw">&gt;</span></a>
+<a class="sourceLine" id="cb4-7" data-line-number="7">                    <span class="kw">&lt;a</span><span class="ot"> class=</span><span class="st">&quot;mod-userLink&quot;</span><span class="ot"> href=</span><span class="st">&quot;/users/11644&quot;</span><span class="kw">&gt;</span></a>
+<a class="sourceLine" id="cb4-8" data-line-number="8">                        <span class="kw">&lt;img</span><span class="ot"> class=</span><span class="st">&quot;mod-userIcon&quot;</span><span class="ot"> src=</span><span class="st">&quot;http://pbs.twimg.com/profile_images/3164994798/6d931b645bef5a659f7f58562d094aaf_normal.png&quot;</span><span class="ot"> width=</span><span class="st">&quot;23&quot;</span><span class="ot"> height=</span><span class="st">&quot;23&quot;</span><span class="kw">&gt;</span></a>
+<a class="sourceLine" id="cb4-9" data-line-number="9">                        <span class="kw">&lt;span&gt;</span>atpons<span class="kw">&lt;/span&gt;</span></a>
+<a class="sourceLine" id="cb4-10" data-line-number="10">                    <span class="kw">&lt;/a&gt;</span></a>
+<a class="sourceLine" id="cb4-11" data-line-number="11">                <span class="kw">&lt;/td&gt;</span></a>
+<a class="sourceLine" id="cb4-12" data-line-number="12">                <span class="kw">&lt;td</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-body&quot;</span><span class="kw">&gt;</span></a>
+<a class="sourceLine" id="cb4-13" data-line-number="13">                    <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-comment&quot;</span><span class="kw">&gt;</span>まだコンピューティングルームにいるの？&lt;/div&gt;</a>
+<a class="sourceLine" id="cb4-14" data-line-number="14">                    <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-title&quot;</span><span class="ot"> hidden=</span><span class="st">&quot;&quot;</span><span class="kw">&gt;&lt;/div&gt;</span></a>
+<a class="sourceLine" id="cb4-15" data-line-number="15">                    <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-url&quot;</span><span class="ot"> hidden=</span><span class="st">&quot;&quot;</span><span class="kw">&gt;</span></a>
+<a class="sourceLine" id="cb4-16" data-line-number="16">                        <span class="kw">&lt;a</span><span class="ot"> href=</span><span class="st">&quot;&quot;</span><span class="ot"> target=</span><span class="st">&quot;_blank&quot;</span><span class="kw">&gt;&lt;/a&gt;</span></a>
+<a class="sourceLine" id="cb4-17" data-line-number="17">                    <span class="kw">&lt;/div&gt;</span></a>
+<a class="sourceLine" id="cb4-18" data-line-number="18">                <span class="kw">&lt;/td&gt;</span></a>
+<a class="sourceLine" id="cb4-19" data-line-number="19">            <span class="kw">&lt;/tr&gt;</span></a>
+<a class="sourceLine" id="cb4-20" data-line-number="20">            <span class="kw">&lt;tr</span><span class="ot"> class=</span><span class="st">&quot;&quot;</span><span class="ot"> id=</span><span class="st">&quot;list-2017-12-06&quot;</span><span class="kw">&gt;</span></a>
+<a class="sourceLine" id="cb4-21" data-line-number="21">                <span class="kw">&lt;th</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-date&quot;</span><span class="kw">&gt;</span>12/06<span class="kw">&lt;/th&gt;</span></a>
+<a class="sourceLine" id="cb4-22" data-line-number="22">                <span class="kw">&lt;td</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-user&quot;</span><span class="kw">&gt;</span></a>
+<a class="sourceLine" id="cb4-23" data-line-number="23">                    <span class="kw">&lt;a</span><span class="ot"> class=</span><span class="st">&quot;mod-userLink&quot;</span><span class="ot"> href=</span><span class="st">&quot;/users/8528&quot;</span><span class="kw">&gt;</span></a>
+<a class="sourceLine" id="cb4-24" data-line-number="24">                        <span class="kw">&lt;img</span><span class="ot"> class=</span><span class="st">&quot;mod-userIcon&quot;</span><span class="ot"> src=</span><span class="st">&quot;https://www.gravatar.com/avatar/6491e85d52916cfb063372cec9edb6cc?size=50</span><span class="dv">&amp;amp;</span><span class="st">d=mm&quot;</span><span class="ot"> width=</span><span class="st">&quot;23&quot;</span><span class="ot"> height=</span><span class="st">&quot;23&quot;</span><span class="kw">&gt;</span></a>
+<a class="sourceLine" id="cb4-25" data-line-number="25">                        <span class="kw">&lt;span&gt;</span>ひげ<span class="kw">&lt;/span&gt;</span></a>
+<a class="sourceLine" id="cb4-26" data-line-number="26">                    <span class="kw">&lt;/a&gt;</span></a>
+<a class="sourceLine" id="cb4-27" data-line-number="27">                <span class="kw">&lt;/td&gt;</span></a>
+<a class="sourceLine" id="cb4-28" data-line-number="28">                <span class="kw">&lt;td</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-body&quot;</span><span class="kw">&gt;</span></a>
+<a class="sourceLine" id="cb4-29" data-line-number="29">                    <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-comment&quot;</span><span class="kw">&gt;</span>ADVENTAR Slack Bot をパワーアップしたい<span class="kw">&lt;/div&gt;</span></a>
+<a class="sourceLine" id="cb4-30" data-line-number="30">                    <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-title&quot;</span><span class="kw">&gt;</span>ADVENTAR Slack Bot 2 using Haskell on Circle CI<span class="kw">&lt;/div&gt;</span></a>
+<a class="sourceLine" id="cb4-31" data-line-number="31">                    <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">&quot;mod-entryList-url&quot;</span><span class="kw">&gt;</span></a>
+<a class="sourceLine" id="cb4-32" data-line-number="32">                        <span class="kw">&lt;a</span><span class="ot"> href=</span><span class="st">&quot;https://matsubara0507.github.io&quot;</span><span class="ot"> target=</span><span class="st">&quot;_blank&quot;</span><span class="kw">&gt;</span>https://matsubara0507.github.io<span class="kw">&lt;/a&gt;</span></a>
+<a class="sourceLine" id="cb4-33" data-line-number="33">                    <span class="kw">&lt;/div&gt;</span></a>
+<a class="sourceLine" id="cb4-34" data-line-number="34">                <span class="kw">&lt;/td&gt;</span></a>
+<a class="sourceLine" id="cb4-35" data-line-number="35">            <span class="kw">&lt;/tr&gt;</span></a>
+<a class="sourceLine" id="cb4-36" data-line-number="36">        <span class="kw">&lt;/tbody&gt;</span></a>
+<a class="sourceLine" id="cb4-37" data-line-number="37">    <span class="kw">&lt;/table&gt;</span></a>
+<a class="sourceLine" id="cb4-38" data-line-number="38"><span class="kw">&lt;/body&gt;</span></a></code></pre></div>
 <p>以下のようなデータ構造を Scraping する関数型パーサーを考える．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Calendar</span> <span class="fu">=</span> <span class="dt">HashMap</span> <span class="dt">Date</span> <span class="dt">Entry</span>
-<span class="kw">type</span> <span class="dt">Date</span> <span class="fu">=</span> <span class="dt">Text</span>
-
-<span class="kw">data</span> <span class="dt">Entry</span> <span class="fu">=</span> <span class="dt">Entry</span>
-  {<span class="ot"> user    ::</span> <span class="dt">Text</span>
-  ,<span class="ot"> comment ::</span> <span class="dt">Text</span>
-  ,<span class="ot"> title   ::</span> <span class="dt">Text</span>
-  ,<span class="ot"> url      ::</span> <span class="dt">Text</span>
-  }</code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="kw">type</span> <span class="dt">Calendar</span> <span class="fu">=</span> <span class="dt">HashMap</span> <span class="dt">Date</span> <span class="dt">Entry</span></a>
+<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="kw">type</span> <span class="dt">Date</span> <span class="fu">=</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb5-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb5-4" data-line-number="4"><span class="kw">data</span> <span class="dt">Entry</span> <span class="fu">=</span> <span class="dt">Entry</span></a>
+<a class="sourceLine" id="cb5-5" data-line-number="5">  {<span class="ot"> user    ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb5-6" data-line-number="6">  ,<span class="ot"> comment ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb5-7" data-line-number="7">  ,<span class="ot"> title   ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb5-8" data-line-number="8">  ,<span class="ot"> url      ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb5-9" data-line-number="9">  }</a></code></pre></div>
 <p><code>HashMap k v</code> コンテナ型は，いわゆる連想配列型・辞書型のことである． 単一のエントリーの型 <code>Entry</code> には投稿者 <code>user</code> とコメント <code>comment</code> ，投稿した記事のタイトル <code>title</code> と URL <code>url</code> のフィールドがあるって感じである．</p>
 <p>Haskell には標準で日付型が無いので，めんどくさいからタダの文字列型 <code>Text</code> として扱うことにした． なので日付 (e.g. “12/03”) では無く “ABC” をキーとしたエントリーを書いてもコンパイルエラーにはならないが，まぁいいや(そういうの出来なくもないけどね…)．</p>
 <h4 id="scraper-関数の実装">Scraper 関数の実装</h4>
 <p>まずはトップレベルの関数を定義</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">adventarScraper ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Calendar</span>
-adventarScraper txt <span class="fu">=</span> HM.fromList <span class="fu">.</span> fromMaybe [] <span class="fu">.</span> scrapeStringLike txt <span class="fu">$</span>
-  chroot (<span class="st">&quot;table&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;mod-entryList&quot;</span>]) (chroots <span class="st">&quot;tr&quot;</span> scrapeEntryWithDate)
-
-<span class="ot">scrapeEntryWithDate ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> (<span class="dt">Date</span>, <span class="dt">Entry</span>)
-scrapeEntryWithDate <span class="fu">=</span> <span class="kw">do</span>
-  date <span class="ot">&lt;-</span> scrapeDate
-  entry <span class="ot">&lt;-</span> scrapeEntry
-  return (date, entry)
-
-<span class="ot">scrapeEntry ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> <span class="dt">Entry</span>
-scrapeEntry <span class="fu">=</span> undefined
-
-<span class="ot">scrapeDate ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> <span class="dt">Date</span>
-scrapeDate <span class="fu">=</span> undefined</code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="ot">adventarScraper ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Calendar</span></a>
+<a class="sourceLine" id="cb6-2" data-line-number="2">adventarScraper txt <span class="fu">=</span> HM.fromList <span class="fu">.</span> fromMaybe [] <span class="fu">.</span> scrapeStringLike txt <span class="fu">$</span></a>
+<a class="sourceLine" id="cb6-3" data-line-number="3">  chroot (<span class="st">&quot;table&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;mod-entryList&quot;</span>]) (chroots <span class="st">&quot;tr&quot;</span> scrapeEntryWithDate)</a>
+<a class="sourceLine" id="cb6-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb6-5" data-line-number="5"><span class="ot">scrapeEntryWithDate ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> (<span class="dt">Date</span>, <span class="dt">Entry</span>)</a>
+<a class="sourceLine" id="cb6-6" data-line-number="6">scrapeEntryWithDate <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb6-7" data-line-number="7">  date <span class="ot">&lt;-</span> scrapeDate</a>
+<a class="sourceLine" id="cb6-8" data-line-number="8">  entry <span class="ot">&lt;-</span> scrapeEntry</a>
+<a class="sourceLine" id="cb6-9" data-line-number="9">  return (date, entry)</a>
+<a class="sourceLine" id="cb6-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb6-11" data-line-number="11"><span class="ot">scrapeEntry ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> <span class="dt">Entry</span></a>
+<a class="sourceLine" id="cb6-12" data-line-number="12">scrapeEntry <span class="fu">=</span> undefined</a>
+<a class="sourceLine" id="cb6-13" data-line-number="13"></a>
+<a class="sourceLine" id="cb6-14" data-line-number="14"><span class="ot">scrapeDate ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> <span class="dt">Date</span></a>
+<a class="sourceLine" id="cb6-15" data-line-number="15">scrapeDate <span class="fu">=</span> undefined</a></code></pre></div>
 <p><code>&lt;table class=&quot;mod-entryList&quot;&gt;</code> の子要素の <code>tr</code> タグの中身を全て取ってきてほしいので <code>chroot</code> と <code>chroots</code> を使って連結してる． 日付とエントリのタプルのリストが取れれば，<code>HashMap.fromList</code> で日付をキーにしたエントリーの <code>HashMap</code> が作れる．</p>
 <p>次にエントリーと日付を取ってきてみる．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">scrapeEntry ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> <span class="dt">Entry</span>
-scrapeEntry <span class="fu">=</span>
-  user'    <span class="ot">&lt;-</span> scrapeUser
-  comment' <span class="ot">&lt;-</span> scrapeComment
-  title'   <span class="ot">&lt;-</span> scrapeTitle
-  url'     <span class="ot">&lt;-</span> scrapeUrl
-  return <span class="fu">$</span> <span class="dt">Entry</span> user' comment' title' url'
-
-<span class="ot">scrapeDate ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> <span class="dt">Date</span>
-scrapeDate <span class="fu">=</span> text (<span class="st">&quot;th&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;mod-entryList-date&quot;</span>])
-
-<span class="ot">scrapeUser ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> <span class="dt">Text</span>
-scrapeUser <span class="fu">=</span> <span class="st">&quot;td&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;mod-entryList-user&quot;</span>] <span class="ot">`chroot`</span> text <span class="st">&quot;span&quot;</span>
-
-<span class="ot">scrapeComment ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> <span class="dt">Text</span>
-scrapeComment <span class="fu">=</span> text (<span class="st">&quot;div&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;mod-entryList-comment&quot;</span>])
-
-<span class="ot">scrapeTitle ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> <span class="dt">Text</span>
-scrapeTitle <span class="fu">=</span>
-  text (<span class="st">&quot;div&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;mod-entryList-title&quot;</span>, notHidden]) <span class="fu">&lt;|&gt;</span> pure <span class="st">&quot;&quot;</span>
-
-<span class="ot">scrapeUrl ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> <span class="dt">Url</span>
-scrapeUrl <span class="fu">=</span>
-  text (<span class="st">&quot;div&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;mod-entryList-url&quot;</span>, notHidden]) <span class="fu">&lt;|&gt;</span> pure <span class="st">&quot;&quot;</span>
-
-<span class="ot">notHidden ::</span> <span class="dt">AttributePredicate</span>
-notHidden <span class="fu">=</span> notP <span class="fu">$</span> <span class="st">&quot;hidden&quot;</span> <span class="fu">@=</span> <span class="st">&quot;&quot;</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="ot">scrapeEntry ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> <span class="dt">Entry</span></a>
+<a class="sourceLine" id="cb7-2" data-line-number="2">scrapeEntry <span class="fu">=</span></a>
+<a class="sourceLine" id="cb7-3" data-line-number="3">  user'    <span class="ot">&lt;-</span> scrapeUser</a>
+<a class="sourceLine" id="cb7-4" data-line-number="4">  comment' <span class="ot">&lt;-</span> scrapeComment</a>
+<a class="sourceLine" id="cb7-5" data-line-number="5">  title'   <span class="ot">&lt;-</span> scrapeTitle</a>
+<a class="sourceLine" id="cb7-6" data-line-number="6">  url'     <span class="ot">&lt;-</span> scrapeUrl</a>
+<a class="sourceLine" id="cb7-7" data-line-number="7">  return <span class="fu">$</span> <span class="dt">Entry</span> user' comment' title' url'</a>
+<a class="sourceLine" id="cb7-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb7-9" data-line-number="9"><span class="ot">scrapeDate ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> <span class="dt">Date</span></a>
+<a class="sourceLine" id="cb7-10" data-line-number="10">scrapeDate <span class="fu">=</span> text (<span class="st">&quot;th&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;mod-entryList-date&quot;</span>])</a>
+<a class="sourceLine" id="cb7-11" data-line-number="11"></a>
+<a class="sourceLine" id="cb7-12" data-line-number="12"><span class="ot">scrapeUser ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb7-13" data-line-number="13">scrapeUser <span class="fu">=</span> <span class="st">&quot;td&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;mod-entryList-user&quot;</span>] <span class="ot">`chroot`</span> text <span class="st">&quot;span&quot;</span></a>
+<a class="sourceLine" id="cb7-14" data-line-number="14"></a>
+<a class="sourceLine" id="cb7-15" data-line-number="15"><span class="ot">scrapeComment ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb7-16" data-line-number="16">scrapeComment <span class="fu">=</span> text (<span class="st">&quot;div&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;mod-entryList-comment&quot;</span>])</a>
+<a class="sourceLine" id="cb7-17" data-line-number="17"></a>
+<a class="sourceLine" id="cb7-18" data-line-number="18"><span class="ot">scrapeTitle ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb7-19" data-line-number="19">scrapeTitle <span class="fu">=</span></a>
+<a class="sourceLine" id="cb7-20" data-line-number="20">  text (<span class="st">&quot;div&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;mod-entryList-title&quot;</span>, notHidden]) <span class="fu">&lt;|&gt;</span> pure <span class="st">&quot;&quot;</span></a>
+<a class="sourceLine" id="cb7-21" data-line-number="21"></a>
+<a class="sourceLine" id="cb7-22" data-line-number="22"><span class="ot">scrapeUrl ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> <span class="dt">Url</span></a>
+<a class="sourceLine" id="cb7-23" data-line-number="23">scrapeUrl <span class="fu">=</span></a>
+<a class="sourceLine" id="cb7-24" data-line-number="24">  text (<span class="st">&quot;div&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;mod-entryList-url&quot;</span>, notHidden]) <span class="fu">&lt;|&gt;</span> pure <span class="st">&quot;&quot;</span></a>
+<a class="sourceLine" id="cb7-25" data-line-number="25"></a>
+<a class="sourceLine" id="cb7-26" data-line-number="26"><span class="ot">notHidden ::</span> <span class="dt">AttributePredicate</span></a>
+<a class="sourceLine" id="cb7-27" data-line-number="27">notHidden <span class="fu">=</span> notP <span class="fu">$</span> <span class="st">&quot;hidden&quot;</span> <span class="fu">@=</span> <span class="st">&quot;&quot;</span></a></code></pre></div>
 <p>基本的には何となく読めるだろう(正直，関数として小分けにする必要は無いが，分けておくと <code>ghci</code> とかでデバッグしやすいのだ)． ちなみに，<code>notHidden</code> は <code>hidden</code> 属性が付いていない場合に取得してくるという意味だ． 何故かというと，記事を先に登録しておくと，その日になるまで <code>hidden</code> でブラウザでは見れないだけで，DOM には書いてあるためだ． 記事を先に登録して置いたら，通知で見えてしまっては嫌でしょ？(笑)</p>
 <h3 id="json">JSON</h3>
 <p>Haskell で JSON を扱うのは簡単． <a href="https://hackage.haskell.org/package/aeson-1.2.3.0">aeson</a> というライブラリが，ほぼほぼデファクトスタンダードとなっている． aeson は任意の型を <code>FromJSON</code> 型クラスや <code>ToJSON</code> 型クラスのインスタンスにしてあげるだけで，デコーダーとエンコーダーを実装してくれる． しかも，Generics という機能を使えば，一行で終わる．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Entry</span> <span class="fu">=</span> <span class="dt">Entry</span>
-  {<span class="ot"> user    ::</span> <span class="dt">Text</span>
-  ,<span class="ot"> comment ::</span> <span class="dt">Text</span>
-  ,<span class="ot"> title   ::</span> <span class="dt">Text</span>
-  ,<span class="ot"> url     ::</span> <span class="dt">Url</span>
-  } <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>, <span class="dt">Generic</span>)
-
-<span class="kw">instance</span> <span class="dt">ToJSON</span> <span class="dt">Entry</span>
-<span class="kw">instance</span> <span class="dt">FromJSON</span> <span class="dt">Entry</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Entry</span> <span class="fu">=</span> <span class="dt">Entry</span></a>
+<a class="sourceLine" id="cb8-2" data-line-number="2">  {<span class="ot"> user    ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb8-3" data-line-number="3">  ,<span class="ot"> comment ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb8-4" data-line-number="4">  ,<span class="ot"> title   ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb8-5" data-line-number="5">  ,<span class="ot"> url     ::</span> <span class="dt">Url</span></a>
+<a class="sourceLine" id="cb8-6" data-line-number="6">  } <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>, <span class="dt">Generic</span>)</a>
+<a class="sourceLine" id="cb8-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb8-8" data-line-number="8"><span class="kw">instance</span> <span class="dt">ToJSON</span> <span class="dt">Entry</span></a>
+<a class="sourceLine" id="cb8-9" data-line-number="9"><span class="kw">instance</span> <span class="dt">FromJSON</span> <span class="dt">Entry</span></a></code></pre></div>
 <p>わぁすごい(<code>HashMap</code> 型は既にインスタンスの定義がされてる)．</p>
 <p>問題は文字コードで，今回は日本語(マルチバイト文字)を含むので，次のように JSON ファイルの読み込みと書き込みを定義してあげる．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import           </span><span class="dt">Data.Aeson</span>               (decode)
-<span class="kw">import           </span><span class="dt">Data.Aeson.Encode.Pretty</span> (encodePrettyToTextBuilder)
-<span class="kw">import           </span><span class="dt">Data.Text</span>                (<span class="dt">Text</span>, unpack)
-<span class="kw">import           </span><span class="dt">Data.Text.Lazy.Builder</span>   (toLazyText)
-<span class="kw">import           </span><span class="dt">Data.Text.Lazy.Encoding</span>  (encodeUtf8)
-<span class="kw">import qualified</span> <span class="dt">Data.Text.Lazy.IO</span>        <span class="kw">as</span> <span class="dt">LT</span>
-
-<span class="ot">readEntryJson ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Calendar</span>
-readEntryJson jsonPath <span class="fu">=</span>
-  fromMaybe emptyCalender <span class="fu">.</span> decode <span class="fu">.</span> encodeUtf8 <span class="fu">&lt;$&gt;</span> <span class="dt">LT</span><span class="fu">.</span>readFile (unpack jsonPath)
-
-<span class="ot">updateEntryJson ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Calendar</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()
-updateEntryJson jsonPath newCal <span class="fu">=</span>
-  <span class="dt">LT</span><span class="fu">.</span>writeFile (unpack jsonPath) <span class="fu">.</span> toLazyText <span class="fu">$</span> encodePrettyToTextBuilder newCal</code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="kw">import</span>           <span class="dt">Data.Aeson</span>               (decode)</a>
+<a class="sourceLine" id="cb9-2" data-line-number="2"><span class="kw">import</span>           <span class="dt">Data.Aeson.Encode.Pretty</span> (encodePrettyToTextBuilder)</a>
+<a class="sourceLine" id="cb9-3" data-line-number="3"><span class="kw">import</span>           <span class="dt">Data.Text</span>                (<span class="dt">Text</span>, unpack)</a>
+<a class="sourceLine" id="cb9-4" data-line-number="4"><span class="kw">import</span>           <span class="dt">Data.Text.Lazy.Builder</span>   (toLazyText)</a>
+<a class="sourceLine" id="cb9-5" data-line-number="5"><span class="kw">import</span>           <span class="dt">Data.Text.Lazy.Encoding</span>  (encodeUtf8)</a>
+<a class="sourceLine" id="cb9-6" data-line-number="6"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Text.Lazy.IO</span>        <span class="kw">as</span> <span class="dt">LT</span></a>
+<a class="sourceLine" id="cb9-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb9-8" data-line-number="8"><span class="ot">readEntryJson ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Calendar</span></a>
+<a class="sourceLine" id="cb9-9" data-line-number="9">readEntryJson jsonPath <span class="fu">=</span></a>
+<a class="sourceLine" id="cb9-10" data-line-number="10">  fromMaybe emptyCalender <span class="fu">.</span> decode <span class="fu">.</span> encodeUtf8 <span class="fu">&lt;$&gt;</span> <span class="dt">LT</span><span class="fu">.</span>readFile (unpack jsonPath)</a>
+<a class="sourceLine" id="cb9-11" data-line-number="11"></a>
+<a class="sourceLine" id="cb9-12" data-line-number="12"><span class="ot">updateEntryJson ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Calendar</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb9-13" data-line-number="13">updateEntryJson jsonPath newCal <span class="fu">=</span></a>
+<a class="sourceLine" id="cb9-14" data-line-number="14">  <span class="dt">LT</span><span class="fu">.</span>writeFile (unpack jsonPath) <span class="fu">.</span> toLazyText <span class="fu">$</span> encodePrettyToTextBuilder newCal</a></code></pre></div>
 <p>Haskell の文字コードは難しくて，<code>String</code>, <code>ByteString</code>, <code>Lazy.ByteString</code>, <code>Text</code>, <code>Lazy.Text</code> の5種類ある(たしか)． 遅延文字列(<code>Lazy</code>)は大きなファイルの取り扱いに使われ，効率良くマルチバイト文字を扱うには <code>Text</code> 型を使う． そのため，今回は <code>Lazy.Text</code> 型を主軸に使っているのだ(e.g. <code>decodeUtf8</code>, <code>encodePrettyToTextBuilder</code>)．</p>
 <p>このあたり結構苦労した….</p>
 <h3 id="slack-bot">Slack Bot</h3>
 <p>Haskell で Slack Bot の API を使うには，今のところ <a href="https://hackage.haskell.org/package/slack-api">slack-api</a> ライブラリが最適だろう． <a href="https://hackage.haskell.org/package/slack-web">slack-web</a> というライブラリもあり，こっちの方が他の API 系ライブラリに近い印象だが，うまく動かなかった….</p>
 <p>slack-api ライブラリは何故か <a href="https://www.stackage.org">Stackage</a> の LTS に無いため，stack.yaml に書き加える必要がある．</p>
-<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">resolver:</span><span class="at"> lts-9.12</span>
-<span class="fu">packages:</span>
-  <span class="kw">-</span> .
-<span class="fu">extra-deps:</span>
-  <span class="kw">-</span> slack-api-0.12   <span class="co"># here</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="fu">resolver:</span><span class="at"> lts-9.12</span></a>
+<a class="sourceLine" id="cb10-2" data-line-number="2"><span class="fu">packages:</span></a>
+<a class="sourceLine" id="cb10-3" data-line-number="3">  <span class="kw">-</span> .</a>
+<a class="sourceLine" id="cb10-4" data-line-number="4"><span class="fu">extra-deps:</span></a>
+<a class="sourceLine" id="cb10-5" data-line-number="5">  <span class="kw">-</span> slack-api-0.12   <span class="co"># here</span></a></code></pre></div>
 <p>slack-api ライブラリは基本的に RTM API について書かれているのだが，Web API の方も申し訳程度に<a href="https://hackage.haskell.org/package/slack-api-0.12/docs/Web-Slack-WebAPI.html">実装されている</a>(e.g. <code>chat_postMessage</code>)</p>
 <p><a href="https://github.com/mpickering/slack-api/blob/master/src/Web/Slack/WebAPI.hs">GitHub の方</a>を見ると，もっとイロンナ API が実装されているので，v0.12 の API では足りない場合は GitHub から直接取ってくるように stack.yaml を書き換えると良いだろう．</p>
 <p>さて，では Slack にポストする関数を実装する． 以下のような感じ． 凄い簡単．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Token</span> <span class="fu">=</span> <span class="dt">Text</span>
-<span class="kw">type</span> <span class="dt">Message</span> <span class="fu">=</span> <span class="dt">Text</span>
-<span class="kw">type</span> <span class="dt">ChannelName</span> <span class="fu">=</span> <span class="dt">Text</span>
-
-<span class="ot">postMessage ::</span> <span class="dt">Token</span> <span class="ot">-&gt;</span> <span class="dt">ChannelName</span> <span class="ot">-&gt;</span> <span class="dt">Message</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Either</span> <span class="dt">Text</span> ())
-postMessage token cname message <span class="fu">=</span> runExceptT <span class="fu">$</span>
-  chat_postMessage (<span class="dt">SlackConfig</span> <span class="fu">$</span> unpack token) (<span class="dt">Id</span> cname) message []</code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="kw">type</span> <span class="dt">Token</span> <span class="fu">=</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb11-2" data-line-number="2"><span class="kw">type</span> <span class="dt">Message</span> <span class="fu">=</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb11-3" data-line-number="3"><span class="kw">type</span> <span class="dt">ChannelName</span> <span class="fu">=</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb11-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb11-5" data-line-number="5"><span class="ot">postMessage ::</span> <span class="dt">Token</span> <span class="ot">-&gt;</span> <span class="dt">ChannelName</span> <span class="ot">-&gt;</span> <span class="dt">Message</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Either</span> <span class="dt">Text</span> ())</a>
+<a class="sourceLine" id="cb11-6" data-line-number="6">postMessage token cname message <span class="fu">=</span> runExceptT <span class="fu">$</span></a>
+<a class="sourceLine" id="cb11-7" data-line-number="7">  chat_postMessage (<span class="dt">SlackConfig</span> <span class="fu">$</span> unpack token) (<span class="dt">Id</span> cname) message []</a></code></pre></div>
 <p>読みやすいように型エイリアスを多用している． 返り値型の <code>Either Text ()</code> 型は「ポストに失敗したときに <code>Left Text</code> 型のエラーメッセージが返ってくるよ」って意味である．</p>
 <h3 id="headless-browser">Headless Browser</h3>
 <p>さぁお待ちかね Headless Browser を Haskell で扱うよー(ﾄﾞﾝﾄﾞﾝﾊﾟﾌﾊﾟﾌ)．</p>
 <p>イロイロ調べた結果，<a href="https://hackage.haskell.org/package/webdriver">webdriver</a> というライブラリが使いやすそうだった． そこにあった<a href="https://github.com/kallisti-dev/hs-webdriver/blob/e442b05569a6e0fb244b0fab95c08eb87f11126e/examples/readme-example-beginner.md#hello-world">サンプル</a>はこんな感じ．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">main ::</span> <span class="dt">IO</span> ()
-main <span class="fu">=</span> runSession firefoxConfig <span class="fu">$</span> <span class="kw">do</span>
-  openPage <span class="st">&quot;http://google.com&quot;</span>
-  searchInput <span class="ot">&lt;-</span> findElem ( <span class="dt">ByCSS</span> <span class="st">&quot;input[type='text']&quot;</span> )
-  sendKeys <span class="st">&quot;Hello, World!&quot;</span> searchInput
-  submit searchInput
-  closeSession
-
-firefoxConfig <span class="fu">=</span> useBrowser firefox defaultConfig</code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" data-line-number="1"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb12-2" data-line-number="2">main <span class="fu">=</span> runSession firefoxConfig <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb12-3" data-line-number="3">  openPage <span class="st">&quot;http://google.com&quot;</span></a>
+<a class="sourceLine" id="cb12-4" data-line-number="4">  searchInput <span class="ot">&lt;-</span> findElem ( <span class="dt">ByCSS</span> <span class="st">&quot;input[type='text']&quot;</span> )</a>
+<a class="sourceLine" id="cb12-5" data-line-number="5">  sendKeys <span class="st">&quot;Hello, World!&quot;</span> searchInput</a>
+<a class="sourceLine" id="cb12-6" data-line-number="6">  submit searchInput</a>
+<a class="sourceLine" id="cb12-7" data-line-number="7">  closeSession</a>
+<a class="sourceLine" id="cb12-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb12-9" data-line-number="9">firefoxConfig <span class="fu">=</span> useBrowser firefox defaultConfig</a></code></pre></div>
 <p>直感的に読める通りだ． 全体では，“Hello, World!” をグーグル検索してるだけ(検索結果は取得してない気がするけど(笑))．</p>
 <p>今回は，ただ単にページを開いて，ソースコードを取得したいだけだから，以下のような関数を書いた．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">fetchHtml ::</span> <span class="dt">Url</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Text</span>
-fetchHtml url <span class="fu">=</span> runSession config <span class="fu">$</span> <span class="kw">do</span>
-  openPage (unpack url)
-  getSource
-  <span class="kw">where</span>
-    config <span class="fu">=</span> useBrowser chrome defaultConfig</code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" data-line-number="1"><span class="ot">fetchHtml ::</span> <span class="dt">Url</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb13-2" data-line-number="2">fetchHtml url <span class="fu">=</span> runSession config <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb13-3" data-line-number="3">  openPage (unpack url)</a>
+<a class="sourceLine" id="cb13-4" data-line-number="4">  getSource</a>
+<a class="sourceLine" id="cb13-5" data-line-number="5">  <span class="kw">where</span></a>
+<a class="sourceLine" id="cb13-6" data-line-number="6">    config <span class="fu">=</span> useBrowser chrome defaultConfig</a></code></pre></div>
 <p><code>getSource</code> で現在表示中のページのソースコードを返してれる． 簡単だ．</p>
 <h3 id="組み合わせる">組み合わせる</h3>
 <p>さぁいよいよ最終段階． 今まで定義した関数を組み合わせる．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">main ::</span> <span class="dt">IO</span> ()
-main <span class="fu">=</span> <span class="kw">do</span>
-  setLocaleEncoding utf8
-  [htmlUrl, jsonPath, channel, token] <span class="ot">&lt;-</span> fmap pack <span class="fu">&lt;$&gt;</span> getArgs
-  oldCal <span class="ot">&lt;-</span> readEntryJson jsonPath
-  newCal <span class="ot">&lt;-</span> adventarScraper <span class="fu">&lt;$&gt;</span> fetchHtml htmlUrl
-  <span class="kw">let</span> message <span class="fu">=</span> mkMessage oldCal newCal
-  result <span class="ot">&lt;-</span> postMessage token channel (pack <span class="fu">$</span> either id id message)
-  <span class="kw">case</span> result <span class="kw">of</span>
-    <span class="dt">Right</span> _ <span class="ot">-&gt;</span> putStrLn <span class="st">&quot;Success!&quot;</span>
-    <span class="dt">Left</span>  e <span class="ot">-&gt;</span> putStrLn <span class="fu">$</span> <span class="st">&quot;Error: &quot;</span> <span class="ot">`mappend`</span> unpack e
-
-  when (isRight message <span class="fu">&amp;&amp;</span> isRight result) <span class="fu">$</span>
-    updateEntryJson jsonPath newCal
-
-
-<span class="ot">mkMessage ::</span> <span class="dt">Calendar</span> <span class="ot">-&gt;</span> <span class="dt">Calendar</span> <span class="ot">-&gt;</span> <span class="dt">Either</span> <span class="dt">String</span> <span class="dt">String</span>
-mkMessage <span class="fu">=</span> <span class="fu">...</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb14-2" data-line-number="2">main <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb14-3" data-line-number="3">  setLocaleEncoding utf8</a>
+<a class="sourceLine" id="cb14-4" data-line-number="4">  [htmlUrl, jsonPath, channel, token] <span class="ot">&lt;-</span> fmap pack <span class="fu">&lt;$&gt;</span> getArgs</a>
+<a class="sourceLine" id="cb14-5" data-line-number="5">  oldCal <span class="ot">&lt;-</span> readEntryJson jsonPath</a>
+<a class="sourceLine" id="cb14-6" data-line-number="6">  newCal <span class="ot">&lt;-</span> adventarScraper <span class="fu">&lt;$&gt;</span> fetchHtml htmlUrl</a>
+<a class="sourceLine" id="cb14-7" data-line-number="7">  <span class="kw">let</span> message <span class="fu">=</span> mkMessage oldCal newCal</a>
+<a class="sourceLine" id="cb14-8" data-line-number="8">  result <span class="ot">&lt;-</span> postMessage token channel (pack <span class="fu">$</span> either id id message)</a>
+<a class="sourceLine" id="cb14-9" data-line-number="9">  <span class="kw">case</span> result <span class="kw">of</span></a>
+<a class="sourceLine" id="cb14-10" data-line-number="10">    <span class="dt">Right</span> _ <span class="ot">-&gt;</span> putStrLn <span class="st">&quot;Success!&quot;</span></a>
+<a class="sourceLine" id="cb14-11" data-line-number="11">    <span class="dt">Left</span>  e <span class="ot">-&gt;</span> putStrLn <span class="fu">$</span> <span class="st">&quot;Error: &quot;</span> <span class="ot">`mappend`</span> unpack e</a>
+<a class="sourceLine" id="cb14-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb14-13" data-line-number="13">  when (isRight message <span class="fu">&amp;&amp;</span> isRight result) <span class="fu">$</span></a>
+<a class="sourceLine" id="cb14-14" data-line-number="14">    updateEntryJson jsonPath newCal</a>
+<a class="sourceLine" id="cb14-15" data-line-number="15"></a>
+<a class="sourceLine" id="cb14-16" data-line-number="16"></a>
+<a class="sourceLine" id="cb14-17" data-line-number="17"><span class="ot">mkMessage ::</span> <span class="dt">Calendar</span> <span class="ot">-&gt;</span> <span class="dt">Calendar</span> <span class="ot">-&gt;</span> <span class="dt">Either</span> <span class="dt">String</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb14-18" data-line-number="18">mkMessage <span class="fu">=</span> <span class="fu">...</span></a></code></pre></div>
 <p><code>mkMessage</code> は取得したエントリーの情報と前のを比較して，いい感じのメッセージを返してくれる関数(めんどいので割愛)． 差分が無かった時には <code>Left &quot;No Update...&quot;</code> を返す． なので，<code>when (isRight message &amp;&amp; isRight result) $ ...</code> で差分があったときだけ，JSON ファイルを書き換えている．</p>
 <h4 id="vs-文字コード">vs 文字コード</h4>
 <p>実は手元(Windows)でビルドしてるときは問題なかったのだが，Ubuntu 上で Dockerize し，selenium の Docker イメージと docker-compose した時に，文字コードで怒られた…</p>
@@ -380,10 +374,7 @@ mkMessage <span class="fu">=</span> <span class="fu">...</span></code></pre></di
 <h2 id="実行する">実行する</h2>
 <p>selenium は <a href="https://github.com/kallisti-dev/hs-webdriver/blob/master/README.md#using-the-selenium-server">webdriver の READMEに書いてある通り</a> Java のモノをインストールして実行した(別のターミナルで)． なんのドライバーも持ってなかったので，<a href="https://sites.google.com/a/chromium.org/chromedriver/downloads">chrome の webdriver</a> をダウンロードして，パスの通ってるとこに置いた．</p>
 <p>で，あとは <code>stack exec -- adventar-bot &quot;https://adventar.org/calendars/2300&quot; &quot;./hoge/entry.json&quot; &quot;bot-test&quot; &quot;XXXXX&quot;</code> とするだけ．</p>
-<div class="figure">
-<img src="../assets/re-adventar-slack-bot/adventar-bot-0.jpg" />
-
-</div>
+<p><img src="../assets/re-adventar-slack-bot/adventar-bot-0.jpg" /></p>
 <p>いい感じ</p>
 <h2 id="おしまい">おしまい</h2>
 <p>次回は，これを定期実行(cron)するために CircleCI で実行する！</p>

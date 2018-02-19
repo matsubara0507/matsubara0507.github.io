@@ -117,92 +117,92 @@
 <p>ずいぶん余計な話が長くなったが，ここから本題．</p>
 <h2 id="ちなみに">ちなみに</h2>
 <p><code>curl</code> を使う場合は次のように書く．</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">curl</span> -X GET -H <span class="st">&quot;X-ChatWorkToken: XXXXX&quot;</span> <span class="st">&quot;https://api.chatwork.com/v2/me&quot;</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="ex">curl</span> -X GET -H <span class="st">&quot;X-ChatWorkToken: XXXXX&quot;</span> <span class="st">&quot;https://api.chatwork.com/v2/me&quot;</span></a></code></pre></div>
 <p><code>XXXXX</code> が発行したトークン．</p>
 <h3 id="返ってくる-json-の型を作る">返ってくる JSON の型を作る</h3>
 <p><a href="http://developer.chatwork.com/ja/endpoint_me.html"><code>https://api.chatwork.com/v2/me</code></a> というエンドポイントを考える．</p>
 <p>返ってくる JSON は次のような感じ．</p>
-<div class="sourceCode"><pre class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span>
-  <span class="dt">&quot;account_id&quot;</span><span class="fu">:</span> <span class="dv">123</span><span class="fu">,</span>
-  <span class="dt">&quot;room_id&quot;</span><span class="fu">:</span> <span class="dv">322</span><span class="fu">,</span>
-  <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;John Smith&quot;</span><span class="fu">,</span>
-  <span class="dt">&quot;chatwork_id&quot;</span><span class="fu">:</span> <span class="st">&quot;tarochatworkid&quot;</span><span class="fu">,</span>
-  <span class="dt">&quot;organization_id&quot;</span><span class="fu">:</span> <span class="dv">101</span><span class="fu">,</span>
-  <span class="dt">&quot;organization_name&quot;</span><span class="fu">:</span> <span class="st">&quot;Hello Company&quot;</span><span class="fu">,</span>
-  <span class="dt">&quot;department&quot;</span><span class="fu">:</span> <span class="st">&quot;Marketing&quot;</span><span class="fu">,</span>
-  <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;CMO&quot;</span><span class="fu">,</span>
-  <span class="dt">&quot;url&quot;</span><span class="fu">:</span> <span class="st">&quot;http://mycompany.com&quot;</span><span class="fu">,</span>
-  <span class="dt">&quot;introduction&quot;</span><span class="fu">:</span> <span class="st">&quot;Self Introduction&quot;</span><span class="fu">,</span>
-  <span class="dt">&quot;mail&quot;</span><span class="fu">:</span> <span class="st">&quot;taro@example.com&quot;</span><span class="fu">,</span>
-  <span class="dt">&quot;tel_organization&quot;</span><span class="fu">:</span> <span class="st">&quot;XXX-XXXX-XXXX&quot;</span><span class="fu">,</span>
-  <span class="dt">&quot;tel_extension&quot;</span><span class="fu">:</span> <span class="st">&quot;YYY-YYYY-YYYY&quot;</span><span class="fu">,</span>
-  <span class="dt">&quot;tel_mobile&quot;</span><span class="fu">:</span> <span class="st">&quot;ZZZ-ZZZZ-ZZZZ&quot;</span><span class="fu">,</span>
-  <span class="dt">&quot;skype&quot;</span><span class="fu">:</span> <span class="st">&quot;myskype_id&quot;</span><span class="fu">,</span>
-  <span class="dt">&quot;facebook&quot;</span><span class="fu">:</span> <span class="st">&quot;myfacebook_id&quot;</span><span class="fu">,</span>
-  <span class="dt">&quot;twitter&quot;</span><span class="fu">:</span> <span class="st">&quot;mytwitter_id&quot;</span><span class="fu">,</span>
-  <span class="dt">&quot;avatar_image_url&quot;</span><span class="fu">:</span> <span class="st">&quot;https://example.com/abc.png&quot;</span>
-<span class="fu">}</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="fu">{</span></a>
+<a class="sourceLine" id="cb2-2" data-line-number="2">  <span class="dt">&quot;account_id&quot;</span><span class="fu">:</span> <span class="dv">123</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb2-3" data-line-number="3">  <span class="dt">&quot;room_id&quot;</span><span class="fu">:</span> <span class="dv">322</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb2-4" data-line-number="4">  <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;John Smith&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb2-5" data-line-number="5">  <span class="dt">&quot;chatwork_id&quot;</span><span class="fu">:</span> <span class="st">&quot;tarochatworkid&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb2-6" data-line-number="6">  <span class="dt">&quot;organization_id&quot;</span><span class="fu">:</span> <span class="dv">101</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb2-7" data-line-number="7">  <span class="dt">&quot;organization_name&quot;</span><span class="fu">:</span> <span class="st">&quot;Hello Company&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb2-8" data-line-number="8">  <span class="dt">&quot;department&quot;</span><span class="fu">:</span> <span class="st">&quot;Marketing&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb2-9" data-line-number="9">  <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;CMO&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb2-10" data-line-number="10">  <span class="dt">&quot;url&quot;</span><span class="fu">:</span> <span class="st">&quot;http://mycompany.com&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb2-11" data-line-number="11">  <span class="dt">&quot;introduction&quot;</span><span class="fu">:</span> <span class="st">&quot;Self Introduction&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb2-12" data-line-number="12">  <span class="dt">&quot;mail&quot;</span><span class="fu">:</span> <span class="st">&quot;taro@example.com&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb2-13" data-line-number="13">  <span class="dt">&quot;tel_organization&quot;</span><span class="fu">:</span> <span class="st">&quot;XXX-XXXX-XXXX&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb2-14" data-line-number="14">  <span class="dt">&quot;tel_extension&quot;</span><span class="fu">:</span> <span class="st">&quot;YYY-YYYY-YYYY&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb2-15" data-line-number="15">  <span class="dt">&quot;tel_mobile&quot;</span><span class="fu">:</span> <span class="st">&quot;ZZZ-ZZZZ-ZZZZ&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb2-16" data-line-number="16">  <span class="dt">&quot;skype&quot;</span><span class="fu">:</span> <span class="st">&quot;myskype_id&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb2-17" data-line-number="17">  <span class="dt">&quot;facebook&quot;</span><span class="fu">:</span> <span class="st">&quot;myfacebook_id&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb2-18" data-line-number="18">  <span class="dt">&quot;twitter&quot;</span><span class="fu">:</span> <span class="st">&quot;mytwitter_id&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb2-19" data-line-number="19">  <span class="dt">&quot;avatar_image_url&quot;</span><span class="fu">:</span> <span class="st">&quot;https://example.com/abc.png&quot;</span></a>
+<a class="sourceLine" id="cb2-20" data-line-number="20"><span class="fu">}</span></a></code></pre></div>
 <p>コレをレコードで表現する． どう考えても <code>account_id</code> とか <code>name</code> とかが重複しそうなので適当なプレフィックスを付ける(ダサいけど…)．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.Text</span> (<span class="dt">Text</span>)
-<span class="kw">import </span><span class="dt">GHC.Generic</span> (<span class="dt">Generic</span>)
-
-<span class="kw">data</span> <span class="dt">Me</span> <span class="fu">=</span> <span class="dt">Me</span>
-         {<span class="ot"> meToAccountId        ::</span> <span class="dt">Int</span>
-         ,<span class="ot"> meToRoomId           ::</span> <span class="dt">Int</span>
-         ,<span class="ot"> meToName             ::</span> <span class="dt">Text</span>
-         ,<span class="ot"> meToChatworkId       ::</span> <span class="dt">Text</span>
-         ,<span class="ot"> meToOrganizationId   ::</span> <span class="dt">Int</span>
-         ,<span class="ot"> meToOrganizationName ::</span> <span class="dt">Text</span>
-         ,<span class="ot"> meToDepartment       ::</span> <span class="dt">Text</span>
-         ,<span class="ot"> meToTitle            ::</span> <span class="dt">Text</span>
-         ,<span class="ot"> meToUrl              ::</span> <span class="dt">Text</span>
-         ,<span class="ot"> meToIntroduction     ::</span> <span class="dt">Text</span>
-         ,<span class="ot"> meToMail             ::</span> <span class="dt">Text</span>
-         ,<span class="ot"> meToTelOrganization  ::</span> <span class="dt">Text</span>
-         ,<span class="ot"> meToTelExtension     ::</span> <span class="dt">Text</span>
-         ,<span class="ot"> meToTelMobile        ::</span> <span class="dt">Text</span>
-         ,<span class="ot"> meToSkype            ::</span> <span class="dt">Text</span>
-         ,<span class="ot"> meToFacebook         ::</span> <span class="dt">Text</span>
-         ,<span class="ot"> meToTwitter          ::</span> <span class="dt">Text</span>
-         ,<span class="ot"> meToAvatarImageUrl   ::</span> <span class="dt">Text</span>
-         } <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>, <span class="dt">Generic</span>)</code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Data.Text</span> (<span class="dt">Text</span>)</a>
+<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="kw">import</span> <span class="dt">GHC.Generic</span> (<span class="dt">Generic</span>)</a>
+<a class="sourceLine" id="cb3-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb3-4" data-line-number="4"><span class="kw">data</span> <span class="dt">Me</span> <span class="fu">=</span> <span class="dt">Me</span></a>
+<a class="sourceLine" id="cb3-5" data-line-number="5">         {<span class="ot"> meToAccountId        ::</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb3-6" data-line-number="6">         ,<span class="ot"> meToRoomId           ::</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb3-7" data-line-number="7">         ,<span class="ot"> meToName             ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb3-8" data-line-number="8">         ,<span class="ot"> meToChatworkId       ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb3-9" data-line-number="9">         ,<span class="ot"> meToOrganizationId   ::</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb3-10" data-line-number="10">         ,<span class="ot"> meToOrganizationName ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb3-11" data-line-number="11">         ,<span class="ot"> meToDepartment       ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb3-12" data-line-number="12">         ,<span class="ot"> meToTitle            ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb3-13" data-line-number="13">         ,<span class="ot"> meToUrl              ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb3-14" data-line-number="14">         ,<span class="ot"> meToIntroduction     ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb3-15" data-line-number="15">         ,<span class="ot"> meToMail             ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb3-16" data-line-number="16">         ,<span class="ot"> meToTelOrganization  ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb3-17" data-line-number="17">         ,<span class="ot"> meToTelExtension     ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb3-18" data-line-number="18">         ,<span class="ot"> meToTelMobile        ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb3-19" data-line-number="19">         ,<span class="ot"> meToSkype            ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb3-20" data-line-number="20">         ,<span class="ot"> meToFacebook         ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb3-21" data-line-number="21">         ,<span class="ot"> meToTwitter          ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb3-22" data-line-number="22">         ,<span class="ot"> meToAvatarImageUrl   ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb3-23" data-line-number="23">         } <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>, <span class="dt">Generic</span>)</a></code></pre></div>
 <p>これを <code>FronJSON</code> 型クラスのインスタンスにしてやる(<code>ToJSON</code> はついで)．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.Aeson.Casing</span> (aesonDrop, snakeCase)
-<span class="kw">import </span><span class="dt">Data.Aeson</span> (<span class="dt">FromJSON</span> (..), <span class="dt">ToJSON</span> (..),
-                   genericParseJSON, genericToJSON)
-
-<span class="kw">instance</span> <span class="dt">ToJSON</span> <span class="dt">Me</span> <span class="kw">where</span>
-  toJSON <span class="fu">=</span> genericToJSON <span class="fu">$</span> aesonDrop (length <span class="st">&quot;meTo&quot;</span>) snakeCase
-<span class="kw">instance</span> <span class="dt">FromJSON</span> <span class="dt">Me</span> <span class="kw">where</span>
-  parseJSON <span class="fu">=</span> genericParseJSON <span class="fu">$</span> aesonDrop (length <span class="st">&quot;meTo&quot;</span>) snakeCase</code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Data.Aeson.Casing</span> (aesonDrop, snakeCase)</a>
+<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="kw">import</span> <span class="dt">Data.Aeson</span> (<span class="dt">FromJSON</span> (..), <span class="dt">ToJSON</span> (..),</a>
+<a class="sourceLine" id="cb4-3" data-line-number="3">                   genericParseJSON, genericToJSON)</a>
+<a class="sourceLine" id="cb4-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb4-5" data-line-number="5"><span class="kw">instance</span> <span class="dt">ToJSON</span> <span class="dt">Me</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb4-6" data-line-number="6">  toJSON <span class="fu">=</span> genericToJSON <span class="fu">$</span> aesonDrop (length <span class="st">&quot;meTo&quot;</span>) snakeCase</a>
+<a class="sourceLine" id="cb4-7" data-line-number="7"><span class="kw">instance</span> <span class="dt">FromJSON</span> <span class="dt">Me</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb4-8" data-line-number="8">  parseJSON <span class="fu">=</span> genericParseJSON <span class="fu">$</span> aesonDrop (length <span class="st">&quot;meTo&quot;</span>) snakeCase</a></code></pre></div>
 <p><code>Data.Aeson.Casing</code> は <a href="https://hackage.haskell.org/package/aeson-casing"><code>aeson-casing</code></a> というパッケージのモジュールで，これを利用すると簡単に <code>aeson</code> のための前処理を記述できる．</p>
 <h3 id="エンドポイント用の関数を作る">エンドポイント用の関数を作る</h3>
 <p>トークンを与えてエンドポイント用の関数を実行すると，先に定義した <code>Me</code> 型の値が返ってくる．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Network.HTTP.Req</span>
-
-<span class="kw">type</span> <span class="dt">Token</span> <span class="fu">=</span> <span class="dt">ByteString</span>
-
-<span class="ot">baseUrl ::</span> <span class="dt">Url</span> <span class="ch">'Https</span>
-baseUrl <span class="fu">=</span> https <span class="st">&quot;api.chatwork.com&quot;</span> <span class="fu">/:</span> <span class="st">&quot;v2&quot;</span>
-
-<span class="ot">mkHeader ::</span> <span class="dt">Token</span> <span class="ot">-&gt;</span> <span class="dt">Option</span> <span class="ch">'Https</span>
-mkHeader token <span class="fu">=</span> header <span class="st">&quot;X-ChatWorkToken&quot;</span> token
-
-<span class="ot">getMe ::</span> (<span class="dt">MonadHttp</span> m) <span class="ot">=&gt;</span> <span class="dt">Token</span> <span class="ot">-&gt;</span> m (<span class="dt">JsonResponse</span> <span class="dt">Me</span>)
-getMe token <span class="fu">=</span> req <span class="dt">GET</span> (baseUrl <span class="fu">/:</span> <span class="st">&quot;me&quot;</span>) <span class="dt">NoReqBody</span> jsonResponse (mkHeader token)</code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Network.HTTP.Req</span></a>
+<a class="sourceLine" id="cb5-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb5-3" data-line-number="3"><span class="kw">type</span> <span class="dt">Token</span> <span class="fu">=</span> <span class="dt">ByteString</span></a>
+<a class="sourceLine" id="cb5-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb5-5" data-line-number="5"><span class="ot">baseUrl ::</span> <span class="dt">Url</span> <span class="ch">'Https</span></a>
+<a class="sourceLine" id="cb5-6" data-line-number="6">baseUrl <span class="fu">=</span> https <span class="st">&quot;api.chatwork.com&quot;</span> <span class="fu">/:</span> <span class="st">&quot;v2&quot;</span></a>
+<a class="sourceLine" id="cb5-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb5-8" data-line-number="8"><span class="ot">mkHeader ::</span> <span class="dt">Token</span> <span class="ot">-&gt;</span> <span class="dt">Option</span> <span class="ch">'Https</span></a>
+<a class="sourceLine" id="cb5-9" data-line-number="9">mkHeader token <span class="fu">=</span> header <span class="st">&quot;X-ChatWorkToken&quot;</span> token</a>
+<a class="sourceLine" id="cb5-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb5-11" data-line-number="11"><span class="ot">getMe ::</span> (<span class="dt">MonadHttp</span> m) <span class="ot">=&gt;</span> <span class="dt">Token</span> <span class="ot">-&gt;</span> m (<span class="dt">JsonResponse</span> <span class="dt">Me</span>)</a>
+<a class="sourceLine" id="cb5-12" data-line-number="12">getMe token <span class="fu">=</span> req <span class="dt">GET</span> (baseUrl <span class="fu">/:</span> <span class="st">&quot;me&quot;</span>) <span class="dt">NoReqBody</span> jsonResponse (mkHeader token)</a></code></pre></div>
 <p>べた書きはあんまりよくないが，<code>baseUrl</code> にどのエンドポイントでも変わらない，ベースとなる URL を定義しておく． <code>req</code> 関数の型は以下の通り</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">req
-<span class="ot">  ::</span> ( <span class="dt">MonadHttp</span>    m
-     , <span class="dt">HttpMethod</span>   method
-     , <span class="dt">HttpBody</span>     body
-     , <span class="dt">HttpResponse</span> response
-     , <span class="dt">HttpBodyAllowed</span> (<span class="dt">AllowsBody</span> method) (<span class="dt">ProvidesBody</span> body) )
-  <span class="ot">=&gt;</span> method            <span class="co">-- ^ HTTP method</span>
-  <span class="ot">-&gt;</span> <span class="dt">Url</span> scheme        <span class="co">-- ^ 'Url'—location of resource</span>
-  <span class="ot">-&gt;</span> body              <span class="co">-- ^ Body of the request</span>
-  <span class="ot">-&gt;</span> <span class="dt">Proxy</span> response    <span class="co">-- ^ A hint how to interpret response</span>
-  <span class="ot">-&gt;</span> <span class="dt">Option</span> scheme     <span class="co">-- ^ Collection of optional parameters</span>
-  <span class="ot">-&gt;</span> m response        <span class="co">-- ^ Response</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1">req</a>
+<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="ot">  ::</span> ( <span class="dt">MonadHttp</span>    m</a>
+<a class="sourceLine" id="cb6-3" data-line-number="3">     , <span class="dt">HttpMethod</span>   method</a>
+<a class="sourceLine" id="cb6-4" data-line-number="4">     , <span class="dt">HttpBody</span>     body</a>
+<a class="sourceLine" id="cb6-5" data-line-number="5">     , <span class="dt">HttpResponse</span> response</a>
+<a class="sourceLine" id="cb6-6" data-line-number="6">     , <span class="dt">HttpBodyAllowed</span> (<span class="dt">AllowsBody</span> method) (<span class="dt">ProvidesBody</span> body) )</a>
+<a class="sourceLine" id="cb6-7" data-line-number="7">  <span class="ot">=&gt;</span> method            <span class="co">-- ^ HTTP method</span></a>
+<a class="sourceLine" id="cb6-8" data-line-number="8">  <span class="ot">-&gt;</span> <span class="dt">Url</span> scheme        <span class="co">-- ^ 'Url'—location of resource</span></a>
+<a class="sourceLine" id="cb6-9" data-line-number="9">  <span class="ot">-&gt;</span> body              <span class="co">-- ^ Body of the request</span></a>
+<a class="sourceLine" id="cb6-10" data-line-number="10">  <span class="ot">-&gt;</span> <span class="dt">Proxy</span> response    <span class="co">-- ^ A hint how to interpret response</span></a>
+<a class="sourceLine" id="cb6-11" data-line-number="11">  <span class="ot">-&gt;</span> <span class="dt">Option</span> scheme     <span class="co">-- ^ Collection of optional parameters</span></a>
+<a class="sourceLine" id="cb6-12" data-line-number="12">  <span class="ot">-&gt;</span> m response        <span class="co">-- ^ Response</span></a></code></pre></div>
 <p>一見難しそうだが</p>
 <ul>
 <li><code>method</code> は <a href="https://hackage.haskell.org/package/req-0.4.0/docs/Network-HTTP-Req.html#t:GET"><code>GET</code></a> や <a href="https://hackage.haskell.org/package/req-0.4.0/docs/Network-HTTP-Req.html#t:POST"><code>POST</code></a> などの HTTPメソッド</li>
@@ -215,140 +215,140 @@ getMe token <span class="fu">=</span> req <span class="dt">GET</span> (baseUrl <
 <p><code>Url scheme</code> 型は <a href="https://hackage.haskell.org/package/req-0.4.0/docs/Network-HTTP-Req.html#v:-47-:"><code>/:</code></a>で組み立てていく． GETメソッドの場合は本体(<code>body</code>)を指定できない(これは <code>HttpBpdyAllowed</code> 型クラスで決まってる)ので <a href="https://hackage.haskell.org/package/req-0.4.0/docs/Network-HTTP-Req.html#t:NoReqBody"><code>NoReqBody</code></a> コンストラクタを使う． <code>Proxy response</code> の値は既に定義されているのでそれを使う(e.g. <code>jsonResponse</code>)． その他のリクエストパラメータにはトークンを指定したいので，<code>mkHeader</code> 関数で <code>Token</code> 型の値(まぁただの <code>ByteString</code>)から生成する．</p>
 <h2 id="section-3"></h2>
 <p>これを GHCi で実行すると次のようになる</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;&gt;</span> <span class="fu">:</span><span class="kw">module</span> <span class="dt">Network.HTTP.Req</span> <span class="dt">ChatWork</span>
-<span class="fu">&gt;&gt;</span> token <span class="fu">=</span> <span class="st">&quot;xxx&quot;</span>
-<span class="fu">&gt;&gt;</span> print <span class="fu">=&lt;&lt;</span> (responseBody <span class="fu">&lt;$&gt;</span> getMe token)
-<span class="dt">Right</span> (<span class="dt">Me</span> {meToAccountId <span class="fu">=</span> <span class="dv">1234567</span>, meToRoomId <span class="fu">=</span> <span class="dv">9876543</span>, meToName <span class="fu">=</span> <span class="st">&quot;\26494\21407\20449\24544&quot;</span>, meToChatworkId <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToOrganizationId <span class="fu">=</span> <span class="dv">13579</span>, meToOrganizationName <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToDepartment <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTitle <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToUrl <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToIntroduction <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToMail <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTelOrganization <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTelExtension <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTelMobile <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToSkype <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToFacebook <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTwitter <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToAvatarImageUrl <span class="fu">=</span> <span class="st">&quot;https://appdata.chatwork.com/avatar/1234/12345678.rsz.png&quot;</span>})</code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="fu">&gt;&gt;</span> <span class="fu">:</span><span class="kw">module</span> <span class="dt">Network.HTTP.Req</span> <span class="dt">ChatWork</span></a>
+<a class="sourceLine" id="cb7-2" data-line-number="2"><span class="fu">&gt;&gt;</span> token <span class="fu">=</span> <span class="st">&quot;xxx&quot;</span></a>
+<a class="sourceLine" id="cb7-3" data-line-number="3"><span class="fu">&gt;&gt;</span> print <span class="fu">=&lt;&lt;</span> (responseBody <span class="fu">&lt;$&gt;</span> getMe token)</a>
+<a class="sourceLine" id="cb7-4" data-line-number="4"><span class="dt">Right</span> (<span class="dt">Me</span> {meToAccountId <span class="fu">=</span> <span class="dv">1234567</span>, meToRoomId <span class="fu">=</span> <span class="dv">9876543</span>, meToName <span class="fu">=</span> <span class="st">&quot;\26494\21407\20449\24544&quot;</span>, meToChatworkId <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToOrganizationId <span class="fu">=</span> <span class="dv">13579</span>, meToOrganizationName <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToDepartment <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTitle <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToUrl <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToIntroduction <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToMail <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTelOrganization <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTelExtension <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTelMobile <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToSkype <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToFacebook <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTwitter <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToAvatarImageUrl <span class="fu">=</span> <span class="st">&quot;https://appdata.chatwork.com/avatar/1234/12345678.rsz.png&quot;</span>})</a></code></pre></div>
 <h3 id="manager-を使ってカスタマイズ"><code>Manager</code> を使ってカスタマイズ</h3>
 <p>ChatWork のエンドポイントのいくつかは配列が返ってくることがある．</p>
 <p>例えば，<a href="http://developer.chatwork.com/ja/endpoint_contacts.html"><code>https://api.chatwork.com/v2/contacts</code></a>では次のようなJSONが返ってくる．</p>
-<div class="sourceCode"><pre class="sourceCode json"><code class="sourceCode json"><span class="ot">[</span>
-  <span class="fu">{</span>
-    <span class="dt">&quot;account_id&quot;</span><span class="fu">:</span> <span class="dv">123</span><span class="fu">,</span>
-    <span class="dt">&quot;room_id&quot;</span><span class="fu">:</span> <span class="dv">322</span><span class="fu">,</span>
-    <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;John Smith&quot;</span><span class="fu">,</span>
-    <span class="dt">&quot;chatwork_id&quot;</span><span class="fu">:</span> <span class="st">&quot;tarochatworkid&quot;</span><span class="fu">,</span>
-    <span class="dt">&quot;organization_id&quot;</span><span class="fu">:</span> <span class="dv">101</span><span class="fu">,</span>
-    <span class="dt">&quot;organization_name&quot;</span><span class="fu">:</span> <span class="st">&quot;Hello Company&quot;</span><span class="fu">,</span>
-    <span class="dt">&quot;department&quot;</span><span class="fu">:</span> <span class="st">&quot;Marketing&quot;</span><span class="fu">,</span>
-    <span class="dt">&quot;avatar_image_url&quot;</span><span class="fu">:</span> <span class="st">&quot;https://example.com/abc.png&quot;</span>
-  <span class="fu">}</span>
-<span class="ot">]</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="ot">[</span></a>
+<a class="sourceLine" id="cb8-2" data-line-number="2">  <span class="fu">{</span></a>
+<a class="sourceLine" id="cb8-3" data-line-number="3">    <span class="dt">&quot;account_id&quot;</span><span class="fu">:</span> <span class="dv">123</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb8-4" data-line-number="4">    <span class="dt">&quot;room_id&quot;</span><span class="fu">:</span> <span class="dv">322</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb8-5" data-line-number="5">    <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;John Smith&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb8-6" data-line-number="6">    <span class="dt">&quot;chatwork_id&quot;</span><span class="fu">:</span> <span class="st">&quot;tarochatworkid&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb8-7" data-line-number="7">    <span class="dt">&quot;organization_id&quot;</span><span class="fu">:</span> <span class="dv">101</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb8-8" data-line-number="8">    <span class="dt">&quot;organization_name&quot;</span><span class="fu">:</span> <span class="st">&quot;Hello Company&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb8-9" data-line-number="9">    <span class="dt">&quot;department&quot;</span><span class="fu">:</span> <span class="st">&quot;Marketing&quot;</span><span class="fu">,</span></a>
+<a class="sourceLine" id="cb8-10" data-line-number="10">    <span class="dt">&quot;avatar_image_url&quot;</span><span class="fu">:</span> <span class="st">&quot;https://example.com/abc.png&quot;</span></a>
+<a class="sourceLine" id="cb8-11" data-line-number="11">  <span class="fu">}</span></a>
+<a class="sourceLine" id="cb8-12" data-line-number="12"><span class="ot">]</span></a></code></pre></div>
 <p>問題は，配列が空の場合． その場合，<code>[]</code> ではなく，なにも返ってこない… そのため，次のようなエラーで落ちてしまう．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;&gt;</span> print <span class="fu">=&lt;&lt;</span> (responseBody <span class="fu">&lt;$&gt;</span> getContacts <span class="st">&quot;xxxx&quot;</span>)
-<span class="fu">***</span> <span class="dt">Exception</span><span class="fu">:</span> <span class="dt">JsonHttpException</span> <span class="st">&quot;Error in $: not enough input&quot;</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="fu">&gt;&gt;</span> print <span class="fu">=&lt;&lt;</span> (responseBody <span class="fu">&lt;$&gt;</span> getContacts <span class="st">&quot;xxxx&quot;</span>)</a>
+<a class="sourceLine" id="cb9-2" data-line-number="2"><span class="fu">***</span> <span class="dt">Exception</span><span class="fu">:</span> <span class="dt">JsonHttpException</span> <span class="st">&quot;Error in $: not enough input&quot;</span></a></code></pre></div>
 <p><code>aeson</code> のパーサーは空文字 <code>&quot;&quot;</code> をパースできないのだ… 一度は完全に詰んだかと思ったが，たまたま作ってた当時の翌週に <code>req</code> パッケージが v3.0 にアップデートし，<a href="https://hackage.haskell.org/package/req-0.4.0/docs/Network-HTTP-Req.html#v:req-39-"><code>req'</code></a> と言う関数が追加された！</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import qualified</span> <span class="dt">Network.HTTP.Client</span> <span class="kw">as</span> <span class="dt">L</span>
-
-req'
-<span class="ot">  ::</span> forall m method body scheme a<span class="fu">.</span>
-     ( <span class="dt">MonadHttp</span>  m
-     , <span class="dt">HttpMethod</span> method
-     , <span class="dt">HttpBody</span>   body
-     , <span class="dt">HttpBodyAllowed</span> (<span class="dt">AllowsBody</span> method) (<span class="dt">ProvidesBody</span> body) )
-  <span class="ot">=&gt;</span> method            <span class="co">-- ^ HTTP method</span>
-  <span class="ot">-&gt;</span> <span class="dt">Url</span> scheme        <span class="co">-- ^ 'Url'—location of resource</span>
-  <span class="ot">-&gt;</span> body              <span class="co">-- ^ Body of the request</span>
-  <span class="ot">-&gt;</span> <span class="dt">Option</span> scheme     <span class="co">-- ^ Collection of optional parameters</span>
-  <span class="ot">-&gt;</span> (<span class="dt">L.Request</span> <span class="ot">-&gt;</span> <span class="dt">L.Manager</span> <span class="ot">-&gt;</span> m a) <span class="co">-- ^ How to perform request</span>
-  <span class="ot">-&gt;</span> m a</code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Network.HTTP.Client</span> <span class="kw">as</span> <span class="dt">L</span></a>
+<a class="sourceLine" id="cb10-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb10-3" data-line-number="3">req'</a>
+<a class="sourceLine" id="cb10-4" data-line-number="4"><span class="ot">  ::</span> forall m method body scheme a<span class="fu">.</span></a>
+<a class="sourceLine" id="cb10-5" data-line-number="5">     ( <span class="dt">MonadHttp</span>  m</a>
+<a class="sourceLine" id="cb10-6" data-line-number="6">     , <span class="dt">HttpMethod</span> method</a>
+<a class="sourceLine" id="cb10-7" data-line-number="7">     , <span class="dt">HttpBody</span>   body</a>
+<a class="sourceLine" id="cb10-8" data-line-number="8">     , <span class="dt">HttpBodyAllowed</span> (<span class="dt">AllowsBody</span> method) (<span class="dt">ProvidesBody</span> body) )</a>
+<a class="sourceLine" id="cb10-9" data-line-number="9">  <span class="ot">=&gt;</span> method            <span class="co">-- ^ HTTP method</span></a>
+<a class="sourceLine" id="cb10-10" data-line-number="10">  <span class="ot">-&gt;</span> <span class="dt">Url</span> scheme        <span class="co">-- ^ 'Url'—location of resource</span></a>
+<a class="sourceLine" id="cb10-11" data-line-number="11">  <span class="ot">-&gt;</span> body              <span class="co">-- ^ Body of the request</span></a>
+<a class="sourceLine" id="cb10-12" data-line-number="12">  <span class="ot">-&gt;</span> <span class="dt">Option</span> scheme     <span class="co">-- ^ Collection of optional parameters</span></a>
+<a class="sourceLine" id="cb10-13" data-line-number="13">  <span class="ot">-&gt;</span> (<span class="dt">L.Request</span> <span class="ot">-&gt;</span> <span class="dt">L.Manager</span> <span class="ot">-&gt;</span> m a) <span class="co">-- ^ How to perform request</span></a>
+<a class="sourceLine" id="cb10-14" data-line-number="14">  <span class="ot">-&gt;</span> m a</a></code></pre></div>
 <p>変わったのは5引数目の <code>(L.Request -&gt; L.Manager -&gt; m a)</code> 型(もともとは <code>Proxy response</code> 型)． ざっくりいうと，<a href="https://hackage.haskell.org/package/http-client-0.5.7.0"><code>http-client</code></a> パッケージの <a href="https://hackage.haskell.org/package/http-client-0.5.7.0/docs/Network-HTTP-Client.html#t:Manager"><code>Manager</code></a> 型を使って，様々な前処理を書き加えることができるようになる(他の用途もあるだろうが)．</p>
 <p>これで，空文字だったら <code>[]</code> に変化する前処理を加えてあげれば良い．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad.IO.Class</span> (<span class="dt">MonadIO</span> (..))
-<span class="kw">import </span><span class="dt">Data.Default.Class</span> (def)
-<span class="kw">import </span><span class="dt">Data.List</span> (lookup)
-<span class="kw">import </span><span class="dt">Data.Maybe</span> (fromMaybe)
-<span class="kw">import </span><span class="dt">Data.Proxy</span> (<span class="dt">Proxy</span> (..))
-<span class="kw">import </span><span class="dt">Network.Connection</span> (initConnectionContext)
-<span class="kw">import </span><span class="dt">Network.HTTP.Client</span> (<span class="dt">BodyReader</span>, <span class="dt">Manager</span>,
-                            <span class="dt">ManagerSettings</span> (<span class="fu">..</span>), <span class="dt">Request</span>,
-                            <span class="dt">Response</span> (<span class="fu">..</span>), newManager)
-<span class="kw">import </span><span class="dt">Network.HTTP.Client.Internal</span> (constBodyReader)
-<span class="kw">import </span><span class="dt">Network.HTTP.Client.TLS</span> (mkManagerSettingsContext)
-<span class="kw">import </span><span class="dt">Network.HTTP.Req</span> (<span class="dt">AllowsBody</span>, <span class="dt">HttpBody</span>, <span class="dt">HttpBodyAllowed</span>,
-                         <span class="dt">HttpMethod</span>, <span class="dt">HttpResponse</span>, <span class="dt">MonadHttp</span>, <span class="dt">Option</span>,
-                         <span class="dt">ProvidesBody</span>, <span class="dt">Url</span>, req')
-<span class="kw">import </span><span class="dt">Network.HTTP.Types.Header</span> (hContentLength)
-
-<span class="ot">req ::</span>
-  ( <span class="dt">MonadHttp</span> m, <span class="dt">HttpMethod</span> method, <span class="dt">HttpBody</span> body, <span class="dt">HttpResponse</span> response
-  , <span class="dt">HttpBodyAllowed</span> (<span class="dt">AllowsBody</span> method) (<span class="dt">ProvidesBody</span> body))
-  <span class="ot">=&gt;</span> method
-  <span class="ot">-&gt;</span> <span class="dt">Url</span> scheme
-  <span class="ot">-&gt;</span> body
-  <span class="ot">-&gt;</span> <span class="dt">Proxy</span> response
-  <span class="ot">-&gt;</span> <span class="dt">Option</span> scheme
-  <span class="ot">-&gt;</span> m response
-req method url body proxy option <span class="fu">=</span>
-  req' method url body option (getHttpResponse' proxy)
-
-<span class="ot">getHttpResponse' ::</span> (<span class="dt">HttpResponse</span> a, <span class="dt">MonadHttp</span> m) <span class="ot">=&gt;</span> <span class="dt">Proxy</span> a <span class="ot">-&gt;</span> (<span class="dt">Request</span> <span class="ot">-&gt;</span> <span class="dt">Manager</span> <span class="ot">-&gt;</span> m a)
-getHttpResponse' <span class="dt">Proxy</span> r _ <span class="fu">=</span> liftIO <span class="fu">$</span> getHttpResponse r <span class="fu">=&lt;&lt;</span> fixEmptyStringManager
-
-<span class="ot">fixEmptyStringManager ::</span> <span class="dt">IO</span> <span class="dt">Manager</span>
-fixEmptyStringManager <span class="fu">=</span> <span class="kw">do</span>
-  context <span class="ot">&lt;-</span> initConnectionContext
-  <span class="kw">let</span> settings <span class="fu">=</span> mkManagerSettingsContext (<span class="dt">Just</span> context) def <span class="dt">Nothing</span>
-  newManager <span class="fu">$</span> settings { managerModifyResponse <span class="fu">=</span> fixEmptyString }
-
-<span class="ot">fixEmptyString ::</span> <span class="dt">Response</span> <span class="dt">BodyReader</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Response</span> <span class="dt">BodyReader</span>)
-fixEmptyString res <span class="fu">=</span> <span class="kw">do</span>
-  reader <span class="ot">&lt;-</span> constBodyReader [<span class="st">&quot;[]&quot;</span>]
-  <span class="kw">let</span>
-    contentLength <span class="fu">=</span> fromMaybe <span class="st">&quot;0&quot;</span> <span class="fu">$</span> lookup hContentLength (responseHeaders res)
-  return <span class="fu">$</span> <span class="kw">if</span> contentLength <span class="fu">/=</span> <span class="st">&quot;0&quot;</span> <span class="kw">then</span> res <span class="kw">else</span> res { responseBody <span class="fu">=</span> reader }</code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Control.Monad.IO.Class</span> (<span class="dt">MonadIO</span> (..))</a>
+<a class="sourceLine" id="cb11-2" data-line-number="2"><span class="kw">import</span> <span class="dt">Data.Default.Class</span> (def)</a>
+<a class="sourceLine" id="cb11-3" data-line-number="3"><span class="kw">import</span> <span class="dt">Data.List</span> (lookup)</a>
+<a class="sourceLine" id="cb11-4" data-line-number="4"><span class="kw">import</span> <span class="dt">Data.Maybe</span> (fromMaybe)</a>
+<a class="sourceLine" id="cb11-5" data-line-number="5"><span class="kw">import</span> <span class="dt">Data.Proxy</span> (<span class="dt">Proxy</span> (..))</a>
+<a class="sourceLine" id="cb11-6" data-line-number="6"><span class="kw">import</span> <span class="dt">Network.Connection</span> (initConnectionContext)</a>
+<a class="sourceLine" id="cb11-7" data-line-number="7"><span class="kw">import</span> <span class="dt">Network.HTTP.Client</span> (<span class="dt">BodyReader</span>, <span class="dt">Manager</span>,</a>
+<a class="sourceLine" id="cb11-8" data-line-number="8">                            <span class="dt">ManagerSettings</span> (<span class="fu">..</span>), <span class="dt">Request</span>,</a>
+<a class="sourceLine" id="cb11-9" data-line-number="9">                            <span class="dt">Response</span> (<span class="fu">..</span>), newManager)</a>
+<a class="sourceLine" id="cb11-10" data-line-number="10"><span class="kw">import</span> <span class="dt">Network.HTTP.Client.Internal</span> (constBodyReader)</a>
+<a class="sourceLine" id="cb11-11" data-line-number="11"><span class="kw">import</span> <span class="dt">Network.HTTP.Client.TLS</span> (mkManagerSettingsContext)</a>
+<a class="sourceLine" id="cb11-12" data-line-number="12"><span class="kw">import</span> <span class="dt">Network.HTTP.Req</span> (<span class="dt">AllowsBody</span>, <span class="dt">HttpBody</span>, <span class="dt">HttpBodyAllowed</span>,</a>
+<a class="sourceLine" id="cb11-13" data-line-number="13">                         <span class="dt">HttpMethod</span>, <span class="dt">HttpResponse</span>, <span class="dt">MonadHttp</span>, <span class="dt">Option</span>,</a>
+<a class="sourceLine" id="cb11-14" data-line-number="14">                         <span class="dt">ProvidesBody</span>, <span class="dt">Url</span>, req')</a>
+<a class="sourceLine" id="cb11-15" data-line-number="15"><span class="kw">import</span> <span class="dt">Network.HTTP.Types.Header</span> (hContentLength)</a>
+<a class="sourceLine" id="cb11-16" data-line-number="16"></a>
+<a class="sourceLine" id="cb11-17" data-line-number="17"><span class="ot">req ::</span></a>
+<a class="sourceLine" id="cb11-18" data-line-number="18">  ( <span class="dt">MonadHttp</span> m, <span class="dt">HttpMethod</span> method, <span class="dt">HttpBody</span> body, <span class="dt">HttpResponse</span> response</a>
+<a class="sourceLine" id="cb11-19" data-line-number="19">  , <span class="dt">HttpBodyAllowed</span> (<span class="dt">AllowsBody</span> method) (<span class="dt">ProvidesBody</span> body))</a>
+<a class="sourceLine" id="cb11-20" data-line-number="20">  <span class="ot">=&gt;</span> method</a>
+<a class="sourceLine" id="cb11-21" data-line-number="21">  <span class="ot">-&gt;</span> <span class="dt">Url</span> scheme</a>
+<a class="sourceLine" id="cb11-22" data-line-number="22">  <span class="ot">-&gt;</span> body</a>
+<a class="sourceLine" id="cb11-23" data-line-number="23">  <span class="ot">-&gt;</span> <span class="dt">Proxy</span> response</a>
+<a class="sourceLine" id="cb11-24" data-line-number="24">  <span class="ot">-&gt;</span> <span class="dt">Option</span> scheme</a>
+<a class="sourceLine" id="cb11-25" data-line-number="25">  <span class="ot">-&gt;</span> m response</a>
+<a class="sourceLine" id="cb11-26" data-line-number="26">req method url body proxy option <span class="fu">=</span></a>
+<a class="sourceLine" id="cb11-27" data-line-number="27">  req' method url body option (getHttpResponse' proxy)</a>
+<a class="sourceLine" id="cb11-28" data-line-number="28"></a>
+<a class="sourceLine" id="cb11-29" data-line-number="29"><span class="ot">getHttpResponse' ::</span> (<span class="dt">HttpResponse</span> a, <span class="dt">MonadHttp</span> m) <span class="ot">=&gt;</span> <span class="dt">Proxy</span> a <span class="ot">-&gt;</span> (<span class="dt">Request</span> <span class="ot">-&gt;</span> <span class="dt">Manager</span> <span class="ot">-&gt;</span> m a)</a>
+<a class="sourceLine" id="cb11-30" data-line-number="30">getHttpResponse' <span class="dt">Proxy</span> r _ <span class="fu">=</span> liftIO <span class="fu">$</span> getHttpResponse r <span class="fu">=&lt;&lt;</span> fixEmptyStringManager</a>
+<a class="sourceLine" id="cb11-31" data-line-number="31"></a>
+<a class="sourceLine" id="cb11-32" data-line-number="32"><span class="ot">fixEmptyStringManager ::</span> <span class="dt">IO</span> <span class="dt">Manager</span></a>
+<a class="sourceLine" id="cb11-33" data-line-number="33">fixEmptyStringManager <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb11-34" data-line-number="34">  context <span class="ot">&lt;-</span> initConnectionContext</a>
+<a class="sourceLine" id="cb11-35" data-line-number="35">  <span class="kw">let</span> settings <span class="fu">=</span> mkManagerSettingsContext (<span class="dt">Just</span> context) def <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb11-36" data-line-number="36">  newManager <span class="fu">$</span> settings { managerModifyResponse <span class="fu">=</span> fixEmptyString }</a>
+<a class="sourceLine" id="cb11-37" data-line-number="37"></a>
+<a class="sourceLine" id="cb11-38" data-line-number="38"><span class="ot">fixEmptyString ::</span> <span class="dt">Response</span> <span class="dt">BodyReader</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Response</span> <span class="dt">BodyReader</span>)</a>
+<a class="sourceLine" id="cb11-39" data-line-number="39">fixEmptyString res <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb11-40" data-line-number="40">  reader <span class="ot">&lt;-</span> constBodyReader [<span class="st">&quot;[]&quot;</span>]</a>
+<a class="sourceLine" id="cb11-41" data-line-number="41">  <span class="kw">let</span></a>
+<a class="sourceLine" id="cb11-42" data-line-number="42">    contentLength <span class="fu">=</span> fromMaybe <span class="st">&quot;0&quot;</span> <span class="fu">$</span> lookup hContentLength (responseHeaders res)</a>
+<a class="sourceLine" id="cb11-43" data-line-number="43">  return <span class="fu">$</span> <span class="kw">if</span> contentLength <span class="fu">/=</span> <span class="st">&quot;0&quot;</span> <span class="kw">then</span> res <span class="kw">else</span> res { responseBody <span class="fu">=</span> reader }</a></code></pre></div>
 <p>レスポンスパラメータの <code>ContentLength</code> が <code>0</code> だった場合は，<code>&quot;[]&quot;</code> を新しく返している，という処理だ． 元の <code>Network.HTTP.Req.req</code> 関数の代わりに，この <code>req</code> 関数を使えばうまく動作するはずだ．</p>
 <h3 id="post-や-put-はどうするか">POST や PUT はどうするか</h3>
 <p>例えば，チャットルームを作るエンドポイントの場合を考える． <code>curl</code> であれば次のように書く．</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">curl</span> -X POST -H <span class="st">&quot;X-ChatWorkToken: 自分のAPIトークン&quot;</span> -d <span class="st">&quot;description=group+chat+description&amp;icon_preset=meeting&amp;members_admin_ids=123%2C542%2C1001&amp;members_member_ids=21%2C344&amp;members_readonly_ids=15%2C103&amp;name=Website+renewal+project&quot;</span> <span class="st">&quot;https://api.chatwork.com/v2/rooms&quot;</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb12-1" data-line-number="1"><span class="ex">curl</span> -X POST -H <span class="st">&quot;X-ChatWorkToken: 自分のAPIトークン&quot;</span> -d <span class="st">&quot;description=group+chat+description&amp;icon_preset=meeting&amp;members_admin_ids=123%2C542%2C1001&amp;members_member_ids=21%2C344&amp;members_readonly_ids=15%2C103&amp;name=Website+renewal+project&quot;</span> <span class="st">&quot;https://api.chatwork.com/v2/rooms&quot;</span></a></code></pre></div>
 <p><code>-d</code> オプションを使ってルーム名 <code>name</code> や誰を招待するか <code>members_member_ids</code> を指定している． <code>req</code> パッケージでは次のように書く．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Network.HTTP.Req</span>  (<span class="dt">MonadHttp</span>, <span class="dt">POST</span> (..), <span class="dt">ReqBodyUrlEnc</span> (..),
-                          jsonResponse, (<span class="fu">/:</span>))
-
-<span class="kw">newtype</span> <span class="dt">RoomIdWrap</span> <span class="fu">=</span> <span class="dt">RoomIdWrap</span> {<span class="ot"> getRoomId ::</span> <span class="dt">Int</span> } <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>, <span class="dt">Generic</span>)
-
-<span class="kw">data</span> <span class="dt">CreateRoomParams</span> <span class="fu">=</span> <span class="dt">CreateRoomParams</span>
-                      {<span class="ot"> cRoomDescription    ::</span> <span class="dt">Maybe</span> <span class="dt">Text</span>
-                      ,<span class="ot"> cIconPreset         ::</span> <span class="dt">Maybe</span> <span class="dt">IconPreset</span>
-                      ,<span class="ot"> cMembersAdminIds    ::</span> [<span class="dt">Int</span>]
-                      ,<span class="ot"> cMembersMemberIds   ::</span> <span class="dt">Maybe</span> [<span class="dt">Int</span>]
-                      ,<span class="ot"> cMembersReadonlyIds ::</span> <span class="dt">Maybe</span> [<span class="dt">Int</span>]
-                      ,<span class="ot"> cRoomName           ::</span> <span class="dt">Text</span>
-                      } <span class="kw">deriving</span> (<span class="dt">Show</span>)
-
-<span class="ot">createRoom ::</span> (<span class="dt">MonadHttp</span> m) <span class="ot">=&gt;</span> <span class="dt">Token</span> <span class="ot">-&gt;</span> <span class="dt">CreateRoomParams</span> <span class="ot">-&gt;</span> m (<span class="dt">ChatWorkResponse</span> <span class="dt">RoomIdWrap</span>)
-createRoom token params <span class="fu">=</span>
-  req <span class="dt">POST</span> (baseUrl c <span class="fu">/:</span> <span class="st">&quot;rooms&quot;</span>) (<span class="dt">ReqBodyUrlEnc</span> params') jsonResponse <span class="fu">$</span> mkHeader token
-  <span class="kw">where</span>
-    params' <span class="fu">=</span> toReqParam <span class="st">&quot;description&quot;</span> (cRoomDescription params)
-           <span class="fu">&lt;&gt;</span> toReqParam <span class="st">&quot;icon_preset&quot;</span> (cIconPreset params)
-           <span class="fu">&lt;&gt;</span> toReqParam <span class="st">&quot;members_admin_ids&quot;</span> (cMembersAdminIds params)
-           <span class="fu">&lt;&gt;</span> toReqParam <span class="st">&quot;members_member_ids&quot;</span> (cMembersMemberIds params)
-           <span class="fu">&lt;&gt;</span> toReqParam <span class="st">&quot;members_readonly_ids&quot;</span> (cMembersReadonlyIds params)
-           <span class="fu">&lt;&gt;</span> toReqParam <span class="st">&quot;name&quot;</span> (cRoomName params)</code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Network.HTTP.Req</span>  (<span class="dt">MonadHttp</span>, <span class="dt">POST</span> (..), <span class="dt">ReqBodyUrlEnc</span> (..),</a>
+<a class="sourceLine" id="cb13-2" data-line-number="2">                          jsonResponse, (<span class="fu">/:</span>))</a>
+<a class="sourceLine" id="cb13-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb13-4" data-line-number="4"><span class="kw">newtype</span> <span class="dt">RoomIdWrap</span> <span class="fu">=</span> <span class="dt">RoomIdWrap</span> {<span class="ot"> getRoomId ::</span> <span class="dt">Int</span> } <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>, <span class="dt">Generic</span>)</a>
+<a class="sourceLine" id="cb13-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb13-6" data-line-number="6"><span class="kw">data</span> <span class="dt">CreateRoomParams</span> <span class="fu">=</span> <span class="dt">CreateRoomParams</span></a>
+<a class="sourceLine" id="cb13-7" data-line-number="7">                      {<span class="ot"> cRoomDescription    ::</span> <span class="dt">Maybe</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb13-8" data-line-number="8">                      ,<span class="ot"> cIconPreset         ::</span> <span class="dt">Maybe</span> <span class="dt">IconPreset</span></a>
+<a class="sourceLine" id="cb13-9" data-line-number="9">                      ,<span class="ot"> cMembersAdminIds    ::</span> [<span class="dt">Int</span>]</a>
+<a class="sourceLine" id="cb13-10" data-line-number="10">                      ,<span class="ot"> cMembersMemberIds   ::</span> <span class="dt">Maybe</span> [<span class="dt">Int</span>]</a>
+<a class="sourceLine" id="cb13-11" data-line-number="11">                      ,<span class="ot"> cMembersReadonlyIds ::</span> <span class="dt">Maybe</span> [<span class="dt">Int</span>]</a>
+<a class="sourceLine" id="cb13-12" data-line-number="12">                      ,<span class="ot"> cRoomName           ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb13-13" data-line-number="13">                      } <span class="kw">deriving</span> (<span class="dt">Show</span>)</a>
+<a class="sourceLine" id="cb13-14" data-line-number="14"></a>
+<a class="sourceLine" id="cb13-15" data-line-number="15"><span class="ot">createRoom ::</span> (<span class="dt">MonadHttp</span> m) <span class="ot">=&gt;</span> <span class="dt">Token</span> <span class="ot">-&gt;</span> <span class="dt">CreateRoomParams</span> <span class="ot">-&gt;</span> m (<span class="dt">ChatWorkResponse</span> <span class="dt">RoomIdWrap</span>)</a>
+<a class="sourceLine" id="cb13-16" data-line-number="16">createRoom token params <span class="fu">=</span></a>
+<a class="sourceLine" id="cb13-17" data-line-number="17">  req <span class="dt">POST</span> (baseUrl c <span class="fu">/:</span> <span class="st">&quot;rooms&quot;</span>) (<span class="dt">ReqBodyUrlEnc</span> params') jsonResponse <span class="fu">$</span> mkHeader token</a>
+<a class="sourceLine" id="cb13-18" data-line-number="18">  <span class="kw">where</span></a>
+<a class="sourceLine" id="cb13-19" data-line-number="19">    params' <span class="fu">=</span> toReqParam <span class="st">&quot;description&quot;</span> (cRoomDescription params)</a>
+<a class="sourceLine" id="cb13-20" data-line-number="20">           <span class="fu">&lt;&gt;</span> toReqParam <span class="st">&quot;icon_preset&quot;</span> (cIconPreset params)</a>
+<a class="sourceLine" id="cb13-21" data-line-number="21">           <span class="fu">&lt;&gt;</span> toReqParam <span class="st">&quot;members_admin_ids&quot;</span> (cMembersAdminIds params)</a>
+<a class="sourceLine" id="cb13-22" data-line-number="22">           <span class="fu">&lt;&gt;</span> toReqParam <span class="st">&quot;members_member_ids&quot;</span> (cMembersMemberIds params)</a>
+<a class="sourceLine" id="cb13-23" data-line-number="23">           <span class="fu">&lt;&gt;</span> toReqParam <span class="st">&quot;members_readonly_ids&quot;</span> (cMembersReadonlyIds params)</a>
+<a class="sourceLine" id="cb13-24" data-line-number="24">           <span class="fu">&lt;&gt;</span> toReqParam <span class="st">&quot;name&quot;</span> (cRoomName params)</a></code></pre></div>
 <p><code>IconPreset</code> 型は <code>icon_preset</code> パラメータに丁度対応するように作った型である(長いので割愛してる)． 今回はURLエンコードする必要があるので，<a href="https://hackage.haskell.org/package/req-0.4.0/docs/Network-HTTP-Req.html#t:ReqBodyUrlEnc"><code>ReqBodyUrlEnc</code></a> コンストラクタを使う． コンストラクタの引数には <a href="https://hackage.haskell.org/package/req-0.4.0/docs/Network-HTTP-Req.html#t:FormUrlEncodedParam"><code>FormUrlEncodedParam</code></a> 型の値を指定してやる必要があり，本来は <code>(=:)</code> 演算子を使って次のように定義する．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">param ::</span> <span class="dt">FormUrlEncodedParam</span>
-param <span class="fu">=</span> <span class="st">&quot;price&quot;</span> <span class="fu">=:</span> (<span class="dv">24</span><span class="ot"> ::</span> <span class="dt">Int</span>)
-     <span class="fu">&lt;&gt;</span> <span class="st">&quot;mmember&quot;</span> <span class="fu">=:</span> (<span class="st">&quot;hoge&quot;</span><span class="ot"> ::</span> <span class="dt">Text</span>)</code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="ot">param ::</span> <span class="dt">FormUrlEncodedParam</span></a>
+<a class="sourceLine" id="cb14-2" data-line-number="2">param <span class="fu">=</span> <span class="st">&quot;price&quot;</span> <span class="fu">=:</span> (<span class="dv">24</span><span class="ot"> ::</span> <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb14-3" data-line-number="3">     <span class="fu">&lt;&gt;</span> <span class="st">&quot;mmember&quot;</span> <span class="fu">=:</span> (<span class="st">&quot;hoge&quot;</span><span class="ot"> ::</span> <span class="dt">Text</span>)</a></code></pre></div>
 <p><code>Int</code> 型や <code>Text</code> 型だけなら楽だが，<code>Maybe</code> 型やリスト型のようなコンテナ型が関わってくるとめんどくさい．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">param ::</span> <span class="dt">FormUrlEncodedParam</span>
-param <span class="fu">=</span> fromMaybe mempty (<span class="st">&quot;price&quot;</span> <span class="fu">=:</span>) (<span class="dv">24</span><span class="ot"> ::</span> <span class="dt">Maybe</span> <span class="dt">Int</span>)
-     <span class="fu">&lt;&gt;</span> <span class="st">&quot;member&quot;</span> <span class="fu">=:</span> (foldl1 (\acc txt <span class="ot">-&gt;</span> mconcat [acc, <span class="st">&quot;,&quot;</span>, txt]) ([<span class="st">&quot;hoge&quot;</span>, <span class="st">&quot;fuga&quot;</span>]<span class="ot"> ::</span> [<span class="dt">Text</span>]))</code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" data-line-number="1"><span class="ot">param ::</span> <span class="dt">FormUrlEncodedParam</span></a>
+<a class="sourceLine" id="cb15-2" data-line-number="2">param <span class="fu">=</span> fromMaybe mempty (<span class="st">&quot;price&quot;</span> <span class="fu">=:</span>) (<span class="dv">24</span><span class="ot"> ::</span> <span class="dt">Maybe</span> <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb15-3" data-line-number="3">     <span class="fu">&lt;&gt;</span> <span class="st">&quot;member&quot;</span> <span class="fu">=:</span> (foldl1 (\acc txt <span class="ot">-&gt;</span> mconcat [acc, <span class="st">&quot;,&quot;</span>, txt]) ([<span class="st">&quot;hoge&quot;</span>, <span class="st">&quot;fuga&quot;</span>]<span class="ot"> ::</span> [<span class="dt">Text</span>]))</a></code></pre></div>
 <p>なので，これを抽象化した <code>toReqParam</code> 型クラスを作った．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">ToReqParam</span> a <span class="kw">where</span>
-<span class="ot">  toReqParam ::</span> (<span class="dt">QueryParam</span> param, <span class="dt">Monoid</span> param) <span class="ot">=&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> param
-
-<span class="kw">instance</span> <span class="dt">ToReqParam</span> <span class="dt">Int</span> <span class="kw">where</span>
-  toReqParam <span class="fu">=</span> (<span class="fu">=:</span>)
-
-<span class="kw">instance</span> <span class="dt">ToReqParam</span> <span class="dt">Text</span> <span class="kw">where</span>
-  toReqParam <span class="fu">=</span> (<span class="fu">=:</span>)
-
-<span class="kw">instance</span> <span class="dt">ToReqParam</span> a <span class="ot">=&gt;</span> <span class="dt">ToReqParam</span> (<span class="dt">Maybe</span> a) <span class="kw">where</span>
-  toReqParam <span class="fu">=</span> maybe mempty <span class="fu">.</span> toReqParam
-
-<span class="kw">instance</span> <span class="dt">Show</span> a <span class="ot">=&gt;</span> <span class="dt">ToReqParam</span> [a] <span class="kw">where</span>
-  toReqParam name <span class="fu">=</span> toReqParam name <span class="fu">.</span> foldl1 (\acc txt <span class="ot">-&gt;</span> mconcat [acc, <span class="st">&quot;,&quot;</span>, txt]) <span class="fu">.</span> fmap (pack <span class="fu">.</span> show)</code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" data-line-number="1"><span class="kw">class</span> <span class="dt">ToReqParam</span> a <span class="kw">where</span></a>
+<a class="sourceLine" id="cb16-2" data-line-number="2"><span class="ot">  toReqParam ::</span> (<span class="dt">QueryParam</span> param, <span class="dt">Monoid</span> param) <span class="ot">=&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> param</a>
+<a class="sourceLine" id="cb16-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb16-4" data-line-number="4"><span class="kw">instance</span> <span class="dt">ToReqParam</span> <span class="dt">Int</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb16-5" data-line-number="5">  toReqParam <span class="fu">=</span> (<span class="fu">=:</span>)</a>
+<a class="sourceLine" id="cb16-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb16-7" data-line-number="7"><span class="kw">instance</span> <span class="dt">ToReqParam</span> <span class="dt">Text</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb16-8" data-line-number="8">  toReqParam <span class="fu">=</span> (<span class="fu">=:</span>)</a>
+<a class="sourceLine" id="cb16-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb16-10" data-line-number="10"><span class="kw">instance</span> <span class="dt">ToReqParam</span> a <span class="ot">=&gt;</span> <span class="dt">ToReqParam</span> (<span class="dt">Maybe</span> a) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb16-11" data-line-number="11">  toReqParam <span class="fu">=</span> maybe mempty <span class="fu">.</span> toReqParam</a>
+<a class="sourceLine" id="cb16-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb16-13" data-line-number="13"><span class="kw">instance</span> <span class="dt">Show</span> a <span class="ot">=&gt;</span> <span class="dt">ToReqParam</span> [a] <span class="kw">where</span></a>
+<a class="sourceLine" id="cb16-14" data-line-number="14">  toReqParam name <span class="fu">=</span> toReqParam name <span class="fu">.</span> foldl1 (\acc txt <span class="ot">-&gt;</span> mconcat [acc, <span class="st">&quot;,&quot;</span>, txt]) <span class="fu">.</span> fmap (pack <span class="fu">.</span> show)</a></code></pre></div>
 <p>楽になった．</p>
 <h3 id="あとは">あとは…</h3>
 <p>あとはこれらをエンドポイントの種類だけ書く． まぁこれがしんどいんだが….</p>

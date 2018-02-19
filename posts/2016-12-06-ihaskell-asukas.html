@@ -98,43 +98,31 @@
 <p>試しに，公式のデモを使ってみるのも良いのかもしれません <a href="https://try.jupyter.org">try.jupyter.org</a> ．</p>
 <h2 id="アプリケーションを作成">アプリケーションを作成</h2>
 <p>アカウント登録したら，アプリを新しく作成をします．</p>
-<div class="figure">
-<img src="../assets/ihaskell-arukas/new_app.jpg" />
-
-</div>
+<p><img src="../assets/ihaskell-arukas/new_app.jpg" /></p>
 <p>のように設定しました． (エンドポイントを指定しない場合ランダムに生成される)</p>
 <p>現状，Arukas は Docker Hub に公開されているパブリックなコンテナしか Docker イメージしか使えない点に注意です．</p>
 <p>今後，他の方法も可能になるかはわかりません(<a href="https://support.arukas.io/hc/ja/articles/219254197">寧ろ無さそう？</a>)．</p>
 <p>なので使い方としては，完成したモノをアップロードするために使うべきなんですかね． テストは別の環境で行って．</p>
 <p>あとは，<code>Apps</code> のところの今作ったアプリ名をクリックして，<code>デプロイ</code> (起動) を押し，<code>Endpoint</code> の URL にアクセスすれば良い．</p>
-<div class="figure">
-<img src="../assets/ihaskell-arukas/home.jpg" />
-
-</div>
+<p><img src="../assets/ihaskell-arukas/home.jpg" /></p>
 <h2 id="テスト">テスト</h2>
 <p>適当に有名な <a href="https://ja.wikipedia.org/wiki/Fizz_Buzz">FizzBuzz</a> プログラムでも実行してみます．</p>
 <p>全体のコードはこんな感じ．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad</span> (guard)
-<span class="kw">import </span><span class="dt">Data.Maybe</span> (fromMaybe)
-<span class="kw">import </span><span class="dt">Data.Monoid</span> ((&lt;&gt;))
-
-<span class="ot">fizzbuzz ::</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">String</span>
-fizzbuzz <span class="fu">=</span> fromMaybe <span class="fu">.</span> show <span class="fu">&lt;*&gt;</span> <span class="dv">3</span> <span class="fu">~&gt;</span> <span class="st">&quot;Fizz&quot;</span> <span class="fu">&lt;&gt;</span> <span class="dv">5</span> <span class="fu">~&gt;</span> <span class="st">&quot;Buzz&quot;</span>
-  <span class="kw">where</span>
-    (d <span class="fu">~&gt;</span> s) n <span class="fu">=</span> s <span class="fu">&lt;$</span> guard (n <span class="ot">`mod`</span> d <span class="fu">==</span> <span class="dv">0</span>)</code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Control.Monad</span> (guard)</a>
+<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="kw">import</span> <span class="dt">Data.Maybe</span> (fromMaybe)</a>
+<a class="sourceLine" id="cb1-3" data-line-number="3"><span class="kw">import</span> <span class="dt">Data.Monoid</span> ((&lt;&gt;))</a>
+<a class="sourceLine" id="cb1-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb1-5" data-line-number="5"><span class="ot">fizzbuzz ::</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb1-6" data-line-number="6">fizzbuzz <span class="fu">=</span> fromMaybe <span class="fu">.</span> show <span class="fu">&lt;*&gt;</span> <span class="dv">3</span> <span class="fu">~&gt;</span> <span class="st">&quot;Fizz&quot;</span> <span class="fu">&lt;&gt;</span> <span class="dv">5</span> <span class="fu">~&gt;</span> <span class="st">&quot;Buzz&quot;</span></a>
+<a class="sourceLine" id="cb1-7" data-line-number="7">  <span class="kw">where</span></a>
+<a class="sourceLine" id="cb1-8" data-line-number="8">    (d <span class="fu">~&gt;</span> s) n <span class="fu">=</span> s <span class="fu">&lt;$</span> guard (n <span class="ot">`mod`</span> d <span class="fu">==</span> <span class="dv">0</span>)</a></code></pre></div>
 <p><a href="https://www.reddit.com/r/haskell/comments/2cum9p/i_did_a_haskell_fizzbuzz/">ココ</a>より参照した(自分は解説しません)．</p>
 <p>これを Jupyter に書き加えて実行．</p>
-<div class="figure">
-<img src="../assets/ihaskell-arukas/error.jpg" />
-
-</div>
+<p><img src="../assets/ihaskell-arukas/error.jpg" /></p>
 <p>え，エラー？</p>
 <p>IPython (2系) の方ではうまくいくのに….</p>
 <p>ローカルでやってみた．</p>
-<div class="figure">
-<img src="../assets/ihaskell-arukas/local.jpg" />
-
-</div>
+<p><img src="../assets/ihaskell-arukas/local.jpg" /></p>
 <p>うまくいった． なかなか遅いが，一応動く．</p>
 <p>Arukas の方はときおりコンテナのデプロイすらうまくいかない(時間がめちゃくちゃかかる)ようになったので，向こうの負荷がひどいのかも．</p>
 <h2 id="おしまい">おしまい</h2>

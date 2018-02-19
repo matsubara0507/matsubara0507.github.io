@@ -103,16 +103,16 @@
 <h2 id="できたモノ">できたモノ</h2>
 <p>リポジトリは <a href="https://github.com/matsubara0507/thank-you-stars">matsubara0507/thank-you-stars</a> ．</p>
 <p>使い方はホームディレクトリに以下のように記述した <code>.thank-you-stars.json</code> ファイルを作って</p>
-<div class="sourceCode"><pre class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span>
-    <span class="dt">&quot;token&quot;</span><span class="fu">:</span> <span class="st">&quot;SET_YOUR_TOKEN_HERE&quot;</span>
-<span class="fu">}</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="fu">{</span></a>
+<a class="sourceLine" id="cb1-2" data-line-number="2">    <span class="dt">&quot;token&quot;</span><span class="fu">:</span> <span class="st">&quot;SET_YOUR_TOKEN_HERE&quot;</span></a>
+<a class="sourceLine" id="cb1-3" data-line-number="3"><span class="fu">}</span></a></code></pre></div>
 <p><code>{:thank_you_stars, &quot;~&gt; 0.1.0&quot;, only: :dev}</code> を <code>mix.exs</code> ファイルの <code>deps</code> に書き加えて，<code>mix thank_you_stars</code> を実行するだけ． <code>mix.exs</code> の <code>deps</code> を読み込んで，Star をする．</p>
 <h2 id="section"></h2>
 <p>ちなみに，他の thank-you-stars と違って，mix task として生えるので他の thank-you-stars と共存可能です！</p>
 <h2 id="作る">作る</h2>
 <h3 id="振る舞い">振る舞い</h3>
 <p>全部の thank-you-stars を読んだわけではないけど，だいたいこんな感じだと思う．</p>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li><code>.thank-you-stars.json</code> ファイルから GitHub の APIトークンを取得</li>
 <li>依存パッケージを記述してるファイルからパッケージ名を取得</li>
 <li>パッケージ名から対応する GitHub リポジトリの名前を取得(オーナーも要る)</li>
@@ -122,22 +122,22 @@
 <p>Elixir は(Go言語のように)エラーハンドリングを <code>{:ok, xxx}</code> か <code>{:error, yyy}</code> を返して行う慣習がある(例外も投げれるけど)． ファイルの読み込みとか，JSONのパースとか．</p>
 <p>ただし，コレのおかげでお得意のパイプ演算子 <code>(|&gt;)</code> による結合が使えない． モナドが使えれば…． 調べてみたら，このパターン専用のモナドみたいな <a href="https://github.com/CrowdHailer/OK">OK パッケージ</a> というのがあった． なので，積極的にこのパッケージを使っていく．</p>
 <p>使い方はパイプ演算子の代わりにバインド演算子 <code>~&gt;&gt;</code> を使うだけ．</p>
-<div class="sourceCode"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span class="cn">OK</span><span class="op">.</span>success(file)
-  <span class="op">~&gt;&gt;</span> <span class="cn">File</span><span class="op">.</span>read
-  <span class="op">~&gt;&gt;</span> <span class="cn">Poison</span><span class="op">.</span>decode
-  <span class="op">~&gt;&gt;</span> <span class="cn">Dict</span><span class="op">.</span>fetch(name)</code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="cn">OK</span><span class="op">.</span>success(file)</a>
+<a class="sourceLine" id="cb2-2" data-line-number="2">  <span class="op">~&gt;&gt;</span> <span class="cn">File</span><span class="op">.</span>read</a>
+<a class="sourceLine" id="cb2-3" data-line-number="3">  <span class="op">~&gt;&gt;</span> <span class="cn">Poison</span><span class="op">.</span>decode</a>
+<a class="sourceLine" id="cb2-4" data-line-number="4">  <span class="op">~&gt;&gt;</span> <span class="cn">Dict</span><span class="op">.</span>fetch(name)</a></code></pre></div>
 <p>他にも <code>OK.with</code> マクロや <code>OK.try</code> マクロなどがある．</p>
 <h3 id="github-の-apiトークンを取得">1. GitHub の APIトークンを取得</h3>
 <p><code>$HOME/.thank-you-stars.json</code> ファイルの読み込みは <code>File.read(Path.join [System.user_home, &quot;.thank-you-stars.json&quot;])</code> でできる．</p>
 <h2 id="section-1"></h2>
 <p>JSON のデコードは <a href="https://github.com/devinus/poison">Poison</a> というライブラリを使うのがデファクトスタンダードっぽい． しかし，このまま使うと OK パッケージとうまくかみ合わない(例では使ったけど)．</p>
 <p>というのも，<a href="https://hexdocs.pm/poison/Poison.html#decode/2">ドキュメント</a>では <code>{:error, {:invalid, String.t}}</code> という型のエラーが返ってくる可能性があると書いてあるが 実際に返ってくるのは <code>{:error, :invalid, 0}</code> という感じの3つ組のタプル(この問題は既に <a href="https://github.com/devinus/poison/issues/122">Issue</a> にあって，コメントによると修正済みで次のバージョンでは直ってるようだ)． OK パッケージは3つ組のタプルを処理できない． なのでラッパー関数を定義して使った．</p>
-<div class="sourceCode"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span class="kw">defp</span> poison_decode(str) <span class="kw">do</span>
-  <span class="kw">case</span> <span class="cn">Poison</span><span class="op">.</span>decode(str) <span class="kw">do</span>
-    {<span class="va">:error</span>, <span class="va">:invalid</span>, _} <span class="op">-&gt;</span> {<span class="va">:error</span>, <span class="va">:invalid</span>}
-    other <span class="op">-&gt;</span> other
-  <span class="kw">end</span>
-<span class="kw">end</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw">defp</span> poison_decode(str) <span class="kw">do</span></a>
+<a class="sourceLine" id="cb3-2" data-line-number="2">  <span class="kw">case</span> <span class="cn">Poison</span><span class="op">.</span>decode(str) <span class="kw">do</span></a>
+<a class="sourceLine" id="cb3-3" data-line-number="3">    {<span class="va">:error</span>, <span class="va">:invalid</span>, _} <span class="op">-&gt;</span> {<span class="va">:error</span>, <span class="va">:invalid</span>}</a>
+<a class="sourceLine" id="cb3-4" data-line-number="4">    other <span class="op">-&gt;</span> other</a>
+<a class="sourceLine" id="cb3-5" data-line-number="5">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb3-6" data-line-number="6"><span class="kw">end</span></a></code></pre></div>
 <p>あとは連想配列の <code>&quot;token&quot;</code> キーで API Token を取得するだけ．</p>
 <h3 id="パッケージ名を取得">2. パッケージ名を取得</h3>
 <p>他の言語のだと JSON ファイルや Cabal ファイルを読み込んで，デコードしてみたいなことをしているが，Elixir もとい Mix の場合は必要ない．</p>
@@ -151,27 +151,27 @@
 <h2 id="section-4"></h2>
 <p>もういっこ問題があって，それは GitHub のリポジトリへの URL が適当に定義されている点だ． <code>&quot;GitHub&quot; : &quot;https://github.com/xxx/yyy&quot;</code> と書いてあったり，<code>&quot;Github&quot; : &quot;https://github.com/xxx/yyy&quot;</code> と書いてあったり，<code>&quot;github&quot; : &quot;https://github.com/xxx/yyy&quot;</code> と書いてあったりする． これは，hexpm の API が単純に，各パッケージの mix.exs に定義した <a href="https://hex.pm/docs/publish">hex の設定</a>を読んでいるだけで，GitHub へのリンクの設定は，フォーマットが無く任意だからだ(<code>:links</code> の設定値の中に自由にリンクを書くだけ)．</p>
 <p>なので，どれでもマッチできるような処理を書く必要があった．</p>
-<div class="sourceCode"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span class="kw">def</span> github_url(links) <span class="kw">do</span>
-  [<span class="st">&quot;GitHub&quot;</span>, <span class="st">&quot;Github&quot;</span>, <span class="st">&quot;github&quot;</span>]
-    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span>(<span class="cn">Map</span><span class="op">.</span>get(links, <span class="op">&amp;</span><span class="dv">1</span>)))
-    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>filter(<span class="op">&amp;</span>(!is_nil(<span class="op">&amp;</span><span class="dv">1</span>)))
-    <span class="op">|&gt;</span> <span class="kw">case</span> <span class="kw">do</span>
-         [] <span class="op">-&gt;</span> <span class="cn">OK</span><span class="op">.</span>failure <span class="cn">nil</span>
-         [link <span class="op">|</span> _] <span class="op">-&gt;</span> <span class="cn">OK</span><span class="op">.</span>success link
-       <span class="kw">end</span>
-<span class="kw">end</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">def</span> github_url(links) <span class="kw">do</span></a>
+<a class="sourceLine" id="cb4-2" data-line-number="2">  [<span class="st">&quot;GitHub&quot;</span>, <span class="st">&quot;Github&quot;</span>, <span class="st">&quot;github&quot;</span>]</a>
+<a class="sourceLine" id="cb4-3" data-line-number="3">    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>map(<span class="op">&amp;</span>(<span class="cn">Map</span><span class="op">.</span>get(links, <span class="op">&amp;</span><span class="dv">1</span>)))</a>
+<a class="sourceLine" id="cb4-4" data-line-number="4">    <span class="op">|&gt;</span> <span class="cn">Enum</span><span class="op">.</span>filter(<span class="op">&amp;</span>(!is_nil(<span class="op">&amp;</span><span class="dv">1</span>)))</a>
+<a class="sourceLine" id="cb4-5" data-line-number="5">    <span class="op">|&gt;</span> <span class="kw">case</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb4-6" data-line-number="6">         [] <span class="op">-&gt;</span> <span class="cn">OK</span><span class="op">.</span>failure <span class="cn">nil</span></a>
+<a class="sourceLine" id="cb4-7" data-line-number="7">         [link <span class="op">|</span> _] <span class="op">-&gt;</span> <span class="cn">OK</span><span class="op">.</span>success link</a>
+<a class="sourceLine" id="cb4-8" data-line-number="8">       <span class="kw">end</span></a>
+<a class="sourceLine" id="cb4-9" data-line-number="9"><span class="kw">end</span></a></code></pre></div>
 <h3 id="star-をする">4. Star をする</h3>
 <p>GitHub API の Elixir Client には <a href="https://github.com/edgurgel/tentacat">Tentacat パッケージ</a>を使った． しかし，Star を行う API は実装されてなかった(あとで PR でも送ろうかな…)ので <a href="https://hexdocs.pm/tentacat/Tentacat.html#put/3"><code>Tentacat.put/3</code></a> を直接使った．</p>
-<div class="sourceCode"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span class="kw">def</span> star_github_package(url, client) <span class="kw">do</span>
-  url
-    <span class="op">|&gt;</span> <span class="cn">URI</span><span class="op">.</span>parse()
-    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="va">:path</span>, <span class="st">&quot;&quot;</span>)
-    <span class="op">|&gt;</span> (<span class="op">&amp;</span>(<span class="cn">Tentacat</span><span class="op">.</span>put <span class="st">&quot;user/starred</span><span class="ot">#{</span><span class="op">&amp;</span><span class="dv">1</span><span class="ot">}</span><span class="st">&quot;</span>, client))<span class="op">.</span>()
-    <span class="op">|&gt;</span> <span class="kw">case</span> <span class="kw">do</span>
-         {<span class="dv">204</span>, _} <span class="op">-&gt;</span> <span class="cn">OK</span><span class="op">.</span>success(url)
-         _        <span class="op">-&gt;</span> <span class="cn">OK</span><span class="op">.</span>failure(url)
-       <span class="kw">end</span>
-<span class="kw">end</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="kw">def</span> star_github_package(url, client) <span class="kw">do</span></a>
+<a class="sourceLine" id="cb5-2" data-line-number="2">  url</a>
+<a class="sourceLine" id="cb5-3" data-line-number="3">    <span class="op">|&gt;</span> <span class="cn">URI</span><span class="op">.</span>parse()</a>
+<a class="sourceLine" id="cb5-4" data-line-number="4">    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="va">:path</span>, <span class="st">&quot;&quot;</span>)</a>
+<a class="sourceLine" id="cb5-5" data-line-number="5">    <span class="op">|&gt;</span> (<span class="op">&amp;</span>(<span class="cn">Tentacat</span><span class="op">.</span>put <span class="st">&quot;user/starred</span><span class="ot">#{</span><span class="op">&amp;</span><span class="dv">1</span><span class="ot">}</span><span class="st">&quot;</span>, client))<span class="op">.</span>()</a>
+<a class="sourceLine" id="cb5-6" data-line-number="6">    <span class="op">|&gt;</span> <span class="kw">case</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb5-7" data-line-number="7">         {<span class="dv">204</span>, _} <span class="op">-&gt;</span> <span class="cn">OK</span><span class="op">.</span>success(url)</a>
+<a class="sourceLine" id="cb5-8" data-line-number="8">         _        <span class="op">-&gt;</span> <span class="cn">OK</span><span class="op">.</span>failure(url)</a>
+<a class="sourceLine" id="cb5-9" data-line-number="9">       <span class="kw">end</span></a>
+<a class="sourceLine" id="cb5-10" data-line-number="10"><span class="kw">end</span></a></code></pre></div>
 <p>ちなみに，GitHub の URL <code>https://github.com/xxx/yyy</code> からオーナーとリポジトリ名 <code>/xxx/yyy</code> を切り出すには，<a href="https://hexdocs.pm/elixir/URI.html">標準パッケージ URI</a> の <a href="https://hexdocs.pm/elixir/URI.html#parse/1"><code>URI.parse/1</code></a> 関数を使った(標準であるの凄い)．</p>
 <h3 id="hex-に登録">Hex に登録</h3>
 <p>最後に，Hex に登録する． こうすることで， <code>matsubara0507/thank-you-stars</code> を簡単にローカルへインストールできる．</p>

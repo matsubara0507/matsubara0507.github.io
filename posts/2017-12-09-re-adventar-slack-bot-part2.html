@@ -83,10 +83,7 @@
 
   <div class="post-content" itemprop="articleBody">
     <p>ドーモ CircleCI でなんでもするマンです．</p>
-<div class="figure">
-<img src="../assets/re-adventar-slack-bot/nandemoyaruman.jpg" />
-
-</div>
+<p><img src="../assets/re-adventar-slack-bot/nandemoyaruman.jpg" /></p>
 <p>ADVENTAR の更新通知 Slack Bot を作ったという話の後編です(書いてたら長くなったので分けた)． ちなみに，前半に書いた通り，わざわざスクレイピングとかしなくても RSS を取得できます (;ω;)</p>
 <p><a href="../posts/2017-12-02-re-adventar-slack-bot-part1.html">前編</a>はコチラ．</p>
 <h2 id="前回までのあらすじ">前回までのあらすじ</h2>
@@ -95,7 +92,7 @@
 <p>できたけどドコで定期実行する？ お金ないのでタダで回したいよね？ CircleCI なら Docker 使えるからやりたい放題じゃん！！ ってことで CircleCI で Haskell プログラムを実行する．</p>
 <h2 id="戦略">戦略</h2>
 <p>Circle CI で実行するための戦略はこうだ．</p>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li>プログラムを Dockerrize する</li>
 <li>selenium のスタンドアローンと docker-compose する</li>
 <li>Circle CI では docker-compose を実行する(だけ)</li>
@@ -103,37 +100,34 @@
 <li>コレを cron で回す</li>
 </ol>
 <p>いちいち CIrcle CI 上で Docker ビルドしてたら時間がかかりすぎる． なので，事前にビルドしたイメージを Docker Hub にあげておいて，Circle CI 上では docker pull するだけにする．</p>
-<div class="figure">
-<img src="../assets/re-adventar-slack-bot/run-on-circleci.jpg" />
-
-</div>
+<p><img src="../assets/re-adventar-slack-bot/run-on-circleci.jpg" /></p>
 <h2 id="作る">作る</h2>
 <h3 id="プログラムを-dockerize">1. プログラムを Dockerize</h3>
 <p>前回で Haskell の話は終わりと言ったが <strong>あれはウソだ</strong> ！！</p>
 <p>(※ 言ってません)</p>
 <p>Haskell のビルドツール <a href="https://docs.haskellstack.org/en/stable/README/">stack</a> には <a href="https://docs.haskellstack.org/en/stable/docker_integration/">Docker Integration</a> と言う機能がある． Docker Integration は主に以下の2つの機能を提供する．</p>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li>ホスト環境ではなく Docker の上でビルド</li>
 <li>Docker イメージの作成</li>
 </ol>
 <p>これらの設定は <code>stack.yaml</code> で行う．</p>
-<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">resolver:</span><span class="at"> lts-9.12</span>
-<span class="fu">packages:</span>
-  <span class="kw">-</span> .
-<span class="fu">extra-deps:</span>
-  <span class="kw">-</span> slack-api-0.12
-<span class="fu">flags:</span><span class="at"> </span><span class="kw">{}</span>
-<span class="fu">extra-package-dbs:</span><span class="at"> </span><span class="kw">[]</span>
-
-<span class="fu">docker:</span>
-  <span class="fu">repo:</span><span class="at"> </span><span class="st">&quot;fpco/stack-build&quot;</span>
-
-<span class="fu">image:</span>
-  <span class="fu">container:</span>
-    <span class="fu">name:</span><span class="at"> </span><span class="st">&quot;matsubara0507/adventar-bot&quot;</span>
-    <span class="fu">base:</span><span class="at"> </span><span class="st">&quot;matsubara0507/ubuntu-tcp&quot;</span>
-    <span class="fu">add:</span>
-      <span class="fu">scripts:</span><span class="at"> /usr/local/bin</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="fu">resolver:</span><span class="at"> lts-9.12</span></a>
+<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="fu">packages:</span></a>
+<a class="sourceLine" id="cb1-3" data-line-number="3">  <span class="kw">-</span> .</a>
+<a class="sourceLine" id="cb1-4" data-line-number="4"><span class="fu">extra-deps:</span></a>
+<a class="sourceLine" id="cb1-5" data-line-number="5">  <span class="kw">-</span> slack-api-0.12</a>
+<a class="sourceLine" id="cb1-6" data-line-number="6"><span class="fu">flags:</span><span class="at"> </span><span class="kw">{}</span></a>
+<a class="sourceLine" id="cb1-7" data-line-number="7"><span class="fu">extra-package-dbs:</span><span class="at"> </span><span class="kw">[]</span></a>
+<a class="sourceLine" id="cb1-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb1-9" data-line-number="9"><span class="fu">docker:</span></a>
+<a class="sourceLine" id="cb1-10" data-line-number="10">  <span class="fu">repo:</span><span class="at"> </span><span class="st">&quot;fpco/stack-build&quot;</span></a>
+<a class="sourceLine" id="cb1-11" data-line-number="11"></a>
+<a class="sourceLine" id="cb1-12" data-line-number="12"><span class="fu">image:</span></a>
+<a class="sourceLine" id="cb1-13" data-line-number="13">  <span class="fu">container:</span></a>
+<a class="sourceLine" id="cb1-14" data-line-number="14">    <span class="fu">name:</span><span class="at"> </span><span class="st">&quot;matsubara0507/adventar-bot&quot;</span></a>
+<a class="sourceLine" id="cb1-15" data-line-number="15">    <span class="fu">base:</span><span class="at"> </span><span class="st">&quot;matsubara0507/ubuntu-tcp&quot;</span></a>
+<a class="sourceLine" id="cb1-16" data-line-number="16">    <span class="fu">add:</span></a>
+<a class="sourceLine" id="cb1-17" data-line-number="17">      <span class="fu">scripts:</span><span class="at"> /usr/local/bin</span></a></code></pre></div>
 <p><code>docker</code> の部分が (1) でのビルドするイメージを指定している． <code>image</code> の部分が (2) で作成するイメージの設定だ．</p>
 <p>あとは</p>
 <pre><code>$ stack build --docker --ghc-options='-optl-static -optl-pthread'
@@ -162,32 +156,32 @@ $ stack image container</code></pre>
 <li><a href="https://hub.docker.com/r/selenium/standalone-chrome/">selenium/standalone-chrome - Docker Hub</a></li>
 </ul>
 <p><a href="https://github.com/IGGG/adventar-bot/blob/master/docker-compose.yml">docker-compose.yaml</a> はこんな感じ．</p>
-<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">version:</span><span class="at"> </span><span class="st">&quot;2&quot;</span>
-<span class="fu">services:</span>
-  <span class="fu">bot:</span>
-    <span class="fu">image:</span><span class="at"> matsubara0507/adventar-bot</span>
-    <span class="fu">command:</span><span class="at"> wait.sh adventar-bot &quot;${HTML_URL}&quot; &quot;/config/entry.json&quot; &quot;${SLACK_CHANNEL}&quot;</span>
-    <span class="fu">volumes:</span>
-      <span class="kw">-</span> <span class="fu">./.circleci:</span><span class="at">/config</span>
-    <span class="fu">depends_on:</span>
-      <span class="kw">-</span> selenium
-    <span class="fu">networks:</span>
-      <span class="kw">-</span> apps
-    <span class="fu">environment:</span>
-      <span class="fu">LANG:</span><span class="at"> C.utf-8</span>
-      <span class="fu">TZ:</span><span class="at"> Asia/Tokyo</span>
-      <span class="fu">WD_HOST:</span><span class="at"> selenium</span>
-      <span class="fu">WD_PORT:</span><span class="at"> 4444</span>
-      <span class="fu">SLACK_TOKEN:</span>
-  <span class="fu">selenium:</span>
-    <span class="fu">image:</span><span class="at"> selenium/standalone-chrome</span>
-    <span class="fu">networks:</span>
-      <span class="kw">-</span> apps
-    <span class="fu">ports:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;4444&quot;</span><span class="kw">]</span>
-    <span class="fu">environment:</span>
-      <span class="fu">TZ:</span><span class="at"> Asia/Tokyo</span>
-<span class="fu">networks:</span>
-  <span class="fu">apps:</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="fu">version:</span><span class="at"> </span><span class="st">&quot;2&quot;</span></a>
+<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="fu">services:</span></a>
+<a class="sourceLine" id="cb4-3" data-line-number="3">  <span class="fu">bot:</span></a>
+<a class="sourceLine" id="cb4-4" data-line-number="4">    <span class="fu">image:</span><span class="at"> matsubara0507/adventar-bot</span></a>
+<a class="sourceLine" id="cb4-5" data-line-number="5">    <span class="fu">command:</span><span class="at"> wait.sh adventar-bot &quot;${HTML_URL}&quot; &quot;/config/entry.json&quot; &quot;${SLACK_CHANNEL}&quot;</span></a>
+<a class="sourceLine" id="cb4-6" data-line-number="6">    <span class="fu">volumes:</span></a>
+<a class="sourceLine" id="cb4-7" data-line-number="7">      <span class="kw">-</span> <span class="fu">./.circleci:</span><span class="at">/config</span></a>
+<a class="sourceLine" id="cb4-8" data-line-number="8">    <span class="fu">depends_on:</span></a>
+<a class="sourceLine" id="cb4-9" data-line-number="9">      <span class="kw">-</span> selenium</a>
+<a class="sourceLine" id="cb4-10" data-line-number="10">    <span class="fu">networks:</span></a>
+<a class="sourceLine" id="cb4-11" data-line-number="11">      <span class="kw">-</span> apps</a>
+<a class="sourceLine" id="cb4-12" data-line-number="12">    <span class="fu">environment:</span></a>
+<a class="sourceLine" id="cb4-13" data-line-number="13">      <span class="fu">LANG:</span><span class="at"> C.utf-8</span></a>
+<a class="sourceLine" id="cb4-14" data-line-number="14">      <span class="fu">TZ:</span><span class="at"> Asia/Tokyo</span></a>
+<a class="sourceLine" id="cb4-15" data-line-number="15">      <span class="fu">WD_HOST:</span><span class="at"> selenium</span></a>
+<a class="sourceLine" id="cb4-16" data-line-number="16">      <span class="fu">WD_PORT:</span><span class="at"> 4444</span></a>
+<a class="sourceLine" id="cb4-17" data-line-number="17">      <span class="fu">SLACK_TOKEN:</span></a>
+<a class="sourceLine" id="cb4-18" data-line-number="18">  <span class="fu">selenium:</span></a>
+<a class="sourceLine" id="cb4-19" data-line-number="19">    <span class="fu">image:</span><span class="at"> selenium/standalone-chrome</span></a>
+<a class="sourceLine" id="cb4-20" data-line-number="20">    <span class="fu">networks:</span></a>
+<a class="sourceLine" id="cb4-21" data-line-number="21">      <span class="kw">-</span> apps</a>
+<a class="sourceLine" id="cb4-22" data-line-number="22">    <span class="fu">ports:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;4444&quot;</span><span class="kw">]</span></a>
+<a class="sourceLine" id="cb4-23" data-line-number="23">    <span class="fu">environment:</span></a>
+<a class="sourceLine" id="cb4-24" data-line-number="24">      <span class="fu">TZ:</span><span class="at"> Asia/Tokyo</span></a>
+<a class="sourceLine" id="cb4-25" data-line-number="25"><span class="fu">networks:</span></a>
+<a class="sourceLine" id="cb4-26" data-line-number="26">  <span class="fu">apps:</span></a></code></pre></div>
 <p><code>adventar-bot</code> に渡している引数が前半の記事と違うのはあんまり気にしないで(適当にいくつかを環境変数で渡すようにした)． <code>wait.sh</code> は何かというと，<code>adventar-bot</code> の実行を遅延させる，こんな感じのシェルスクリプトだ．</p>
 <pre class="shell"><code>#!/bin/bash
 set -e
@@ -198,27 +192,27 @@ $@</code></pre>
 <p>これは運用し始めてからわかったのだが，ADVENTAR は事前にセットした URL の <code>hidden</code> 属性を <strong>アクセスしたマシンのタイムゾーンでの日付によって外していた</strong>． つまり，日本時間でアドベントカレンダーの担当日になっても，スクレイピングするマシーンのタイムゾーンが UTC だと，まだ日付が変わっていないので投稿していないことになってしまう(笑) なので，<code>TZ</code> 環境変数でコンテナのタイムゾーンを日本にした．</p>
 <h3 id="circle-ci-で-docker-compose">3. Circle CI で docker-compose</h3>
 <p>次はこの設定で <code>docker-compose</code> を CircleCI 上で実行する． これはかなり簡単で，次のような <code>.circleci/config.yml</code> を書くだけ．</p>
-<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">version:</span><span class="at"> 2</span>
-<span class="fu">jobs:</span>
-  <span class="fu">build:</span>
-    <span class="fu">machine:</span><span class="at"> true</span>
-    <span class="fu">steps:</span>
-      <span class="kw">-</span> checkout
-      <span class="kw">-</span> <span class="fu">run:</span>
-          <span class="fu">name:</span><span class="at"> Build Docker Image</span>
-          <span class="fu">command:</span><span class="at"> docker-compose pull</span>
-      <span class="kw">-</span> <span class="fu">run:</span>
-          <span class="fu">name:</span><span class="at"> docker-compose run bot</span>
-          <span class="fu">command:</span><span class="at"> |</span>
-            docker-compose -f ./docker-compose.yml run bot
-<span class="fu">workflows:</span>
-  <span class="fu">version:</span><span class="at"> 2</span>
-  <span class="fu">normal_workflow:</span>
-    <span class="fu">jobs:</span>
-      <span class="kw">-</span> <span class="fu">build:</span>
-          <span class="fu">filters:</span>
-            <span class="fu">branches:</span>
-              <span class="fu">only:</span><span class="at"> dump</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="fu">version:</span><span class="at"> 2</span></a>
+<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="fu">jobs:</span></a>
+<a class="sourceLine" id="cb6-3" data-line-number="3">  <span class="fu">build:</span></a>
+<a class="sourceLine" id="cb6-4" data-line-number="4">    <span class="fu">machine:</span><span class="at"> true</span></a>
+<a class="sourceLine" id="cb6-5" data-line-number="5">    <span class="fu">steps:</span></a>
+<a class="sourceLine" id="cb6-6" data-line-number="6">      <span class="kw">-</span> checkout</a>
+<a class="sourceLine" id="cb6-7" data-line-number="7">      <span class="kw">-</span> <span class="fu">run:</span></a>
+<a class="sourceLine" id="cb6-8" data-line-number="8">          <span class="fu">name:</span><span class="at"> Build Docker Image</span></a>
+<a class="sourceLine" id="cb6-9" data-line-number="9">          <span class="fu">command:</span><span class="at"> docker-compose pull</span></a>
+<a class="sourceLine" id="cb6-10" data-line-number="10">      <span class="kw">-</span> <span class="fu">run:</span></a>
+<a class="sourceLine" id="cb6-11" data-line-number="11">          <span class="fu">name:</span><span class="at"> docker-compose run bot</span></a>
+<a class="sourceLine" id="cb6-12" data-line-number="12">          <span class="fu">command:</span><span class="at"> |</span></a>
+<a class="sourceLine" id="cb6-13" data-line-number="13">            docker-compose -f ./docker-compose.yml run bot</a>
+<a class="sourceLine" id="cb6-14" data-line-number="14"><span class="fu">workflows:</span></a>
+<a class="sourceLine" id="cb6-15" data-line-number="15">  <span class="fu">version:</span><span class="at"> 2</span></a>
+<a class="sourceLine" id="cb6-16" data-line-number="16">  <span class="fu">normal_workflow:</span></a>
+<a class="sourceLine" id="cb6-17" data-line-number="17">    <span class="fu">jobs:</span></a>
+<a class="sourceLine" id="cb6-18" data-line-number="18">      <span class="kw">-</span> <span class="fu">build:</span></a>
+<a class="sourceLine" id="cb6-19" data-line-number="19">          <span class="fu">filters:</span></a>
+<a class="sourceLine" id="cb6-20" data-line-number="20">            <span class="fu">branches:</span></a>
+<a class="sourceLine" id="cb6-21" data-line-number="21">              <span class="fu">only:</span><span class="at"> dump</span></a></code></pre></div>
 <p>CircleCI は最初っから docker と docker-compose が入っているので，めちゃくちゃ楽ですね．</p>
 <h3 id="リポジトリに-push">4. リポジトリに push</h3>
 <p>ここが少しめんどくさい． CircleCI が自動で設定してくれるアクセストークンは Read Only なのだ． そのため，このままでは Push できない．</p>
@@ -226,16 +220,16 @@ $@</code></pre>
 <ul>
 <li><a href="https://circleci.com/docs/2.0/gh-bb-integration/#adding-readwrite-deployment-keys-to-github-or-bitbucket">Adding Read/Write Deployment Keys to GitHub or Bitbucket - CircleCI</a></li>
 </ul>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li><a href="https://help.github.com/articles/generating-ssh-keys/">GitHub のページ</a>を参考に SSH 鍵を作って(ただし <em>パスフレーズは入れちゃダメ</em>)</li>
 <li>公開鍵を GitHub の <code>https://github.com/you/test-repo/settings/keys</code> に登録して</li>
 <li>秘密鍵を CircleCI の <code>https://circleci.com/gh/you/test-repo/edit#ssh</code> に Hosename を <code>github.com</code> にして登録して</li>
 <li>config.yml に以下のように fingerprints を書いて鍵を上書きする(チェックアウトする前に)</li>
 </ol>
-<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">steps:</span>
-  <span class="kw">-</span> <span class="fu">add_ssh_keys:</span>
-    <span class="fu">fingerprints:</span>
-      <span class="kw">-</span> <span class="st">&quot;SO:ME:FIN:G:ER:PR:IN:T&quot;</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="fu">steps:</span></a>
+<a class="sourceLine" id="cb7-2" data-line-number="2">  <span class="kw">-</span> <span class="fu">add_ssh_keys:</span></a>
+<a class="sourceLine" id="cb7-3" data-line-number="3">    <span class="fu">fingerprints:</span></a>
+<a class="sourceLine" id="cb7-4" data-line-number="4">      <span class="kw">-</span> <span class="st">&quot;SO:ME:FIN:G:ER:PR:IN:T&quot;</span></a></code></pre></div>
 <h4 id="更新がある時だけ-push-する">更新がある時だけ Push する</h4>
 <p>ようにしたいよね？ もちろんシェルスクリプトを書いて，<code>if</code> で分岐すればいいんだけど，めんどくさいのでシェル芸みたいにワンライナーで何とかしたい． 頑張ってググってみたら，同じ質問をしている人が居た．</p>
 <ul>
@@ -244,59 +238,56 @@ $@</code></pre>
 <p><code>git diff --quiet &amp;&amp; git diff --staged --quiet || git commit -am 'Added license headers'</code> って感じにすれば良いみたい． なるほどなるほど．</p>
 <h2 id="section"></h2>
 <p>で，結果として <code>config.yml</code> の <code>jobs</code> の部分が以下のようになる．</p>
-<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">jobs:</span>
-  <span class="fu">build:</span>
-    <span class="fu">machine:</span><span class="at"> true</span>
-    <span class="fu">steps:</span>
-      <span class="kw">-</span> <span class="fu">add-ssh-keys:</span>
-          <span class="fu">fingerprints:</span>
-            <span class="kw">-</span> <span class="st">&quot;99:5c:f8:55:4d:2c:ab:aa:3a:e6:4b:73:1b:07:19:98&quot;</span>
-      <span class="kw">-</span> checkout
-      <span class="kw">-</span> <span class="fu">run:</span>
-          <span class="fu">name:</span><span class="at"> Git config</span>
-          <span class="fu">command:</span><span class="at"> |</span>
-             git config --global user.email <span class="st">&quot;example@example.com&quot;</span>
-             git config --global user.name <span class="st">&quot;Bot&quot;</span>
-      <span class="kw">-</span> <span class="fu">run:</span>
-          <span class="fu">name:</span><span class="at"> Build Docker Image</span>
-          <span class="fu">command:</span><span class="at"> docker-compose pull</span>
-      <span class="kw">-</span> <span class="fu">run:</span>
-          <span class="fu">name:</span><span class="at"> docker-compose run bot</span>
-          <span class="fu">command:</span><span class="at"> |</span>
-            docker-compose -f ./docker-compose.yml run bot
-      <span class="kw">-</span> <span class="fu">run:</span>
-          <span class="fu">name:</span><span class="at"> Push update json</span>
-          <span class="fu">command:</span><span class="at"> |</span>
-            git status
-            git diff --quiet &amp;&amp; git diff --staged --quiet || git commit -am <span class="st">&quot;[skip ci] Update entry.json&quot;</span>
-            git push origin dump</code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="fu">jobs:</span></a>
+<a class="sourceLine" id="cb8-2" data-line-number="2">  <span class="fu">build:</span></a>
+<a class="sourceLine" id="cb8-3" data-line-number="3">    <span class="fu">machine:</span><span class="at"> true</span></a>
+<a class="sourceLine" id="cb8-4" data-line-number="4">    <span class="fu">steps:</span></a>
+<a class="sourceLine" id="cb8-5" data-line-number="5">      <span class="kw">-</span> <span class="fu">add-ssh-keys:</span></a>
+<a class="sourceLine" id="cb8-6" data-line-number="6">          <span class="fu">fingerprints:</span></a>
+<a class="sourceLine" id="cb8-7" data-line-number="7">            <span class="kw">-</span> <span class="st">&quot;99:5c:f8:55:4d:2c:ab:aa:3a:e6:4b:73:1b:07:19:98&quot;</span></a>
+<a class="sourceLine" id="cb8-8" data-line-number="8">      <span class="kw">-</span> checkout</a>
+<a class="sourceLine" id="cb8-9" data-line-number="9">      <span class="kw">-</span> <span class="fu">run:</span></a>
+<a class="sourceLine" id="cb8-10" data-line-number="10">          <span class="fu">name:</span><span class="at"> Git config</span></a>
+<a class="sourceLine" id="cb8-11" data-line-number="11">          <span class="fu">command:</span><span class="at"> |</span></a>
+<a class="sourceLine" id="cb8-12" data-line-number="12">             git config --global user.email <span class="st">&quot;example@example.com&quot;</span></a>
+<a class="sourceLine" id="cb8-13" data-line-number="13">             git config --global user.name <span class="st">&quot;Bot&quot;</span></a>
+<a class="sourceLine" id="cb8-14" data-line-number="14">      <span class="kw">-</span> <span class="fu">run:</span></a>
+<a class="sourceLine" id="cb8-15" data-line-number="15">          <span class="fu">name:</span><span class="at"> Build Docker Image</span></a>
+<a class="sourceLine" id="cb8-16" data-line-number="16">          <span class="fu">command:</span><span class="at"> docker-compose pull</span></a>
+<a class="sourceLine" id="cb8-17" data-line-number="17">      <span class="kw">-</span> <span class="fu">run:</span></a>
+<a class="sourceLine" id="cb8-18" data-line-number="18">          <span class="fu">name:</span><span class="at"> docker-compose run bot</span></a>
+<a class="sourceLine" id="cb8-19" data-line-number="19">          <span class="fu">command:</span><span class="at"> |</span></a>
+<a class="sourceLine" id="cb8-20" data-line-number="20">            docker-compose -f ./docker-compose.yml run bot</a>
+<a class="sourceLine" id="cb8-21" data-line-number="21">      <span class="kw">-</span> <span class="fu">run:</span></a>
+<a class="sourceLine" id="cb8-22" data-line-number="22">          <span class="fu">name:</span><span class="at"> Push update json</span></a>
+<a class="sourceLine" id="cb8-23" data-line-number="23">          <span class="fu">command:</span><span class="at"> |</span></a>
+<a class="sourceLine" id="cb8-24" data-line-number="24">            git status</a>
+<a class="sourceLine" id="cb8-25" data-line-number="25">            git diff --quiet &amp;&amp; git diff --staged --quiet || git commit -am <span class="st">&quot;[skip ci] Update entry.json&quot;</span></a>
+<a class="sourceLine" id="cb8-26" data-line-number="26">            git push origin dump</a></code></pre></div>
 <p>コミットメッセージに <code>[skip ci]</code> と書いておけば，このコミットによる CI は無視される． また，<code>Git config</code> のところはコミットするのに最低限必要な設定を書いてある．</p>
 <h3 id="cron-で回す">5. cron で回す</h3>
 <p>CircleCI 2.0 で cron を書けるようになった． TravisCI と違い，どんな cron でも指定できる．</p>
-<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">workflows:</span>
-  <span class="fu">version:</span><span class="at"> 2</span>
-  <span class="fu">normal_workflow:</span>
-    <span class="fu">jobs:</span>
-      <span class="kw">-</span> <span class="fu">build:</span>
-          <span class="fu">filters:</span>
-            <span class="fu">branches:</span>
-              <span class="fu">only:</span><span class="at"> dump</span>
-  <span class="fu">nightly_workflow:</span>
-    <span class="fu">triggers:</span>
-      <span class="kw">-</span> <span class="fu">schedule:</span>
-          <span class="fu">cron:</span><span class="at"> </span><span class="st">&quot;0 0 * * *&quot;</span>
-          <span class="fu">filters:</span>
-            <span class="fu">branches:</span>
-              <span class="fu">only:</span><span class="at"> dump</span>
-    <span class="fu">jobs:</span>
-      <span class="kw">-</span> build</code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="fu">workflows:</span></a>
+<a class="sourceLine" id="cb9-2" data-line-number="2">  <span class="fu">version:</span><span class="at"> 2</span></a>
+<a class="sourceLine" id="cb9-3" data-line-number="3">  <span class="fu">normal_workflow:</span></a>
+<a class="sourceLine" id="cb9-4" data-line-number="4">    <span class="fu">jobs:</span></a>
+<a class="sourceLine" id="cb9-5" data-line-number="5">      <span class="kw">-</span> <span class="fu">build:</span></a>
+<a class="sourceLine" id="cb9-6" data-line-number="6">          <span class="fu">filters:</span></a>
+<a class="sourceLine" id="cb9-7" data-line-number="7">            <span class="fu">branches:</span></a>
+<a class="sourceLine" id="cb9-8" data-line-number="8">              <span class="fu">only:</span><span class="at"> dump</span></a>
+<a class="sourceLine" id="cb9-9" data-line-number="9">  <span class="fu">nightly_workflow:</span></a>
+<a class="sourceLine" id="cb9-10" data-line-number="10">    <span class="fu">triggers:</span></a>
+<a class="sourceLine" id="cb9-11" data-line-number="11">      <span class="kw">-</span> <span class="fu">schedule:</span></a>
+<a class="sourceLine" id="cb9-12" data-line-number="12">          <span class="fu">cron:</span><span class="at"> </span><span class="st">&quot;0 0 * * *&quot;</span></a>
+<a class="sourceLine" id="cb9-13" data-line-number="13">          <span class="fu">filters:</span></a>
+<a class="sourceLine" id="cb9-14" data-line-number="14">            <span class="fu">branches:</span></a>
+<a class="sourceLine" id="cb9-15" data-line-number="15">              <span class="fu">only:</span><span class="at"> dump</span></a>
+<a class="sourceLine" id="cb9-16" data-line-number="16">    <span class="fu">jobs:</span></a>
+<a class="sourceLine" id="cb9-17" data-line-number="17">      <span class="kw">-</span> build</a></code></pre></div>
 <p>ちなみに，CircleCI のタイムゾーンは UTC なので，毎朝9時に実行されることになる．</p>
 <h2 id="完成">完成</h2>
 <p>見た目全く変わらないけど，一応 CircleCI から実行されてる．</p>
-<div class="figure">
-<img src="../assets/re-adventar-slack-bot/adventar-bot-1.jpg" />
-
-</div>
+<p><img src="../assets/re-adventar-slack-bot/adventar-bot-1.jpg" /></p>
 <h2 id="おしまい">おしまい</h2>
 <p>ただし，CircleCI は月に使えるビルド時間が決まってて，1500分しかない． こいつはだいたい1分ぐらいかかるので月1500回． まぁ1日1回ぐらいなら余裕か．</p>
   </div>

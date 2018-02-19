@@ -85,7 +85,7 @@
     <p>ちょっと珍しい組み合わせでアプリを作ったので，そのメモ．</p>
 <h2 id="いきさつ">いきさつ</h2>
 <p>去年，母校の学園祭用に <a href="https://iggg.github.io/2016/10/18/create-anaqram/">AnaQRam という Android アプリ(ゲーム)を Java で作った</a>． 今年，このアプリを</p>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li>Kotlin に変換</li>
 <li>サーバーサイドにスコアランキングを追加</li>
 <li>データを DB で管理</li>
@@ -106,33 +106,33 @@
 <pre><code>Error:(24, 20) Type mismatch: inferred type is Array&lt;CharBox?&gt; but Array&lt;CharBox&gt; was expected</code></pre>
 <p>だいたい Nullable のせい． Kotlin では <code>null</code> をとり得る任意の型 <code>A</code> は <code>A?</code> と書く必要がある．</p>
 <p>ラムダ式の無い Java で配列を動的に初期化するには以下のように書くしかなかった(Javaマスターでは無いので実は裏技があったかも)．</p>
-<div class="sourceCode"><pre class="sourceCode java"><code class="sourceCode java"><span class="kw">private</span> CharBox[] <span class="fu">getCurrentCharBoxes</span>() {
-    CharBox[] current = <span class="kw">new</span> CharBox[buttons.<span class="fu">length</span>];
-    <span class="kw">for</span> (<span class="dt">int</span> i = <span class="dv">0</span>; i &lt; buttons.<span class="fu">length</span>; i++)
-        current[i] = charBoxes.<span class="fu">get</span>(buttons[i]);
-    <span class="kw">return</span> current;
-}</code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode java"><code class="sourceCode java"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw">private</span> CharBox[] <span class="fu">getCurrentCharBoxes</span>() {</a>
+<a class="sourceLine" id="cb2-2" data-line-number="2">    CharBox[] current = <span class="kw">new</span> CharBox[buttons.<span class="fu">length</span>];</a>
+<a class="sourceLine" id="cb2-3" data-line-number="3">    <span class="kw">for</span> (<span class="dt">int</span> i = <span class="dv">0</span>; i &lt; buttons.<span class="fu">length</span>; i++)</a>
+<a class="sourceLine" id="cb2-4" data-line-number="4">        current[i] = charBoxes.<span class="fu">get</span>(buttons[i]);</a>
+<a class="sourceLine" id="cb2-5" data-line-number="5">    <span class="kw">return</span> current;</a>
+<a class="sourceLine" id="cb2-6" data-line-number="6">}</a></code></pre></div>
 <p>これの自動変換は以下のようになる．</p>
-<div class="sourceCode"><pre class="sourceCode kotlin"><code class="sourceCode kotlin"><span class="kw">private</span> <span class="kw">val</span> <span class="va">currentCharBoxes</span>: Array&lt;CharBox&gt;
-    <span class="kw">get</span>() {
-        <span class="kw">val</span> <span class="va">current</span> = arrayOfNulls&lt;CharBox&gt;(buttons.size)
-        <span class="cf">for</span> (i <span class="kw">in</span> buttons.indices)
-            current[i] = charBoxes[buttons[i]]
-        <span class="kw">return</span> current
-    }</code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode kotlin"><code class="sourceCode kotlin"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw">private</span> <span class="kw">val</span> <span class="va">currentCharBoxes</span>: Array&lt;CharBox&gt;</a>
+<a class="sourceLine" id="cb3-2" data-line-number="2">    <span class="kw">get</span>() {</a>
+<a class="sourceLine" id="cb3-3" data-line-number="3">        <span class="kw">val</span> <span class="va">current</span> = arrayOfNulls&lt;CharBox&gt;(buttons.size)</a>
+<a class="sourceLine" id="cb3-4" data-line-number="4">        <span class="cf">for</span> (i <span class="kw">in</span> buttons.indices)</a>
+<a class="sourceLine" id="cb3-5" data-line-number="5">            current[i] = charBoxes[buttons[i]]</a>
+<a class="sourceLine" id="cb3-6" data-line-number="6">        <span class="kw">return</span> current</a>
+<a class="sourceLine" id="cb3-7" data-line-number="7">    }</a></code></pre></div>
 <p>返り値は <code>Array&lt;CharBox&gt;</code> となっているが，<code>arrayOfNulls&lt;CharBox&gt;(size)</code> が返す型は <code>Array&lt;CharBox?&gt;</code> なのである(<code>null</code> で埋めた配列を返してるせい)． ここで，返り値の型を <code>Array&lt;CharBox?&gt;</code> としてもエラーは消える(しわ寄せされる)．</p>
 <p>ラムダ式とかでうまく置き換えても良いが，取りあえずはこれでゴリゴリエラーを消していった．</p>
 <h2 id="section-1"></h2>
 <p>あとは，Nullable でない引数に Nullable な変数を渡す場合には変数の前に <code>?</code> を書き足す必要がある(<code>?</code> は <code>null</code> が返ってきた場合には以降を実行ぜず <code>null</code> を返す)．</p>
-<div class="sourceCode"><pre class="sourceCode kotlin"><code class="sourceCode kotlin">charBoxes = HashMap(buttons.size)
-<span class="cf">for</span> (i <span class="kw">in</span> buttons.indices) {
-    <span class="co">// charBoxes.put(buttons.get(i), cbs[i])</span>
-    buttons[i]?.let { charBoxes.put(it, cbs[i]) }  
-}</code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode kotlin"><code class="sourceCode kotlin"><a class="sourceLine" id="cb4-1" data-line-number="1">charBoxes = HashMap(buttons.size)</a>
+<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="cf">for</span> (i <span class="kw">in</span> buttons.indices) {</a>
+<a class="sourceLine" id="cb4-3" data-line-number="3">    <span class="co">// charBoxes.put(buttons.get(i), cbs[i])</span></a>
+<a class="sourceLine" id="cb4-4" data-line-number="4">    buttons[i]?.let { charBoxes.put(it, cbs[i]) }  </a>
+<a class="sourceLine" id="cb4-5" data-line-number="5">}</a></code></pre></div>
 <p>最悪 <code>!!</code> を変数の前に書き足すことで全部無視できる(<code>!!</code> は <code>null</code> の例外が返ること許容する)．</p>
-<div class="sourceCode"><pre class="sourceCode kotlin"><code class="sourceCode kotlin"><span class="co">// CharBoxMapper(activity: Activity, charBoxes: Array&lt;CharBox?&gt;)</span>
-<span class="co">// gameManager.getCharBoxes() は Nullable</span>
-charBoxMapper = CharBoxMapper(<span class="kw">this</span>, gameManager!!.getCharBoxes())</code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode kotlin"><code class="sourceCode kotlin"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="co">// CharBoxMapper(activity: Activity, charBoxes: Array&lt;CharBox?&gt;)</span></a>
+<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="co">// gameManager.getCharBoxes() は Nullable</span></a>
+<a class="sourceLine" id="cb5-3" data-line-number="3">charBoxMapper = CharBoxMapper(<span class="kw">this</span>, gameManager!!.getCharBoxes())</a></code></pre></div>
 <p>ホントは全部 <code>!!</code> を足すだけで良かったりする．</p>
 <h3 id="kotlin-らしく">Kotlin らしく</h3>
 <p>Kotlinマスターでも無いので「Kotlin らしさ」なんてわからないけど，とりあえず便利そうなモノだけでも使ってみた．</p>
@@ -151,37 +151,34 @@ charBoxMapper = CharBoxMapper(<span class="kw">this</span>, gameManager!!.getCha
 <li>参照: <a href="http://tomoima525.hatenablog.com/entry/2017/08/04/154434">Kotlinの標準ライブラリ(let, apply, with etc)を何となく使うから卒業する - tomoima525’s blog</a></li>
 </ul>
 <p>コレらを使うと，いい感じにメソッドチェーンが書ける．</p>
-<div class="sourceCode"><pre class="sourceCode kotlin"><code class="sourceCode kotlin">Toast(<span class="kw">this</span>)
-       .apply { setGravity(Gravity.CENTER, x, y) }
-       .apply { duration = Toast.LENGTH_LONG }
-       .also { toast -&gt;
-           toast.view = TextView(<span class="kw">this</span>)
-               .also {
-                   it.text = message
-                   it.textSize = 50f
-                   it.setTextColor(Color.WHITE)
-                   it.setBackgroundColor(ContextCompat.getColor(<span class="kw">this</span>, R.color.colorPrimary))
-               }
-       }.show()</code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode kotlin"><code class="sourceCode kotlin"><a class="sourceLine" id="cb6-1" data-line-number="1">Toast(<span class="kw">this</span>)</a>
+<a class="sourceLine" id="cb6-2" data-line-number="2">       .apply { setGravity(Gravity.CENTER, x, y) }</a>
+<a class="sourceLine" id="cb6-3" data-line-number="3">       .apply { duration = Toast.LENGTH_LONG }</a>
+<a class="sourceLine" id="cb6-4" data-line-number="4">       .also { toast -&gt;</a>
+<a class="sourceLine" id="cb6-5" data-line-number="5">           toast.view = TextView(<span class="kw">this</span>)</a>
+<a class="sourceLine" id="cb6-6" data-line-number="6">               .also {</a>
+<a class="sourceLine" id="cb6-7" data-line-number="7">                   it.text = message</a>
+<a class="sourceLine" id="cb6-8" data-line-number="8">                   it.textSize = 50f</a>
+<a class="sourceLine" id="cb6-9" data-line-number="9">                   it.setTextColor(Color.WHITE)</a>
+<a class="sourceLine" id="cb6-10" data-line-number="10">                   it.setBackgroundColor(ContextCompat.getColor(<span class="kw">this</span>, R.color.colorPrimary))</a>
+<a class="sourceLine" id="cb6-11" data-line-number="11">               }</a>
+<a class="sourceLine" id="cb6-12" data-line-number="12">       }.show()</a></code></pre></div>
 <h3 id="サーバーサイドプログラムを書く">サーバーサイドプログラムを書く</h3>
 <p>Haskell Servant で API サーバーを立てて，Elm で Web UI を作る． この組み合わせは前に記事にした．</p>
 <ul>
 <li>参考: <a href="../posts/2017-09-17-create-haskell-and-elm.html">Haskell × Elm のサンプルアプリケーションを書いてみた - ひげメモ</a></li>
 </ul>
 <p>実はこのときに作ったプログラムを改良しただけ． <code>Todo</code> 型を <code>Score</code> 型とし，API を GET と POST だけにした．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Score</span> <span class="fu">=</span> <span class="dt">Score</span>
-  {<span class="ot"> textLength ::</span> <span class="dt">Int</span>
-  ,<span class="ot"> clearTime  ::</span> <span class="dt">Int</span>
-  ,<span class="ot"> swapCount  ::</span> <span class="dt">Int</span>
-  } <span class="kw">deriving</span> (<span class="dt">Generic</span>, <span class="dt">Show</span>)
-
-<span class="kw">type</span> <span class="dt">CRUD</span> <span class="fu">=</span> <span class="st">&quot;scores&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">'[JSON] [Score]</span>
-       <span class="fu">:&lt;|&gt;</span> <span class="st">&quot;scores&quot;</span> <span class="fu">:&gt;</span> <span class="dt">ReqBody</span> <span class="ch">'[JSON, FormUrlEncoded] Score :&gt; Post '</span>[<span class="dt">JSON</span>] <span class="dt">Score</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Score</span> <span class="fu">=</span> <span class="dt">Score</span></a>
+<a class="sourceLine" id="cb7-2" data-line-number="2">  {<span class="ot"> textLength ::</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb7-3" data-line-number="3">  ,<span class="ot"> clearTime  ::</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb7-4" data-line-number="4">  ,<span class="ot"> swapCount  ::</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb7-5" data-line-number="5">  } <span class="kw">deriving</span> (<span class="dt">Generic</span>, <span class="dt">Show</span>)</a>
+<a class="sourceLine" id="cb7-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb7-7" data-line-number="7"><span class="kw">type</span> <span class="dt">CRUD</span> <span class="fu">=</span> <span class="st">&quot;scores&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">'[JSON] [Score]</span></a>
+<a class="sourceLine" id="cb7-8" data-line-number="8">       <span class="fu">:&lt;|&gt;</span> <span class="st">&quot;scores&quot;</span> <span class="fu">:&gt;</span> <span class="dt">ReqBody</span> <span class="ch">'[JSON, FormUrlEncoded] Score :&gt; Post '</span>[<span class="dt">JSON</span>] <span class="dt">Score</span></a></code></pre></div>
 <p>Elm は頑張って書いてこんな感じのデザインにした．</p>
-<div class="figure">
-<img src="../assets/create-anaqram/scoreboard.jpg" />
-
-</div>
+<p><img src="../assets/create-anaqram/scoreboard.jpg" /></p>
 <p>意外と機能があって</p>
 <ul>
 <li>1分毎ごとに自動更新するかのチェックボックス</li>
@@ -195,7 +192,7 @@ charBoxMapper = CharBoxMapper(<span class="kw">this</span>, gameManager!!.getCha
 <p>Google Container Registry に，このサーバーサイドプログラムのイメージをあげて，そこから Google Container Engine にデプロイする．</p>
 <p>Haskell Stack には Docker Intagration という機能があって，このおかげで簡単にプロジェクトのイメージを作成できる．</p>
 <p>(この辺りの定義は曖昧なので間違ってるかもしれないけど) Docker Integration の機能は主に２つ．</p>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li>任意の Docker イメージをベースにして <code>stack build</code> や <code>stack exec</code> を行える</li>
 <li><code>stack image container</code> というコマンドで <code>stack build</code> 生成されるバイナリを含んだ Docker イメージを生成する</li>
 </ol>
@@ -208,16 +205,16 @@ charBoxMapper = CharBoxMapper(<span class="kw">this</span>, gameManager!!.getCha
 </ul></li>
 </ul>
 <p><code>stack.yaml</code> に次のように書くと，<a href="https://hub.docker.com/r/fpco/stack-build/"><code>fpco/stack-build</code></a> をベースイメージにして，<code>config</code>, <code>data</code>, <code>script</code>, <code>static</code> ディレクトリを生成するイメージの対応するディレクトリにコピーして，<code>entrypoint.sh</code> を実行する Docker イメージが <code>stack image container</code> で出来上がる．</p>
-<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">image:</span>
-  <span class="fu">container:</span>
-    <span class="fu">name:</span><span class="at"> </span><span class="st">&quot;anaqram&quot;</span>
-    <span class="fu">base:</span><span class="at"> </span><span class="st">&quot;fpco/stack-build&quot;</span>
-    <span class="fu">add:</span>
-      <span class="fu">config:</span><span class="at"> /app/config</span>
-      <span class="fu">data:</span><span class="at"> /app</span>
-      <span class="fu">script:</span><span class="at"> /usr/local/bin/</span>
-      <span class="fu">static:</span><span class="at"> /app/static</span>
-    <span class="fu">entrypoints:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;entrypoint.sh&quot;</span><span class="kw">]</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="fu">image:</span></a>
+<a class="sourceLine" id="cb8-2" data-line-number="2">  <span class="fu">container:</span></a>
+<a class="sourceLine" id="cb8-3" data-line-number="3">    <span class="fu">name:</span><span class="at"> </span><span class="st">&quot;anaqram&quot;</span></a>
+<a class="sourceLine" id="cb8-4" data-line-number="4">    <span class="fu">base:</span><span class="at"> </span><span class="st">&quot;fpco/stack-build&quot;</span></a>
+<a class="sourceLine" id="cb8-5" data-line-number="5">    <span class="fu">add:</span></a>
+<a class="sourceLine" id="cb8-6" data-line-number="6">      <span class="fu">config:</span><span class="at"> /app/config</span></a>
+<a class="sourceLine" id="cb8-7" data-line-number="7">      <span class="fu">data:</span><span class="at"> /app</span></a>
+<a class="sourceLine" id="cb8-8" data-line-number="8">      <span class="fu">script:</span><span class="at"> /usr/local/bin/</span></a>
+<a class="sourceLine" id="cb8-9" data-line-number="9">      <span class="fu">static:</span><span class="at"> /app/static</span></a>
+<a class="sourceLine" id="cb8-10" data-line-number="10">    <span class="fu">entrypoints:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;entrypoint.sh&quot;</span><span class="kw">]</span></a></code></pre></div>
 <p>あとは，このイメージのタグを GCR のモノに変えて，<code>gcloud docker push</code> するだけ．</p>
 <h2 id="section-3"></h2>
 <p>GKE の設定は Google CLoud のコンソールから <strong>めちゃくちゃ適当に</strong> やった． ちゃんと YAML にしていないので，いずれやらないと… kubernetes は要素が多くて難しい…</p>
@@ -225,13 +222,13 @@ charBoxMapper = CharBoxMapper(<span class="kw">this</span>, gameManager!!.getCha
 <h3 id="db-の追加">DB の追加</h3>
 <p>上記まででは，集計したスコアデータをただの配列で保持していた． つまりプログラムが落ちるとすべて消える． なので，Google Cloud SQL と連携して，スコアデータを外部に保存することにした．</p>
 <p>Haskell の ORM みたいなパッケージには <a href="https://hackage.haskell.org/package/persistent">Persistent</a> を使うことにした． Persistent は Template Haskell を利用して任意の型に対し簡単に型安全な ORM を定義してくれる，かなり強力なパッケージである．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">share [mkPersist sqlSettings, mkMigrate <span class="st">&quot;migrateAll&quot;</span>] [persistLowerCase|
-ScoreData
-    textLength Int
-    clearTime  Int
-    swapCount  Int
-    deriving Show
-|]</code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1">share [mkPersist sqlSettings, mkMigrate <span class="st">&quot;migrateAll&quot;</span>] [persistLowerCase|</a>
+<a class="sourceLine" id="cb9-2" data-line-number="2">ScoreData</a>
+<a class="sourceLine" id="cb9-3" data-line-number="3">    textLength Int</a>
+<a class="sourceLine" id="cb9-4" data-line-number="4">    clearTime  Int</a>
+<a class="sourceLine" id="cb9-5" data-line-number="5">    swapCount  Int</a>
+<a class="sourceLine" id="cb9-6" data-line-number="6">    deriving Show</a>
+<a class="sourceLine" id="cb9-7" data-line-number="7">|]</a></code></pre></div>
 <p>と書くだけで，<code>Migration</code> や <code>insert</code> や <code>select</code> をする関数を自動生成してくれる．</p>
 <h2 id="section-4"></h2>
 <p>ただ，すでにある型(<code>Score</code> 型)に対し，それらの関数を自動生成する方法がわからなかった． なので，上記の <code>ScoreData</code> 型と元の <code>Score</code> 型を相互変換する関数を用意して補った．</p>

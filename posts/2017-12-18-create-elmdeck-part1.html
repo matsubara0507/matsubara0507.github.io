@@ -96,7 +96,7 @@
 <h2 id="section-1"></h2>
 <p>なので，自分でイチから作ってみることにした． ちなみに，Marp が再リリースされて，そっちの方で全然満足出来たらそっちに移るつもり．</p>
 <p>個人的に最低限欲しい機能は</p>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li>シンタックスハイライト</li>
 <li>数式</li>
 <li>画像の拡縮</li>
@@ -114,207 +114,207 @@
 <p>マークダウンパーサーとしては他にも，<a href="http://package.elm-lang.org/packages/evancz/elm-markdown">Elm の作者が作ったモノ</a>があったが，これは Native モジュールで JS の <a href="https://github.com/chjj/marked">marked</a> を呼んでるだけなので，マークダウンの構文木をいじれない． なので，構文木も扱える pablohirafuji/elm-markdown を使った(その代わり速度は遅い…)．</p>
 <h2 id="section-2"></h2>
 <p>pablohirafuji/elm-markdown は <a href="http://package.elm-lang.org/packages/pablohirafuji/elm-markdown/2.0.4/Markdown-Block#parse"><code>parse</code></a> 関数を用いることで文字列から次の <code>Block b i</code> 型のリストに変換する．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Block</span> b i
-    <span class="fu">=</span> <span class="dt">BlankLine</span> <span class="dt">String</span>
-    <span class="fu">|</span> <span class="dt">ThematicBreak</span>
-    <span class="fu">|</span> <span class="dt">Heading</span> <span class="dt">String</span> <span class="dt">Int</span> (<span class="dt">List</span> (<span class="dt">Inline</span> i))
-    <span class="fu">|</span> <span class="dt">CodeBlock</span> <span class="dt">CodeBlock</span> <span class="dt">String</span>
-    <span class="fu">|</span> <span class="dt">Paragraph</span> <span class="dt">String</span> (<span class="dt">List</span> (<span class="dt">Inline</span> i))
-    <span class="fu">|</span> <span class="dt">BlockQuote</span> (<span class="dt">List</span> (<span class="dt">Block</span> b i))
-    <span class="fu">|</span> <span class="dt">List</span> <span class="dt">ListBlock</span> (<span class="dt">List</span> (<span class="dt">List</span> (<span class="dt">Block</span> b i)))
-    <span class="fu">|</span> <span class="dt">PlainInlines</span> (<span class="dt">List</span> (<span class="dt">Inline</span> i))
-    <span class="fu">|</span> <span class="dt">Custom</span> b (<span class="dt">List</span> (<span class="dt">Block</span> b i))</code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">type</span> <span class="dt">Block</span> b i</a>
+<a class="sourceLine" id="cb1-2" data-line-number="2">    <span class="fu">=</span> <span class="dt">BlankLine</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb1-3" data-line-number="3">    <span class="fu">|</span> <span class="dt">ThematicBreak</span></a>
+<a class="sourceLine" id="cb1-4" data-line-number="4">    <span class="fu">|</span> <span class="dt">Heading</span> <span class="dt">String</span> <span class="dt">Int</span> (<span class="dt">List</span> (<span class="dt">Inline</span> i))</a>
+<a class="sourceLine" id="cb1-5" data-line-number="5">    <span class="fu">|</span> <span class="dt">CodeBlock</span> <span class="dt">CodeBlock</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb1-6" data-line-number="6">    <span class="fu">|</span> <span class="dt">Paragraph</span> <span class="dt">String</span> (<span class="dt">List</span> (<span class="dt">Inline</span> i))</a>
+<a class="sourceLine" id="cb1-7" data-line-number="7">    <span class="fu">|</span> <span class="dt">BlockQuote</span> (<span class="dt">List</span> (<span class="dt">Block</span> b i))</a>
+<a class="sourceLine" id="cb1-8" data-line-number="8">    <span class="fu">|</span> <span class="dt">List</span> <span class="dt">ListBlock</span> (<span class="dt">List</span> (<span class="dt">List</span> (<span class="dt">Block</span> b i)))</a>
+<a class="sourceLine" id="cb1-9" data-line-number="9">    <span class="fu">|</span> <span class="dt">PlainInlines</span> (<span class="dt">List</span> (<span class="dt">Inline</span> i))</a>
+<a class="sourceLine" id="cb1-10" data-line-number="10">    <span class="fu">|</span> <span class="dt">Custom</span> b (<span class="dt">List</span> (<span class="dt">Block</span> b i))</a></code></pre></div>
 <p><code>Block b i</code> 型から <code>Html msg</code> へは <a href="http://package.elm-lang.org/packages/pablohirafuji/elm-markdown/2.0.4/Markdown-Block#toHtml"><code>toHtml</code></a> 関数を使えばよい．</p>
 <p><code>elm repl</code> で試した結果，<code>---</code> は <code>ThematicBreak</code> になることが分かった． なので，<code>ThematicBreak</code> で <code>List (Block b i)</code> を <code>List (List (Block b i))</code> に分割する． <code>(a -&gt; Bool) -&gt; List a -&gt; List (List a)</code> って感じの関数が無かったので<a href="https://github.com/matsubara0507/elmdeck/blob/6ff0520f65080c9a94ac85c99fc01e0374ca250e/src/Utils.elm#L9">自分で定義した</a>．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">markdownView <span class="fu">:</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> <span class="dt">Html</span> <span class="dt">Msg</span>
-markdownView { textarea, window } <span class="fu">=</span>
-    textarea
-        <span class="fu">|&gt;</span> Block.parse <span class="dt">Nothing</span>
-        <span class="fu">|&gt;</span> Utils.split ((<span class="fu">==</span>) <span class="dt">Block.ThematicBreak</span>)
-        <span class="fu">|&gt;</span> List.map (toSlide window)
-        <span class="fu">|&gt;</span> div []
-
-toSlide <span class="fu">:</span> <span class="dt">Window.Size</span> <span class="ot">-&gt;</span> <span class="dt">List</span> (<span class="dt">Block</span> b i) <span class="ot">-&gt;</span> <span class="dt">Html</span> msg
-toSlide window blocks <span class="fu">=</span>
-    blocks
-        <span class="fu">|&gt;</span> List.concatMap customHtmlBlock
-        <span class="fu">|&gt;</span> slideView window
-
-customHtmlBlock <span class="fu">:</span> <span class="dt">Block</span> b i <span class="ot">-&gt;</span> <span class="dt">List</span> (<span class="dt">Html</span> msg)
-customHtmlBlock block <span class="fu">=</span>
-    Block.defaultHtml (<span class="dt">Just</span> customHtmlBlock) <span class="dt">Nothing</span> block</code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1">markdownView <span class="fu">:</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> <span class="dt">Html</span> <span class="dt">Msg</span></a>
+<a class="sourceLine" id="cb2-2" data-line-number="2">markdownView { textarea, window } <span class="fu">=</span></a>
+<a class="sourceLine" id="cb2-3" data-line-number="3">    textarea</a>
+<a class="sourceLine" id="cb2-4" data-line-number="4">        <span class="fu">|&gt;</span> Block.parse <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb2-5" data-line-number="5">        <span class="fu">|&gt;</span> Utils.split ((<span class="fu">==</span>) <span class="dt">Block.ThematicBreak</span>)</a>
+<a class="sourceLine" id="cb2-6" data-line-number="6">        <span class="fu">|&gt;</span> List.map (toSlide window)</a>
+<a class="sourceLine" id="cb2-7" data-line-number="7">        <span class="fu">|&gt;</span> div []</a>
+<a class="sourceLine" id="cb2-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb2-9" data-line-number="9">toSlide <span class="fu">:</span> <span class="dt">Window.Size</span> <span class="ot">-&gt;</span> <span class="dt">List</span> (<span class="dt">Block</span> b i) <span class="ot">-&gt;</span> <span class="dt">Html</span> msg</a>
+<a class="sourceLine" id="cb2-10" data-line-number="10">toSlide window blocks <span class="fu">=</span></a>
+<a class="sourceLine" id="cb2-11" data-line-number="11">    blocks</a>
+<a class="sourceLine" id="cb2-12" data-line-number="12">        <span class="fu">|&gt;</span> List.concatMap customHtmlBlock</a>
+<a class="sourceLine" id="cb2-13" data-line-number="13">        <span class="fu">|&gt;</span> slideView window</a>
+<a class="sourceLine" id="cb2-14" data-line-number="14"></a>
+<a class="sourceLine" id="cb2-15" data-line-number="15">customHtmlBlock <span class="fu">:</span> <span class="dt">Block</span> b i <span class="ot">-&gt;</span> <span class="dt">List</span> (<span class="dt">Html</span> msg)</a>
+<a class="sourceLine" id="cb2-16" data-line-number="16">customHtmlBlock block <span class="fu">=</span></a>
+<a class="sourceLine" id="cb2-17" data-line-number="17">    Block.defaultHtml (<span class="dt">Just</span> customHtmlBlock) <span class="dt">Nothing</span> block</a></code></pre></div>
 <p>取りあえずは <code>customHtmlBlock</code> 関数では標準のを呼んでいる． <code>window</code> を引き回しているのは，ウィンドウサイズに合わせてスライドの大きさを拡縮するため．</p>
 <h3 id="シンタックスハイライト">シンタックスハイライト</h3>
 <p>シンタックスハイライトは皆さんご存知 <a href="https://highlightjs.org/">highlight.js</a> を使う． Elm 製のパッケージは見当たらなかったので，js のパッケージを使うことにした．</p>
 <p><a href="https://github.com/evancz/elm-markdown/blob/e395295cbe0b460ab051c4040011470628f05b72/src/Native/Markdown.js#L77">evancz/elm-markdown が highlight.js を使っていた</a>ので，それを参考に Native モジュールを作った．</p>
-<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="co">// src/Native/Highlight.js</span>
-<span class="kw">var</span> _matsubara0507$elmdeck$Native_Highlight <span class="op">=</span> <span class="kw">function</span>() <span class="op">{</span>
-  <span class="kw">function</span> <span class="at">toHighlight</span>(lang<span class="op">,</span> code)
-  <span class="op">{</span>
-    <span class="cf">if</span> (<span class="kw">typeof</span> hljs <span class="op">!==</span> <span class="st">'undefined'</span> <span class="op">&amp;&amp;</span> lang <span class="op">&amp;&amp;</span> <span class="va">hljs</span>.<span class="at">listLanguages</span>().<span class="at">indexOf</span>(lang) <span class="op">&gt;=</span> <span class="dv">0</span>)
-    <span class="op">{</span>
-      <span class="cf">return</span> <span class="va">hljs</span>.<span class="at">highlight</span>(lang<span class="op">,</span> code<span class="op">,</span> <span class="kw">true</span>).<span class="at">value</span><span class="op">;</span>
-    <span class="op">}</span>
-    <span class="cf">return</span> code<span class="op">;</span>
-  <span class="op">}</span>
-
-  <span class="cf">return</span> <span class="op">{</span>
-    <span class="dt">toHighlight</span><span class="op">:</span> <span class="at">F2</span>(toHighlight)
-  <span class="op">}</span>
-<span class="op">}</span>()<span class="op">;</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="co">// src/Native/Highlight.js</span></a>
+<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="kw">var</span> _matsubara0507$elmdeck$Native_Highlight <span class="op">=</span> <span class="kw">function</span>() <span class="op">{</span></a>
+<a class="sourceLine" id="cb3-3" data-line-number="3">  <span class="kw">function</span> <span class="at">toHighlight</span>(lang<span class="op">,</span> code)</a>
+<a class="sourceLine" id="cb3-4" data-line-number="4">  <span class="op">{</span></a>
+<a class="sourceLine" id="cb3-5" data-line-number="5">    <span class="cf">if</span> (<span class="kw">typeof</span> hljs <span class="op">!==</span> <span class="st">'undefined'</span> <span class="op">&amp;&amp;</span> lang <span class="op">&amp;&amp;</span> <span class="va">hljs</span>.<span class="at">listLanguages</span>().<span class="at">indexOf</span>(lang) <span class="op">&gt;=</span> <span class="dv">0</span>)</a>
+<a class="sourceLine" id="cb3-6" data-line-number="6">    <span class="op">{</span></a>
+<a class="sourceLine" id="cb3-7" data-line-number="7">      <span class="cf">return</span> <span class="va">hljs</span>.<span class="at">highlight</span>(lang<span class="op">,</span> code<span class="op">,</span> <span class="kw">true</span>).<span class="at">value</span><span class="op">;</span></a>
+<a class="sourceLine" id="cb3-8" data-line-number="8">    <span class="op">}</span></a>
+<a class="sourceLine" id="cb3-9" data-line-number="9">    <span class="cf">return</span> code<span class="op">;</span></a>
+<a class="sourceLine" id="cb3-10" data-line-number="10">  <span class="op">}</span></a>
+<a class="sourceLine" id="cb3-11" data-line-number="11"></a>
+<a class="sourceLine" id="cb3-12" data-line-number="12">  <span class="cf">return</span> <span class="op">{</span></a>
+<a class="sourceLine" id="cb3-13" data-line-number="13">    <span class="dt">toHighlight</span><span class="op">:</span> <span class="at">F2</span>(toHighlight)</a>
+<a class="sourceLine" id="cb3-14" data-line-number="14">  <span class="op">}</span></a>
+<a class="sourceLine" id="cb3-15" data-line-number="15"><span class="op">}</span>()<span class="op">;</span></a></code></pre></div>
 <p>Elm 側はこんな感じ．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Native.Highlight</span>
-
-toHighlight <span class="fu">:</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span>
-toHighlight <span class="fu">=</span>
-    Native.Highlight.toHighlight</code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Native.Highlight</span></a>
+<a class="sourceLine" id="cb4-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb4-3" data-line-number="3">toHighlight <span class="fu">:</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb4-4" data-line-number="4">toHighlight <span class="fu">=</span></a>
+<a class="sourceLine" id="cb4-5" data-line-number="5">    Native.Highlight.toHighlight</a></code></pre></div>
 <p>返ってくるのは <code>&quot;&lt;div&gt;...&lt;/div&gt;&quot;</code> のような HTML の文字列なので，これを <code>Html a</code> 型に変換してやる必要がある． それには jinjor 先生の <a href="http://package.elm-lang.org/packages/jinjor/elm-html-parser/latest">jinjor/elm-html-parser</a> を用いた．</p>
 <ul>
 <li><a href="http://jinjor-labo.hatenablog.com/entry/2016/09/11/222251">ElmでHTMLパーサを作って公開するまでの手順 - ジンジャー研究室</a></li>
 </ul>
 <p>これをこんな感じに呼び出す</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">customHtmlBlock <span class="fu">:</span> <span class="dt">Block</span> b i <span class="ot">-&gt;</span> <span class="dt">List</span> (<span class="dt">Html</span> msg)
-customHtmlBlock block <span class="fu">=</span>
-    <span class="kw">case</span> block <span class="kw">of</span>
-        <span class="dt">Block.CodeBlock</span> (<span class="dt">Block.Fenced</span> _ fence) code <span class="ot">-&gt;</span>
-            <span class="kw">let</span>
-                language <span class="fu">=</span>
-                    <span class="dt">Maybe</span><span class="fu">.</span>withDefault <span class="st">&quot;&quot;</span> fence<span class="fu">.</span>language
-            <span class="kw">in</span>
-            code
-                <span class="fu">|&gt;</span> Utils.toHighlight language
-                <span class="fu">|&gt;</span> precode language
-                <span class="fu">|&gt;</span> Html.parse
-                <span class="fu">|&gt;</span> Html.toVirtualDom
-
-        _ <span class="ot">-&gt;</span>
-            Block.defaultHtml (<span class="dt">Just</span> customHtmlBlock) <span class="dt">Nothing</span> block
-
-precode <span class="fu">:</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span>
-precode lang code <span class="fu">=</span>
-    <span class="st">&quot;&lt;pre&gt;&lt;code class=\&quot;&quot;</span> <span class="fu">++</span> lang <span class="fu">++</span> <span class="st">&quot;\&quot;&gt;&quot;</span> <span class="fu">++</span> code <span class="fu">++</span> <span class="st">&quot;&lt;/code&gt;&lt;/pre&gt;&quot;</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1">customHtmlBlock <span class="fu">:</span> <span class="dt">Block</span> b i <span class="ot">-&gt;</span> <span class="dt">List</span> (<span class="dt">Html</span> msg)</a>
+<a class="sourceLine" id="cb5-2" data-line-number="2">customHtmlBlock block <span class="fu">=</span></a>
+<a class="sourceLine" id="cb5-3" data-line-number="3">    <span class="kw">case</span> block <span class="kw">of</span></a>
+<a class="sourceLine" id="cb5-4" data-line-number="4">        <span class="dt">Block.CodeBlock</span> (<span class="dt">Block.Fenced</span> _ fence) code <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb5-5" data-line-number="5">            <span class="kw">let</span></a>
+<a class="sourceLine" id="cb5-6" data-line-number="6">                language <span class="fu">=</span></a>
+<a class="sourceLine" id="cb5-7" data-line-number="7">                    <span class="dt">Maybe</span><span class="fu">.</span>withDefault <span class="st">&quot;&quot;</span> fence<span class="fu">.</span>language</a>
+<a class="sourceLine" id="cb5-8" data-line-number="8">            <span class="kw">in</span></a>
+<a class="sourceLine" id="cb5-9" data-line-number="9">            code</a>
+<a class="sourceLine" id="cb5-10" data-line-number="10">                <span class="fu">|&gt;</span> Utils.toHighlight language</a>
+<a class="sourceLine" id="cb5-11" data-line-number="11">                <span class="fu">|&gt;</span> precode language</a>
+<a class="sourceLine" id="cb5-12" data-line-number="12">                <span class="fu">|&gt;</span> Html.parse</a>
+<a class="sourceLine" id="cb5-13" data-line-number="13">                <span class="fu">|&gt;</span> Html.toVirtualDom</a>
+<a class="sourceLine" id="cb5-14" data-line-number="14"></a>
+<a class="sourceLine" id="cb5-15" data-line-number="15">        _ <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb5-16" data-line-number="16">            Block.defaultHtml (<span class="dt">Just</span> customHtmlBlock) <span class="dt">Nothing</span> block</a>
+<a class="sourceLine" id="cb5-17" data-line-number="17"></a>
+<a class="sourceLine" id="cb5-18" data-line-number="18">precode <span class="fu">:</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb5-19" data-line-number="19">precode lang code <span class="fu">=</span></a>
+<a class="sourceLine" id="cb5-20" data-line-number="20">    <span class="st">&quot;&lt;pre&gt;&lt;code class=\&quot;&quot;</span> <span class="fu">++</span> lang <span class="fu">++</span> <span class="st">&quot;\&quot;&gt;&quot;</span> <span class="fu">++</span> code <span class="fu">++</span> <span class="st">&quot;&lt;/code&gt;&lt;/pre&gt;&quot;</span></a></code></pre></div>
 <p>どう考えても効率悪いけど(笑)</p>
 <h3 id="数式">数式</h3>
 <p>Marp を参考にして <a href="https://khan.github.io/KaTeX/">KaTeX</a> を使うことにした． KaTeX も highlight.js と同じように文字列を受け取って HTML に変換した文字列を返す関数 <code>renderToString</code> がある． 注意点は，<code>renderToString</code> の場合は失敗すると例外を投げてくるところ．</p>
-<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="kw">var</span> _matsubara0507$elmdeck$Native_Katex <span class="op">=</span> <span class="kw">function</span>() <span class="op">{</span>
-  <span class="kw">function</span> <span class="at">toKatex</span>(code)
-  <span class="op">{</span>
-    <span class="cf">if</span> (<span class="kw">typeof</span> katex <span class="op">!==</span> <span class="st">'undefined'</span>)
-    <span class="op">{</span>
-      <span class="cf">try</span> <span class="op">{</span>
-        <span class="cf">return</span> <span class="va">katex</span>.<span class="at">renderToString</span>(code)<span class="op">;</span>
-      <span class="op">}</span> <span class="cf">catch</span> (e) <span class="op">{</span>
-        <span class="cf">return</span> code
-      <span class="op">}</span>
-    <span class="op">}</span>
-    <span class="cf">return</span> code<span class="op">;</span>
-  <span class="op">}</span>
-
-  <span class="cf">return</span> <span class="op">{</span>
-    <span class="dt">toKatex</span><span class="op">:</span> toKatex
-  <span class="op">}</span>
-<span class="op">}</span>()<span class="op">;</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">var</span> _matsubara0507$elmdeck$Native_Katex <span class="op">=</span> <span class="kw">function</span>() <span class="op">{</span></a>
+<a class="sourceLine" id="cb6-2" data-line-number="2">  <span class="kw">function</span> <span class="at">toKatex</span>(code)</a>
+<a class="sourceLine" id="cb6-3" data-line-number="3">  <span class="op">{</span></a>
+<a class="sourceLine" id="cb6-4" data-line-number="4">    <span class="cf">if</span> (<span class="kw">typeof</span> katex <span class="op">!==</span> <span class="st">'undefined'</span>)</a>
+<a class="sourceLine" id="cb6-5" data-line-number="5">    <span class="op">{</span></a>
+<a class="sourceLine" id="cb6-6" data-line-number="6">      <span class="cf">try</span> <span class="op">{</span></a>
+<a class="sourceLine" id="cb6-7" data-line-number="7">        <span class="cf">return</span> <span class="va">katex</span>.<span class="at">renderToString</span>(code)<span class="op">;</span></a>
+<a class="sourceLine" id="cb6-8" data-line-number="8">      <span class="op">}</span> <span class="cf">catch</span> (e) <span class="op">{</span></a>
+<a class="sourceLine" id="cb6-9" data-line-number="9">        <span class="cf">return</span> code</a>
+<a class="sourceLine" id="cb6-10" data-line-number="10">      <span class="op">}</span></a>
+<a class="sourceLine" id="cb6-11" data-line-number="11">    <span class="op">}</span></a>
+<a class="sourceLine" id="cb6-12" data-line-number="12">    <span class="cf">return</span> code<span class="op">;</span></a>
+<a class="sourceLine" id="cb6-13" data-line-number="13">  <span class="op">}</span></a>
+<a class="sourceLine" id="cb6-14" data-line-number="14"></a>
+<a class="sourceLine" id="cb6-15" data-line-number="15">  <span class="cf">return</span> <span class="op">{</span></a>
+<a class="sourceLine" id="cb6-16" data-line-number="16">    <span class="dt">toKatex</span><span class="op">:</span> toKatex</a>
+<a class="sourceLine" id="cb6-17" data-line-number="17">  <span class="op">}</span></a>
+<a class="sourceLine" id="cb6-18" data-line-number="18"><span class="op">}</span>()<span class="op">;</span></a></code></pre></div>
 <p>Elm 側はほぼ同じ．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Native.Katex</span>
-
-toKatex <span class="fu">:</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span>
-toKatex <span class="fu">=</span>
-    Native.Katex.toKatex</code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Native.Katex</span></a>
+<a class="sourceLine" id="cb7-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb7-3" data-line-number="3">toKatex <span class="fu">:</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb7-4" data-line-number="4">toKatex <span class="fu">=</span></a>
+<a class="sourceLine" id="cb7-5" data-line-number="5">    Native.Katex.toKatex</a></code></pre></div>
 <p>最初は以下の LaTeX 表記ををパースしようと思った</p>
 <pre><code>$$
   a + 1
 $$</code></pre>
 <p>が難しくてやめた(笑) 結局 <code>katex</code> のシンタックスハイライトを KaTeX にした．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">customHtmlBlock <span class="fu">:</span> <span class="dt">Block</span> b <span class="dt">Formula</span> <span class="ot">-&gt;</span> <span class="dt">List</span> (<span class="dt">Html</span> msg)
-customHtmlBlock block <span class="fu">=</span>
-    <span class="kw">case</span> block <span class="kw">of</span>
-        <span class="dt">Block.CodeBlock</span> (<span class="dt">Block.Fenced</span> _ fence) code <span class="ot">-&gt;</span>
-            <span class="kw">let</span>
-                language <span class="fu">=</span>
-                    <span class="dt">Maybe</span><span class="fu">.</span>withDefault <span class="st">&quot;&quot;</span> fence<span class="fu">.</span>language
-
-                toHighlight_ <span class="fu">=</span>
-                    <span class="kw">if</span> List.member language [ <span class="st">&quot;katex&quot;</span>, <span class="st">&quot;Katex&quot;</span> ] <span class="kw">then</span>
-                        Utils.toKatex <span class="fu">&gt;&gt;</span> divFormula
-                    <span class="kw">else</span>
-                        Utils.toHighlight language <span class="fu">&gt;&gt;</span> precode language
-            <span class="kw">in</span>
-            code
-                <span class="fu">|&gt;</span> toHighlight_
-                <span class="fu">|&gt;</span> Html.parse
-                <span class="fu">|&gt;</span> Html.toVirtualDom
-
-        _ <span class="ot">-&gt;</span>
-            block
-                <span class="fu">|&gt;</span> Block.defaultHtml
-                    (<span class="dt">Just</span> customHtmlBlock)
-                    <span class="dt">Nothing</span>
-
-divFormula <span class="fu">:</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span>
-divFormula code <span class="fu">=</span>
-    <span class="st">&quot;&lt;div class=\&quot;formula\&quot;&gt;&quot;</span> <span class="fu">++</span> code <span class="fu">++</span> <span class="st">&quot;&lt;/div&gt;&quot;</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1">customHtmlBlock <span class="fu">:</span> <span class="dt">Block</span> b <span class="dt">Formula</span> <span class="ot">-&gt;</span> <span class="dt">List</span> (<span class="dt">Html</span> msg)</a>
+<a class="sourceLine" id="cb9-2" data-line-number="2">customHtmlBlock block <span class="fu">=</span></a>
+<a class="sourceLine" id="cb9-3" data-line-number="3">    <span class="kw">case</span> block <span class="kw">of</span></a>
+<a class="sourceLine" id="cb9-4" data-line-number="4">        <span class="dt">Block.CodeBlock</span> (<span class="dt">Block.Fenced</span> _ fence) code <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb9-5" data-line-number="5">            <span class="kw">let</span></a>
+<a class="sourceLine" id="cb9-6" data-line-number="6">                language <span class="fu">=</span></a>
+<a class="sourceLine" id="cb9-7" data-line-number="7">                    <span class="dt">Maybe</span><span class="fu">.</span>withDefault <span class="st">&quot;&quot;</span> fence<span class="fu">.</span>language</a>
+<a class="sourceLine" id="cb9-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb9-9" data-line-number="9">                toHighlight_ <span class="fu">=</span></a>
+<a class="sourceLine" id="cb9-10" data-line-number="10">                    <span class="kw">if</span> List.member language [ <span class="st">&quot;katex&quot;</span>, <span class="st">&quot;Katex&quot;</span> ] <span class="kw">then</span></a>
+<a class="sourceLine" id="cb9-11" data-line-number="11">                        Utils.toKatex <span class="fu">&gt;&gt;</span> divFormula</a>
+<a class="sourceLine" id="cb9-12" data-line-number="12">                    <span class="kw">else</span></a>
+<a class="sourceLine" id="cb9-13" data-line-number="13">                        Utils.toHighlight language <span class="fu">&gt;&gt;</span> precode language</a>
+<a class="sourceLine" id="cb9-14" data-line-number="14">            <span class="kw">in</span></a>
+<a class="sourceLine" id="cb9-15" data-line-number="15">            code</a>
+<a class="sourceLine" id="cb9-16" data-line-number="16">                <span class="fu">|&gt;</span> toHighlight_</a>
+<a class="sourceLine" id="cb9-17" data-line-number="17">                <span class="fu">|&gt;</span> Html.parse</a>
+<a class="sourceLine" id="cb9-18" data-line-number="18">                <span class="fu">|&gt;</span> Html.toVirtualDom</a>
+<a class="sourceLine" id="cb9-19" data-line-number="19"></a>
+<a class="sourceLine" id="cb9-20" data-line-number="20">        _ <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb9-21" data-line-number="21">            block</a>
+<a class="sourceLine" id="cb9-22" data-line-number="22">                <span class="fu">|&gt;</span> Block.defaultHtml</a>
+<a class="sourceLine" id="cb9-23" data-line-number="23">                    (<span class="dt">Just</span> customHtmlBlock)</a>
+<a class="sourceLine" id="cb9-24" data-line-number="24">                    <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb9-25" data-line-number="25"></a>
+<a class="sourceLine" id="cb9-26" data-line-number="26">divFormula <span class="fu">:</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb9-27" data-line-number="27">divFormula code <span class="fu">=</span></a>
+<a class="sourceLine" id="cb9-28" data-line-number="28">    <span class="st">&quot;&lt;div class=\&quot;formula\&quot;&gt;&quot;</span> <span class="fu">++</span> code <span class="fu">++</span> <span class="st">&quot;&lt;/div&gt;&quot;</span></a></code></pre></div>
 <h3 id="インラインの数式">インラインの数式</h3>
 <p>次はインラインの数式 <code>$a + 1$</code> を変換する． シンタックスハイライトと数式のブロック要素はかなり雑にやったが，ここはもう少し真面目にやらないといけない．</p>
 <p>インライン要素を追加する方法は <a href="https://github.com/pablohirafuji/elm-markdown/tree/2.0.4#implementing-gfm-task-list">pablohirafuji/elm-markdown に少し書いてある</a>． これを参考に拡張していった．</p>
 <h4 id="カスタムインライン要素">カスタムインライン要素</h4>
 <p>インライン要素の型 <code>Inline i</code> は次のようになっている．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Inline</span> i
-    <span class="fu">=</span> <span class="dt">Text</span> <span class="dt">String</span>
-    <span class="fu">|</span> <span class="dt">HardLineBreak</span>
-    <span class="fu">|</span> <span class="dt">CodeInline</span> <span class="dt">String</span>
-    <span class="fu">|</span> <span class="dt">Link</span> <span class="dt">String</span> (<span class="dt">Maybe</span> <span class="dt">String</span>) (<span class="dt">List</span> (<span class="dt">Inline</span> i))
-    <span class="fu">|</span> <span class="dt">Image</span> <span class="dt">String</span> (<span class="dt">Maybe</span> <span class="dt">String</span>) (<span class="dt">List</span> (<span class="dt">Inline</span> i))
-    <span class="fu">|</span> <span class="dt">HtmlInline</span> <span class="dt">String</span> (<span class="dt">List</span> (<span class="dt">String</span>, <span class="dt">Maybe</span> <span class="dt">String</span>)) (<span class="dt">List</span> (<span class="dt">Inline</span> i))
-    <span class="fu">|</span> <span class="dt">Emphasis</span> <span class="dt">Int</span> (<span class="dt">List</span> (<span class="dt">Inline</span> i))
-    <span class="fu">|</span> <span class="dt">Custom</span> i (<span class="dt">List</span> (<span class="dt">Inline</span> i))</code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw">type</span> <span class="dt">Inline</span> i</a>
+<a class="sourceLine" id="cb10-2" data-line-number="2">    <span class="fu">=</span> <span class="dt">Text</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb10-3" data-line-number="3">    <span class="fu">|</span> <span class="dt">HardLineBreak</span></a>
+<a class="sourceLine" id="cb10-4" data-line-number="4">    <span class="fu">|</span> <span class="dt">CodeInline</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb10-5" data-line-number="5">    <span class="fu">|</span> <span class="dt">Link</span> <span class="dt">String</span> (<span class="dt">Maybe</span> <span class="dt">String</span>) (<span class="dt">List</span> (<span class="dt">Inline</span> i))</a>
+<a class="sourceLine" id="cb10-6" data-line-number="6">    <span class="fu">|</span> <span class="dt">Image</span> <span class="dt">String</span> (<span class="dt">Maybe</span> <span class="dt">String</span>) (<span class="dt">List</span> (<span class="dt">Inline</span> i))</a>
+<a class="sourceLine" id="cb10-7" data-line-number="7">    <span class="fu">|</span> <span class="dt">HtmlInline</span> <span class="dt">String</span> (<span class="dt">List</span> (<span class="dt">String</span>, <span class="dt">Maybe</span> <span class="dt">String</span>)) (<span class="dt">List</span> (<span class="dt">Inline</span> i))</a>
+<a class="sourceLine" id="cb10-8" data-line-number="8">    <span class="fu">|</span> <span class="dt">Emphasis</span> <span class="dt">Int</span> (<span class="dt">List</span> (<span class="dt">Inline</span> i))</a>
+<a class="sourceLine" id="cb10-9" data-line-number="9">    <span class="fu">|</span> <span class="dt">Custom</span> i (<span class="dt">List</span> (<span class="dt">Inline</span> i))</a></code></pre></div>
 <p>インライン要素を増やすには <code>Custom i (List (Inline i))</code> を用いる． <code>i</code> の部分に新しい型を追加すればよいのだ． なので，数式のインライン要素用の型を定義する．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Formula</span>
-    <span class="fu">=</span> <span class="dt">Formula</span> <span class="dt">String</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="kw">type</span> <span class="dt">Formula</span></a>
+<a class="sourceLine" id="cb11-2" data-line-number="2">    <span class="fu">=</span> <span class="dt">Formula</span> <span class="dt">String</span></a></code></pre></div>
 <p><code>Formula String</code> の <code>String</code> が数式に変換すべき文字列．</p>
 <p>そして <code>Block b i</code> だったところを <code>Block b Formula</code> に置き換える． 次に上から順に変えていこう．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">customHtmlBlock <span class="fu">:</span> <span class="dt">Block</span> b <span class="dt">Formula</span> <span class="ot">-&gt;</span> <span class="dt">List</span> (<span class="dt">Html</span> msg)
-customHtmlBlock block <span class="fu">=</span>
-    <span class="kw">case</span> block <span class="kw">of</span>
-        <span class="fu">...</span>
-        _ <span class="ot">-&gt;</span>
-            block
-                <span class="fu">|&gt;</span> Block.defaultHtml
-                    (<span class="dt">Just</span> customHtmlBlock)
-                    (<span class="dt">Just</span> customHtmlInline)
-
-customHtmlInline <span class="fu">:</span> <span class="dt">Inline</span> <span class="dt">Formula</span> <span class="ot">-&gt;</span> <span class="dt">Html</span> msg
-customHtmlInline inline <span class="fu">=</span>
-    <span class="kw">case</span> inline <span class="kw">of</span>
-        <span class="dt">Inline.Custom</span> (<span class="dt">Formula</span> txt) _ <span class="ot">-&gt;</span>
-            Utils.toKatex txt
-                <span class="fu">|&gt;</span> Html.parse
-                <span class="fu">|&gt;</span> Html.toVirtualDom
-                <span class="fu">|&gt;</span> span []
-
-        _ <span class="ot">-&gt;</span>
-            Inline.defaultHtml (<span class="dt">Just</span> customHtmlInline) inline</code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" data-line-number="1">customHtmlBlock <span class="fu">:</span> <span class="dt">Block</span> b <span class="dt">Formula</span> <span class="ot">-&gt;</span> <span class="dt">List</span> (<span class="dt">Html</span> msg)</a>
+<a class="sourceLine" id="cb12-2" data-line-number="2">customHtmlBlock block <span class="fu">=</span></a>
+<a class="sourceLine" id="cb12-3" data-line-number="3">    <span class="kw">case</span> block <span class="kw">of</span></a>
+<a class="sourceLine" id="cb12-4" data-line-number="4">        <span class="fu">...</span></a>
+<a class="sourceLine" id="cb12-5" data-line-number="5">        _ <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb12-6" data-line-number="6">            block</a>
+<a class="sourceLine" id="cb12-7" data-line-number="7">                <span class="fu">|&gt;</span> Block.defaultHtml</a>
+<a class="sourceLine" id="cb12-8" data-line-number="8">                    (<span class="dt">Just</span> customHtmlBlock)</a>
+<a class="sourceLine" id="cb12-9" data-line-number="9">                    (<span class="dt">Just</span> customHtmlInline)</a>
+<a class="sourceLine" id="cb12-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb12-11" data-line-number="11">customHtmlInline <span class="fu">:</span> <span class="dt">Inline</span> <span class="dt">Formula</span> <span class="ot">-&gt;</span> <span class="dt">Html</span> msg</a>
+<a class="sourceLine" id="cb12-12" data-line-number="12">customHtmlInline inline <span class="fu">=</span></a>
+<a class="sourceLine" id="cb12-13" data-line-number="13">    <span class="kw">case</span> inline <span class="kw">of</span></a>
+<a class="sourceLine" id="cb12-14" data-line-number="14">        <span class="dt">Inline.Custom</span> (<span class="dt">Formula</span> txt) _ <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb12-15" data-line-number="15">            Utils.toKatex txt</a>
+<a class="sourceLine" id="cb12-16" data-line-number="16">                <span class="fu">|&gt;</span> Html.parse</a>
+<a class="sourceLine" id="cb12-17" data-line-number="17">                <span class="fu">|&gt;</span> Html.toVirtualDom</a>
+<a class="sourceLine" id="cb12-18" data-line-number="18">                <span class="fu">|&gt;</span> span []</a>
+<a class="sourceLine" id="cb12-19" data-line-number="19"></a>
+<a class="sourceLine" id="cb12-20" data-line-number="20">        _ <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb12-21" data-line-number="21">            Inline.defaultHtml (<span class="dt">Just</span> customHtmlInline) inline</a></code></pre></div>
 <p>ここまでは難しくない． 問題は <code>Custom (Formula txt) blocks</code> な値をどうやって構築するか．</p>
 <h2 id="section-3"></h2>
 <p><code>Inline i</code> 型の <code>Text String</code> のうち <code>$...$</code> のモノを <code>Custom (Formula txt) []</code> に変換する．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">parseFormulaInline <span class="fu">:</span> <span class="dt">Inline</span> <span class="dt">Formula</span> <span class="ot">-&gt;</span> <span class="dt">List</span> (<span class="dt">Inline</span> <span class="dt">Formula</span>)
-parseFormulaInline inline <span class="fu">=</span>
-    <span class="kw">case</span> inline <span class="kw">of</span>
-        <span class="dt">Inline.Text</span> text <span class="ot">-&gt;</span>
-            <span class="kw">case</span> parseFormula text <span class="kw">of</span>
-                [] <span class="ot">-&gt;</span>
-                    [ inline ]
-
-                [ _ ] <span class="ot">-&gt;</span>
-                    [ inline ]
-
-                inlines <span class="ot">-&gt;</span>
-                    inlines
-
-        _ <span class="ot">-&gt;</span>
-            [ inline ]
-
-parseFormula <span class="fu">:</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">List</span> (<span class="dt">Inline</span> <span class="dt">Formula</span>)
-parseFormula text <span class="fu">=</span> undefined ()</code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" data-line-number="1">parseFormulaInline <span class="fu">:</span> <span class="dt">Inline</span> <span class="dt">Formula</span> <span class="ot">-&gt;</span> <span class="dt">List</span> (<span class="dt">Inline</span> <span class="dt">Formula</span>)</a>
+<a class="sourceLine" id="cb13-2" data-line-number="2">parseFormulaInline inline <span class="fu">=</span></a>
+<a class="sourceLine" id="cb13-3" data-line-number="3">    <span class="kw">case</span> inline <span class="kw">of</span></a>
+<a class="sourceLine" id="cb13-4" data-line-number="4">        <span class="dt">Inline.Text</span> text <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb13-5" data-line-number="5">            <span class="kw">case</span> parseFormula text <span class="kw">of</span></a>
+<a class="sourceLine" id="cb13-6" data-line-number="6">                [] <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb13-7" data-line-number="7">                    [ inline ]</a>
+<a class="sourceLine" id="cb13-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb13-9" data-line-number="9">                [ _ ] <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb13-10" data-line-number="10">                    [ inline ]</a>
+<a class="sourceLine" id="cb13-11" data-line-number="11"></a>
+<a class="sourceLine" id="cb13-12" data-line-number="12">                inlines <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb13-13" data-line-number="13">                    inlines</a>
+<a class="sourceLine" id="cb13-14" data-line-number="14"></a>
+<a class="sourceLine" id="cb13-15" data-line-number="15">        _ <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb13-16" data-line-number="16">            [ inline ]</a>
+<a class="sourceLine" id="cb13-17" data-line-number="17"></a>
+<a class="sourceLine" id="cb13-18" data-line-number="18">parseFormula <span class="fu">:</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">List</span> (<span class="dt">Inline</span> <span class="dt">Formula</span>)</a>
+<a class="sourceLine" id="cb13-19" data-line-number="19">parseFormula text <span class="fu">=</span> undefined ()</a></code></pre></div>
 <p><code>abc$1+2$def</code> なども考えられるので <code>String -&gt; List (Inline Formula)</code> に変換している．</p>
 <h4 id="パーサーを作る">パーサーを作る</h4>
 <p>いよいよパーサーだ． カレンダーのいつぞやで jinjor 先生が <a href="http://package.elm-lang.org/packages/elm-tools/parser/latest">elm-tools/parser</a> を紹介してくれた．</p>
@@ -322,62 +322,59 @@ parseFormula text <span class="fu">=</span> undefined ()</code></pre></div>
 <li><a href="https://qiita.com/jinjor/items/d0d4b83b530251df913e">Elm で構文解析しよう - Qiita</a></li>
 </ul>
 <p>が，自分には Haskell の Parsec 由来の <a href="http://package.elm-lang.org/packages/elm-community/parser-combinators/latest">elm-community/parser-combinators</a> の方が使いやすかったのでコッチに逃げた(ゴメンナサイ)．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">withFormula <span class="fu">:</span> <span class="dt">Parser</span> s ( <span class="dt">String</span>, <span class="dt">String</span> )
-withFormula <span class="fu">=</span>
-    (,) <span class="fu">&lt;$&gt;</span> (<span class="dt">String</span><span class="fu">.</span>concat <span class="fu">&lt;$&gt;</span> many noneDal) <span class="fu">&lt;*&gt;</span> formula
-
-formula <span class="fu">:</span> <span class="dt">Parser</span> s <span class="dt">String</span>
-formula <span class="fu">=</span>
-    <span class="dt">String</span><span class="fu">.</span>concat <span class="fu">&lt;$&gt;</span> between (string <span class="st">&quot;$&quot;</span>) (string <span class="st">&quot;$&quot;</span>) (many term)
-
-term <span class="fu">:</span> <span class="dt">Parser</span> s <span class="dt">String</span>
-term <span class="fu">=</span>
-    escapedChar <span class="fu">&lt;|&gt;</span> noneDal
-
-noneDal <span class="fu">:</span> <span class="dt">Parser</span> s <span class="dt">String</span>
-noneDal <span class="fu">=</span>
-    <span class="dt">String</span><span class="fu">.</span>fromChar <span class="fu">&lt;$&gt;</span> noneOf [ <span class="ch">'$'</span> ]
-
-escapedChar <span class="fu">:</span> <span class="dt">Parser</span> s <span class="dt">String</span>
-escapedChar <span class="fu">=</span>
-    <span class="dt">String</span><span class="fu">.</span>append <span class="fu">&lt;$&gt;</span> string <span class="st">&quot;\\&quot;</span> <span class="fu">&lt;*&gt;</span> (<span class="dt">String</span><span class="fu">.</span>fromChar <span class="fu">&lt;$&gt;</span> anyChar)</code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" data-line-number="1">withFormula <span class="fu">:</span> <span class="dt">Parser</span> s ( <span class="dt">String</span>, <span class="dt">String</span> )</a>
+<a class="sourceLine" id="cb14-2" data-line-number="2">withFormula <span class="fu">=</span></a>
+<a class="sourceLine" id="cb14-3" data-line-number="3">    (,) <span class="fu">&lt;$&gt;</span> (<span class="dt">String</span><span class="fu">.</span>concat <span class="fu">&lt;$&gt;</span> many noneDal) <span class="fu">&lt;*&gt;</span> formula</a>
+<a class="sourceLine" id="cb14-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb14-5" data-line-number="5">formula <span class="fu">:</span> <span class="dt">Parser</span> s <span class="dt">String</span></a>
+<a class="sourceLine" id="cb14-6" data-line-number="6">formula <span class="fu">=</span></a>
+<a class="sourceLine" id="cb14-7" data-line-number="7">    <span class="dt">String</span><span class="fu">.</span>concat <span class="fu">&lt;$&gt;</span> between (string <span class="st">&quot;$&quot;</span>) (string <span class="st">&quot;$&quot;</span>) (many term)</a>
+<a class="sourceLine" id="cb14-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb14-9" data-line-number="9">term <span class="fu">:</span> <span class="dt">Parser</span> s <span class="dt">String</span></a>
+<a class="sourceLine" id="cb14-10" data-line-number="10">term <span class="fu">=</span></a>
+<a class="sourceLine" id="cb14-11" data-line-number="11">    escapedChar <span class="fu">&lt;|&gt;</span> noneDal</a>
+<a class="sourceLine" id="cb14-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb14-13" data-line-number="13">noneDal <span class="fu">:</span> <span class="dt">Parser</span> s <span class="dt">String</span></a>
+<a class="sourceLine" id="cb14-14" data-line-number="14">noneDal <span class="fu">=</span></a>
+<a class="sourceLine" id="cb14-15" data-line-number="15">    <span class="dt">String</span><span class="fu">.</span>fromChar <span class="fu">&lt;$&gt;</span> noneOf [ <span class="ch">'$'</span> ]</a>
+<a class="sourceLine" id="cb14-16" data-line-number="16"></a>
+<a class="sourceLine" id="cb14-17" data-line-number="17">escapedChar <span class="fu">:</span> <span class="dt">Parser</span> s <span class="dt">String</span></a>
+<a class="sourceLine" id="cb14-18" data-line-number="18">escapedChar <span class="fu">=</span></a>
+<a class="sourceLine" id="cb14-19" data-line-number="19">    <span class="dt">String</span><span class="fu">.</span>append <span class="fu">&lt;$&gt;</span> string <span class="st">&quot;\\&quot;</span> <span class="fu">&lt;*&gt;</span> (<span class="dt">String</span><span class="fu">.</span>fromChar <span class="fu">&lt;$&gt;</span> anyChar)</a></code></pre></div>
 <p><code>abc$1+2$</code> が <code>(&quot;abc&quot;, &quot;1+2&quot;)</code> になるようにパーサーを書いた(<code>$1+2$</code> は <code>(&quot;&quot;, &quot;1+2&quot;)</code> となる)． このパーサーを再帰的に適用する．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">parseFormula <span class="fu">:</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">List</span> (<span class="dt">Inline</span> <span class="dt">Formula</span>)
-parseFormula text <span class="fu">=</span>
-    <span class="kw">case</span> Combine.parse withFormula text <span class="kw">of</span>
-        <span class="dt">Result.Err</span> ( (), stream, _ ) <span class="ot">-&gt;</span>
-            <span class="kw">if</span> stream<span class="fu">.</span><span class="kw">data</span> <span class="fu">==</span> <span class="st">&quot;&quot;</span> <span class="kw">then</span>
-                []
-            <span class="kw">else</span>
-                [ <span class="dt">Inline.Text</span> stream<span class="fu">.</span><span class="kw">data</span> ]
-
-        <span class="dt">Result.Ok</span> ( (), stream, ( txt, exp ) ) <span class="ot">-&gt;</span>
-            <span class="dt">Inline.Text</span> txt
-<span class="ot">                ::</span> <span class="dt">Inline.Custom</span> (<span class="dt">Formula</span> exp) []
-<span class="ot">                ::</span> parseFormula stream<span class="fu">.</span>input</code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" data-line-number="1">parseFormula <span class="fu">:</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">List</span> (<span class="dt">Inline</span> <span class="dt">Formula</span>)</a>
+<a class="sourceLine" id="cb15-2" data-line-number="2">parseFormula text <span class="fu">=</span></a>
+<a class="sourceLine" id="cb15-3" data-line-number="3">    <span class="kw">case</span> Combine.parse withFormula text <span class="kw">of</span></a>
+<a class="sourceLine" id="cb15-4" data-line-number="4">        <span class="dt">Result.Err</span> ( (), stream, _ ) <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb15-5" data-line-number="5">            <span class="kw">if</span> stream<span class="fu">.</span><span class="kw">data</span> <span class="fu">==</span> <span class="st">&quot;&quot;</span> <span class="kw">then</span></a>
+<a class="sourceLine" id="cb15-6" data-line-number="6">                []</a>
+<a class="sourceLine" id="cb15-7" data-line-number="7">            <span class="kw">else</span></a>
+<a class="sourceLine" id="cb15-8" data-line-number="8">                [ <span class="dt">Inline.Text</span> stream<span class="fu">.</span><span class="kw">data</span> ]</a>
+<a class="sourceLine" id="cb15-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb15-10" data-line-number="10">        <span class="dt">Result.Ok</span> ( (), stream, ( txt, exp ) ) <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb15-11" data-line-number="11">            <span class="dt">Inline.Text</span> txt</a>
+<a class="sourceLine" id="cb15-12" data-line-number="12"><span class="ot">                ::</span> <span class="dt">Inline.Custom</span> (<span class="dt">Formula</span> exp) []</a>
+<a class="sourceLine" id="cb15-13" data-line-number="13"><span class="ot">                ::</span> parseFormula stream<span class="fu">.</span>input</a></code></pre></div>
 <p><code>parse withFormula text</code> をすると，core の <a href="http://package.elm-lang.org/packages/elm-lang/core/latest/Result#Result"><code>Result</code></a> 型を返す． <code>stream</code> はパースした残りなので，パース成功 <code>Result.Ok</code> なら <code>stream</code> に再度パーサーをかけ，失敗 <code>Result.Err</code> ならそのまま返す．</p>
 <h4 id="高階関数">高階関数</h4>
 <p>pablohirafuji/elm-markdown には便利な高階関数がいくつか定義されている．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">walk <span class="fu">:</span> (<span class="dt">Block</span> b i <span class="ot">-&gt;</span> <span class="dt">Block</span> b i) <span class="ot">-&gt;</span> <span class="dt">Block</span> b i <span class="ot">-&gt;</span> <span class="dt">Block</span> b i
-walkInlines <span class="fu">:</span> (<span class="dt">Inline</span> i <span class="ot">-&gt;</span> <span class="dt">Inline</span> i) <span class="ot">-&gt;</span> <span class="dt">Block</span> b i <span class="ot">-&gt;</span> <span class="dt">Block</span> b i</code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" data-line-number="1">walk <span class="fu">:</span> (<span class="dt">Block</span> b i <span class="ot">-&gt;</span> <span class="dt">Block</span> b i) <span class="ot">-&gt;</span> <span class="dt">Block</span> b i <span class="ot">-&gt;</span> <span class="dt">Block</span> b i</a>
+<a class="sourceLine" id="cb16-2" data-line-number="2">walkInlines <span class="fu">:</span> (<span class="dt">Inline</span> i <span class="ot">-&gt;</span> <span class="dt">Inline</span> i) <span class="ot">-&gt;</span> <span class="dt">Block</span> b i <span class="ot">-&gt;</span> <span class="dt">Block</span> b i</a></code></pre></div>
 <p>前述したとおり <code>Block b i</code> 型は再帰型になっているので，<code>Block b i</code> や <code>Inline i</code> をリストで持っている． なので，<a href="http://package.elm-lang.org/packages/pablohirafuji/elm-markdown/2.0.4/Markdown-Block#walk"><code>walk</code></a> や <a href="http://package.elm-lang.org/packages/pablohirafuji/elm-markdown/2.0.4/Markdown-Block#walkInlines"><code>walkInlines</code></a> 関数はそれらに対し再帰的に関数を適用してくれる．</p>
 <p>しかし，用意した関数は <code>Inline Formula -&gt; List (Inline Formula)</code> なのでどちらも使えない． なので，<code>walkInlinesWithConcat : (Inline i -&gt; List (Inline i)) -&gt; Block b i -&gt; Block b i</code> というのを定義した．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">parseFormulaInBlock <span class="fu">:</span> <span class="dt">Block</span> b <span class="dt">Formula</span> <span class="ot">-&gt;</span> <span class="dt">Block</span> b <span class="dt">Formula</span>
-parseFormulaInBlock <span class="fu">=</span>
-    Block.walkInlinesWithConcat parseFormulaInline</code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" data-line-number="1">parseFormulaInBlock <span class="fu">:</span> <span class="dt">Block</span> b <span class="dt">Formula</span> <span class="ot">-&gt;</span> <span class="dt">Block</span> b <span class="dt">Formula</span></a>
+<a class="sourceLine" id="cb17-2" data-line-number="2">parseFormulaInBlock <span class="fu">=</span></a>
+<a class="sourceLine" id="cb17-3" data-line-number="3">    Block.walkInlinesWithConcat parseFormulaInline</a></code></pre></div>
 <p>あとはこれを呼ぶだけ</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">toSlide <span class="fu">:</span> <span class="dt">Window.Size</span> <span class="ot">-&gt;</span> <span class="dt">List</span> (<span class="dt">Block</span> b <span class="dt">Formula</span>) <span class="ot">-&gt;</span> <span class="dt">Html</span> msg
-toSlide window blocks <span class="fu">=</span>
-    blocks
-        <span class="fu">|&gt;</span> List.map (Block.walk parseFormulaInBlock)
-        <span class="fu">|&gt;</span> List.concatMap customHtmlBlock
-        <span class="fu">|&gt;</span> slideView window</code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb18-1" data-line-number="1">toSlide <span class="fu">:</span> <span class="dt">Window.Size</span> <span class="ot">-&gt;</span> <span class="dt">List</span> (<span class="dt">Block</span> b <span class="dt">Formula</span>) <span class="ot">-&gt;</span> <span class="dt">Html</span> msg</a>
+<a class="sourceLine" id="cb18-2" data-line-number="2">toSlide window blocks <span class="fu">=</span></a>
+<a class="sourceLine" id="cb18-3" data-line-number="3">    blocks</a>
+<a class="sourceLine" id="cb18-4" data-line-number="4">        <span class="fu">|&gt;</span> List.map (Block.walk parseFormulaInBlock)</a>
+<a class="sourceLine" id="cb18-5" data-line-number="5">        <span class="fu">|&gt;</span> List.concatMap customHtmlBlock</a>
+<a class="sourceLine" id="cb18-6" data-line-number="6">        <span class="fu">|&gt;</span> slideView window</a></code></pre></div>
 <h2 id="demo">Demo</h2>
 <p>こんな感じ</p>
-<div class="figure">
-<img src="../assets/create-elmdeck/elmdeck.jpg" />
-
-</div>
+<p><img src="../assets/create-elmdeck/elmdeck.jpg" /></p>
 <p><a href="https://matsubara0507.github.io/elmdeck/">GitHub Pages においた</a>．</p>
 <h2 id="おしまい">おしまい</h2>
 <p>長くなったのでココまで． Electron の部分も面白いんだけどなぁ．</p>

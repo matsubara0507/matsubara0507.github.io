@@ -81,7 +81,7 @@
 
   <div class="post-content" itemprop="articleBody">
     <p><a href="https://jaspervdj.be/hakyll/">Hakyll</a> 使って <a href="https://pages.github.com/">GitHub Pages</a> はじめました．</p>
-<p>Hakyll (読み方は ハギル でいいのかな、Jekyll が ジギル だし)とは，Haskell 製の静的サイトジェネレーターです． 名前は GitHub Pages で最もよく使われている<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a> <a href="https://jekyllrb.com/">Jekyll</a> からだと思う．</p>
+<p>Hakyll (読み方は ハギル でいいのかな、Jekyll が ジギル だし)とは，Haskell 製の静的サイトジェネレーターです． 名前は GitHub Pages で最もよく使われている<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> <a href="https://jekyllrb.com/">Jekyll</a> からだと思う．</p>
 <p>正直，Jekyll や Hexo の方が使いやすい，少なくともドキュメントやプラグイン，テーマが豊富だろうけど，「Haskell が使いたかった」という理由だけで Hakyll を使いました．</p>
 <h2 id="環境">環境</h2>
 <ul>
@@ -117,31 +117,39 @@ _site/
 <h3 id="hakyll-のセットアップ">3. Hakyll のセットアップ</h3>
 <p>ココからは公式サイトの<a href="https://jaspervdj.be/hakyll/tutorials/01-installation.html">チュートリアル</a>に従う．</p>
 <p>ちなみに，source ブランチに居ると仮定してる(正直どっちでもいいんだけど)．</p>
-<ol style="list-style-type: decimal">
-<li><p>Hakyll をインストール</p>
-<pre><code>$ stack install hakyll</code></pre></li>
-<li><p>Hakyll プロジェクトの作成</p>
-<pre><code>$ hakyll-init site</code></pre></li>
-<li><p>ファイルの移動(要するにコピペ)</p>
+<ol type="1">
+<li>Hakyll をインストール</li>
+</ol>
+<pre><code>$ stack install hakyll</code></pre>
+<ol start="2" type="1">
+<li>Hakyll プロジェクトの作成</li>
+</ol>
+<pre><code>$ hakyll-init site</code></pre>
+<ol start="3" type="1">
+<li>ファイルの移動(要するにコピペ)</li>
+</ol>
 <pre><code>$ mv site/* ./
-$ rm -d site</code></pre></li>
-<li><p>ビルド</p>
+$ rm -d site</code></pre>
+<ol start="4" type="1">
+<li>ビルド</li>
+</ol>
 <pre><code>$ stack init
 $ stack build
-$ stack exec site build</code></pre></li>
-</ol>
+$ stack exec site build</code></pre>
 <p><code>stack exec site watch</code> して <code>localhost:8000</code> で確認できればOK．</p>
 <p><strong><em>Note</em></strong>: もし <code>stack build</code> の際に，パッケージのビルドでこけた場合，<code>--no-system-ghc</code> を付けるとよい．</p>
 <p><strong><em>Note</em></strong>: また，<code>hGet~</code> なんちゃらで怒られた場合，基本的に文字コードが原因なので，<code>chcp 65001</code> を実行して，端末の文字コードを UTF-8 に変更しよう．</p>
 <p><strong><em>Note</em></strong>: ちなみに，<code>stack exec site build</code> で一度こけた場合，<code>stack exec site clean</code> をしてから再ビルドをするとよい．</p>
 <h3 id="デプロイ">4. デプロイ</h3>
 <p>source ブランチに居て，既に <code>stack exec site build</code> が済んでいると仮定する．</p>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li>まず，現在の変更を全てコミットするかスタッシュする．このとき，<code>.gitignore</code> に <code>_site/</code> が書いてあるので，<code>_site/</code> は残るはず．</li>
 <li>master ブランチにチェックアウト</li>
-<li><p><code>_site/</code> の中身をカレントディレクトリにコピぺ</p>
-<pre><code>$ cp -a _site/. .</code></pre></li>
-<li><p>この状態で，コミットしてプッシュ</p></li>
+<li><code>_site/</code> の中身をカレントディレクトリにコピぺ</li>
+</ol>
+<pre><code>$ cp -a _site/. .</code></pre>
+<ol start="4" type="1">
+<li>この状態で，コミットしてプッシュ</li>
 </ol>
 <p>これで，一応デプロイできる．</p>
 <p>2回目以降は，まず初めに</p>
@@ -151,23 +159,23 @@ $ stack exec site build</code></pre></li>
 <h3 id="ちなみに">ちなみに</h3>
 <p><code>stack exec -- site --help</code> とすると，コマンドに <code>site deploy</code> があるのがわかる． GitHub のソースコードを読んだところ，自分で <code>site.hs</code> に定義しないといけないらしい．</p>
 <p>試しに，定義してみた． <code>site.hs</code> の一番最後に，<code>config</code> を定義して．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">config ::</span> <span class="dt">Configuration</span>
-config <span class="fu">=</span> defaultConfiguration
-    { deployCommand <span class="fu">=</span> <span class="st">&quot;git checkout source&quot;</span> <span class="ot">`mappend`</span>
-                      <span class="st">&quot;&amp;&amp; stack exec site rebuild&quot;</span> <span class="ot">`mappend`</span>
-                      <span class="st">&quot;&amp;&amp; git checkout master&quot;</span> <span class="ot">`mappend`</span>
-                      <span class="st">&quot;&amp;&amp; rsync -a --filter='P _site/'&quot;</span> <span class="ot">`mappend`</span>
-                      <span class="st">&quot; --filter='P _cache/' --filter='P .git/'&quot;</span> <span class="ot">`mappend`</span>
-                      <span class="st">&quot; --filter='P .stack-work' --filter='P .gitignore'&quot;</span> <span class="ot">`mappend`</span>
-                      <span class="st">&quot; --delete-excluded _site/ .&quot;</span> <span class="ot">`mappend`</span>
-                      <span class="st">&quot;&amp;&amp; cp -a _site/. .&quot;</span> <span class="ot">`mappend`</span>
-                      <span class="st">&quot;&amp;&amp; git add -A&quot;</span> <span class="ot">`mappend`</span>
-                      <span class="st">&quot;&amp;&amp; git commit -m 'Publish'&quot;</span> <span class="ot">`mappend`</span>
-                      <span class="st">&quot;&amp;&amp; git checkout source&quot;</span>
-    }</code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="ot">config ::</span> <span class="dt">Configuration</span></a>
+<a class="sourceLine" id="cb9-2" data-line-number="2">config <span class="fu">=</span> defaultConfiguration</a>
+<a class="sourceLine" id="cb9-3" data-line-number="3">    { deployCommand <span class="fu">=</span> <span class="st">&quot;git checkout source&quot;</span> <span class="ot">`mappend`</span></a>
+<a class="sourceLine" id="cb9-4" data-line-number="4">                      <span class="st">&quot;&amp;&amp; stack exec site rebuild&quot;</span> <span class="ot">`mappend`</span></a>
+<a class="sourceLine" id="cb9-5" data-line-number="5">                      <span class="st">&quot;&amp;&amp; git checkout master&quot;</span> <span class="ot">`mappend`</span></a>
+<a class="sourceLine" id="cb9-6" data-line-number="6">                      <span class="st">&quot;&amp;&amp; rsync -a --filter='P _site/'&quot;</span> <span class="ot">`mappend`</span></a>
+<a class="sourceLine" id="cb9-7" data-line-number="7">                      <span class="st">&quot; --filter='P _cache/' --filter='P .git/'&quot;</span> <span class="ot">`mappend`</span></a>
+<a class="sourceLine" id="cb9-8" data-line-number="8">                      <span class="st">&quot; --filter='P .stack-work' --filter='P .gitignore'&quot;</span> <span class="ot">`mappend`</span></a>
+<a class="sourceLine" id="cb9-9" data-line-number="9">                      <span class="st">&quot; --delete-excluded _site/ .&quot;</span> <span class="ot">`mappend`</span></a>
+<a class="sourceLine" id="cb9-10" data-line-number="10">                      <span class="st">&quot;&amp;&amp; cp -a _site/. .&quot;</span> <span class="ot">`mappend`</span></a>
+<a class="sourceLine" id="cb9-11" data-line-number="11">                      <span class="st">&quot;&amp;&amp; git add -A&quot;</span> <span class="ot">`mappend`</span></a>
+<a class="sourceLine" id="cb9-12" data-line-number="12">                      <span class="st">&quot;&amp;&amp; git commit -m 'Publish'&quot;</span> <span class="ot">`mappend`</span></a>
+<a class="sourceLine" id="cb9-13" data-line-number="13">                      <span class="st">&quot;&amp;&amp; git checkout source&quot;</span></a>
+<a class="sourceLine" id="cb9-14" data-line-number="14">    }</a></code></pre></div>
 <p><code>main</code> をちょっと変更．</p>
-<div class="sourceCode"><pre class="sourceCode diff"><code class="sourceCode diff"><span class="st">- main = hakyll $ do</span>
-<span class="va">+ main = hakyllWith config $ do</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode diff"><code class="sourceCode diff"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="st">- main = hakyll $ do</span></a>
+<a class="sourceLine" id="cb10-2" data-line-number="2"><span class="va">+ main = hakyllWith config $ do</span></a></code></pre></div>
 <p>デプロイだけど，怖いからプッシュはしないようにしてる． <code>config</code> の中身は各自で適当に．</p>
 <p>こうすると <code>stack exec site deploy</code> で，上で定義したコマンドが実行されるはず．</p>
 <h3 id="展望">展望</h3>
@@ -178,12 +186,12 @@ config <span class="fu">=</span> defaultConfiguration
 </ul>
 <p>自動デプロイはその後かなぁ．</p>
 <h2 id="おしまい">おしまい</h2>
-<div class="footnotes">
+<section class="footnotes">
 <hr />
 <ol>
-<li id="fn1"><p><a href="https://www.staticgen.com/" class="uri">https://www.staticgen.com/</a><a href="#fnref1">↩</a></p></li>
+<li id="fn1"><p><a href="https://www.staticgen.com/" class="uri">https://www.staticgen.com/</a><a href="#fnref1" class="footnote-back">↩</a></p></li>
 </ol>
-</div>
+</section>
   </div>
 </div>
 </article>

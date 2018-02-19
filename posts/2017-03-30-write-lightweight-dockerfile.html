@@ -118,7 +118,7 @@ bfc43e4f492f        5 days ago          /bin/sh -c #(nop)  MAINTAINER MATSUBARA 
 &lt;missing&gt;           6 days ago          /bin/sh -c #(nop) ADD file:4eedf861fb567fffb2   123.4 MB</code></pre>
 <p><code>stack setup</code> で 2.3GB　(笑) やばいなぁ．</p>
 <p>SIZE が大きい順に5つ出すと</p>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li>2.296 GB : Haskell の <code>stack setup</code></li>
 <li>581.7 MB : java8 の <code>apt-get</code></li>
 <li>335.9 MB : Erlang の <code>apt-get</code></li>
@@ -150,23 +150,23 @@ $ docker images | grep haskell
 haskell             latest              198e758a94f7        8 days ago          961.1 MB</code></pre>
 <p>Haskell の<a href="https://github.com/freebroccolo/docker-haskell/blob/5f1ae82bd27501322100b915c9ae6cc9f9aea129/8.0/Dockerfile">公式のDockerfile</a> を見ると，GHC を直接入れて，stack の global config yaml の <code>system-ghc</code> のオプションを <code>true</code> にしている． こうすることで，<code>stack ghc</code> や <code>stack ghci</code> などがカレントディレクトリに config yaml が無い場合に，インストール済みの GHC を使ってくれる．</p>
 <p>なるほど，こうしよう．</p>
-<div class="sourceCode"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span class="kw">RUN</span> echo <span class="st">'deb http://ppa.launchpad.net/hvr/ghc/ubuntu trusty main'</span> &gt; /etc/apt/sources.list.d/ghc.list \
-    &amp;&amp; apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F6F88286 \
-    &amp;&amp; apt-get update &amp;&amp; apt-get install -y --no-install-recommends \
-    ca-certificates \
-    g++ \
-    ghc-8.0.2 \
-    libtinfo-dev \
-    &amp;&amp; apt-get clean \
-    &amp;&amp; rm -rf /var/lib/apt/lists/*
-<span class="kw">RUN</span> apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 575159689BEFB442 \
-    &amp;&amp; echo <span class="st">'deb http://download.fpcomplete.com/debian jessie main'</span> | tee /etc/apt/sources.list.d/fpco.list \
-    &amp;&amp; apt-get update &amp;&amp; apt-get install -y --no-install-recommends \
-    stack \
-    &amp;&amp; apt-get clean \
-    &amp;&amp; rm -rf /var/lib/apt/lists/*
-<span class="kw">RUN</span> stack config set system-ghc --global true
-<span class="kw">ENV</span> PATH /opt/ghc/8.0.2/bin:$PATH</code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">RUN</span> echo <span class="st">'deb http://ppa.launchpad.net/hvr/ghc/ubuntu trusty main'</span> &gt; /etc/apt/sources.list.d/ghc.list \</a>
+<a class="sourceLine" id="cb4-2" data-line-number="2">    &amp;&amp; apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F6F88286 \</a>
+<a class="sourceLine" id="cb4-3" data-line-number="3">    &amp;&amp; apt-get update &amp;&amp; apt-get install -y --no-install-recommends \</a>
+<a class="sourceLine" id="cb4-4" data-line-number="4">    ca-certificates \</a>
+<a class="sourceLine" id="cb4-5" data-line-number="5">    g++ \</a>
+<a class="sourceLine" id="cb4-6" data-line-number="6">    ghc-8.0.2 \</a>
+<a class="sourceLine" id="cb4-7" data-line-number="7">    libtinfo-dev \</a>
+<a class="sourceLine" id="cb4-8" data-line-number="8">    &amp;&amp; apt-get clean \</a>
+<a class="sourceLine" id="cb4-9" data-line-number="9">    &amp;&amp; rm -rf /var/lib/apt/lists/*</a>
+<a class="sourceLine" id="cb4-10" data-line-number="10"><span class="kw">RUN</span> apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 575159689BEFB442 \</a>
+<a class="sourceLine" id="cb4-11" data-line-number="11">    &amp;&amp; echo <span class="st">'deb http://download.fpcomplete.com/debian jessie main'</span> | tee /etc/apt/sources.list.d/fpco.list \</a>
+<a class="sourceLine" id="cb4-12" data-line-number="12">    &amp;&amp; apt-get update &amp;&amp; apt-get install -y --no-install-recommends \</a>
+<a class="sourceLine" id="cb4-13" data-line-number="13">    stack \</a>
+<a class="sourceLine" id="cb4-14" data-line-number="14">    &amp;&amp; apt-get clean \</a>
+<a class="sourceLine" id="cb4-15" data-line-number="15">    &amp;&amp; rm -rf /var/lib/apt/lists/*</a>
+<a class="sourceLine" id="cb4-16" data-line-number="16"><span class="kw">RUN</span> stack config set system-ghc --global true</a>
+<a class="sourceLine" id="cb4-17" data-line-number="17"><span class="kw">ENV</span> PATH /opt/ghc/8.0.2/bin:$PATH</a></code></pre></div>
 <p>stack の入れ方は元ので良さそう．</p>
 <h3 id="erlang">Erlang</h3>
 <p>イロイロ試した結果，<code>erlang-base-hipe</code> いらなそう． これをなくしたらだいぶ build が早くなった．</p>
@@ -177,12 +177,12 @@ erlang              slim                45d18161e949        8 days ago          
 <h3 id="io">Io</h3>
 <p>io をクローンして build した後にクローンしたのを削除するようにした． 一連のレイヤーでやらないと意味ないのでそうした．</p>
 <p>こんな感じ．</p>
-<div class="sourceCode"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span class="kw">RUN</span> git clone --branch 2015.11.11 --depth 1 https://github.com/stevedekorte/io.git ~/io \
-    &amp;&amp; mkdir -p ~/io/build \
-    &amp;&amp; cd ~/io/build \
-    &amp;&amp; cmake .. \
-    &amp;&amp; make install \
-    &amp;&amp; rm -fr ~/io</code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">RUN</span> git clone --branch 2015.11.11 --depth 1 https://github.com/stevedekorte/io.git ~/io \</a>
+<a class="sourceLine" id="cb6-2" data-line-number="2">    &amp;&amp; mkdir -p ~/io/build \</a>
+<a class="sourceLine" id="cb6-3" data-line-number="3">    &amp;&amp; cd ~/io/build \</a>
+<a class="sourceLine" id="cb6-4" data-line-number="4">    &amp;&amp; cmake .. \</a>
+<a class="sourceLine" id="cb6-5" data-line-number="5">    &amp;&amp; make install \</a>
+<a class="sourceLine" id="cb6-6" data-line-number="6">    &amp;&amp; rm -fr ~/io</a></code></pre></div>
 <h3 id="common">Common</h3>
 <p>なんか各言語を独立させたいので，Common の欄はやめた． 必要な箇所で必ず <code>apt-get install</code> するようにした． <code>--no-install-recommends</code> オプションを付ければ何度もインストールされないので問題ないはず．</p>
 <h2 id="修正">修正</h2>

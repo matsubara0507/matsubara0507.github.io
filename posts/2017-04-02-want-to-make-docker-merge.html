@@ -83,43 +83,37 @@
 
   <div class="post-content" itemprop="articleBody">
     <p>Docker コンテナは階層構造になっている． 例えば，次のような Dockaerfile の場合は</p>
-<div class="sourceCode"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span class="kw">FROM</span> buildpack-deps:jessie-scm
-
-<span class="kw">MAINTAINER</span> MATSUBARA Nobutada
-
-<span class="kw">WORKDIR</span> ~
-
-<span class="co"># Install Haskell</span>
-<span class="co">## with stack</span>
-
-<span class="kw">RUN</span> echo <span class="st">'deb http://ppa.launchpad.net/hvr/ghc/ubuntu trusty main'</span> &gt; /etc/apt/sources.list.d/ghc.list \
-    &amp;&amp; apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F6F88286 \
-    &amp;&amp; apt-get update &amp;&amp; apt-get install -y --no-install-recommends \
-    ca-certificates \
-    g++ \
-    ghc-8.0.2 \
-    libtinfo-dev \
-    &amp;&amp; apt-get clean \
-    &amp;&amp; rm -rf /var/lib/apt/lists/*
-<span class="kw">RUN</span> apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 575159689BEFB442 \
-    &amp;&amp; echo <span class="st">'deb http://download.fpcomplete.com/debian jessie main'</span> | tee /etc/apt/sources.list.d/fpco.list \
-    &amp;&amp; apt-get update &amp;&amp; apt-get install -y --no-install-recommends \
-    stack \
-    &amp;&amp; apt-get clean \
-    &amp;&amp; rm -rf /var/lib/apt/lists/*
-<span class="kw">RUN</span> stack config set system-ghc --global true
-<span class="kw">ENV</span> PATH /opt/ghc/8.0.2/bin:$PATH</code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">FROM</span> buildpack-deps:jessie-scm</a>
+<a class="sourceLine" id="cb1-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb1-3" data-line-number="3"><span class="kw">MAINTAINER</span> MATSUBARA Nobutada</a>
+<a class="sourceLine" id="cb1-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb1-5" data-line-number="5"><span class="kw">WORKDIR</span> ~</a>
+<a class="sourceLine" id="cb1-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb1-7" data-line-number="7"><span class="co"># Install Haskell</span></a>
+<a class="sourceLine" id="cb1-8" data-line-number="8"><span class="co">## with stack</span></a>
+<a class="sourceLine" id="cb1-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb1-10" data-line-number="10"><span class="kw">RUN</span> echo <span class="st">'deb http://ppa.launchpad.net/hvr/ghc/ubuntu trusty main'</span> &gt; /etc/apt/sources.list.d/ghc.list \</a>
+<a class="sourceLine" id="cb1-11" data-line-number="11">    &amp;&amp; apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F6F88286 \</a>
+<a class="sourceLine" id="cb1-12" data-line-number="12">    &amp;&amp; apt-get update &amp;&amp; apt-get install -y --no-install-recommends \</a>
+<a class="sourceLine" id="cb1-13" data-line-number="13">    ca-certificates \</a>
+<a class="sourceLine" id="cb1-14" data-line-number="14">    g++ \</a>
+<a class="sourceLine" id="cb1-15" data-line-number="15">    ghc-8.0.2 \</a>
+<a class="sourceLine" id="cb1-16" data-line-number="16">    libtinfo-dev \</a>
+<a class="sourceLine" id="cb1-17" data-line-number="17">    &amp;&amp; apt-get clean \</a>
+<a class="sourceLine" id="cb1-18" data-line-number="18">    &amp;&amp; rm -rf /var/lib/apt/lists/*</a>
+<a class="sourceLine" id="cb1-19" data-line-number="19"><span class="kw">RUN</span> apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 575159689BEFB442 \</a>
+<a class="sourceLine" id="cb1-20" data-line-number="20">    &amp;&amp; echo <span class="st">'deb http://download.fpcomplete.com/debian jessie main'</span> | tee /etc/apt/sources.list.d/fpco.list \</a>
+<a class="sourceLine" id="cb1-21" data-line-number="21">    &amp;&amp; apt-get update &amp;&amp; apt-get install -y --no-install-recommends \</a>
+<a class="sourceLine" id="cb1-22" data-line-number="22">    stack \</a>
+<a class="sourceLine" id="cb1-23" data-line-number="23">    &amp;&amp; apt-get clean \</a>
+<a class="sourceLine" id="cb1-24" data-line-number="24">    &amp;&amp; rm -rf /var/lib/apt/lists/*</a>
+<a class="sourceLine" id="cb1-25" data-line-number="25"><span class="kw">RUN</span> stack config set system-ghc --global true</a>
+<a class="sourceLine" id="cb1-26" data-line-number="26"><span class="kw">ENV</span> PATH /opt/ghc/8.0.2/bin:$PATH</a></code></pre></div>
 <p>次のような階層構造になる．</p>
-<div class="figure">
-<img src="../assets/want-to-make-docker-merge/layer.jpg" />
-
-</div>
+<p><img src="../assets/want-to-make-docker-merge/layer.jpg" /></p>
 <p>要するに，直列にどんどん乗っけていくことは可能なのだ．</p>
 <p>対して，ベースが同じ Dockerfile がふたつあったとき，それをいい感じに並列に繋げることはできない．</p>
-<div class="figure">
-<img src="../assets/want-to-make-docker-merge/merge-layer.jpg" />
-
-</div>
+<p><img src="../assets/want-to-make-docker-merge/merge-layer.jpg" /></p>
 <p>上図の赤枠のレイヤーは同一である． 上ふたつずつが異なる． なので，ふたつの Dockerfile を前半の共通部分をまず実行し，つぎに異なる部分を実行するような階層構造にしてほしい．</p>
 <p>こうすることで，独立した Dockerfile，例えば Ruby をインストールする Dockerfile と Haskell をインストールする Dockerfile を別々に作成・テストし，それを組み合わせて(マージして)，Ruby と Haskell をインストールする Dockerfile を作りたい．</p>
 <p>と<a href="../posts/2017-03-30-write-lightweight-dockerfile.html">前回の記事</a>の最後で言った(つもり)．</p>
@@ -128,10 +122,9 @@
 <p>もちろん Haskell (ぶれない)．</p>
 <p>そもそも，パーサーが必要なので Haskell が向いてるに決まってる(暴論)．</p>
 <p>というかあるんじゃないか？と思った(パーサーが)．</p>
-<div class="figure">
-<img src="../assets/want-to-make-docker-merge/google-haskell-dockerfile-parser.jpg" alt="あった" />
-<p class="caption">あった</p>
-</div>
+<figure>
+<img src="../assets/want-to-make-docker-merge/google-haskell-dockerfile-parser.jpg" alt="あった" /><figcaption>あった</figcaption>
+</figure>
 <p>流石，Haskeller 達は抜かりない．</p>
 <ul>
 <li><a href="https://hackage.haskell.org/package/language-dockerfile">language-dockerfile: Dockerfile linter, parser, pretty-printer and embedded DSL</a></li>
@@ -146,23 +139,23 @@
 <p>コマンドの引数の処理は例の如く <a href="https://hackage.haskell.org/package/optparse-applicative">optparse-applicative</a> を使った． まぁ，まだオプションは無いんですけど(Dockerfile のパスを好きなだけ渡すだけ)．</p>
 <h3 id="コード">コード</h3>
 <p>こんだけしかない．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">toInstructions ::</span> <span class="dt">Dockerfile</span> <span class="ot">-&gt;</span> [<span class="dt">Instruction</span>]
-toInstructions <span class="fu">=</span> fmap instruction
-
-<span class="ot">removeEOL ::</span> [<span class="dt">Instruction</span>] <span class="ot">-&gt;</span> [<span class="dt">Instruction</span>]
-removeEOL <span class="fu">=</span> filter (<span class="fu">/=</span> <span class="dt">EOL</span>)
-
-<span class="ot">mergeDockerfiles ::</span> [<span class="dt">Instruction</span>] <span class="ot">-&gt;</span> [<span class="dt">Instruction</span>] <span class="ot">-&gt;</span> [<span class="dt">Instruction</span>]
-mergeDockerfiles [] df <span class="fu">=</span> df
-mergeDockerfiles xs<span class="fu">@</span>(x<span class="fu">:</span>xs') ys<span class="fu">@</span>(y<span class="fu">:</span>ys')
-  <span class="fu">|</span> x <span class="fu">==</span> y <span class="fu">=</span> x <span class="fu">:</span> mergeDockerfiles xs' ys'
-  <span class="fu">|</span> otherwise <span class="fu">=</span> xs <span class="ot">`mappend`</span> ys
-
-<span class="ot">merge ::</span> [<span class="dt">Dockerfile</span>] <span class="ot">-&gt;</span> <span class="dt">Dockerfile</span>
-merge <span class="fu">=</span> toDockerfile <span class="fu">.</span> foldl mergeDockerfiles [] <span class="fu">.</span> fromDockerfile
-  <span class="kw">where</span>
-    toDockerfile <span class="fu">=</span> fmap instructionPos
-    fromDockerfile <span class="fu">=</span> fmap (removeEOL <span class="fu">.</span> toInstructions)</code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="ot">toInstructions ::</span> <span class="dt">Dockerfile</span> <span class="ot">-&gt;</span> [<span class="dt">Instruction</span>]</a>
+<a class="sourceLine" id="cb2-2" data-line-number="2">toInstructions <span class="fu">=</span> fmap instruction</a>
+<a class="sourceLine" id="cb2-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb2-4" data-line-number="4"><span class="ot">removeEOL ::</span> [<span class="dt">Instruction</span>] <span class="ot">-&gt;</span> [<span class="dt">Instruction</span>]</a>
+<a class="sourceLine" id="cb2-5" data-line-number="5">removeEOL <span class="fu">=</span> filter (<span class="fu">/=</span> <span class="dt">EOL</span>)</a>
+<a class="sourceLine" id="cb2-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb2-7" data-line-number="7"><span class="ot">mergeDockerfiles ::</span> [<span class="dt">Instruction</span>] <span class="ot">-&gt;</span> [<span class="dt">Instruction</span>] <span class="ot">-&gt;</span> [<span class="dt">Instruction</span>]</a>
+<a class="sourceLine" id="cb2-8" data-line-number="8">mergeDockerfiles [] df <span class="fu">=</span> df</a>
+<a class="sourceLine" id="cb2-9" data-line-number="9">mergeDockerfiles xs<span class="fu">@</span>(x<span class="fu">:</span>xs') ys<span class="fu">@</span>(y<span class="fu">:</span>ys')</a>
+<a class="sourceLine" id="cb2-10" data-line-number="10">  <span class="fu">|</span> x <span class="fu">==</span> y <span class="fu">=</span> x <span class="fu">:</span> mergeDockerfiles xs' ys'</a>
+<a class="sourceLine" id="cb2-11" data-line-number="11">  <span class="fu">|</span> otherwise <span class="fu">=</span> xs <span class="ot">`mappend`</span> ys</a>
+<a class="sourceLine" id="cb2-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb2-13" data-line-number="13"><span class="ot">merge ::</span> [<span class="dt">Dockerfile</span>] <span class="ot">-&gt;</span> <span class="dt">Dockerfile</span></a>
+<a class="sourceLine" id="cb2-14" data-line-number="14">merge <span class="fu">=</span> toDockerfile <span class="fu">.</span> foldl mergeDockerfiles [] <span class="fu">.</span> fromDockerfile</a>
+<a class="sourceLine" id="cb2-15" data-line-number="15">  <span class="kw">where</span></a>
+<a class="sourceLine" id="cb2-16" data-line-number="16">    toDockerfile <span class="fu">=</span> fmap instructionPos</a>
+<a class="sourceLine" id="cb2-17" data-line-number="17">    fromDockerfile <span class="fu">=</span> fmap (removeEOL <span class="fu">.</span> toInstructions)</a></code></pre></div>
 <p>これをメイン関数で呼んでるだけ．</p>
 <p>language-dockerfile の <code>Dockerfile</code> 型は <code>[InstructionPos]</code> の型シノニム． <code>InstructionPos</code> は Dockerfile の命令コマンドに行番号やファイル名が含まれている． 等価性をチェックするのに，これらの余分な情報は要らないから消している(<code>toInstructions</code>)．</p>
 <p><code>EOL</code> (改行) も要らないから消している(<code>removeEOL</code>)</p>
@@ -171,27 +164,27 @@ merge <span class="fu">=</span> toDockerfile <span class="fu">.</span> foldl mer
 <p>簡単ですね．</p>
 <h3 id="実行">実行</h3>
 <p>次の Ruby をインストールする Dockerfile と，さっきの Haskell をインストールする Dockerfileをマージする．</p>
-<div class="sourceCode"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span class="kw">FROM</span> buildpack-deps:jessie-scm
-
-<span class="kw">MAINTAINER</span> MATSUBARA Nobutada
-
-<span class="kw">WORKDIR</span> ~
-
-<span class="co"># install Ruby</span>
-<span class="co">## use rbenv</span>
-
-<span class="kw">RUN</span> apt-get update &amp;&amp; apt-get install -y --no-install-recommends \
-    g++ \
-    gcc \
-    make \
-    &amp;&amp; apt-get clean \
-    &amp;&amp; rm -rf /var/lib/apt/lists/*
-<span class="kw">RUN</span> git clone https://github.com/rbenv/rbenv.git ~/.rbenv
-<span class="kw">RUN</span> cd ~/.rbenv \
-    &amp;&amp; src/configure \
-    &amp;&amp; make -C src
-<span class="kw">RUN</span> git clone https://github.com/sstephenson/ruby-build.git ~/.rbenv/plugins/ruby-build
-<span class="kw">RUN</span> echo <span class="st">'export PATH=&quot;$HOME/.rbenv/bin:$PATH&quot;'</span> &gt;&gt; ~/.bashrc</code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw">FROM</span> buildpack-deps:jessie-scm</a>
+<a class="sourceLine" id="cb3-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb3-3" data-line-number="3"><span class="kw">MAINTAINER</span> MATSUBARA Nobutada</a>
+<a class="sourceLine" id="cb3-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb3-5" data-line-number="5"><span class="kw">WORKDIR</span> ~</a>
+<a class="sourceLine" id="cb3-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb3-7" data-line-number="7"><span class="co"># install Ruby</span></a>
+<a class="sourceLine" id="cb3-8" data-line-number="8"><span class="co">## use rbenv</span></a>
+<a class="sourceLine" id="cb3-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb3-10" data-line-number="10"><span class="kw">RUN</span> apt-get update &amp;&amp; apt-get install -y --no-install-recommends \</a>
+<a class="sourceLine" id="cb3-11" data-line-number="11">    g++ \</a>
+<a class="sourceLine" id="cb3-12" data-line-number="12">    gcc \</a>
+<a class="sourceLine" id="cb3-13" data-line-number="13">    make \</a>
+<a class="sourceLine" id="cb3-14" data-line-number="14">    &amp;&amp; apt-get clean \</a>
+<a class="sourceLine" id="cb3-15" data-line-number="15">    &amp;&amp; rm -rf /var/lib/apt/lists/*</a>
+<a class="sourceLine" id="cb3-16" data-line-number="16"><span class="kw">RUN</span> git clone https://github.com/rbenv/rbenv.git ~/.rbenv</a>
+<a class="sourceLine" id="cb3-17" data-line-number="17"><span class="kw">RUN</span> cd ~/.rbenv \</a>
+<a class="sourceLine" id="cb3-18" data-line-number="18">    &amp;&amp; src/configure \</a>
+<a class="sourceLine" id="cb3-19" data-line-number="19">    &amp;&amp; make -C src</a>
+<a class="sourceLine" id="cb3-20" data-line-number="20"><span class="kw">RUN</span> git clone https://github.com/sstephenson/ruby-build.git ~/.rbenv/plugins/ruby-build</a>
+<a class="sourceLine" id="cb3-21" data-line-number="21"><span class="kw">RUN</span> echo <span class="st">'export PATH=&quot;$HOME/.rbenv/bin:$PATH&quot;'</span> &gt;&gt; ~/.bashrc</a></code></pre></div>
 <pre><code>$ stack exec -- docker-merge .\Dockerfiles\ruby\Dockerfile .\Dockerfiles\haskell\Dockerfile
 FROM buildpack-deps:jessie-scm
 MAINTAINER MATSUBARA Nobutada

@@ -83,115 +83,109 @@
 
   <div class="post-content" itemprop="articleBody">
     <p>今朝，バイト先で<a href="http://nabetani.sakura.ne.jp/hena/ord13blocktup/">「積み木の水槽」問題</a>の <a href="https://rosettacode.org/wiki/Water_collected_between_towers#Haskell">Haskell での回答</a>について話題になりました． リンク先の解答を見ると，恐ろしいことに，一行で書けてしまいます(正しくは，この解答では <code>nabetani</code> さんの問題は解けませんが…)．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- 2 == solve [1,5,3,7,2]</span>
-solve <span class="fu">=</span> sum <span class="fu">.</span> filter (<span class="fu">&gt;</span> <span class="dv">0</span>) <span class="fu">.</span> (zipWith (<span class="fu">-</span>) <span class="fu">=&lt;&lt;</span> (zipWith min <span class="fu">.</span> scanl1 max <span class="fu">&lt;*&gt;</span> scanr1 max))</code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="co">-- 2 == solve [1,5,3,7,2]</span></a>
+<a class="sourceLine" id="cb1-2" data-line-number="2">solve <span class="fu">=</span> sum <span class="fu">.</span> filter (<span class="fu">&gt;</span> <span class="dv">0</span>) <span class="fu">.</span> (zipWith (<span class="fu">-</span>) <span class="fu">=&lt;&lt;</span> (zipWith min <span class="fu">.</span> scanl1 max <span class="fu">&lt;*&gt;</span> scanr1 max))</a></code></pre></div>
 <p>普通の Haskeller であれば，これぐらい目コンパイルして振る舞いを読み解くのは朝飯前でしょうが，Haskell 初学者のために簡単な解説を残しておこうかなと思います．</p>
 <h2 id="手直し">手直し</h2>
 <p>前述したとおり，そもそもこれでは <code>nabetani</code> さんの問題は解けないので，解けるように手直しします． もちろん <strong>1行で</strong> ．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">solve <span class="fu">=</span> sum <span class="fu">.</span> fmap (sum <span class="fu">.</span> (zipWith (<span class="fu">-</span>) <span class="fu">=&lt;&lt;</span> (zipWith min <span class="fu">.</span> scanl1 max <span class="fu">&lt;*&gt;</span> scanr1 max)) <span class="fu">.</span> fmap (read <span class="fu">.</span> (<span class="fu">:</span> []))) <span class="fu">.</span> words <span class="fu">.</span> fmap (bool <span class="ch">' '</span> <span class="fu">&lt;*&gt;</span> (<span class="fu">/=</span>) <span class="ch">'0'</span>)</code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1">solve <span class="fu">=</span> sum <span class="fu">.</span> fmap (sum <span class="fu">.</span> (zipWith (<span class="fu">-</span>) <span class="fu">=&lt;&lt;</span> (zipWith min <span class="fu">.</span> scanl1 max <span class="fu">&lt;*&gt;</span> scanr1 max)) <span class="fu">.</span> fmap (read <span class="fu">.</span> (<span class="fu">:</span> []))) <span class="fu">.</span> words <span class="fu">.</span> fmap (bool <span class="ch">' '</span> <span class="fu">&lt;*&gt;</span> (<span class="fu">/=</span>) <span class="ch">'0'</span>)</a></code></pre></div>
 <p><code>Data.List</code> と <code>Data.Bool</code> を <code>import</code> してる前提だが，一応一行で書けた． 雑に直したのでもう少し短くできるような気もしますが，まぁそもそも本質的なところでないので勘弁してください．</p>
 <p>ちなみに，そもそもなんで元のコードでは解けないのかというと，<code>nabetani</code> さんの問題には <code>0</code> が含むからだ． しかし，<code>0</code> で水槽を切り分けてあげて，元の解答を <code>map</code> してあげれば良いだけなのでコアのところはそのまんま(<code>filter (&gt; 0)</code> は要らない気がしたので消したけど)．</p>
 <h2 id="読み解く">読み解く</h2>
 <p>手直しした最終的なコードはテストコードと共に<a href="https://gist.github.com/matsubara0507/10a44fb2a9676bde9658c3eeec456676">ココ</a>にあげた．</p>
 <h3 id="トップダウンに">トップダウンに</h3>
 <p>順に読み解く． Haskell でプログラミングするとき(というか関数型プログラミング)はトップダウンに書いていくのが基本なので，読み解くときも上から順に切り分けてく．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">solve ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>
-solve <span class="fu">=</span> sum <span class="fu">.</span> fmap countWater <span class="fu">.</span> splitTank
-
-<span class="ot">splitTank ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> [<span class="dt">String</span>]
-splitTank <span class="fu">=</span>  words <span class="fu">.</span> fmap (bool <span class="ch">' '</span> <span class="fu">&lt;*&gt;</span> (<span class="fu">/=</span>) <span class="ch">'0'</span>)
-
-<span class="ot">countWater ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>
-countWater <span class="fu">=</span> sum <span class="fu">.</span> (zipWith (<span class="fu">-</span>) <span class="fu">=&lt;&lt;</span> (zipWith min <span class="fu">.</span> scanl1 max <span class="fu">&lt;*&gt;</span> scanr1 max)) <span class="fu">.</span> fmap (read <span class="fu">.</span> (<span class="fu">:</span> []))</code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="ot">solve ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb3-2" data-line-number="2">solve <span class="fu">=</span> sum <span class="fu">.</span> fmap countWater <span class="fu">.</span> splitTank</a>
+<a class="sourceLine" id="cb3-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb3-4" data-line-number="4"><span class="ot">splitTank ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> [<span class="dt">String</span>]</a>
+<a class="sourceLine" id="cb3-5" data-line-number="5">splitTank <span class="fu">=</span>  words <span class="fu">.</span> fmap (bool <span class="ch">' '</span> <span class="fu">&lt;*&gt;</span> (<span class="fu">/=</span>) <span class="ch">'0'</span>)</a>
+<a class="sourceLine" id="cb3-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb3-7" data-line-number="7"><span class="ot">countWater ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb3-8" data-line-number="8">countWater <span class="fu">=</span> sum <span class="fu">.</span> (zipWith (<span class="fu">-</span>) <span class="fu">=&lt;&lt;</span> (zipWith min <span class="fu">.</span> scanl1 max <span class="fu">&lt;*&gt;</span> scanr1 max)) <span class="fu">.</span> fmap (read <span class="fu">.</span> (<span class="fu">:</span> []))</a></code></pre></div>
 <p><code>splitTank</code> 関数は <code>0</code> を区切り文字として文字列を切り分けてるだけだ． 悲しいことに，Haskell (というか GHC)の標準モジュールには「任意の文字で文字列を切り分ける」関数がない． なので，<code>0</code> だけを空白 <code>' '</code> に置換してから，<code>words</code> で切り分けている(空白で切り分ける関数 <code>words</code> は何故か標準にある)．</p>
 <p><code>countWater</code> 関数が各水槽の水の数を数え上げており，それを最後に総和 <code>sum</code> しているだけだ．</p>
 <h3 id="fmap-はわかるよね"><code>fmap</code> はわかるよね？</h3>
 <p>ちなみに，さっきから出てきている <code>fmap</code> という関数はわかりますよね？ 多くの言語でも導入されている，リストや配列の各要素に関数を適用する関数(あるいはメソッド) <code>map :: (a -&gt; b) -&gt; [a] -&gt; [b]</code> をより一般化したものだ． 今回はリストにしか使わないので <code>map</code> と同義だと考えてくれていい(hlint で注意されるので，<code>fmap</code> と書く癖がついた)．</p>
 <h3 id="コアの部分">コアの部分</h3>
 <p>さて，本題でもある <code>countWater</code> 関数を読み解く． まずは切り分けよう．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">countWater ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>
-countWater <span class="fu">=</span> sum <span class="fu">.</span> toWaterLine <span class="fu">.</span> toInts
-
-<span class="ot">toInts ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> [<span class="dt">Int</span>]
-toInts <span class="fu">=</span> fmap (read <span class="fu">.</span> (<span class="fu">:</span> []))
-
-<span class="ot">toWaterLine ::</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> [<span class="dt">Int</span>]
-toWaterLine <span class="fu">=</span> zipWith (<span class="fu">-</span>) <span class="fu">=&lt;&lt;</span> (zipWith min <span class="fu">.</span> scanl1 max <span class="fu">&lt;*&gt;</span> scanr1 max)</code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="ot">countWater ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb4-2" data-line-number="2">countWater <span class="fu">=</span> sum <span class="fu">.</span> toWaterLine <span class="fu">.</span> toInts</a>
+<a class="sourceLine" id="cb4-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb4-4" data-line-number="4"><span class="ot">toInts ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> [<span class="dt">Int</span>]</a>
+<a class="sourceLine" id="cb4-5" data-line-number="5">toInts <span class="fu">=</span> fmap (read <span class="fu">.</span> (<span class="fu">:</span> []))</a>
+<a class="sourceLine" id="cb4-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb4-7" data-line-number="7"><span class="ot">toWaterLine ::</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> [<span class="dt">Int</span>]</a>
+<a class="sourceLine" id="cb4-8" data-line-number="8">toWaterLine <span class="fu">=</span> zipWith (<span class="fu">-</span>) <span class="fu">=&lt;&lt;</span> (zipWith min <span class="fu">.</span> scanl1 max <span class="fu">&lt;*&gt;</span> scanr1 max)</a></code></pre></div>
 <p><code>toInts</code> 関数は数列の文字列から数値のリストに変換している． Haskell で文字列を任意の型に変換するには <code>read :: String -&gt; a</code> 関数を使う． Haskell において <code>String = [Char]</code> なので，<code>fmap (: [])</code> をして <code>String</code> のリストに変換し，各文字列を <code>read</code> をしているというわけだ(<code>singleton</code> みたいな関数が標準にあればいいのに)．</p>
 <p><code>toWaterLine</code> 関数が水槽の各列の水の量を計算し，<code>sum</code> で総和している． なので，重要なのは <code>toWaterLine</code> 関数だ． <code>(&lt;*&gt;)</code> 演算子や <code>(=&lt;&lt;)</code> 演算子などがあって意味不明かもしれないが，この辺りはポイントフリーにするためのツールみたいなもので，アルゴリズムの本質的な部分ではないよ．</p>
 <h3 id="関数も-monad-型クラスのインスタンス">関数も <code>Monad</code> 型クラスのインスタンス</h3>
 <p><code>(&lt;*&gt;)</code> 演算子や <code>(=&lt;&lt;)</code> 演算子が何をしているかと言うのは <strong>関数型 <code>(-&gt;) a</code> も <code>Monad</code> 型クラスのインスタンス</strong> だという事実を知っていれば簡単に読めますね． Haskell 界隈では常識(要出典)なので，説明しなくても良いかもしれないが，初学者のために念のためしておく．</p>
 <p>それぞれの演算子の型は以下の通り(めんどいので <code>Monad</code> で統一)．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">(&lt;*&gt;) ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> m (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> m a <span class="ot">-&gt;</span> m b
-<span class="ot">(=&lt;&lt;) ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> m a <span class="ot">-&gt;</span> m b</code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="ot">(&lt;*&gt;) ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> m (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> m a <span class="ot">-&gt;</span> m b</a>
+<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="ot">(=&lt;&lt;) ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> m a <span class="ot">-&gt;</span> m b</a></code></pre></div>
 <p>で，前述したとおり，関数型 <code>(c -&gt;)</code> も <code>Monad</code> 型クラスのインスタンスなので，<code>m = (c -&gt;)</code> と置き換えれる．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">(&lt;*&gt;) ::</span> (c <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> b)
-<span class="ot">(=&lt;&lt;) ::</span> (a <span class="ot">-&gt;</span> c <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> b)</code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="ot">(&lt;*&gt;) ::</span> (c <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> b)</a>
+<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="ot">(=&lt;&lt;) ::</span> (a <span class="ot">-&gt;</span> c <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> b)</a></code></pre></div>
 <p>便利そうなコンビネーターになった． なので，<code>toWaterLine</code> 関数のこれらの演算子を同様のラムダ式で置き換えてあげよう．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">toWaterLine ::</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> [<span class="dt">Int</span>]
-toWaterLine
-  <span class="fu">=</span> \xs <span class="ot">-&gt;</span> zipWith (<span class="fu">-</span>) ((\ys <span class="ot">-&gt;</span> (zipWith min <span class="fu">.</span> scanl1 max <span class="fu">$</span> ys) (scanr1 max ys)) xs) xs
-  <span class="fu">=</span> \xs <span class="ot">-&gt;</span> zipWith (<span class="fu">-</span>) ((\ys <span class="ot">-&gt;</span> zipWith min (scanl1 max ys) (scanr1 max ys)) xs) xs
-  <span class="fu">=</span> \xs <span class="ot">-&gt;</span> zipWith (<span class="fu">-</span>) (zipWith min (scanl1 max xs) (scanr1 max xs)) xs</code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="ot">toWaterLine ::</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> [<span class="dt">Int</span>]</a>
+<a class="sourceLine" id="cb7-2" data-line-number="2">toWaterLine</a>
+<a class="sourceLine" id="cb7-3" data-line-number="3">  <span class="fu">=</span> \xs <span class="ot">-&gt;</span> zipWith (<span class="fu">-</span>) ((\ys <span class="ot">-&gt;</span> (zipWith min <span class="fu">.</span> scanl1 max <span class="fu">$</span> ys) (scanr1 max ys)) xs) xs</a>
+<a class="sourceLine" id="cb7-4" data-line-number="4">  <span class="fu">=</span> \xs <span class="ot">-&gt;</span> zipWith (<span class="fu">-</span>) ((\ys <span class="ot">-&gt;</span> zipWith min (scanl1 max ys) (scanr1 max ys)) xs) xs</a>
+<a class="sourceLine" id="cb7-5" data-line-number="5">  <span class="fu">=</span> \xs <span class="ot">-&gt;</span> zipWith (<span class="fu">-</span>) (zipWith min (scanl1 max xs) (scanr1 max xs)) xs</a></code></pre></div>
 <p>ついでに，他の言語の人では分かりにくい演算子も置き換えたので，これでどの言語の人でも読めるはずだ．</p>
 <h3 id="アルゴリズム">アルゴリズム</h3>
 <p>ここからは Haskell 関係ない． ひとつひとつ見ていこう．</p>
 <p><code>scanl :: (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; [b]</code> 関数は左畳み込み関数 <code>foldl :: (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; b</code> の途中経過もリストで残したような関数だ． つまり <code>foldl f x xs = last $ scanl f x xs</code> が成り立つ． <code>scanl1 :: (a -&gt; a -&gt; a) -&gt; [a] -&gt; [a]</code> 関数は初期値を無くしたバージョンだ． <code>scanr1</code> は <code>scanl1</code> の右畳み込みバージョン．</p>
 <h2 id="section"></h2>
 <p><code>scanl max xs</code> は左から順に，水槽の高さを比較して高い方を残しているので，各列の最も高い左側が残る． <code>scanr1 max xs</code> は各列の最も高い右側が残る．</p>
-<div class="figure">
-<img src="../assets/water-towers-hs/water1.gif" />
-
-</div>
+<p><img src="../assets/water-towers-hs/water1.gif" /></p>
 <p>そして，それらの低い方を残して，もとの高さを引く．</p>
-<div class="figure">
-<img src="../assets/water-towers-hs/water2.gif" />
-
-</div>
+<p><img src="../assets/water-towers-hs/water2.gif" /></p>
 <p>すごいできた！</p>
 <h2 id="試しに">試しに</h2>
 <p>次のテストコードを走らせてみた．</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- WalterTowers.hs</span>
-<span class="ot">main ::</span> <span class="dt">IO</span> ()
-main <span class="fu">=</span> print <span class="fu">$</span> all ((<span class="fu">==</span>) <span class="fu">&lt;$&gt;</span> snd <span class="fu">&lt;*&gt;</span> (show <span class="fu">.</span> solve <span class="fu">.</span> fst)) testSet
-
-solve <span class="fu">=</span> <span class="fu">...</span>
-
-<span class="ot">testSet ::</span> [(<span class="dt">String</span>, <span class="dt">String</span>)]
-testSet <span class="fu">=</span>
-  [ (<span class="st">&quot;83141310145169154671122&quot;</span>, <span class="st">&quot;24&quot;</span>)
-  , (<span class="st">&quot;923111128&quot;</span>, <span class="st">&quot;45&quot;</span>)
-  , (<span class="st">&quot;923101128&quot;</span>, <span class="st">&quot;1&quot;</span>)
-  , (<span class="st">&quot;903111128&quot;</span>, <span class="st">&quot;9&quot;</span>)
-  , (<span class="st">&quot;3&quot;</span>, <span class="st">&quot;0&quot;</span>)
-  , (<span class="st">&quot;31&quot;</span>, <span class="st">&quot;0&quot;</span>)
-  , (<span class="st">&quot;412&quot;</span>, <span class="st">&quot;1&quot;</span>)
-  , (<span class="st">&quot;3124&quot;</span>, <span class="st">&quot;3&quot;</span>)
-  , (<span class="st">&quot;11111&quot;</span>, <span class="st">&quot;0&quot;</span>)
-  , (<span class="st">&quot;222111&quot;</span>, <span class="st">&quot;0&quot;</span>)
-  , (<span class="st">&quot;335544&quot;</span>, <span class="st">&quot;0&quot;</span>)
-  , (<span class="st">&quot;1223455321&quot;</span>, <span class="st">&quot;0&quot;</span>)
-  , (<span class="st">&quot;000&quot;</span>, <span class="st">&quot;0&quot;</span>)
-  , (<span class="st">&quot;000100020003121&quot;</span>, <span class="st">&quot;1&quot;</span>)
-  , (<span class="st">&quot;1213141516171819181716151413121&quot;</span>, <span class="st">&quot;56&quot;</span>)
-  , (<span class="st">&quot;712131415161718191817161514131216&quot;</span>, <span class="st">&quot;117&quot;</span>)
-  , (<span class="st">&quot;712131405161718191817161514031216&quot;</span>, <span class="st">&quot;64&quot;</span>)
-  , (<span class="st">&quot;03205301204342100&quot;</span>, <span class="st">&quot;1&quot;</span>)
-  , (<span class="st">&quot;0912830485711120342&quot;</span>, <span class="st">&quot;18&quot;</span>)
-  , (<span class="st">&quot;1113241120998943327631001&quot;</span>, <span class="st">&quot;20&quot;</span>)
-  , (<span class="st">&quot;7688167781598943035023813337019904732&quot;</span>, <span class="st">&quot;41&quot;</span>)
-  , (<span class="st">&quot;2032075902729233234129146823006063388&quot;</span>, <span class="st">&quot;79&quot;</span>)
-  , (<span class="st">&quot;8323636570846582397534533&quot;</span>, <span class="st">&quot;44&quot;</span>)
-  , (<span class="st">&quot;2142555257761672319599209190604843&quot;</span>, <span class="st">&quot;41&quot;</span>)
-  , (<span class="st">&quot;06424633785085474133925235&quot;</span>, <span class="st">&quot;51&quot;</span>)
-  , (<span class="st">&quot;503144400846933212134&quot;</span>, <span class="st">&quot;21&quot;</span>)
-  , (<span class="st">&quot;1204706243676306476295999864&quot;</span>, <span class="st">&quot;21&quot;</span>)
-  , (<span class="st">&quot;050527640248767717738306306596466224&quot;</span>, <span class="st">&quot;29&quot;</span>)
-  , (<span class="st">&quot;5926294098216193922825&quot;</span>, <span class="st">&quot;65&quot;</span>)
-  , (<span class="st">&quot;655589141599534035&quot;</span>, <span class="st">&quot;29&quot;</span>)
-  , (<span class="st">&quot;7411279689677738&quot;</span>, <span class="st">&quot;34&quot;</span>)
-  , (<span class="st">&quot;268131111165754619136819109839402&quot;</span>, <span class="st">&quot;102&quot;</span>)
-  ]</code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="co">-- WalterTowers.hs</span></a>
+<a class="sourceLine" id="cb8-2" data-line-number="2"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb8-3" data-line-number="3">main <span class="fu">=</span> print <span class="fu">$</span> all ((<span class="fu">==</span>) <span class="fu">&lt;$&gt;</span> snd <span class="fu">&lt;*&gt;</span> (show <span class="fu">.</span> solve <span class="fu">.</span> fst)) testSet</a>
+<a class="sourceLine" id="cb8-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb8-5" data-line-number="5">solve <span class="fu">=</span> <span class="fu">...</span></a>
+<a class="sourceLine" id="cb8-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb8-7" data-line-number="7"><span class="ot">testSet ::</span> [(<span class="dt">String</span>, <span class="dt">String</span>)]</a>
+<a class="sourceLine" id="cb8-8" data-line-number="8">testSet <span class="fu">=</span></a>
+<a class="sourceLine" id="cb8-9" data-line-number="9">  [ (<span class="st">&quot;83141310145169154671122&quot;</span>, <span class="st">&quot;24&quot;</span>)</a>
+<a class="sourceLine" id="cb8-10" data-line-number="10">  , (<span class="st">&quot;923111128&quot;</span>, <span class="st">&quot;45&quot;</span>)</a>
+<a class="sourceLine" id="cb8-11" data-line-number="11">  , (<span class="st">&quot;923101128&quot;</span>, <span class="st">&quot;1&quot;</span>)</a>
+<a class="sourceLine" id="cb8-12" data-line-number="12">  , (<span class="st">&quot;903111128&quot;</span>, <span class="st">&quot;9&quot;</span>)</a>
+<a class="sourceLine" id="cb8-13" data-line-number="13">  , (<span class="st">&quot;3&quot;</span>, <span class="st">&quot;0&quot;</span>)</a>
+<a class="sourceLine" id="cb8-14" data-line-number="14">  , (<span class="st">&quot;31&quot;</span>, <span class="st">&quot;0&quot;</span>)</a>
+<a class="sourceLine" id="cb8-15" data-line-number="15">  , (<span class="st">&quot;412&quot;</span>, <span class="st">&quot;1&quot;</span>)</a>
+<a class="sourceLine" id="cb8-16" data-line-number="16">  , (<span class="st">&quot;3124&quot;</span>, <span class="st">&quot;3&quot;</span>)</a>
+<a class="sourceLine" id="cb8-17" data-line-number="17">  , (<span class="st">&quot;11111&quot;</span>, <span class="st">&quot;0&quot;</span>)</a>
+<a class="sourceLine" id="cb8-18" data-line-number="18">  , (<span class="st">&quot;222111&quot;</span>, <span class="st">&quot;0&quot;</span>)</a>
+<a class="sourceLine" id="cb8-19" data-line-number="19">  , (<span class="st">&quot;335544&quot;</span>, <span class="st">&quot;0&quot;</span>)</a>
+<a class="sourceLine" id="cb8-20" data-line-number="20">  , (<span class="st">&quot;1223455321&quot;</span>, <span class="st">&quot;0&quot;</span>)</a>
+<a class="sourceLine" id="cb8-21" data-line-number="21">  , (<span class="st">&quot;000&quot;</span>, <span class="st">&quot;0&quot;</span>)</a>
+<a class="sourceLine" id="cb8-22" data-line-number="22">  , (<span class="st">&quot;000100020003121&quot;</span>, <span class="st">&quot;1&quot;</span>)</a>
+<a class="sourceLine" id="cb8-23" data-line-number="23">  , (<span class="st">&quot;1213141516171819181716151413121&quot;</span>, <span class="st">&quot;56&quot;</span>)</a>
+<a class="sourceLine" id="cb8-24" data-line-number="24">  , (<span class="st">&quot;712131415161718191817161514131216&quot;</span>, <span class="st">&quot;117&quot;</span>)</a>
+<a class="sourceLine" id="cb8-25" data-line-number="25">  , (<span class="st">&quot;712131405161718191817161514031216&quot;</span>, <span class="st">&quot;64&quot;</span>)</a>
+<a class="sourceLine" id="cb8-26" data-line-number="26">  , (<span class="st">&quot;03205301204342100&quot;</span>, <span class="st">&quot;1&quot;</span>)</a>
+<a class="sourceLine" id="cb8-27" data-line-number="27">  , (<span class="st">&quot;0912830485711120342&quot;</span>, <span class="st">&quot;18&quot;</span>)</a>
+<a class="sourceLine" id="cb8-28" data-line-number="28">  , (<span class="st">&quot;1113241120998943327631001&quot;</span>, <span class="st">&quot;20&quot;</span>)</a>
+<a class="sourceLine" id="cb8-29" data-line-number="29">  , (<span class="st">&quot;7688167781598943035023813337019904732&quot;</span>, <span class="st">&quot;41&quot;</span>)</a>
+<a class="sourceLine" id="cb8-30" data-line-number="30">  , (<span class="st">&quot;2032075902729233234129146823006063388&quot;</span>, <span class="st">&quot;79&quot;</span>)</a>
+<a class="sourceLine" id="cb8-31" data-line-number="31">  , (<span class="st">&quot;8323636570846582397534533&quot;</span>, <span class="st">&quot;44&quot;</span>)</a>
+<a class="sourceLine" id="cb8-32" data-line-number="32">  , (<span class="st">&quot;2142555257761672319599209190604843&quot;</span>, <span class="st">&quot;41&quot;</span>)</a>
+<a class="sourceLine" id="cb8-33" data-line-number="33">  , (<span class="st">&quot;06424633785085474133925235&quot;</span>, <span class="st">&quot;51&quot;</span>)</a>
+<a class="sourceLine" id="cb8-34" data-line-number="34">  , (<span class="st">&quot;503144400846933212134&quot;</span>, <span class="st">&quot;21&quot;</span>)</a>
+<a class="sourceLine" id="cb8-35" data-line-number="35">  , (<span class="st">&quot;1204706243676306476295999864&quot;</span>, <span class="st">&quot;21&quot;</span>)</a>
+<a class="sourceLine" id="cb8-36" data-line-number="36">  , (<span class="st">&quot;050527640248767717738306306596466224&quot;</span>, <span class="st">&quot;29&quot;</span>)</a>
+<a class="sourceLine" id="cb8-37" data-line-number="37">  , (<span class="st">&quot;5926294098216193922825&quot;</span>, <span class="st">&quot;65&quot;</span>)</a>
+<a class="sourceLine" id="cb8-38" data-line-number="38">  , (<span class="st">&quot;655589141599534035&quot;</span>, <span class="st">&quot;29&quot;</span>)</a>
+<a class="sourceLine" id="cb8-39" data-line-number="39">  , (<span class="st">&quot;7411279689677738&quot;</span>, <span class="st">&quot;34&quot;</span>)</a>
+<a class="sourceLine" id="cb8-40" data-line-number="40">  , (<span class="st">&quot;268131111165754619136819109839402&quot;</span>, <span class="st">&quot;102&quot;</span>)</a>
+<a class="sourceLine" id="cb8-41" data-line-number="41">  ]</a></code></pre></div>
 <p><code>stack runghc</code> で走らせると．</p>
 <pre><code>$ stack runghc WalterTowers.hs
 True</code></pre>
