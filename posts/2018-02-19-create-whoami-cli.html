@@ -155,7 +155,7 @@
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Hoge</span> <span class="fu">=</span> <span class="dt">Hoge1</span> <span class="dt">Int</span> <span class="fu">|</span> <span class="dt">Hoge2</span> <span class="dt">Text</span></code></pre></div>
 <p>を，型レベル辞書を用いて，バリアント型のように書ける．</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Hoge</span> <span class="fu">=</span> <span class="dt">Variant</span> <span class="ch">'[ &quot;hoge1&quot; &gt;: Int, &quot;hoge2&quot; &gt;: Text ]</span></code></pre></div>
-<p>(正直あんまり利点が分かってないけど)拡縮はもちろん，<a href="../posts/2018-02-04-fun-of-extensible-2.html">バリアントの操作関数をファイル分割して実装</a>もできる．</p>
+<p>(正直あんまり利点が分かってないけど)拡縮はもちろん，<a href="../posts/2018-01-31-fun-of-extensible-2.html">バリアントの操作関数をファイル分割して実装</a>もできる．</p>
 <h3 id="拡張可能作用">拡張可能作用</h3>
 <p>型レベル辞書によってモナドスタックを表現する． 今回は次のようなモナドを定義した．</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">ServiceM</span> <span class="fu">=</span> <span class="dt">Eff</span>
@@ -164,7 +164,7 @@
    , <span class="dt">LoggerDef</span>
    , <span class="st">&quot;IO&quot;</span> <span class="fu">&gt;:</span> <span class="dt">IO</span>
    ]</code></pre></div>
-<p>基本的に<a href="../post/2017-12-09-extensible-effects-step-by-step.html">普通のモナドトランスフォーマーのように扱える</a>． じゃぁ素直にモナドトランスフォーマー使えよって感じかもしれないけど気にしないで．</p>
+<p>基本的に<a href="../posts/2017-12-09-extensible-effects-step-by-step.html">普通のモナドトランスフォーマーのように扱える</a>． じゃぁ素直にモナドトランスフォーマー使えよって感じかもしれないけど気にしないで．</p>
 <h3 id="getopt-ラッパー"><code>GetOpt</code> ラッパー</h3>
 <p>GHCには標準で <code>--output hoge</code> みたいな CLI のオプション引数をパースしてくれるモジュール <a href="https://hackage.haskell.org/package/base-4.10.1.0/docs/System-Console-GetOpt.html"><code>GetOpt</code></a> がある(ぼくは初めて使った)． extensible では，パース結果を拡張可能レコードにマッピングするための補助関数が<a href="https://hackage.haskell.org/package/extensible-0.4.7.1/docs/Data-Extensible-GetOpt.html">提供されている</a>．</p>
 <p>キモになるのは <code>withGetOpt</code> 関数である．</p>
