@@ -24,6 +24,11 @@
         Feb 19, 2018
       </time>
       
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a> <a href="/tags/application.html">application</a> <a href="/tags/extensible-package.html">extensible-package</a>
+      </div>
+      
     </p>
   </header>
 
@@ -246,6 +251,11 @@
         Feb 4, 2018
       </time>
       
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a>
+      </div>
+      
     </p>
   </header>
 
@@ -379,6 +389,11 @@ True</code></pre>
         Jan 31, 2018
       </time>
       
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a> <a href="/tags/extensible-package.html">extensible-package</a>
+      </div>
+      
     </p>
   </header>
 
@@ -495,6 +510,11 @@ True</code></pre>
       <time datetime="2018-01-30" itemprop="datePublished">
         Jan 30, 2018
       </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a> <a href="/tags/application.html">application</a> <a href="/tags/scraping.html">scraping</a>
+      </div>
       
     </p>
   </header>
@@ -942,6 +962,11 @@ True</code></pre>
       <time datetime="2017-12-22" itemprop="datePublished">
         Dec 22, 2017
       </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/Elm.html">Elm</a> <a href="/tags/application.html">application</a>
+      </div>
       
     </p>
   </header>
@@ -1428,6 +1453,11 @@ True</code></pre>
         Dec 18, 2017
       </time>
       
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/Elm.html">Elm</a> <a href="/tags/application.html">application</a>
+      </div>
+      
     </p>
   </header>
 
@@ -1749,6 +1779,11 @@ $$</code></pre>
         Dec 16, 2017
       </time>
       
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/GoogleAppsScript.html">GoogleAppsScript</a> <a href="/tags/application.html">application</a> <a href="/tags/bot.html">bot</a>
+      </div>
+      
     </p>
   </header>
 
@@ -1860,6 +1895,11 @@ $$</code></pre>
       <time datetime="2017-12-13" itemprop="datePublished">
         Dec 13, 2017
       </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a> <a href="/tags/Elm.html">Elm</a> <a href="/tags/application.html">application</a>
+      </div>
       
     </p>
   </header>
@@ -2367,6 +2407,11 @@ Successfully generated static/main.js</code></pre>
         Dec 12, 2017
       </time>
       
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a> <a href="/tags/Backpack.html">Backpack</a>
+      </div>
+      
     </p>
   </header>
 
@@ -2746,6 +2791,11 @@ True</code></pre>
       <time datetime="2017-12-09" itemprop="datePublished">
         Dec 9, 2017
       </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/CircleCI.html">CircleCI</a> <a href="/tags/application.html">application</a> <a href="/tags/bot.html">bot</a>
+      </div>
       
     </p>
   </header>
