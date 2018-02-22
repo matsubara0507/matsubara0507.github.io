@@ -106,7 +106,7 @@
 <ul>
 <li><a href="https://haskell.e-bigmoon.com/posts/2017-12-31-travis-out-of-memory.html">travis-ci の初回ビルドで OUT OF MEMORY が出た時の対処法</a></li>
 </ul>
-<p>戦犯は <code>Cabal</code> パッケージなので，こいつだけ先に <code>-j 1</code> オプション(メモリを節約するが速度が遅い)でビルドしてしまうという戦略． この記事のサイトの <a href="https://github.com/e-bigmoon/haskell-blog/blob/a229f118f121e0ad843faae1412e938e3e4f3a6b/.travis.yml"><code>.travis.yml</code></a> を <sub>コピペ</sub> 参考にして次のようにした</p>
+<p>戦犯は <code>Cabal</code> パッケージなので，こいつだけ先に <code>-j 1</code> オプション(メモリを節約するが速度が遅い)でビルドしてしまうという戦略． この記事のサイトの <a href="https://github.com/e-bigmoon/haskell-blog/blob/a229f118f121e0ad843faae1412e938e3e4f3a6b/.travis.yml"><code>.travis.yml</code></a> を <del>コピペ</del> 参考にして次のようにした</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="fu">install:</span></a>
 <a class="sourceLine" id="cb3-2" data-line-number="2">  <span class="kw">-</span> mkdir -p ~/.local/bin</a>
 <a class="sourceLine" id="cb3-3" data-line-number="3">  <span class="kw">-</span> <span class="fu">export PATH=$HOME/.local/bin:</span><span class="at">$PATH</span></a>
@@ -125,7 +125,7 @@
 <p>OUT OF MEMORY は突破したが…</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1">    <span class="fu">/</span>tmp<span class="fu">/</span>stack3402<span class="fu">/</span>hakyll<span class="fu">-</span><span class="fl">4.10</span><span class="fu">.</span><span class="fl">0.0</span><span class="fu">/</span>rts<span class="fu">/</span>posix<span class="fu">/</span>OSThreads.c<span class="fu">:</span><span class="dv">137</span><span class="fu">:</span><span class="dv">0</span><span class="fu">:</span> error<span class="fu">:</span></a>
 <a class="sourceLine" id="cb4-2" data-line-number="2">         error<span class="fu">:</span> undefined reference to <span class="ch">&#39;pthread_create&#39;</span></a></code></pre></div>
-<p>なぜだ… 最新の <a href="https://github.com/jaspervdj/hakyll/commit/480da307d22aff8ab3817d1586710c5f4ff6d779"><code>hakyll-4.11</code> では直ってるみたい</a>なので，<code>stack.yaml</code> に追加したラ上手くいった．</p>
+<p>なぜだ… 最新の <a href="https://github.com/jaspervdj/hakyll/commit/480da307d22aff8ab3817d1586710c5f4ff6d779"><code>hakyll-4.11</code> では直ってるみたい</a>なので，<code>stack.yaml</code> に追加したら上手くいった．</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="fu">extra-deps:</span></a>
 <a class="sourceLine" id="cb5-2" data-line-number="2"><span class="kw">-</span> hakyll-4.11.0.0</a>
 <a class="sourceLine" id="cb5-3" data-line-number="3"><span class="kw">-</span> pandoc-citeproc-0.13.0.1</a></code></pre></div>
@@ -173,7 +173,7 @@
 <a class="sourceLine" id="cb8-11" data-line-number="11">      <span class="fu">&gt;&gt;=</span> relativizeUrls</a></code></pre></div>
 <p><code>gsubRoute</code> 関数を使うことで，ファイル名を特有のパターン記法(？)でマッチさせ置換できる． <code>gsubRoute &quot;/[0-9]{4}/&quot; $ (++ &quot;-&quot;) . init</code> の場合，<code>/2018/</code> をマッチさせ <code>init</code> して <code>/2018</code> となり，末尾に <code>&quot;-&quot;</code> を追加している．</p>
 <h2 id="section-2"></h2>
-<p>さて実はもう一つ問題があって，Haskyll は日時を表すテンプレート変数(<code>$date$</code> とか)を次のようン取得する．</p>
+<p>さて実はもう一つ問題があって，Hakyll は日時を表すテンプレート変数(<code>$date$</code> とか)を次のように取得する．</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="ot">postCtx ::</span> <span class="dt">Context</span> <span class="dt">String</span></a>
 <a class="sourceLine" id="cb9-2" data-line-number="2">postCtx <span class="fu">=</span> mconcat</a>
 <a class="sourceLine" id="cb9-3" data-line-number="3">  [ dateField <span class="st">&quot;time&quot;</span> <span class="st">&quot;%Y-%m-%d&quot;</span></a>
