@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="tasty-discover が Windows+日本語環境で動かなかったので直す" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        tasty-discover が Windows+日本語環境で動かなかったので直す
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">tasty-discover が Windows+日本語環境で動かなかったので直す</h1>
+    <p class="post-meta">
+      <time datetime="2018-03-04" itemprop="datePublished">
+        Mar 4, 2018
+      </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="../tags/Haskell.html">Haskell</a>
+      </div>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>おそらく少数派であろう Windows + 日本語環境の Haskeller のひげです．</p>
+<p>最近は知人のすゝめで，Haskell のテストフレームワークに <a href="https://hackage.haskell.org/package/tasty"><code>tasty</code></a> を使ってます． <code>tasty</code> にも例に漏れず <a href="http://hackage.haskell.org/package/tasty-discover"><code>tasty-discover</code></a> というテスト用の関数を <code>.hs</code> ファイルから集めてきてくれるツールがある． しかし，悲しいことに <code>tasty-discover</code> がマルチバイト文字(日本語とか)を Windows で読み込むと <strong>いつもの</strong> エラーで死んでしまう．</p>
+<p>なので，直して PR 出した． この記事はそのメモです．</p>
+<h2 id="問題のエラー">問題のエラー</h2>
+<pre><code>Building test suite 'test' for tasty-discover-4.1.3..
+tasty-discover: test\ConfigTest.hs: hGetContents: invalid argument (invalid byte sequence)
+`tasty-discover' failed in phase `Haskell pre-processor'. (Exit code: 1)
+Progress: 1/2
+--  While building custom Setup.hs for package tasty-discover-4.1.3 using:
+      C:\Users\Hoge\AppData\Roaming\stack\setup-exe-cache\i386-windows\Cabal-simple_Z6RU0evB_2.0.1.0_ghc-8.2.2.exe --builddir=.stack-work\dist\010ee936 build lib:tasty-discover exe:tasty-discover test:test --ghc-options &quot; -ddump-hi -ddump-to-file -fdiagnostics-color=always&quot;
+    Process exited with code: ExitFailure 1</code></pre>
+<p><code>hGetContents: invalid argument (invalid byte sequence)</code> は 日本語 Windows Haskeller なら親の顔より良く見るエラーメッセージですね(そんなことは無い)． このエラーは <code>hGetContents</code> で読み込もうとしているファイルの文字コードが，<code>hGetContents</code> で設定されている文字コードと違うために起きている(<code>hGetContents</code> 関数は，例えば <code>readFile</code> 関数などで呼び出されている)．</p>
+<h2 id="対処法">対処法</h2>
+<p>日本語 Windows Haskeller 筆頭の igrep 氏が Haskell-jp Blog に投稿してくれてる．</p>
+<ul>
+<li><a href="https://haskell.jp/blog/posts/2017/windows-gotchas.html">WindowsでHaskellを扱う時によく遭遇するエラーと対処法 - Haskell-jp</a></li>
+</ul>
+<p>今回は(孫プロセスとして読んでるせいか)「それでもダメな場合」に当たる． つまり，場当たり的な解決方法(<code>chcp 65001</code> と打つとか)ではダメで，プログラムを修正するしかない．</p>
+<h2 id="section"></h2>
+<p>神な igrep 氏は，この場合の解決策も書いておいてくれた． この <a href="https://github.com/haskell/haddock/pull/566">PR</a> を参考にして書き換えてやればよい．</p>
+<p><code>tasty-discover</code> も<a href="https://github.com/lwm/tasty-discover/pull/138/files">こんな感じに書き加えた</a>．</p>
+<h2 id="pr-を出す">PR を出す</h2>
+<p>修正自体は1時間ほどで終わり(移動中の新幹線の中で直した)，これでテストを実行できるようになったので PR を出さずに満足してしまった(あるある)． 半月ほどほっといてたら，同じケースで困った知り合いに <a href="https://github.com/lwm/tasty-discover/issues/135">Issue</a> を出されてしまった(笑)</p>
+<p>しょうがないので PR を出そうとしたら，「Windows は良く分からないから，ぜひ Windows 環境用の自動テストも欲しい！」と<a href="https://github.com/lwm/tasty-discover/issues/127">作者に言われてしまった</a>(「時間があればやって」とね)．</p>
+<h2 id="section-1"></h2>
+<p><a href="https://www.appveyor.com/">AppVeyor</a> と言うのを使えばいいみたい． 調べたらサクッとできそうなので，やってみた．</p>
+<ul>
+<li><a href="https://www.snoyman.com/blog/2016/08/appveyor-haskell-windows-ci">Using AppVeyor for Haskell+Windows CI</a></li>
+</ul>
+<p>記事にある設定ファイルをそのままコピペしてやってみたが，問題がふたつあった． ひとつ目は，<code>tasty-discover</code> のテスト自体に <code>tasty-discover</code> を使っている点だ． 最初に <code>stack test</code> を実行するときにはまだ <code>tasty-discover</code> はインストールされてないのでテストが落ちてしまう．</p>
+<pre><code>[2 of 2] Compiling Paths_tasty_discover ( .stack-work\dist\010ee936\build\tasty-discover\autogen\Paths_tasty_discover.hs, .stack-work\dist\010ee936\build\tasty-discover\tasty-discover-tmp\Paths_tasty_discover.o )
+Linking .stack-work\dist\010ee936\build\tasty-discover\tasty-discover.exe ...
+Preprocessing test suite 'test' for tasty-discover-4.1.3..
+Building test suite 'test' for tasty-discover-4.1.3..
+ghc.EXE: could not execute: tasty-discover</code></pre>
+<p>なので，<code>stack test</code> する前に <code>stack install</code> することにした．</p>
+<h2 id="section-2"></h2>
+<p>ふたつ目は，そもそも WIndows のビルドが落ちる点． <code>System.FilePath</code> に関するバグだったので，<a href="https://github.com/lwm/tasty-discover/pull/136/files#diff-383b12983902facd1ce205458e1061b6">サクッと直した</a>． Windows のテストに関する <a href="https://github.com/lwm/tasty-discover/pull/136">PR</a> もマージされたので，本命の <a href="https://github.com/lwm/tasty-discover/pull/138">PR</a> も出した(これもマージされた)．</p>
+<h2 id="今回の問題をテストする">今回の問題をテストする(？)</h2>
+<p>今回の問題のテストも欲しいと言われた． <code>tasty-discover</code> のテスト自体が <code>tasty-discover</code> を使うため，ユニットテストとして表現できない． <code>stack test</code> そのものが落ちるか落ちないかのテストはできるが，それはなんか違うなぁと思い，結局コミットはしていない．</p>
+<p>ただし，いちおう AppVeyor で<a href="https://ci.appveyor.com/project/matsubara0507/tasty-discover/build/1.0.9">再現できるようにはした</a>． AppVeyor はデフォルトだと日本語環境になっていない(即ち Shift-JIS じゃない)ため落ちない． なので，以下を参考にして日本語環境にして実行した．</p>
+<ul>
+<li><a href="https://github.com/appveyor/ci/issues/846">Support a different code page · Issue #846 · appveyor/ci</a></li>
+</ul>
+<pre><code>init:
+- ps: Set-WinSystemLocale ja-JP
+- ps: Start-Sleep -s 5
+- ps: Restart-Computer</code></pre>
+<p>というのを <code>appveyor.yml</code> に書き加えるだけで良い．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>なんか <a href="https://github.com/lwm/tasty-discover/issues/139">Push 権限を貰った</a>． こういうこともあるんですね(OSS歴が浅いので驚いた)．</p>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+  <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+    <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+      <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+    </a>
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>
