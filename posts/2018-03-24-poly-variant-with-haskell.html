@@ -93,9 +93,11 @@
 <li><a href="http://osiire.hatenablog.com/entry/20090516/1242456737">多相バリアントを使いこなそう(4) - osiire’s blog</a></li>
 </ul>
 <p>これらの記事は OCaml で多相バリアントの紹介をしています． ということで，同様の議論を Haskell でもしてみた！というのが，この記事の内容です．</p>
+<h2 id="section"></h2>
+<p>(2018.04.13 追記アリ)</p>
 <h3 id="haskell-と多相バリアント">Haskell と多相バリアント</h3>
 <p>悲しいことに，Haskell には組み込みで多相バリアントは無い(バリアントとは Haskell の代数的データ型における直和型と概ね一緒)． なので，多相バリアントを Haskell で模倣するために，毎度おなじみ <a href="https://hackage.haskell.org/package/extensible"><code>extensible</code></a> パッケージを用いる．</p>
-<h2 id="section"></h2>
+<h2 id="section-1"></h2>
 <p>ネタバレをすると Haskell で同じことをするのは難しかった． なので，本質的な議論は osiire’s blog の方を読んだ方がいいと思うよ． 結局，本記事は osiire’s blog のと同様のことを Haskell もとい，<code>extensible</code> パッケージでどのように行うか，という記事って感じになった．</p>
 <h2 id="多相バリアントの基本">多相バリアントの基本</h2>
 <p>多相バリアントとは，名前の通り，多相的なバリアントである． バリアントは前述したとおり，直和型と基本的に同じ．</p>
@@ -168,7 +170,7 @@
 <a class="sourceLine" id="cb9-21" data-line-number="21"><span class="fu">&gt;&gt;</span> <span class="fu">:</span>t toInt2 hoge3</a>
 <a class="sourceLine" id="cb9-22" data-line-number="22">toInt2<span class="ot"> hoge3 ::</span> <span class="dt">Int</span></a></code></pre></div>
 <p>確かに，<code>toInt1</code> は <code>hoge1</code> と <code>hoge2</code> に適用でき，<code>toInt2</code> は <code>hoge1</code> と <code>hoge3</code> に適用できている．</p>
-<h2 id="section-1"></h2>
+<h2 id="section-2"></h2>
 <p>さて，<code>toInt1</code> と <code>toInt2</code> の実装を与えてみる． 実は簡単なのは後者 <code>toInt2</code> だ．</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="ot">{-# LANGUAGE OverloadedLabels #-}</span></a>
 <a class="sourceLine" id="cb10-2" data-line-number="2"></a>
@@ -180,13 +182,14 @@
 <p>(<a href="https://matsubara0507.github.io/posts/2017-11-28-fun-of-extensible-1.html">昔の記事</a>でも紹介した) <a href="https://hackage.haskell.org/package/extensible-0.4.8/docs/Data-Extensible-Inclusion.html#v:spread"><code>spread</code></a> 関数を用いることで <strong>バリアント型を拡張できる</strong> (<a href="https://hackage.haskell.org/package/extensible-0.4.8/docs/Data-Extensible-Field.html#v:matchField"><code>matchField</code></a> 関数の使い方についてはこの<a href="https://matsubara0507.github.io/posts/2018-01-31-fun-of-extensible-2.html">記事</a>を参照して)．</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="ot">shrink ::</span> (xs ⊆ ys) <span class="ot">=&gt;</span> <span class="dt">Record</span> ys <span class="ot">-&gt;</span> <span class="dt">Record</span> xs</a>
 <a class="sourceLine" id="cb11-2" data-line-number="2"><span class="ot">spread ::</span> (xs ⊆ ys) <span class="ot">=&gt;</span> <span class="dt">Variant</span> xs <span class="ot">-&gt;</span> <span class="dt">Variant</span> ys</a></code></pre></div>
-<p>拡縮する関数 <code>spread</code> や <code>shrink</code> は強力なのだが，多相的すぎて前後の型が分からないとエラーになる(気がする(パッケージの作者じゃないので細かいことはよくわからん))ので，型注釈 (<code>spread xs :: Hoge</code> の部分)を与える必要がある．</p>
+<p><del>拡縮する関数 <code>spread</code> や <code>shrink</code> は強力なのだが，多相的すぎて前後の型が分からないとエラーになる(気がする(パッケージの作者じゃないので細かいことはよくわからん))ので，型注釈 (<code>spread xs :: Hoge</code> の部分)を与える必要がある．</del></p>
+<p>(2018.04.13 追記) <code>spread</code> や <code>shrink</code> の代わりに <code>shrinkAssoc</code> や <code>spreadAssoc</code> を使えば値が多相でもうまく扱えるとのコトを<a href="https://www.reddit.com/r/haskell_jp/comments/86rx9b/多相バリアントを使いこなそう_with_haskell/dwaq3cw/">作者様よりコメント</a>いただいた． 感謝．</p>
 <h3 id="必殺-coinclusion">必殺 Coinclusion</h3>
 <p>前者が難しいのは，<code>spread</code> や <code>shrink</code> とは逆の振る舞いを要求するからだ． そのために(この前作者から教えてもらった隠し技(別に隠してない)) <a href="https://hackage.haskell.org/package/extensible-0.4.8/docs/Data-Extensible-Nullable.html"><code>Nullable</code></a> を使う！ <code>Nullable</code> を使うとバリアントやレコードの全ての要素を簡単に <code>Maybe</code> でラップできる(なんかいいテーマがあったら，そのうち解説する)． さらに <code>Nullable</code> を用いることで，Coinclusion を定義できる！</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" data-line-number="1"><span class="ot">wrench ::</span> (<span class="dt">Generate</span> ys, xs ⊆ ys) <span class="ot">=&gt;</span> (h <span class="fu">:*</span> xs) <span class="ot">-&gt;</span> <span class="dt">Nullable</span> h <span class="fu">:*</span> ys</a>
 <a class="sourceLine" id="cb12-2" data-line-number="2"><span class="ot">retrench ::</span> (<span class="dt">Generate</span> ys, xs ⊆ ys) <span class="ot">=&gt;</span> (h <span class="fu">:|</span> ys) <span class="ot">-&gt;</span> <span class="dt">Nullable</span> ((<span class="fu">:|</span>) h) xs</a></code></pre></div>
 <p><code>wrench</code> や <code>retrench</code> は <code>shrink</code> と <code>spread</code> の逆向きの変換になっているのが分かるだろうか？ 逆向きにしたせいで足りない部分は <code>Nullable</code> によって <code>Nothing</code> となる． 例えば <code>Variant (&quot;piyo&quot; &gt;: () ': HogeFields)</code> から <code>Hoge</code> に縮小する場合は，<code>embedAssoc (#piyo @= ())</code> が <code>Nothing</code> となり，他が <code>Just</code> でラップされる．</p>
-<h2 id="section-2"></h2>
+<h2 id="section-3"></h2>
 <p>Coinclusion を用いて <code>toInt2</code> 関数を実装してみると次のようになる．</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" data-line-number="1"><span class="ot">{-# LANGUAGE PolyKinds           #-}</span></a>
 <a class="sourceLine" id="cb13-2" data-line-number="2"><span class="ot">{-# LANGUAGE RankNTypes          #-}</span></a>
