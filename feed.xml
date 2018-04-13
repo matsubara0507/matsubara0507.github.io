@@ -8,8 +8,256 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2018-04-02T00:00:00Z</updated>
+    <updated>2018-04-13T00:00:00Z</updated>
     <entry>
+    <title>rio ライブラリを試す その１</title>
+    <link href="https://matsubara0507.github.io/posts/2018-04-13-try-rio-1.html" />
+    <id>https://matsubara0507.github.io/posts/2018-04-13-try-rio-1.html</id>
+    <published>2018-04-13T00:00:00Z</published>
+    <updated>2018-04-13T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">rio ライブラリを試す その１</h1>
+    <p class="post-meta">
+      <time datetime="2018-04-13" itemprop="datePublished">
+        Apr 13, 2018
+      </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a> <a href="/tags/rio.html">rio</a>
+      </div>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>先日，alt. <code>Prelude</code> を目指している <a href="https://hackage.haskell.org/package/rio"><code>rio</code></a> ライブラリの ver.0.1 がリリースされました． 自作している CLI ツールを試しに <code>rio</code> で置き換えようかとしてまして，自分の整理のためにまとめてみようと思います．</p>
+<h2 id="section"></h2>
+<p>ただし，<code>rio</code> 作者ではないし，全部をちゃんと追っていないので間違っているかも． 間違っている場合は<a href="https://github.com/matsubara0507/source-gh-pages">このリポジトリに Issue</a> するか <a href="https://www.reddit.com/r/haskell_jp">Reddit</a> でコメントでもしてください m(_ _ )m</p>
+<h1 id="readme-でひとめぐり">README でひとめぐり</h1>
+<p>もともとはビルドツール Stack を作成するために考えたデザインパターンをまとめたものっぽい．</p>
+<ul>
+<li><a href="https://www.fpcomplete.com/blog/2017/07/the-rio-monad">The RIO Monad</a></li>
+</ul>
+<p><code>rio</code> ライブラリの README にはライブラリのゴール・目的の他に(彼らにとっての)ベストプラクティスが書いてある(<code>rio</code> 自体がそれに則って作られてる)． ここには翻訳というより，README の各項目の要約を記述する．</p>
+<h2 id="goal">Goal</h2>
+<p><code>rio</code> ライブラリのゴール(目的)は以下の3つ．</p>
+<ol type="1">
+<li>よく設計された信頼できるライブラリのコレクション</li>
+<li>より優れた Prelude の代替え</li>
+<li>高品質な Haskell コードを書くためのベストプラクティス</li>
+</ol>
+<p>(1)により <code>text</code> や <code>bytesyring</code> のような，ほとんど <code>base</code> のようなパッケージを <code>dependencies</code> に列挙する必要が無くなる． (3)は大域変数(<code>Reader</code> モナド)やロガーのような実用モナド回りのベストプラクティスが目玉かな(他にもあるけど)．</p>
+<h2 id="標準ライブラリ">標準ライブラリ</h2>
+<p>いくつかのパッケージを「標準」ライブラリとして再エクスポートしている． <code>rio</code> の<a href="https://github.com/commercialhaskell/rio/blob/311549f5a7c29abf6fc25e3ba7ec5ab6647e2d96/rio/package.yaml#L14">依存関係</a>を見る限り，次のパッケージを再エクスポートしているようだ．</p>
+<ul>
+<li>bytestring</li>
+<li>containers</li>
+<li>deepseq</li>
+<li>directory</li>
+<li>exceptions</li>
+<li>filepath</li>
+<li>hashable</li>
+<li>lens(microlens)</li>
+<li>process</li>
+<li>text</li>
+<li>time</li>
+<li>unliftio</li>
+<li>unordered-containers</li>
+<li>vector</li>
+</ul>
+<p>もちろん，元のパッケージの全ての関数や型を再エクスポートしているのではなく，取捨選択して再エクスポートしている． また，後述する <code>Prelude</code> の代わりである <a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO.html"><code>RIO</code></a> モジュールに含まれるものもあれば，<code>RIO.XXX</code> として別のモジュールとして提供されているものもある．</p>
+<h3 id="lens">Lens</h3>
+<p><code>lens</code> の場合，申し訳程度の関数しか再エクスポートされていない． 基本的に <code>set</code>・<code>sets</code>・<code>over</code>・<code>to</code> だけだ． 演算子は参照の <code>(.^)</code> しかない． 今後どうなるか分からないが，現状 <code>(.~)</code> や <code>(%~)</code> は無いので替わりに関数を中置演算子にして使うしか無さそうだ．</p>
+<h2 id="prelude-の代替え"><code>Prelude</code> の代替え</h2>
+<p><code>Prelude</code> の代替えとして <a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO.html"><code>RIO</code></a> モジュールというのがある． README には部分関数や遅延 I/O のような，よく問題になるものを削除していると書いてある． また，<code>Data.Maybe</code> や <code>Control.Arrow</code> のような良く使う <code>base</code> ライブラリのモジュールが再エクスポートされていたり，<code>mapLeft</code> や <code>whenM</code> のような良く使いそうなのに <code>base</code> には無い関数が<a href="https://github.com/commercialhaskell/rio/blob/e8c4cba69599aecd9f91c4398aea47ab4eadbb07/rio/src/RIO/Prelude/Extra.hs">定義されている</a>． 正直，この辺りがすごい便利．</p>
+<h2 id="ベストプラクティス">ベストプラクティス</h2>
+<p>ココからが長い + 意見の分かれるところ． 結構 <code>TODO</code> と書いてあるところも多いので彼らの中でもまとまってないのかな？？</p>
+<h3 id="インポートプラクティス">インポートプラクティス</h3>
+<p>以下をやってほしいらしい</p>
+<ul>
+<li><code>NoImplicitPrelude</code> 言語拡張をオン</li>
+<li>全てのモジュールに <code>import RIO</code> を追加 (すごいめんどい)</li>
+<li>必要に応じて <code>RIO.XXX</code> モジュールを <code>qualified</code> を使ってインポート
+<ul>
+<li>適切な <code>qualified</code> の付け方は各モジュールの Haddock の冒頭に書いてある</li>
+<li>例えば <a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO-ByteString.html"><code>import qualified RIO.ByteString as B</code></a> とか</li>
+<li>ドキュメントに <code>qualified</code> が書いてない場合は <code>qualified</code> しなくていいのかな？？(例えば <a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO-Directory.html"><code>RIO.Directory</code></a> とか)</li>
+</ul></li>
+<li>中置演算子は <code>qualified</code> しなくていい(他のモジュールと衝突しない限りは)</li>
+</ul>
+<h3 id="言語拡張">言語拡張</h3>
+<p>「言語拡張を使わないプロジェクトなんて，最近じゃほとんどないよね」とか書いてある． 以下の観点を基にデフォルトで利用しても良さそうな言語拡張を選定したそうだ．</p>
+<ul>
+<li>コミュニティで受け入れられている</li>
+<li>コードを壊すようなことが <strong>ほとんど</strong> ない</li>
+<li><strong>一般的に</strong> 安全だと考えられている</li>
+</ul>
+<p>割と断言していないのが面白い(笑) 推奨する言語拡張はこちら</p>
+<pre><code>AutoDeriveTypeable
+BangPatterns
+BinaryLiterals
+ConstraintKinds
+DataKinds
+DefaultSignatures
+DeriveDataTypeable
+DeriveFoldable
+DeriveFunctor
+DeriveGeneric
+DeriveTraversable
+DoAndIfThenElse
+EmptyDataDecls
+ExistentialQuantification
+FlexibleContexts
+FlexibleInstances
+FunctionalDependencies
+GADTs
+GeneralizedNewtypeDeriving
+InstanceSigs
+KindSignatures
+LambdaCase
+MultiParamTypeClasses
+MultiWayIf
+NamedFieldPuns
+NoImplicitPrelude
+OverloadedStrings
+PartialTypeSignatures
+PatternGuards
+PolyKinds
+RankNTypes
+RecordWildCards
+ScopedTypeVariables
+StandaloneDeriving
+TupleSections
+TypeFamilies
+TypeSynonymInstances
+ViewPatterns</code></pre>
+<p><code>RecordWildCards</code> と <code>OverloadedStrings</code> は議論の余地あり的なことが書いてある(詳しくはもとの README を見て)．</p>
+<h3 id="ghcオプション">GHCオプション</h3>
+<p>以下を使いなさいとのコト．</p>
+<pre><code>-Wall
+-Wcompat
+-Wincomplete-record-updates
+-Wincomplete-uni-patterns
+-Wredundant-constraints</code></pre>
+<p>どういう形で指定してもいいけど，<code>package.yaml</code> で書くと楽だし，後述するテンプレートにも書く予定だそうだ． あと，プロダクションコードなら <code>-Werror</code> をオンにして，最後には確認した方が良いとも書いてある(CIとかでチェックしたいよね)．</p>
+<h3 id="monads">Monads</h3>
+<p>まってました！ モナドです． 実用的なプロジェクトを考えるとき，必要になってくるのが大域変数・ロガー・例外・IO だと思うので，気になるのはこの辺りだよね．</p>
+<p>全体としての推奨事項は以下の通り．</p>
+<ul>
+<li><code>IO</code> を使いたいときは <code>RIO</code> モナドを使いなさい．
+<ul>
+<li><code>RIO</code> モナドは <code>ReaderT env IO</code> と同じだけど，<code>rio</code> には <code>RIO</code> モナドに対する補助関数が含まれるのでぜひ使って．<br />
+</li>
+</ul></li>
+<li><code>RIO</code> モナドで <code>env</code> の参照関数を書くときは，具体的な型に対する参照関数を書かずに，型クラスを用いた多相的な関数を書くべき(詳しくは後述)
+<ul>
+<li><code>Has</code> スタイルの型クラスを使えば lens を利用することが出来るよ</li>
+</ul></li>
+<li>いくつかの良い <code>mtl</code> スタイルの型クラスも利用する必要は出てくるはず
+<ul>
+<li>ただし，推奨しているのは <code>MonadReader</code> <code>MonadIO</code> <code>MonadUnliftIO</code> <code>PrimMonad</code></li>
+<li><code>MonadReader</code> + <code>Has</code> の方が <code>MonadLogger</code> のように新しい型クラスを作るより優れていると思う</li>
+<li>特に <code>MonadBase</code> <code>MonadBaseControl</code> <code>MonadMask</code> <code>MonadCatch</code> は避けるべき</li>
+</ul></li>
+</ul>
+<h4 id="大域変数">大域変数</h4>
+<p><code>env</code> 回りについて． <code>Has</code> スタイル(パターン)というのがあって，それ自体はこの<a href="https://hackernoon.com/the-has-type-class-pattern-ca12adab70ae">ページ</a>が参考になるのかな？ <code>env</code> から何らかの値を参照する場合には</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="ot">myFunction ::</span> <span class="dt">RIO</span> <span class="dt">Config</span> <span class="dt">Foo</span></a></code></pre></div>
+<p>のような関数は <strong>やめて</strong> ，次のように書くのを推奨している．</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">class</span> <span class="dt">HasConfig</span> env <span class="kw">where</span></a>
+<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="ot">  configL ::</span> <span class="dt">Lens&#39;</span> env <span class="dt">Config</span> <span class="co">-- more on this in a moment</span></a>
+<a class="sourceLine" id="cb4-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb4-4" data-line-number="4"><span class="ot">myFunction ::</span> <span class="dt">HasConfig</span> env <span class="ot">=&gt;</span> <span class="dt">RIO</span> env <span class="dt">Foo</span></a></code></pre></div>
+<p>ここで，<code>env</code> は次のようなレコードを想定しており</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Env</span> <span class="fu">=</span> <span class="dt">Env</span> {<span class="ot"> envConfig ::</span> <span class="fu">!</span><span class="dt">Config</span> }</a></code></pre></div>
+<p>こうすることで，<code>env</code> に複数の大域変数を持たせても，うまく機能させることが出来る． また，次のように <code>Env</code> と <code>Config</code> それぞれでインスタンスを定義することで，それぞれで利用できる．</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">HasConfig</span> <span class="dt">Config</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb6-2" data-line-number="2">  configL <span class="fu">=</span> id</a>
+<a class="sourceLine" id="cb6-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb6-4" data-line-number="4"><span class="kw">instance</span> <span class="dt">HasConfig</span> <span class="dt">Env</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb6-5" data-line-number="5">  configL <span class="fu">=</span> lens envConfig (\x y <span class="ot">-&gt;</span> x { envConfig <span class="fu">=</span> y })</a></code></pre></div>
+<h4 id="ロガー">ロガー</h4>
+<p>ロガーも同様に <code>Has</code> スタイルを推奨している． <code>env</code> にログを出力するための関数(<a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO.html#t:LogFunc"><code>LogFunc</code></a> 型のもの)を持たせる．</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Env</span> <span class="fu">=</span> <span class="dt">Env</span> {<span class="ot"> envLogFunc ::</span> <span class="fu">!</span><span class="dt">LogFunc</span>,<span class="ot"> envConfig ::</span> <span class="fu">!</span><span class="dt">Config</span> }</a></code></pre></div>
+<p>これの <code>Has</code> スタイル型クラスは <code>RIO</code> モジュールに<a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO.html#t:HasLogFunc">定義してある</a>．</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">HasLogFunc</span> <span class="dt">Env</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb8-2" data-line-number="2">  logFuncL <span class="fu">=</span> lens envLogFunc (\x y <span class="ot">-&gt;</span> x { envLogFunc <span class="fu">=</span> y })</a></code></pre></div>
+<p><code>LogFunc</code> 型の値を渡すには <a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO.html#v:withLogFunc"><code>withLogFunc</code></a> 関数を用いるようだ(<a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO.html#v:mkLogFunc"><code>mkLogFunc</code></a> 関数もあるがアドバンスドと書いてある．)．</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb9-2" data-line-number="2">main <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb9-3" data-line-number="3">  envConfig <span class="ot">&lt;-</span> getConfig</a>
+<a class="sourceLine" id="cb9-4" data-line-number="4">  logOpts <span class="ot">&lt;-</span> logOptionsHandle stdout <span class="dt">False</span></a>
+<a class="sourceLine" id="cb9-5" data-line-number="5">  withLogFunc logOpts <span class="fu">$</span> \envLogFunc <span class="ot">-&gt;</span> runRIO <span class="dt">Env</span>{<span class="fu">..</span>} action</a>
+<a class="sourceLine" id="cb9-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb9-7" data-line-number="7"><span class="ot">action ::</span> <span class="dt">RIO</span> <span class="dt">Env</span> ()</a>
+<a class="sourceLine" id="cb9-8" data-line-number="8">action <span class="fu">=</span> <span class="fu">...</span></a></code></pre></div>
+<h4 id="例外">例外</h4>
+<p>例外をどのように表現すべきかは結構議論されており，今のところの基本的アイデアは以下の通り．</p>
+<ul>
+<li><code>lookup</code> のような単純に失敗する関数(部分関数になり得る？)の場合は <code>Maybe</code> や <code>Either</code> を返そう</li>
+<li>それらを使いたくない場合(大域脱出とか？)は例外を使って
+<ul>
+<li>純粋なコード(IOではなく)の場合は <code>MonadThrow</code> 制約を使う</li>
+<li><code>IO</code> の場合は <code>thorowIO</code> を介した実行時例外を使う(<code>RIO</code> モナドも同じ)</li>
+</ul></li>
+<li>「IOアクションがどのように失敗するかを正確に把握できないことにより，不安と不満を感じるかもしれない．しかし，その痛みを受け入れて共存し内在化して，<code>tryAny</code> を用いて移動してください．これは非同期例外に対して支払う代償です．」
+<ul>
+<li>ちょっと何言ってるかよくわからない…</li>
+</ul></li>
+<li>全てのリソース割り当ては <code>bracket</code> や <code>finally</code> のような関数で行う</li>
+</ul>
+<p>以下のようにして，アプリ専用の例外を定義し使用することが推奨されている．</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw">data</span> <span class="dt">AppExceptions</span></a>
+<a class="sourceLine" id="cb10-2" data-line-number="2">  <span class="fu">=</span> <span class="dt">NetworkChangeError</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb10-3" data-line-number="3">  <span class="fu">|</span> <span class="dt">FilePathError</span> FilePath</a>
+<a class="sourceLine" id="cb10-4" data-line-number="4">  <span class="fu">|</span> <span class="dt">ImpossibleError</span></a>
+<a class="sourceLine" id="cb10-5" data-line-number="5">  <span class="kw">deriving</span> (<span class="dt">Typeable</span>)</a>
+<a class="sourceLine" id="cb10-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb10-7" data-line-number="7"><span class="kw">instance</span> <span class="dt">Exception</span> <span class="dt">AppExceptions</span></a>
+<a class="sourceLine" id="cb10-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb10-9" data-line-number="9"><span class="kw">instance</span> <span class="dt">Show</span> <span class="dt">AppExceptions</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb10-10" data-line-number="10">  show <span class="fu">=</span> \<span class="kw">case</span></a>
+<a class="sourceLine" id="cb10-11" data-line-number="11">    <span class="dt">NetworkChangeError</span> err <span class="ot">-&gt;</span> <span class="st">&quot;network error: &quot;</span> <span class="fu">&lt;&gt;</span> (unpack err)</a>
+<a class="sourceLine" id="cb10-12" data-line-number="12">    <span class="dt">FilePathError</span> fp <span class="ot">-&gt;</span> <span class="st">&quot;error accessing filepath at: &quot;</span> <span class="fu">&lt;&gt;</span> fp</a>
+<a class="sourceLine" id="cb10-13" data-line-number="13">    <span class="dt">ImpossibleError</span> <span class="ot">-&gt;</span> <span class="st">&quot;this codepath should never have been executed. Please report a bug.&quot;</span></a></code></pre></div>
+<p>ちなみに，<code>Exception</code> 型クラス(というか <a href="https://hackage.haskell.org/package/base-4.11.0.0/docs/Control-Exception-Base.html#t:SomeException"><code>SomeException</code></a> 型)は，いわゆる存在型を利用して具体型(<code>AppExceptions</code> とか)を隠蔽している．</p>
+<h2 id="section-1"></h2>
+<p>疑問なところは，投げた例外を <code>catch</code> してからディスパッチして良いのだろうか？ 実行時例外じゃなくて大域脱出をしたいだけなんだけどな． ちょっとイマイチ使い方が分からない．</p>
+<h3 id="strict">Strict</h3>
+<p>特別な理由が無い限り，データフィールド(レコードのフィールド？？)は正格にすべき，とのこと． 割と重要そうなのに一文しかない．</p>
+<h3 id="プロジェクトテンプレート">プロジェクトテンプレート</h3>
+<p>そのうち，新しい Stack テンプレートを作るそうだ． もちろん，<code>cabal</code> ファイルは使わず <code>hpack</code> を使用する．</p>
+<h3 id="安全第一">安全第一</h3>
+<p><code>rio</code> は安全性を最優先しており，そのため部分関数と遅延 I/O を全力で避けている． もし，遅延 I/O を使いたい場合は <code>conduit</code> のようなストリーミングライブラリを使いなさい，とのこと．</p>
+<h3 id="一般化">一般化</h3>
+<p>Haskell のよくある疑問として，いつ一般化すべきか，というのがある(いつ？)． README にはいくつかの簡単なガイドラインが書いてある．</p>
+<p>パラメトリック多相の場合，わりと議論の余地が無く，多相的な方が有用． つまり，<code>reverse :: [a] -&gt; [a]</code> は <code>reverse :: [Int] -&gt; [Int]</code> より優れている．</p>
+<p>型クラスの場合は話が微妙になる． <code>Foldable</code> や <code>Traversable</code> のような <code>RIO</code> で定義済みの型クラスには可能な限り一般化(インスタンスを定義)するのが良いだろう． しかし，本当の疑問は <strong>自身で型クラスを定義すべきかどうか</strong> の場合． 原則としては可能な限りそれは避けるべきだ． もし，自身で型クラスを定義している場合は，<strong>自分が期待していなかった型がインスタンス化されてもバグが起きないよう</strong> に気を付けること，とのこと．</p>
+<h3 id="コーディングスタイル">コーディングスタイル</h3>
+<p>議論中だそうだ．</p>
+<h3 id="モジュール階層">モジュール階層</h3>
+<p><code>RIO.Prelude.XXX</code> モジュールはドキュメントを Haddock で読みやすくするための階層で，個別にインポートすることを想定しているわけではない． と書いてあるが，結局 <a href="https://github.com/commercialhaskell/rio/pull/72">ver.0.1 からは Haddock からも消えてしまった</a>ので気にする必要はない．</p>
+<h1 id="io-まわり">I/O まわり</h1>
+<p>(この話は README に書いてあるわけではないです)</p>
+<p><code>RIO</code> モジュールには文字列型(<code>String</code>)の一般的な <code>putStr</code> や <code>getLine</code> のような I/O 関数は無い． 実用コードの場合，これらの関数を直接呼ぶことは稀だろうが，例えば CLI を作ったときに <code>--version</code> オプションでバージョン情報を出力したい場合などがある．</p>
+<p>替わりとして次のような I/O 関数が提供されている．</p>
+<ul>
+<li><code>Strict.ByteString</code> 型の <code>putStr</code> や <code>getLine</code> であれば <code>RIO.ByteString</code> モジュールで再定義されている</li>
+<li>ファイルの入出力であれば <code>RIO</code> モジュールに <code>Strict.ByteString</code> 版と <code>Text</code> 版が提供されている</li>
+<li><code>Builder</code> 型の標準出力 <a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO.html#v:hPutBuilder"><code>hPutBuilder</code></a> 関数ならある</li>
+</ul>
+<p>コンソールに対する I/O はどれを使うべきかはまだ<a href="https://github.com/commercialhaskell/rio/issues/5">議論中</a>みたいだ．</p>
+<h1 id="おしまい">おしまい</h1>
+<p>何となく<a href="https://github.com/matsubara0507/scrapbook/tree/rio">置き換えはできた</a>けど，例外や I/O 回りは良く分かってない… また試していこう．</p>
+  </div>
+</div>
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>ML Day ＃1 に行ってきた</title>
     <link href="https://matsubara0507.github.io/posts/2018-04-02-ml-day-1.html" />
     <id>https://matsubara0507.github.io/posts/2018-04-02-ml-day-1.html</id>
@@ -1980,496 +2228,6 @@ True</code></pre>
 <p>は <a href="https://github.com/haskell-jp/blog/blob/02a2b1c68cd75a15d72eedd3148fc803c103a0b7/preprocessed-site/posts/2017/advent-calendar-2017.md#%E3%83%9D%E3%82%A8%E3%83%A0">Haskell-jp ブログのソースコード</a>(もちろん前半部分は手書き)を見ればいいと思うよ．</p>
 <h2 id="おしまい">おしまい</h2>
 <p>結局，<strong>全ての記事を集めてくるのに半日近くかかった(笑)</strong> 来年は投票機能とか，少しずつ集めたりとかできるといいよね．</p>
-  </div>
-</div>
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>Elm でマークダウンプレゼンテーションエディタを作ってみた (その２)</title>
-    <link href="https://matsubara0507.github.io/posts/2017-12-22-create-elmdeck-part2.html" />
-    <id>https://matsubara0507.github.io/posts/2017-12-22-create-elmdeck-part2.html</id>
-    <published>2017-12-22T00:00:00Z</published>
-    <updated>2017-12-22T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
- <div class="card-content">
-  <header class="post-header">
-    <h1 class="post-title" itemprop="name headline">Elm でマークダウンプレゼンテーションエディタを作ってみた (その２)</h1>
-    <p class="post-meta">
-      <time datetime="2017-12-22" itemprop="datePublished">
-        Dec 22, 2017
-      </time>
-      
-      
-      <div class="tags">
-          <i class="fa fa-tags"></i> <a href="/tags/Elm.html">Elm</a> <a href="/tags/application.html">application</a>
-      </div>
-      
-    </p>
-  </header>
-
-  <div class="post-content" itemprop="articleBody">
-    <p><a href="https://qiita.com/advent-calendar/2017/electron">Electron Advent Calendar 2017</a> の22日目の記事です．</p>
-<p><a href="https://qiita.com/advent-calendar/2017/elm2">Elm2 アドカレ</a>で 「Elm でマークダウンプレゼンテーションエディタを作るハナシ」を書いたのですが，長くなったので分けました． 前半は<a href="/posts/2017-12-18-create-elmdeck-part1.html">コチラ</a>(前半は Electron 関係ないけどね)．</p>
-<h2 id="section"></h2>
-<p>今回はローカルファイルの読み書きをするために Electron を導入します(Elm もといブラウザでいい感じにする方法が分からなかった)． 今回のコードは以下のリポジトリにあります．</p>
-<ul>
-<li><a href="https://github.com/matsubara0507/elmdeck/tree/electron">matsubara0507/elmdeck - GitHub</a></li>
-</ul>
-<h2 id="elm-と-electron">Elm と Electron</h2>
-<p>結構いろんな人が挑戦してて，資料は豊富にある． ぼくは以下のリポジトリを参考にした．</p>
-<ul>
-<li><a href="https://github.com/yasuyuky/elmtrn">yasuyuky/elmtrn - GitHub</a></li>
-</ul>
-<p>アナログ時計を表示する Electron プログラムだったはず．</p>
-<h2 id="つくる">つくる</h2>
-<p>少しずつ拡張していく．</p>
-<h3 id="electron-化">Electron 化</h3>
-<p>まずは Electron 化する． <a href="https://github.com/matsubara0507/elmdeck/tree/6ff0520f65080c9a94ac85c99fc01e0374ca250e">もともと</a>は次のような構成だった(<code>main.js</code> は Elm ファイル群から生成)．</p>
-<pre class="txt"><code>/
- |-- elm-package.json
- |-- index.html
- |-- src/
- |    |-- Main.elm
- |    \-- ..
- \-- js/
-      |-- main.js
-      \-- highlight.js</code></pre>
-<p>これ，elmtrn を参考に次のような構成に変更した．</p>
-<pre class="txt"><code>/
- |-- elm-package.json
- |-- gulpfile.js
- |-- package.json
- \-- app
-      |-- index.html
-      |-- src/
-      |    |-- Main.elm
-      |    \-- ..
-      \-- js/
-           |-- app.js
-           |-- main.js
-           \-- ..</code></pre>
-<p><a href="https://github.com/matsubara0507/elmdeck/blob/97607bc1c2f069101d7d6012dcd46470d3a2d3fe/package.json">package.json</a> は elmtrn をほぼそのまんま(<code>main</code> の場所だけ違う)． gulp を使って，Elm のコードを監視・コンパイルし，生成した JS コードを Electron から呼び出す． elmtrn の gulpfile.js の設定では，各 Elm ファイルに対しひとつの JS ファイルを生成していたが，自分はひとまとめにした JS を生成したかったので，次のように gulpfile.js を書き換えた．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw">const</span> g <span class="op">=</span> <span class="at">require</span>(<span class="st">&#39;gulp&#39;</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="kw">const</span> electron <span class="op">=</span> <span class="at">require</span>(<span class="st">&#39;electron-connect&#39;</span>).<span class="va">server</span>.<span class="at">create</span>()<span class="op">;</span></a>
-<a class="sourceLine" id="cb3-3" data-line-number="3"><span class="kw">const</span> packager <span class="op">=</span> <span class="at">require</span>(<span class="st">&#39;electron-packager&#39;</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb3-4" data-line-number="4"><span class="kw">const</span> $ <span class="op">=</span> <span class="at">require</span>(<span class="st">&#39;gulp-load-plugins&#39;</span>)()<span class="op">;</span></a>
-<a class="sourceLine" id="cb3-5" data-line-number="5"><span class="kw">const</span> packageJson <span class="op">=</span> <span class="at">require</span>(<span class="st">&#39;./package.json&#39;</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb3-6" data-line-number="6"><span class="kw">const</span> extend <span class="op">=</span> <span class="at">require</span>(<span class="st">&#39;util&#39;</span>).<span class="at">_extend</span><span class="op">;</span></a>
-<a class="sourceLine" id="cb3-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb3-8" data-line-number="8"><span class="va">g</span>.<span class="at">task</span>(<span class="st">&#39;watch&#39;</span><span class="op">,</span> () <span class="op">=&gt;</span> <span class="op">{</span></a>
-<a class="sourceLine" id="cb3-9" data-line-number="9">  <span class="va">g</span>.<span class="at">watch</span>([<span class="st">&#39;app/src/**/*.elm&#39;</span>]<span class="op">,</span>[<span class="st">&#39;elm&#39;</span>])<span class="op">;</span></a>
-<a class="sourceLine" id="cb3-10" data-line-number="10">  <span class="va">electron</span>.<span class="at">start</span>()<span class="op">;</span></a>
-<a class="sourceLine" id="cb3-11" data-line-number="11">  <span class="va">g</span>.<span class="at">watch</span>([<span class="st">&#39;app/js/*.js&#39;</span><span class="op">,</span> <span class="st">&#39;app/index.html&#39;</span>]<span class="op">,</span> <span class="va">electron</span>.<span class="at">restart</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb3-12" data-line-number="12">  <span class="va">g</span>.<span class="at">watch</span>([]<span class="op">,</span> <span class="va">electron</span>.<span class="at">reload</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb3-13" data-line-number="13"><span class="op">}</span>)</a>
-<a class="sourceLine" id="cb3-14" data-line-number="14"></a>
-<a class="sourceLine" id="cb3-15" data-line-number="15"><span class="va">g</span>.<span class="at">task</span>(<span class="st">&#39;elm&#39;</span><span class="op">,</span> () <span class="op">=&gt;{</span></a>
-<a class="sourceLine" id="cb3-16" data-line-number="16">  <span class="va">g</span>.<span class="at">src</span>([<span class="st">&#39;app/src/**/*.elm&#39;</span>])</a>
-<a class="sourceLine" id="cb3-17" data-line-number="17">    .<span class="at">pipe</span>(<span class="va">$</span>.<span class="at">logger</span>())</a>
-<a class="sourceLine" id="cb3-18" data-line-number="18">    .<span class="at">pipe</span>(<span class="va">$</span>.<span class="at">plumber</span>())</a>
-<a class="sourceLine" id="cb3-19" data-line-number="19">    .<span class="at">pipe</span>(<span class="va">$</span>.<span class="va">elm</span>.<span class="at">bundle</span>(<span class="st">&#39;main.js&#39;</span><span class="op">,</span> debug<span class="op">=</span><span class="kw">true</span>))</a>
-<a class="sourceLine" id="cb3-20" data-line-number="20">    .<span class="at">pipe</span>(<span class="va">g</span>.<span class="at">dest</span>(<span class="st">&quot;app/js&quot;</span>))<span class="op">;</span></a>
-<a class="sourceLine" id="cb3-21" data-line-number="21"><span class="op">}</span>)</a>
-<a class="sourceLine" id="cb3-22" data-line-number="22"></a>
-<a class="sourceLine" id="cb3-23" data-line-number="23"><span class="va">g</span>.<span class="at">task</span>(<span class="st">&#39;default&#39;</span><span class="op">,</span> [<span class="st">&#39;watch&#39;</span>])</a></code></pre></div>
-<p><a href="https://github.com/philopon/gulp-elm">philopon/gulp-elm の README</a> が参考になった．</p>
-<h2 id="section-1"></h2>
-<p>あとは，次のように elmtrn の app.js を適当に書き直した．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">const</span> <span class="op">{</span>app<span class="op">,</span> BrowserWindow<span class="op">}</span> <span class="op">=</span> <span class="at">require</span>(<span class="st">&#39;electron&#39;</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="kw">var</span> mainWindow <span class="op">=</span> <span class="kw">null</span><span class="op">;</span></a>
-<a class="sourceLine" id="cb4-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb4-4" data-line-number="4"><span class="va">app</span>.<span class="at">on</span>(<span class="st">&#39;window-all-closed&#39;</span><span class="op">,</span> <span class="kw">function</span>() <span class="op">{</span></a>
-<a class="sourceLine" id="cb4-5" data-line-number="5">    <span class="va">app</span>.<span class="at">quit</span>()<span class="op">;</span></a>
-<a class="sourceLine" id="cb4-6" data-line-number="6"><span class="op">}</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb4-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb4-8" data-line-number="8"><span class="va">app</span>.<span class="at">on</span>(<span class="st">&#39;ready&#39;</span><span class="op">,</span> <span class="kw">function</span>() <span class="op">{</span></a>
-<a class="sourceLine" id="cb4-9" data-line-number="9">  mainWindow <span class="op">=</span> <span class="kw">new</span> <span class="at">BrowserWindow</span>(<span class="op">{</span></a>
-<a class="sourceLine" id="cb4-10" data-line-number="10">    <span class="st">&quot;frame&quot;</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb4-11" data-line-number="11">    <span class="st">&quot;always-on-top&quot;</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb4-12" data-line-number="12">    <span class="st">&quot;resizable&quot;</span><span class="op">:</span> <span class="kw">true</span></a>
-<a class="sourceLine" id="cb4-13" data-line-number="13">  <span class="op">}</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb4-14" data-line-number="14">  <span class="va">mainWindow</span>.<span class="at">maximize</span>()<span class="op">;</span></a>
-<a class="sourceLine" id="cb4-15" data-line-number="15">  <span class="va">mainWindow</span>.<span class="at">loadURL</span>(<span class="st">&#39;file://&#39;</span> <span class="op">+</span> __dirname <span class="op">+</span> <span class="st">&#39;/../index.html&#39;</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb4-16" data-line-number="16">  <span class="va">mainWindow</span>.<span class="at">on</span>(<span class="st">&#39;closed&#39;</span><span class="op">,</span> <span class="kw">function</span>() <span class="op">{</span></a>
-<a class="sourceLine" id="cb4-17" data-line-number="17">    mainWindow <span class="op">=</span> <span class="kw">null</span><span class="op">;</span></a>
-<a class="sourceLine" id="cb4-18" data-line-number="18">  <span class="op">}</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb4-19" data-line-number="19"><span class="op">}</span>)<span class="op">;</span></a></code></pre></div>
-<p>これで <code>gulp</code> を実行すればブラウザ版 elmdeck がそのまんま electron で実行できる． やったぁ．</p>
-<h3 id="ファイルの読み込み">ファイルの読み込み</h3>
-<p>ココからが本番．</p>
-<p>設計として，デスクトップでよくある感じに，左上の <code>File</code> から <code>Open</code> とかしたい． こんな感じ(これは Atom だけど)．</p>
-<p><img src="/assets/create-elmdeck/atom-file-open.jpg" /></p>
-<p>Electron でファイルの呼び出しをする方法は以下の記事を参考にした．</p>
-<ul>
-<li><a href="https://qiita.com/_takwat/items/6544342fd4141345bb19">Electronでファイルやフォルダの選択 - Qiita</a></li>
-</ul>
-<p>Node の fs ライブラリを使えばよいようだ(Electron に限らないハナシかな)． <a href="https://nodejs.org/api/fs.html">fs の公式ドキュメント</a>とにらめっこして <a href="https://nodejs.org/api/fs.html#fs_fs_readfile_path_options_callback"><code>fs.readFile</code></a> を呼び出せば良いみたいなのは分かった． 取りあえず，次のような <code>files.js</code> ファイルを書いた．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="st">&#39;use strict&#39;</span><span class="op">;</span></a>
-<a class="sourceLine" id="cb5-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb5-3" data-line-number="3"><span class="kw">const</span> <span class="op">{</span>remote<span class="op">}</span> <span class="op">=</span> <span class="at">require</span>(<span class="st">&#39;electron&#39;</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb5-4" data-line-number="4"><span class="kw">const</span> <span class="op">{</span>dialog<span class="op">,</span> BrowserWindow<span class="op">}</span> <span class="op">=</span> remote<span class="op">;</span></a>
-<a class="sourceLine" id="cb5-5" data-line-number="5"><span class="kw">const</span> fs <span class="op">=</span> <span class="at">require</span>(<span class="st">&#39;fs&#39;</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb5-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb5-7" data-line-number="7"><span class="va">module</span>.<span class="at">exports</span> <span class="op">=</span> <span class="op">{</span></a>
-<a class="sourceLine" id="cb5-8" data-line-number="8">  <span class="dt">readFile</span><span class="op">:</span> <span class="kw">function</span> (app) <span class="op">{</span></a>
-<a class="sourceLine" id="cb5-9" data-line-number="9">    <span class="va">dialog</span>.<span class="at">showOpenDialog</span>(<span class="kw">null</span><span class="op">,</span> <span class="op">{</span></a>
-<a class="sourceLine" id="cb5-10" data-line-number="10">        <span class="dt">properties</span><span class="op">:</span> [<span class="st">&#39;openFile&#39;</span>]<span class="op">,</span></a>
-<a class="sourceLine" id="cb5-11" data-line-number="11">        <span class="dt">title</span><span class="op">:</span> <span class="st">&#39;File&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb5-12" data-line-number="12">        <span class="dt">defaultPath</span><span class="op">:</span> <span class="st">&#39;.&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb5-13" data-line-number="13">        <span class="dt">filters</span><span class="op">:</span> [</a>
-<a class="sourceLine" id="cb5-14" data-line-number="14">            <span class="op">{</span><span class="dt">name</span><span class="op">:</span> <span class="st">&#39;マークダウン&#39;</span><span class="op">,</span> <span class="dt">extensions</span><span class="op">:</span> [<span class="st">&#39;md&#39;</span><span class="op">,</span> <span class="st">&#39;markdown&#39;</span>]<span class="op">},</span></a>
-<a class="sourceLine" id="cb5-15" data-line-number="15">        ]</a>
-<a class="sourceLine" id="cb5-16" data-line-number="16">    <span class="op">},</span> (fileNames) <span class="op">=&gt;</span> <span class="op">{</span></a>
-<a class="sourceLine" id="cb5-17" data-line-number="17">        <span class="va">fs</span>.<span class="at">readFile</span>(fileNames[<span class="dv">0</span>]<span class="op">,</span> <span class="st">&#39;utf8&#39;</span><span class="op">,</span> (err<span class="op">,</span> data) <span class="op">=&gt;</span> <span class="op">{</span></a>
-<a class="sourceLine" id="cb5-18" data-line-number="18">          <span class="cf">if</span> (err) <span class="va">console</span>.<span class="at">log</span>(err)<span class="op">;</span></a>
-<a class="sourceLine" id="cb5-19" data-line-number="19">          <span class="va">console</span>.<span class="at">log</span>(data)<span class="op">;</span></a>
-<a class="sourceLine" id="cb5-20" data-line-number="20">        <span class="op">}</span>)</a>
-<a class="sourceLine" id="cb5-21" data-line-number="21">    <span class="op">}</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb5-22" data-line-number="22">  <span class="op">}</span></a>
-<a class="sourceLine" id="cb5-23" data-line-number="23"><span class="op">}</span></a></code></pre></div>
-<p>次にこれをメニューバーから呼べるようにする． Electron のメニューバーを拡張するには <a href="https://electronjs.org/docs/api/menu"><code>Menu</code> クラス</a>を使えば良いらしい． サンプルやらを参考にしながらイロイロ試行錯誤してみた結果，次のような <code>menuItems.js</code> ファイルを書き，</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">const</span> <span class="op">{</span>app<span class="op">,</span> Menu<span class="op">,</span> dialog<span class="op">}</span> <span class="op">=</span> <span class="at">require</span>(<span class="st">&#39;electron&#39;</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb6-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb6-3" data-line-number="3"><span class="kw">const</span> template <span class="op">=</span> [</a>
-<a class="sourceLine" id="cb6-4" data-line-number="4">  <span class="op">{</span></a>
-<a class="sourceLine" id="cb6-5" data-line-number="5">    <span class="dt">label</span><span class="op">:</span> <span class="st">&#39;Edit&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb6-6" data-line-number="6">    <span class="dt">submenu</span><span class="op">:</span> [</a>
-<a class="sourceLine" id="cb6-7" data-line-number="7">      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">&#39;undo&#39;</span><span class="op">},</span></a>
-<a class="sourceLine" id="cb6-8" data-line-number="8">      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">&#39;redo&#39;</span><span class="op">},</span></a>
-<a class="sourceLine" id="cb6-9" data-line-number="9">      <span class="op">{</span><span class="dt">type</span><span class="op">:</span> <span class="st">&#39;separator&#39;</span><span class="op">},</span></a>
-<a class="sourceLine" id="cb6-10" data-line-number="10">      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">&#39;cut&#39;</span><span class="op">},</span></a>
-<a class="sourceLine" id="cb6-11" data-line-number="11">      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">&#39;copy&#39;</span><span class="op">},</span></a>
-<a class="sourceLine" id="cb6-12" data-line-number="12">      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">&#39;paste&#39;</span><span class="op">},</span></a>
-<a class="sourceLine" id="cb6-13" data-line-number="13">      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">&#39;pasteandmatchstyle&#39;</span><span class="op">},</span></a>
-<a class="sourceLine" id="cb6-14" data-line-number="14">      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">&#39;delete&#39;</span><span class="op">},</span></a>
-<a class="sourceLine" id="cb6-15" data-line-number="15">      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">&#39;selectall&#39;</span><span class="op">}</span></a>
-<a class="sourceLine" id="cb6-16" data-line-number="16">    ]</a>
-<a class="sourceLine" id="cb6-17" data-line-number="17">  <span class="op">},</span></a>
-<a class="sourceLine" id="cb6-18" data-line-number="18">  <span class="op">{</span></a>
-<a class="sourceLine" id="cb6-19" data-line-number="19">    <span class="dt">label</span><span class="op">:</span> <span class="st">&#39;View&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb6-20" data-line-number="20">    <span class="dt">submenu</span><span class="op">:</span> [</a>
-<a class="sourceLine" id="cb6-21" data-line-number="21">      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">&#39;reload&#39;</span><span class="op">},</span></a>
-<a class="sourceLine" id="cb6-22" data-line-number="22">      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">&#39;forcereload&#39;</span><span class="op">},</span></a>
-<a class="sourceLine" id="cb6-23" data-line-number="23">      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">&#39;toggledevtools&#39;</span><span class="op">},</span></a>
-<a class="sourceLine" id="cb6-24" data-line-number="24">      <span class="op">{</span><span class="dt">type</span><span class="op">:</span> <span class="st">&#39;separator&#39;</span><span class="op">},</span></a>
-<a class="sourceLine" id="cb6-25" data-line-number="25">      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">&#39;resetzoom&#39;</span><span class="op">},</span></a>
-<a class="sourceLine" id="cb6-26" data-line-number="26">      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">&#39;zoomin&#39;</span><span class="op">},</span></a>
-<a class="sourceLine" id="cb6-27" data-line-number="27">      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">&#39;zoomout&#39;</span><span class="op">},</span></a>
-<a class="sourceLine" id="cb6-28" data-line-number="28">      <span class="op">{</span><span class="dt">type</span><span class="op">:</span> <span class="st">&#39;separator&#39;</span><span class="op">},</span></a>
-<a class="sourceLine" id="cb6-29" data-line-number="29">      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">&#39;togglefullscreen&#39;</span><span class="op">},</span></a>
-<a class="sourceLine" id="cb6-30" data-line-number="30">      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">&#39;toggledevtools&#39;</span><span class="op">}</span></a>
-<a class="sourceLine" id="cb6-31" data-line-number="31">    ]</a>
-<a class="sourceLine" id="cb6-32" data-line-number="32">  <span class="op">},</span></a>
-<a class="sourceLine" id="cb6-33" data-line-number="33">  <span class="op">{</span></a>
-<a class="sourceLine" id="cb6-34" data-line-number="34">    <span class="dt">role</span><span class="op">:</span> <span class="st">&#39;window&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb6-35" data-line-number="35">    <span class="dt">submenu</span><span class="op">:</span> [</a>
-<a class="sourceLine" id="cb6-36" data-line-number="36">      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">&#39;minimize&#39;</span><span class="op">},</span></a>
-<a class="sourceLine" id="cb6-37" data-line-number="37">      <span class="op">{</span><span class="dt">role</span><span class="op">:</span> <span class="st">&#39;close&#39;</span><span class="op">}</span></a>
-<a class="sourceLine" id="cb6-38" data-line-number="38">    ]</a>
-<a class="sourceLine" id="cb6-39" data-line-number="39">  <span class="op">},</span></a>
-<a class="sourceLine" id="cb6-40" data-line-number="40">  <span class="op">{</span></a>
-<a class="sourceLine" id="cb6-41" data-line-number="41">    <span class="dt">role</span><span class="op">:</span> <span class="st">&#39;help&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb6-42" data-line-number="42">    <span class="dt">submenu</span><span class="op">:</span> [</a>
-<a class="sourceLine" id="cb6-43" data-line-number="43">      <span class="op">{</span></a>
-<a class="sourceLine" id="cb6-44" data-line-number="44">        <span class="dt">label</span><span class="op">:</span> <span class="st">&#39;Learn More&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb6-45" data-line-number="45">        <span class="at">click</span> () <span class="op">{</span> <span class="at">require</span>(<span class="st">&#39;electron&#39;</span>).<span class="va">shell</span>.<span class="at">openExternal</span>(<span class="st">&#39;https://electron.atom.io&#39;</span>) <span class="op">}</span></a>
-<a class="sourceLine" id="cb6-46" data-line-number="46">      <span class="op">}</span></a>
-<a class="sourceLine" id="cb6-47" data-line-number="47">    ]</a>
-<a class="sourceLine" id="cb6-48" data-line-number="48">  <span class="op">}</span></a>
-<a class="sourceLine" id="cb6-49" data-line-number="49">]</a>
-<a class="sourceLine" id="cb6-50" data-line-number="50"></a>
-<a class="sourceLine" id="cb6-51" data-line-number="51"><span class="kw">const</span> items <span class="op">=</span> <span class="va">template</span>.<span class="at">map</span>( option <span class="op">=&gt;</span> <span class="op">{</span> <span class="cf">return</span> <span class="kw">new</span> <span class="at">MenuItem</span>(option) <span class="op">}</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb6-52" data-line-number="52"></a>
-<a class="sourceLine" id="cb6-53" data-line-number="53"><span class="va">module</span>.<span class="at">exports</span> <span class="op">=</span> <span class="op">{</span></a>
-<a class="sourceLine" id="cb6-54" data-line-number="54">  <span class="dt">get</span><span class="op">:</span> () <span class="op">=&gt;</span> <span class="op">{</span> <span class="cf">return</span> items<span class="op">;</span> <span class="op">}</span></a>
-<a class="sourceLine" id="cb6-55" data-line-number="55"><span class="op">}</span></a></code></pre></div>
-<p>これ(module exports した <code>get</code> 関数のコト)を <code>index.html</code> で次のように呼び出した．</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode html"><code class="sourceCode html"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw">&lt;script&gt;</span></a>
-<a class="sourceLine" id="cb7-2" data-line-number="2">  <span class="kw">const</span> <span class="op">{</span>remote<span class="op">}</span> <span class="op">=</span> <span class="at">require</span>(<span class="st">&#39;electron&#39;</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb7-3" data-line-number="3">  <span class="kw">const</span> <span class="op">{</span>Menu<span class="op">,</span> MenuItem<span class="op">}</span> <span class="op">=</span> remote<span class="op">;</span></a>
-<a class="sourceLine" id="cb7-4" data-line-number="4">  <span class="kw">const</span> files <span class="op">=</span> <span class="at">require</span>(<span class="st">&#39;./js/files&#39;</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb7-5" data-line-number="5">  <span class="kw">const</span> menuItems <span class="op">=</span> <span class="at">require</span>(<span class="st">&#39;./js/menuItems&#39;</span>)</a>
-<a class="sourceLine" id="cb7-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb7-7" data-line-number="7">  <span class="kw">var</span> node <span class="op">=</span> <span class="va">document</span>.<span class="at">getElementById</span>(<span class="st">&#39;main&#39;</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb7-8" data-line-number="8">  <span class="cf">while</span> (<span class="va">node</span>.<span class="at">firstChild</span>) <span class="op">{</span></a>
-<a class="sourceLine" id="cb7-9" data-line-number="9">    <span class="va">node</span>.<span class="at">removeChild</span>(<span class="va">node</span>.<span class="at">firstChild</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb7-10" data-line-number="10">  <span class="op">}</span></a>
-<a class="sourceLine" id="cb7-11" data-line-number="11">  <span class="kw">var</span> app <span class="op">=</span> <span class="va">module</span>.<span class="va">exports</span>.<span class="va">Main</span>.<span class="at">embed</span>(node)<span class="op">;</span></a>
-<a class="sourceLine" id="cb7-12" data-line-number="12"></a>
-<a class="sourceLine" id="cb7-13" data-line-number="13">  <span class="kw">var</span> menuvar <span class="op">=</span> <span class="kw">new</span> <span class="at">Menu</span>()<span class="op">;</span></a>
-<a class="sourceLine" id="cb7-14" data-line-number="14">  <span class="va">menuvar</span>.<span class="at">append</span>(<span class="kw">new</span> <span class="at">MenuItem</span>(</a>
-<a class="sourceLine" id="cb7-15" data-line-number="15">    <span class="op">{</span></a>
-<a class="sourceLine" id="cb7-16" data-line-number="16">      <span class="dt">label</span><span class="op">:</span> <span class="st">&#39;File&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb7-17" data-line-number="17">      <span class="dt">submenu</span><span class="op">:</span> [</a>
-<a class="sourceLine" id="cb7-18" data-line-number="18">        <span class="op">{</span></a>
-<a class="sourceLine" id="cb7-19" data-line-number="19">          <span class="dt">label</span><span class="op">:</span> <span class="st">&#39;Open&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb7-20" data-line-number="20">          <span class="at">click</span>() <span class="op">{</span> <span class="va">files</span>.<span class="at">readFile</span>(app) <span class="op">}</span></a>
-<a class="sourceLine" id="cb7-21" data-line-number="21">        <span class="op">}</span></a>
-<a class="sourceLine" id="cb7-22" data-line-number="22">      ]</a>
-<a class="sourceLine" id="cb7-23" data-line-number="23">    <span class="op">}</span></a>
-<a class="sourceLine" id="cb7-24" data-line-number="24">  ))<span class="op">;</span></a>
-<a class="sourceLine" id="cb7-25" data-line-number="25">  <span class="va">menuItems</span>.<span class="at">get</span>().<span class="at">forEach</span>( item <span class="op">=&gt;</span> <span class="op">{</span> <span class="va">menuvar</span>.<span class="at">append</span>(item) <span class="op">}</span> )<span class="op">;</span></a>
-<a class="sourceLine" id="cb7-26" data-line-number="26">  <span class="va">Menu</span>.<span class="at">setApplicationMenu</span>(menuvar)</a>
-<a class="sourceLine" id="cb7-27" data-line-number="27"><span class="kw">&lt;/script&gt;</span></a></code></pre></div>
-<p><code>var menuvar = new Menu();</code> 以下からがキモです． どーしても，動的に処理を定義しない部分(<code>Edit</code> とか <code>View</code> とか)を別ファイル(<code>menuItems.js</code>)にまとめたうえで，<code>File</code> を先頭に突っ込みたかったのでこうなった． JS は全然詳しくないのでアンチパターンかもしれないけどね．</p>
-<h4 id="elm-に繋げる">Elm に繋げる</h4>
-<p>ここまでで</p>
-<ol type="1">
-<li>上部にあるメニューバーの <code>File</code> -&gt; <code>Open</code> を押して</li>
-<li>ファイルをダイアログで選択し</li>
-<li>コンソールに内容を吐き出す</li>
-</ol>
-<p>までは書けた． ここからは (3) が「Elm に渡して input エリアに書き出す」になるようにする．</p>
-<p>Elm と JS を繋ぐには方法がいくつかあるが，今回は <code>Port</code> を使ってみる(前回はお行儀の悪い <code>Native</code> モジュールを使ったけど)． 次の記事が本当に参考になった．</p>
-<ul>
-<li><a href="https://qiita.com/jooex/items/5ff2d3b86563cf5dbd84">ElmのPortでJSを使う。 - Qiita</a></li>
-</ul>
-<p>マークダウンファイルの中身を JS から Elm に投げるので Elm で次のような <code>ports</code> 関数を定義した．</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="co">-- src/Port/FS.elm</span></a>
-<a class="sourceLine" id="cb8-2" data-line-number="2">port <span class="kw">module</span> <span class="dt">Port.FS</span> exposing (<span class="fu">..</span>)</a>
-<a class="sourceLine" id="cb8-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb8-4" data-line-number="4">port readFile <span class="fu">:</span> (<span class="dt">String</span> <span class="ot">-&gt;</span> msg) <span class="ot">-&gt;</span> <span class="dt">Sub</span> msg</a></code></pre></div>
-<p>これを <code>Main.elm</code> で次のように呼び出す．</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="kw">type</span> alias <span class="dt">Model</span> <span class="fu">=</span></a>
-<a class="sourceLine" id="cb9-2" data-line-number="2">  { textarea <span class="fu">:</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb9-3" data-line-number="3">  , window <span class="fu">:</span> <span class="dt">Window.Size</span></a>
-<a class="sourceLine" id="cb9-4" data-line-number="4">  }</a>
-<a class="sourceLine" id="cb9-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb9-6" data-line-number="6"><span class="kw">type</span> <span class="dt">Msg</span></a>
-<a class="sourceLine" id="cb9-7" data-line-number="7">  <span class="fu">=</span> <span class="dt">TextAreaInput</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb9-8" data-line-number="8">  <span class="fu">|</span> <span class="dt">SizeUpdated</span> <span class="dt">Window.Size</span></a>
-<a class="sourceLine" id="cb9-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb9-10" data-line-number="10">main <span class="fu">:</span> <span class="dt">Program</span> <span class="dt">Never</span> <span class="dt">Model</span> <span class="dt">Msg</span></a>
-<a class="sourceLine" id="cb9-11" data-line-number="11">main <span class="fu">=</span></a>
-<a class="sourceLine" id="cb9-12" data-line-number="12">  Html.program</a>
-<a class="sourceLine" id="cb9-13" data-line-number="13">    { init <span class="fu">=</span> init model</a>
-<a class="sourceLine" id="cb9-14" data-line-number="14">    , view <span class="fu">=</span> view</a>
-<a class="sourceLine" id="cb9-15" data-line-number="15">    , update <span class="fu">=</span> update</a>
-<a class="sourceLine" id="cb9-16" data-line-number="16">    , subscriptions <span class="fu">=</span> subscriptions</a>
-<a class="sourceLine" id="cb9-17" data-line-number="17">    }</a>
-<a class="sourceLine" id="cb9-18" data-line-number="18"></a>
-<a class="sourceLine" id="cb9-19" data-line-number="19">subscriptions <span class="fu">:</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> <span class="dt">Sub</span> <span class="dt">Msg</span></a>
-<a class="sourceLine" id="cb9-20" data-line-number="20">subscriptions model <span class="fu">=</span></a>
-<a class="sourceLine" id="cb9-21" data-line-number="21">  Sub.batch</a>
-<a class="sourceLine" id="cb9-22" data-line-number="22">    [ Window.resizes <span class="dt">SizeUpdated</span></a>
-<a class="sourceLine" id="cb9-23" data-line-number="23">    , FS.readFile <span class="dt">TextAreaInput</span></a>
-<a class="sourceLine" id="cb9-24" data-line-number="24">    ]</a>
-<a class="sourceLine" id="cb9-25" data-line-number="25"></a>
-<a class="sourceLine" id="cb9-26" data-line-number="26">update <span class="fu">:</span> <span class="dt">Msg</span> <span class="ot">-&gt;</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> ( <span class="dt">Model</span>, <span class="dt">Cmd</span> <span class="dt">Msg</span> )</a>
-<a class="sourceLine" id="cb9-27" data-line-number="27">update msg model <span class="fu">=</span></a>
-<a class="sourceLine" id="cb9-28" data-line-number="28">  <span class="kw">case</span> msg <span class="kw">of</span></a>
-<a class="sourceLine" id="cb9-29" data-line-number="29">    <span class="dt">TextAreaInput</span> str <span class="ot">-&gt;</span></a>
-<a class="sourceLine" id="cb9-30" data-line-number="30">      ( { model <span class="fu">|</span> textarea <span class="fu">=</span> str }, Cmd.none )</a>
-<a class="sourceLine" id="cb9-31" data-line-number="31">    <span class="dt">SizeUpdated</span> size <span class="ot">-&gt;</span></a>
-<a class="sourceLine" id="cb9-32" data-line-number="32">      ( { model <span class="fu">|</span> window <span class="fu">=</span> size }, Cmd.none )        </a></code></pre></div>
-<p><code>Window.Size</code> とか <code>SizeUpdated</code> はブラウザやアプリのウィンドウサイズに合わせて，スライドのサイズを変更するためのサブスクリプションなので気にしないで． <code>TextAreaInput</code> は input エリアにテキストを書き込んだ時にも使っている． 同じ型なので使いまわした．</p>
-<p>あとは <code>files.js</code> の <code>console.log(data);</code> としていた部分を <code>app.ports.readFile.send(data);</code> と<a href="https://github.com/matsubara0507/elmdeck/blob/a102ae0d82b162a3f219b7d33f9875c080ff6be9/app/js/files.js#L19">書き換える</a>だけ．</p>
-<p><img src="/assets/create-elmdeck/openfile.gif" /></p>
-<p>うまくいった．</p>
-<h3 id="ファイルの書き込み">ファイルの書き込み</h3>
-<p>さて次はファイルの保存を実装する．</p>
-<h4 id="ファイルパスも投げておく">ファイルパスも投げておく</h4>
-<p>ファイルを保存するには開いてるファイルのファイルパスがあった方が良いだろう(上書き保存とかするなら)． なのでまずは，読み込み時の処理をファイルパスも投げるように書き換える．</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="co">-- src/Port/FS.elm</span></a>
-<a class="sourceLine" id="cb10-2" data-line-number="2">port <span class="kw">module</span> <span class="dt">Port.FS</span> exposing (<span class="fu">..</span>)</a>
-<a class="sourceLine" id="cb10-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb10-4" data-line-number="4"><span class="kw">type</span> alias <span class="dt">File</span> <span class="fu">=</span></a>
-<a class="sourceLine" id="cb10-5" data-line-number="5">  { path <span class="fu">:</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb10-6" data-line-number="6">  , body <span class="fu">:</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb10-7" data-line-number="7">  }</a>
-<a class="sourceLine" id="cb10-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb10-9" data-line-number="9">port readFile <span class="fu">:</span> (<span class="dt">File</span> <span class="ot">-&gt;</span> msg) <span class="ot">-&gt;</span> <span class="dt">Sub</span> msg</a></code></pre></div>
-<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="kw">type</span> alias <span class="dt">Model</span> <span class="fu">=</span></a>
-<a class="sourceLine" id="cb11-2" data-line-number="2">  { textarea <span class="fu">:</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb11-3" data-line-number="3">  , window <span class="fu">:</span> <span class="dt">Window.Size</span></a>
-<a class="sourceLine" id="cb11-4" data-line-number="4">  , filepath <span class="fu">:</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb11-5" data-line-number="5">  }</a>
-<a class="sourceLine" id="cb11-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb11-7" data-line-number="7"><span class="kw">type</span> <span class="dt">Msg</span></a>
-<a class="sourceLine" id="cb11-8" data-line-number="8">  <span class="fu">=</span> <span class="dt">TextAreaInput</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb11-9" data-line-number="9">  <span class="fu">|</span> <span class="dt">SizeUpdated</span> <span class="dt">Window.Size</span></a>
-<a class="sourceLine" id="cb11-10" data-line-number="10">  <span class="fu">|</span> <span class="dt">ReadFile</span> <span class="dt">FS.File</span></a>
-<a class="sourceLine" id="cb11-11" data-line-number="11"></a>
-<a class="sourceLine" id="cb11-12" data-line-number="12">update <span class="fu">:</span> <span class="dt">Msg</span> <span class="ot">-&gt;</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> ( <span class="dt">Model</span>, <span class="dt">Cmd</span> <span class="dt">Msg</span> )</a>
-<a class="sourceLine" id="cb11-13" data-line-number="13">update msg model <span class="fu">=</span></a>
-<a class="sourceLine" id="cb11-14" data-line-number="14">  <span class="kw">case</span> msg <span class="kw">of</span></a>
-<a class="sourceLine" id="cb11-15" data-line-number="15">    <span class="dt">TextAreaInput</span> str <span class="ot">-&gt;</span></a>
-<a class="sourceLine" id="cb11-16" data-line-number="16">      ( { model <span class="fu">|</span> textarea <span class="fu">=</span> str }, Cmd.none )</a>
-<a class="sourceLine" id="cb11-17" data-line-number="17">    <span class="dt">SizeUpdated</span> size <span class="ot">-&gt;</span></a>
-<a class="sourceLine" id="cb11-18" data-line-number="18">      ( { model <span class="fu">|</span> window <span class="fu">=</span> size }, Cmd.none )</a>
-<a class="sourceLine" id="cb11-19" data-line-number="19">    <span class="dt">ReadFile</span> file <span class="ot">-&gt;</span></a>
-<a class="sourceLine" id="cb11-20" data-line-number="20">      ( { model <span class="fu">|</span> textarea <span class="fu">=</span> file<span class="fu">.</span>body, filepath <span class="fu">=</span> file<span class="fu">.</span>path }, Cmd.none )</a>
-<a class="sourceLine" id="cb11-21" data-line-number="21"></a>
-<a class="sourceLine" id="cb11-22" data-line-number="22">subscriptions <span class="fu">:</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> <span class="dt">Sub</span> <span class="dt">Msg</span></a>
-<a class="sourceLine" id="cb11-23" data-line-number="23">subscriptions model <span class="fu">=</span></a>
-<a class="sourceLine" id="cb11-24" data-line-number="24">  Sub.batch</a>
-<a class="sourceLine" id="cb11-25" data-line-number="25">    [ Window.resizes <span class="dt">SizeUpdated</span></a>
-<a class="sourceLine" id="cb11-26" data-line-number="26">    , FS.readFile <span class="dt">ReadFile</span></a>
-<a class="sourceLine" id="cb11-27" data-line-number="27">    ]</a></code></pre></div>
-<p>レコード型を JS から Elm に投げるには普通のオブジェクトを使えばよいらしい(最初はタプルを使おうとして良くわからなくなり諦めた…)．</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb12-1" data-line-number="1"><span class="co">// js/files.js</span></a>
-<a class="sourceLine" id="cb12-2" data-line-number="2"><span class="va">module</span>.<span class="at">exports</span> <span class="op">=</span> <span class="op">{</span></a>
-<a class="sourceLine" id="cb12-3" data-line-number="3">  <span class="dt">readFile</span><span class="op">:</span> <span class="kw">function</span> (app) <span class="op">{</span></a>
-<a class="sourceLine" id="cb12-4" data-line-number="4">    <span class="va">dialog</span>.<span class="at">showOpenDialog</span>(<span class="kw">null</span><span class="op">,</span> <span class="op">{</span></a>
-<a class="sourceLine" id="cb12-5" data-line-number="5">        <span class="dt">properties</span><span class="op">:</span> [<span class="st">&#39;openFile&#39;</span>]<span class="op">,</span></a>
-<a class="sourceLine" id="cb12-6" data-line-number="6">        <span class="dt">title</span><span class="op">:</span> <span class="st">&#39;File&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb12-7" data-line-number="7">        <span class="dt">defaultPath</span><span class="op">:</span> <span class="st">&#39;.&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb12-8" data-line-number="8">        <span class="dt">filters</span><span class="op">:</span> [</a>
-<a class="sourceLine" id="cb12-9" data-line-number="9">            <span class="op">{</span><span class="dt">name</span><span class="op">:</span> <span class="st">&#39;マークダウン&#39;</span><span class="op">,</span> <span class="dt">extensions</span><span class="op">:</span> [<span class="st">&#39;md&#39;</span><span class="op">,</span> <span class="st">&#39;markdown&#39;</span>]<span class="op">},</span></a>
-<a class="sourceLine" id="cb12-10" data-line-number="10">        ]</a>
-<a class="sourceLine" id="cb12-11" data-line-number="11">    <span class="op">},</span> (fileNames) <span class="op">=&gt;</span> <span class="op">{</span></a>
-<a class="sourceLine" id="cb12-12" data-line-number="12">        <span class="va">fs</span>.<span class="at">readFile</span>(fileNames[<span class="dv">0</span>]<span class="op">,</span> <span class="st">&#39;utf8&#39;</span><span class="op">,</span> (err<span class="op">,</span> data) <span class="op">=&gt;</span> <span class="op">{</span></a>
-<a class="sourceLine" id="cb12-13" data-line-number="13">          <span class="cf">if</span> (err) <span class="va">console</span>.<span class="at">log</span>(err)<span class="op">;</span></a>
-<a class="sourceLine" id="cb12-14" data-line-number="14">          <span class="va">app</span>.<span class="va">ports</span>.<span class="va">readFile</span>.<span class="at">send</span>(<span class="op">{</span> <span class="dt">path</span><span class="op">:</span> fileNames[<span class="dv">0</span>]<span class="op">,</span> <span class="dt">body</span><span class="op">:</span> data <span class="op">}</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb12-15" data-line-number="15">        <span class="op">}</span>)</a>
-<a class="sourceLine" id="cb12-16" data-line-number="16">    <span class="op">}</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb12-17" data-line-number="17">  <span class="op">}</span></a>
-<a class="sourceLine" id="cb12-18" data-line-number="18"><span class="op">}</span></a></code></pre></div>
-<h4 id="いよいよ書き出し">いよいよ書き出し</h4>
-<p>保存するとき，データは Elm 側から投げられるが保存ボタンは Electron 側(JS側)から始めたい． なので</p>
-<ol type="1">
-<li>保存ボタンを押したら何らかの値を JS から Elm に送信</li>
-<li>それを受けたら Elm から JS にマークダウンのデータを送信</li>
-</ol>
-<p>というお手製同期通信を行うことにした(これもアンチパターンかも…)． 上書き保存のときは <code>null</code> (Elm 側では <code>Nothing</code>) を JS から送り，新規保存ならファイル名を送ることにする．</p>
-<h2 id="section-2"></h2>
-<p>まずは Elm 側で，以上の戦略から次のような <code>port</code> を書いた．</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" data-line-number="1">port writeFileHook <span class="fu">:</span> (<span class="dt">Maybe</span> <span class="dt">String</span> <span class="ot">-&gt;</span> msg) <span class="ot">-&gt;</span> <span class="dt">Sub</span> msg</a>
-<a class="sourceLine" id="cb13-2" data-line-number="2">port writeFile <span class="fu">:</span> <span class="dt">File</span> <span class="ot">-&gt;</span> <span class="dt">Cmd</span> msg</a></code></pre></div>
-<p>次は JS 側に移る． ファイルの書き出しには <a href="https://nodejs.org/api/fs.html#fs_fs_writefile_file_data_options_callback"><code>fs.writeFile</code></a> 関数を用いた． 前述した <code>port</code> も使って，次のような関数を <code>files.js</code> に追加した．</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="kw">function</span> <span class="at">writeFileTo</span>(fileName<span class="op">,</span> data) <span class="op">{</span></a>
-<a class="sourceLine" id="cb14-2" data-line-number="2">  <span class="cf">if</span> (fileName) <span class="op">{</span></a>
-<a class="sourceLine" id="cb14-3" data-line-number="3">    <span class="va">fs</span>.<span class="at">writeFile</span>(fileName<span class="op">,</span> data<span class="op">,</span> (err) <span class="op">=&gt;</span> <span class="op">{</span></a>
-<a class="sourceLine" id="cb14-4" data-line-number="4">      <span class="cf">if</span> (err) <span class="op">{</span></a>
-<a class="sourceLine" id="cb14-5" data-line-number="5">        <span class="va">console</span>.<span class="at">log</span>(err)<span class="op">;</span></a>
-<a class="sourceLine" id="cb14-6" data-line-number="6">        <span class="va">dialog</span>.<span class="at">showErrorBox</span>(<span class="st">&#39;Can not save fiel: &#39;</span> <span class="op">+</span> fileName<span class="op">,</span> err)<span class="op">;</span></a>
-<a class="sourceLine" id="cb14-7" data-line-number="7">      <span class="op">}</span></a>
-<a class="sourceLine" id="cb14-8" data-line-number="8">    <span class="op">}</span>)</a>
-<a class="sourceLine" id="cb14-9" data-line-number="9">  <span class="op">}</span></a>
-<a class="sourceLine" id="cb14-10" data-line-number="10"><span class="op">}</span></a>
-<a class="sourceLine" id="cb14-11" data-line-number="11"></a>
-<a class="sourceLine" id="cb14-12" data-line-number="12"><span class="va">module</span>.<span class="at">exports</span> <span class="op">=</span> <span class="op">{</span></a>
-<a class="sourceLine" id="cb14-13" data-line-number="13">  <span class="dt">readFile</span><span class="op">:</span> <span class="kw">function</span> (app) <span class="op">{</span></a>
-<a class="sourceLine" id="cb14-14" data-line-number="14">    ...</a>
-<a class="sourceLine" id="cb14-15" data-line-number="15">  <span class="op">},</span></a>
-<a class="sourceLine" id="cb14-16" data-line-number="16">  <span class="dt">writeFile</span><span class="op">:</span> <span class="kw">function</span> (app) <span class="op">{</span></a>
-<a class="sourceLine" id="cb14-17" data-line-number="17">    <span class="va">app</span>.<span class="va">ports</span>.<span class="va">writeFileHook</span>.<span class="at">send</span>(<span class="kw">null</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb14-18" data-line-number="18">    <span class="va">app</span>.<span class="va">ports</span>.<span class="va">writeFile</span>.<span class="at">subscribe</span>(args <span class="op">=&gt;</span> <span class="op">{</span> <span class="at">writeFileTo</span>(args[<span class="st">&#39;path&#39;</span>]<span class="op">,</span> args[<span class="st">&#39;body&#39;</span>]) <span class="op">}</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb14-19" data-line-number="19">  <span class="op">},</span></a>
-<a class="sourceLine" id="cb14-20" data-line-number="20">  <span class="dt">writeFileAs</span><span class="op">:</span> <span class="kw">function</span> (app) <span class="op">{</span></a>
-<a class="sourceLine" id="cb14-21" data-line-number="21">    <span class="va">dialog</span>.<span class="at">showSaveDialog</span>(<span class="kw">null</span><span class="op">,</span> <span class="op">{</span></a>
-<a class="sourceLine" id="cb14-22" data-line-number="22">        <span class="dt">properties</span><span class="op">:</span> [<span class="st">&#39;openFile&#39;</span>]<span class="op">,</span></a>
-<a class="sourceLine" id="cb14-23" data-line-number="23">        <span class="dt">title</span><span class="op">:</span> <span class="st">&#39;File&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb14-24" data-line-number="24">        <span class="dt">defaultPath</span><span class="op">:</span> <span class="st">&#39;.&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb14-25" data-line-number="25">        <span class="dt">filters</span><span class="op">:</span> [</a>
-<a class="sourceLine" id="cb14-26" data-line-number="26">            <span class="op">{</span><span class="dt">name</span><span class="op">:</span> <span class="st">&#39;Markdown&#39;</span><span class="op">,</span> <span class="dt">extensions</span><span class="op">:</span> [<span class="st">&#39;md&#39;</span><span class="op">,</span> <span class="st">&#39;markdown&#39;</span>]<span class="op">},</span></a>
-<a class="sourceLine" id="cb14-27" data-line-number="27">        ]</a>
-<a class="sourceLine" id="cb14-28" data-line-number="28">    <span class="op">},</span> (fileName) <span class="op">=&gt;</span> <span class="op">{</span></a>
-<a class="sourceLine" id="cb14-29" data-line-number="29">        <span class="cf">if</span> (fileName <span class="op">==</span> <span class="kw">undefined</span>) <span class="op">{</span></a>
-<a class="sourceLine" id="cb14-30" data-line-number="30">          <span class="va">console</span>.<span class="at">log</span>(fileName)<span class="op">;</span></a>
-<a class="sourceLine" id="cb14-31" data-line-number="31">          <span class="va">dialog</span>.<span class="at">showErrorBox</span>(<span class="st">&#39;Can not save fiel: &#39;</span><span class="op">,</span> <span class="st">&#39;Please select file.&#39;</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb14-32" data-line-number="32">          <span class="cf">return</span></a>
-<a class="sourceLine" id="cb14-33" data-line-number="33">        <span class="op">}</span></a>
-<a class="sourceLine" id="cb14-34" data-line-number="34">        <span class="va">app</span>.<span class="va">ports</span>.<span class="va">writeFileHook</span>.<span class="at">send</span>(fileName)<span class="op">;</span></a>
-<a class="sourceLine" id="cb14-35" data-line-number="35">        <span class="va">app</span>.<span class="va">ports</span>.<span class="va">writeFile</span>.<span class="at">subscribe</span>(args <span class="op">=&gt;</span> <span class="op">{</span> <span class="at">writeFileTo</span>(args[<span class="st">&#39;path&#39;</span>]<span class="op">,</span> args[<span class="st">&#39;body&#39;</span>]) <span class="op">}</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb14-36" data-line-number="36">    <span class="op">}</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb14-37" data-line-number="37">  <span class="op">}</span></a>
-<a class="sourceLine" id="cb14-38" data-line-number="38"><span class="op">}</span></a></code></pre></div>
-<p>上書き保存 <code>writeFile</code> と新しく保存 <code>writeFileAs</code> を用意し，共通部分は <code>writeFileTo</code> 関数として書き出した．</p>
-<p>これをメニューバーに追加する．</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb15-1" data-line-number="1"><span class="kw">var</span> menuvar <span class="op">=</span> <span class="kw">new</span> <span class="at">Menu</span>()<span class="op">;</span></a>
-<a class="sourceLine" id="cb15-2" data-line-number="2"><span class="va">menuvar</span>.<span class="at">append</span>(<span class="kw">new</span> <span class="at">MenuItem</span>(</a>
-<a class="sourceLine" id="cb15-3" data-line-number="3">  <span class="op">{</span></a>
-<a class="sourceLine" id="cb15-4" data-line-number="4">    <span class="dt">label</span><span class="op">:</span> <span class="st">&#39;File&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb15-5" data-line-number="5">    <span class="dt">submenu</span><span class="op">:</span> [</a>
-<a class="sourceLine" id="cb15-6" data-line-number="6">      <span class="op">{</span></a>
-<a class="sourceLine" id="cb15-7" data-line-number="7">        <span class="dt">label</span><span class="op">:</span> <span class="st">&#39;Open&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb15-8" data-line-number="8">        <span class="at">click</span>() <span class="op">{</span> <span class="va">files</span>.<span class="at">readFile</span>(app) <span class="op">}</span></a>
-<a class="sourceLine" id="cb15-9" data-line-number="9">      <span class="op">},</span></a>
-<a class="sourceLine" id="cb15-10" data-line-number="10">      <span class="op">{</span></a>
-<a class="sourceLine" id="cb15-11" data-line-number="11">        <span class="dt">label</span><span class="op">:</span> <span class="st">&#39;Save&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb15-12" data-line-number="12">        <span class="at">click</span>() <span class="op">{</span> <span class="va">files</span>.<span class="at">writeFile</span>(app) <span class="op">}</span></a>
-<a class="sourceLine" id="cb15-13" data-line-number="13">      <span class="op">},</span></a>
-<a class="sourceLine" id="cb15-14" data-line-number="14">      <span class="op">{</span></a>
-<a class="sourceLine" id="cb15-15" data-line-number="15">        <span class="dt">label</span><span class="op">:</span> <span class="st">&#39;Save As&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb15-16" data-line-number="16">        <span class="at">click</span>() <span class="op">{</span> <span class="va">files</span>.<span class="at">writeFileAs</span>(app) <span class="op">}</span></a>
-<a class="sourceLine" id="cb15-17" data-line-number="17">      <span class="op">}</span></a>
-<a class="sourceLine" id="cb15-18" data-line-number="18">    ]</a>
-<a class="sourceLine" id="cb15-19" data-line-number="19">  <span class="op">}</span></a>
-<a class="sourceLine" id="cb15-20" data-line-number="20">))<span class="op">;</span></a></code></pre></div>
-<p>最後に Elm 側に処理を追加した．</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" data-line-number="1"><span class="co">-- app/src/Main.elm</span></a>
-<a class="sourceLine" id="cb16-2" data-line-number="2"><span class="kw">type</span> <span class="dt">Msg</span></a>
-<a class="sourceLine" id="cb16-3" data-line-number="3">  <span class="fu">=</span> <span class="dt">TextAreaInput</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb16-4" data-line-number="4">  <span class="fu">|</span> <span class="dt">SizeUpdated</span> <span class="dt">Window.Size</span></a>
-<a class="sourceLine" id="cb16-5" data-line-number="5">  <span class="fu">|</span> <span class="dt">ReadFile</span> <span class="dt">FS.File</span></a>
-<a class="sourceLine" id="cb16-6" data-line-number="6">  <span class="fu">|</span> <span class="dt">WriteFileHook</span> (<span class="dt">Maybe</span> <span class="dt">String</span>)</a>
-<a class="sourceLine" id="cb16-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb16-8" data-line-number="8">update <span class="fu">:</span> <span class="dt">Msg</span> <span class="ot">-&gt;</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> ( <span class="dt">Model</span>, <span class="dt">Cmd</span> <span class="dt">Msg</span> )</a>
-<a class="sourceLine" id="cb16-9" data-line-number="9">update msg model <span class="fu">=</span></a>
-<a class="sourceLine" id="cb16-10" data-line-number="10">  <span class="kw">case</span> msg <span class="kw">of</span></a>
-<a class="sourceLine" id="cb16-11" data-line-number="11">    <span class="dt">TextAreaInput</span> str <span class="ot">-&gt;</span></a>
-<a class="sourceLine" id="cb16-12" data-line-number="12">      ( { model <span class="fu">|</span> textarea <span class="fu">=</span> str }, Cmd.none )</a>
-<a class="sourceLine" id="cb16-13" data-line-number="13">    <span class="dt">SizeUpdated</span> size <span class="ot">-&gt;</span></a>
-<a class="sourceLine" id="cb16-14" data-line-number="14">      ( { model <span class="fu">|</span> window <span class="fu">=</span> size }, Cmd.none )</a>
-<a class="sourceLine" id="cb16-15" data-line-number="15">    <span class="dt">ReadFile</span> file <span class="ot">-&gt;</span></a>
-<a class="sourceLine" id="cb16-16" data-line-number="16">      ( { model <span class="fu">|</span> textarea <span class="fu">=</span> file<span class="fu">.</span>body, filepath <span class="fu">=</span> file<span class="fu">.</span>path }, Cmd.none )</a>
-<a class="sourceLine" id="cb16-17" data-line-number="17">    <span class="dt">WriteFileHook</span> (<span class="dt">Just</span> filepath) <span class="ot">-&gt;</span></a>
-<a class="sourceLine" id="cb16-18" data-line-number="18">      ( { model <span class="fu">|</span> filepath <span class="fu">=</span> filepath }, FS.writeFile { path <span class="fu">=</span> filepath, body <span class="fu">=</span> model<span class="fu">.</span>textarea } )</a>
-<a class="sourceLine" id="cb16-19" data-line-number="19">    <span class="dt">WriteFileHook</span> <span class="dt">Nothing</span> <span class="ot">-&gt;</span></a>
-<a class="sourceLine" id="cb16-20" data-line-number="20">      ( model, FS.writeFile { path <span class="fu">=</span> model<span class="fu">.</span>filepath, body <span class="fu">=</span> model<span class="fu">.</span>textarea } )</a>
-<a class="sourceLine" id="cb16-21" data-line-number="21"></a>
-<a class="sourceLine" id="cb16-22" data-line-number="22">subscriptions <span class="fu">:</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> <span class="dt">Sub</span> <span class="dt">Msg</span></a>
-<a class="sourceLine" id="cb16-23" data-line-number="23">subscriptions model <span class="fu">=</span></a>
-<a class="sourceLine" id="cb16-24" data-line-number="24">  Sub.batch</a>
-<a class="sourceLine" id="cb16-25" data-line-number="25">    [ Window.resizes <span class="dt">SizeUpdated</span></a>
-<a class="sourceLine" id="cb16-26" data-line-number="26">    , FS.readFile <span class="dt">ReadFile</span></a>
-<a class="sourceLine" id="cb16-27" data-line-number="27">    , FS.writeFileHook <span class="dt">WriteFileHook</span></a>
-<a class="sourceLine" id="cb16-28" data-line-number="28">    ]</a></code></pre></div>
-<p>これでうまく動作するはずだ．</p>
-<p><img src="/assets/create-elmdeck/savefile.gif" /></p>
-<h3 id="ショートカット">ショートカット</h3>
-<p>最後にショートカットだ． 次の記事が参考になった．</p>
-<ul>
-<li><a href="https://qiita.com/okaxaki/items/8b8942b0c4e13ac67739">Electronに開発用メニューとショートカットを付ける - Qiita</a></li>
-</ul>
-<p><a href="https://electronjs.org/docs/api/accelerator"><code>Accelerator</code></a> というのを使えばよいらしい．</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb17-1" data-line-number="1"><span class="kw">var</span> menuvar <span class="op">=</span> <span class="kw">new</span> <span class="at">Menu</span>()<span class="op">;</span></a>
-<a class="sourceLine" id="cb17-2" data-line-number="2"><span class="va">menuvar</span>.<span class="at">append</span>(<span class="kw">new</span> <span class="at">MenuItem</span>(</a>
-<a class="sourceLine" id="cb17-3" data-line-number="3">  <span class="op">{</span></a>
-<a class="sourceLine" id="cb17-4" data-line-number="4">    <span class="dt">label</span><span class="op">:</span> <span class="st">&#39;File&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb17-5" data-line-number="5">    <span class="dt">submenu</span><span class="op">:</span> [</a>
-<a class="sourceLine" id="cb17-6" data-line-number="6">      <span class="op">{</span></a>
-<a class="sourceLine" id="cb17-7" data-line-number="7">        <span class="dt">label</span><span class="op">:</span> <span class="st">&#39;Open&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb17-8" data-line-number="8">        <span class="dt">accelerator</span><span class="op">:</span> <span class="st">&#39;Ctrl+O&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb17-9" data-line-number="9">        <span class="at">click</span>() <span class="op">{</span> <span class="va">files</span>.<span class="at">readFile</span>(app) <span class="op">}</span></a>
-<a class="sourceLine" id="cb17-10" data-line-number="10">      <span class="op">},</span></a>
-<a class="sourceLine" id="cb17-11" data-line-number="11">      <span class="op">{</span></a>
-<a class="sourceLine" id="cb17-12" data-line-number="12">        <span class="dt">label</span><span class="op">:</span> <span class="st">&#39;Save&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb17-13" data-line-number="13">        <span class="dt">accelerator</span><span class="op">:</span> <span class="st">&#39;Ctrl+S&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb17-14" data-line-number="14">        <span class="at">click</span>() <span class="op">{</span> <span class="va">files</span>.<span class="at">writeFile</span>(app) <span class="op">}</span></a>
-<a class="sourceLine" id="cb17-15" data-line-number="15">      <span class="op">},</span></a>
-<a class="sourceLine" id="cb17-16" data-line-number="16">      <span class="op">{</span></a>
-<a class="sourceLine" id="cb17-17" data-line-number="17">        <span class="dt">label</span><span class="op">:</span> <span class="st">&#39;Save As&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb17-18" data-line-number="18">        <span class="dt">accelerator</span><span class="op">:</span> <span class="st">&#39;Ctrl+Shift+S&#39;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb17-19" data-line-number="19">        <span class="at">click</span>() <span class="op">{</span> <span class="va">files</span>.<span class="at">writeFileAs</span>(app) <span class="op">}</span></a>
-<a class="sourceLine" id="cb17-20" data-line-number="20">      <span class="op">}</span></a>
-<a class="sourceLine" id="cb17-21" data-line-number="21">    ]</a>
-<a class="sourceLine" id="cb17-22" data-line-number="22">  <span class="op">}</span></a>
-<a class="sourceLine" id="cb17-23" data-line-number="23">))<span class="op">;</span></a></code></pre></div>
-<p>これで目的のモノはできた！</p>
-<h2 id="懸念">懸念</h2>
-<p>なんか Electron のファイル IO にはセキュリティ的に甘いところがあるらしい…</p>
-<ul>
-<li><a href="http://utf-8.jp/public/2016/0307/electron.pdf">Electron の倒し方</a></li>
-</ul>
-<p>個人で使う分にはいいんだけど…対策しなきゃかなぁ… Elm を介してレンダラしたマークダウンを貼り付けてるので問題ないのだろうか… 良く分からない．</p>
-<h2 id="思うところ">思うところ</h2>
-<p>結局 JS は結構書いてるなーと思った(笑) JS 絶対書きたくないマンは Elm でできることは，まだ制限される印象だ． JS の知識も多少ないとキツソウだし．</p>
-<p>まぁ綺麗に分離できるのがうれしいんだけどね．</p>
-<h2 id="おしまい">おしまい</h2>
-<p>頑張って作っていくぞ．</p>
   </div>
 </div>
 </article>
