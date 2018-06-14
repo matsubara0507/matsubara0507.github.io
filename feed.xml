@@ -8,8 +8,348 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2018-05-13T00:00:00Z</updated>
+    <updated>2018-06-15T00:00:00Z</updated>
     <entry>
+    <title>Elchemy 入門 : その１</title>
+    <link href="https://matsubara0507.github.io/posts/2018-06-15-introduce-elchemy-part1.html" />
+    <id>https://matsubara0507.github.io/posts/2018-06-15-introduce-elchemy-part1.html</id>
+    <published>2018-06-15T00:00:00Z</published>
+    <updated>2018-06-15T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Elchemy 入門 : その１</h1>
+    <p class="post-meta">
+      <time datetime="2018-06-15" itemprop="datePublished">
+        Jun 15, 2018
+      </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/Elchemy.html">Elchemy</a> <a href="/tags/Elm.html">Elm</a> <a href="/tags/Elixir.html">Elixir</a> <a href="/tags/Haskell.html">Haskell</a>
+      </div>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>Elm から Elixir のトランスパイラ，<a href="https://github.com/wende/elmchemy">Elchemy</a> についてイロイロと調べたのでまとめていきます． 今回は</p>
+<ul>
+<li><a href="https://github.com/wende/elchemy/blob/9184d758dc1d5d5d3209302f9742c11fe01aa92c/README.md">README</a> の意訳</li>
+<li>Dockerイメージ作成</li>
+<li>Tutorial その１をやってみた</li>
+</ul>
+<p>の3本立てです． ちなみに，現在のバージョンは 0.7.4 です．</p>
+<h2 id="readme-意訳">README 意訳</h2>
+<p>Elchemy は，Elixir の強力なエコシステムと Elm の型安全によって，より簡潔に高速に高品質で型安全なコードを記述するために作られた処理系です．</p>
+<ul>
+<li><a href="http://elchemy-live.herokuapp.com">Elchemy のオンライン環境</a></li>
+<li><a href="https://wende.gitbooks.io/elchemy/content/">Elchemy の公式ドキュメント</a></li>
+<li><a href="https://hackernoon.com/elmchemy-write-type-safe-elixir-code-with-elms-syntax-part-1-introduction-8968b76d721d">Elchemy のチュートリアル</a> (今のところ Part1 と Part2 がある)</li>
+</ul>
+<p>なにか質問がある場合は <a href="https://github.com/wende/elchemy/labels/Q%26A"><code>Q&amp;A</code> ラベルを付けて Issue を書いて</a>，だそうだ．</p>
+<h3 id="features">Features</h3>
+<ul>
+<li><strong>型推論:</strong> 強力な型推論によって型注釈を付けることはめったにない． コンパイラによって全て検査される．</li>
+<li><strong>簡単で型安全な呼び出し:</strong> 余計なボイラープレートなしに Elixir/Erlang のプログラムを呼び出すことが出来る． Elixir の typespec に基づいて可能な限り徹底的に型安全の観点から全ての呼び出しを検査する．</li>
+<li><strong>Elm と Elixir のいいとこどり:</strong> Elchemy は Elm の型安全性と強力な型推論，素晴らしい表現力を継承し，Elixir の Doc-test とツール群，そして BEAM プラットフォームを継承している．</li>
+<li><strong>ほとんどないランタイムエラー:</strong> Elchemy の型システムは <strong>ほぼ全てのランタイムエラーを排除する</strong> ． エッジケースが少なくなることで，Elchemy のコードそのものは安全になる． ランタイムエラーが発生した場合，おそらく Elixir のところが起こしているのだろう．</li>
+<li><strong>美しくて可読性の高い出力:</strong> 生成されたコードは慣習的で効率的で元のコードが無くとも読みやすく分析可能である．</li>
+</ul>
+<h3 id="faq">FAQ</h3>
+<h4 id="どういう人にお勧めか">どういう人にお勧めか？</h4>
+<ul>
+<li>型が好きな人</li>
+<li>実行時エラーよりコンパイルエラーの方が好みな人</li>
+<li><code>defp add(a, b), do: b + c</code> より <code>add b c = b + c</code> な書き方の方が好みな人</li>
+<li>カリー化が好きな人</li>
+<li>さっさと失敗させるより全て失敗しない方が賢いと思う人</li>
+</ul>
+<h4 id="どういう人にお勧めじゃないか">どういう人にお勧めじゃないか？</h4>
+<ul>
+<li>もしあなたのプロジェクトが徹底的にテストされたライブラリに依存しておりかつ，あなたが 0 から始まるバージョンを嫌う場合</li>
+<li>モナドを学ぶことで口ひげが伸び視力が弱くなることを恐れる場合</li>
+</ul>
+<h4 id="既にある-elixir-プロジェクトを置き換えるのは可能か">既にある Elixir プロジェクトを置き換えるのは可能か？</h4>
+<p>可能です． しかし，ナイスでダンディーなコンパイルツールは開発中です．</p>
+<h4 id="上司に-elchemy-に現を抜かしていることがばれるだろうか">上司に Elchemy に現を抜かしていることがばれるだろうか？</h4>
+<p>Elchemy の出力はコードの可読性を第一級市民として扱っている． コードは適切にインデントされ，コメントは省略されず，できるだけ最適化されている(例えば，case 節は関数のオーバーロードになる)．</p>
+<h4 id="elchemy-1.0.0-はまだ">Elchemy 1.0.0 はまだ？</h4>
+<p>終わったらね．</p>
+<h4 id="コントリビュートしてもいい">コントリビュートしてもいい？</h4>
+<p>絶対にしてください．</p>
+<h4 id="型はどのように表される">型はどのように表される？</h4>
+<p>Elchemy の全ての値コンストラクタはスネークケースのアトムとして表現され，コンストラクタの引数はタプルで表わされる． つまり，Elchemy で <code>MyType 42 &quot;Forty two&quot; Error</code> という値は <code>{:my_type, 42, &quot;Forty two&quot;, :error}</code> という Elixir の値となる．</p>
+<p>(Type constructor と書いてあるが正しくは Data constructor あるいは value constructor のはずで，Type application も間違いだと思われる)</p>
+<h4 id="elm-の既存のライブラリを-elchemy-で使えるの">Elm の既存のライブラリを Elchemy で使えるの？</h4>
+<p>Native モジュールや Port，Elm ランタイムを使わない限りは，それらを安全にインポートして使うことが出来る．</p>
+<h4 id="elixir-の既存のライブラリを-elchemy-で使えるの">Elixir の既存のライブラリを Elchemy で使えるの？</h4>
+<p>使える． 任意のモジュールの任意の関数を FFI 呼び出しすることが出来る． Elixir モジュール，Erlang モジュール，あるいはマクロであってしても自身の Elchemy コードに含むことが出来る． FFI 呼び出しは Elchemy 内で特別扱いされる． そして，<code>@spec</code> に基づいた型の解析を行うテストが生成されるため，Elixir コードの型安全性を損なうことは無い． 可読性を向上させるためにも FFI 呼び出しは可能な限り避け，常にドキュメント化と <code>doctest</code> をすることをお勧めする．</p>
+<h4 id="テストのような-elixir-のマクロは使えるの">テストのような Elixir のマクロは使えるの？</h4>
+<p>残念ながら，<code>do...end</code> ブロックのような任意のマクロを書くことはまだできない． 替わりとして，任意の関数に対して次のような Elixir のインラインコードを書くことが出来る．</p>
+<pre class="elm"><code>{- ex
+  code_here
+-}</code></pre>
+<p>しかし，それは最後の手段であり，乱用すべきではない．</p>
+<h4 id="elchemy-の-.elm-ファイルをコンパイルするのに-elm-処理系をインストールする必要がある">Elchemy の <code>.elm</code> ファイルをコンパイルするのに Elm 処理系をインストールする必要がある？</h4>
+<p>(なんとなく解答的に Elixir 処理系だけで完結できないの？という意味っぽい)</p>
+<p>あなたは Elm のようなコードを書いて Elixir のコードを生成したいのに， Elixir コードの生成を Elixir コードを書いて作りたいですか？</p>
+<h4 id="elchemy-プロジェクト">Elchemy プロジェクト</h4>
+<p>作者はこの Elchemy プロジェクトそのものを可能な限り Elm で構築したいらしい． <a href="https://github.com/wende/elchemy#maturity-of-the-project">README にはその達成度が書かれている</a>． 処理系そのものは，ほとんど Elm になっているようだ(結果として世にも珍しい Elm で書かれたコンパイラが出来ている)． エフェクトや ErlangVM 回りが厳しいらしい．</p>
+<h2 id="dockerイメージ作成">Dockerイメージ作成</h2>
+<p>ココからが本題．</p>
+<p>新しい言語を軽く試すのに最適なのはやはり Docker だ． Elchemy の Docker イメージは見当たらなかったので作った．</p>
+<ul>
+<li><a href="https://hub.docker.com/r/matsubara0507/elchemy">matsubara0507/elchemy - Docker Hub</a></li>
+</ul>
+<h3 id="できるまで">できるまで</h3>
+<p>本家の README を読むとわかるように Elchemy でビルドするのに必要なモノは以下の4つ．</p>
+<ul>
+<li>Node (npm)</li>
+<li>Elixir (ErlangVM)</li>
+<li>Elm</li>
+<li>elm-github-install</li>
+</ul>
+<p>これらのうち，もっともめんどくさいのは Elixir もとい ErlangVM だと思う． なので base イメージを Elixir にし，ひとつずつ入れていった．</p>
+<p>base イメージにした <a href="https://hub.docker.com/_/elixir/">Elixir の Docker イメージは公式のモノ</a>を使う． <a href="https://github.com/erlang/docker-erlang-otp/blob/99ab1e150c3708ce81bc08073cf5793ef67c6a1c/20/Dockerfile#L1">OSは Debian9 だ</a>．</p>
+<p>Debian への Node のインストールには以下の記事を参考にした．</p>
+<ul>
+<li><a href="http://atomiyama.com/linux/page/debian-9-2-node-npm/">debian9.2にNode.jsとnpmをインストールする｜atominux</a></li>
+</ul>
+<p>こんな感じ</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw">RUN</span> curl -sL https://deb.nodesource.com/setup_${NODE_VERSION} | bash - \</a>
+<a class="sourceLine" id="cb2-2" data-line-number="2">  &amp;&amp; apt-get update &amp;&amp; apt-get install -y nodejs \</a>
+<a class="sourceLine" id="cb2-3" data-line-number="3">  &amp;&amp; apt-get clean \</a>
+<a class="sourceLine" id="cb2-4" data-line-number="4">  &amp;&amp; rm -rf /var/lib/apt/lists/*</a></code></pre></div>
+<p>後は簡単で Elm，elm-github-install，Elchemy は npm からインストールできる． ただし，Elm と elm-github-install には <code>--unsafe-perm=true --allow-root</code> という<a href="https://github.com/gdotdesign/elm-github-install/issues/21#issuecomment-332827661">オプションを付けないといけない</a>．</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw">RUN</span> npm i -g elm@${ELM_VERSION} --unsafe-perm=true --allow-root</a>
+<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="kw">RUN</span> npm i -g elm-github-install@${ELM_GITHUB_INSTALL_VERSION} --unsafe-perm=true --allow-root</a>
+<a class="sourceLine" id="cb3-3" data-line-number="3"><span class="kw">RUN</span> npm i -g elchemy@${ELCHEMY_VERSION}</a></code></pre></div>
+<h3 id="auto-build">Auto Build</h3>
+<p>Elchemy のリリースを眺めてると想像より開発スピードが速かったので，Elchemy の更新を観測して自動ビルドしてくれる仕組みを作ることにした． シェル芸を駆使すればなんとかなりそうだったが，サクッと Haskell 芸をかまして CLI を作った．</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/dockwright">matsubara0507/dockwright - GitHub</a></li>
+</ul>
+<p>(船大工が <code>shipwright</code> なので Dockerfile 大工ってことで <code>dockwright</code>)</p>
+<p>以下のような設定を書いておくと <code>dockwright</code> ってコマンドで GitHub の <code>release</code> API を叩いてリリースタグを取ってきてくれる． それを Docker 内の環境変数としてテンプレートに書き込む．</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="fu">env:</span></a>
+<a class="sourceLine" id="cb4-2" data-line-number="2">  <span class="fu">elchemy_version:</span></a>
+<a class="sourceLine" id="cb4-3" data-line-number="3">    <span class="fu">github:</span></a>
+<a class="sourceLine" id="cb4-4" data-line-number="4">      <span class="fu">repo:</span><span class="at"> wende/elchemy</span></a>
+<a class="sourceLine" id="cb4-5" data-line-number="5">      <span class="fu">hook:</span><span class="at"> release</span></a></code></pre></div>
+<p>あとは git diff で更新をみて更新があればコミットする(コミットさえすれば Docker Hub が自動ビルドしてくれる)． 定期実行は例の如く TravisCI で回す．</p>
+<h2 id="tutorial-そのをやってみた">Tutorial その１をやってみた</h2>
+<p>以下の記事をやってみる．</p>
+<ul>
+<li><a href="https://hackernoon.com/elmchemy-write-type-safe-elixir-code-with-elms-syntax-part-1-introduction-8968b76d721d">Elmchemy — Write type-safe Elixir code with Elm’s syntax — part 1 — Introduction</a></li>
+</ul>
+<p>まずは <code>article_example_elchemy</code> というプロジェクトを作る． 記事内では <code>mix new</code> をして <code>elchemy init</code> をしろと書いてあるが，最新の Elchemy では <code>elchemy new</code> をすることで一気にやってくれる．</p>
+<pre><code>$ elchemy new article_example_elchemy</code></pre>
+<p>Elchemy をコンパイルするためには，<code>mix.exs</code> を次のように<a href="https://wende.gitbooks.io/elchemy/content/INSTALLATION.html">書き換える必要がある</a>．</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">defmodule</span> <span class="cn">MyProject</span><span class="op">.</span><span class="cn">Mixfile</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb6-2" data-line-number="2">  <span class="im">use</span> <span class="cn">Mix</span><span class="op">.</span><span class="cn">Project</span></a>
+<a class="sourceLine" id="cb6-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb6-4" data-line-number="4">  <span class="kw">def</span> project <span class="kw">do</span></a>
+<a class="sourceLine" id="cb6-5" data-line-number="5">    [</a>
+<a class="sourceLine" id="cb6-6" data-line-number="6">      <span class="va">app:</span> <span class="va">:my_project</span>,</a>
+<a class="sourceLine" id="cb6-7" data-line-number="7">      <span class="va">version:</span> <span class="st">&quot;0.1.0&quot;</span>,</a>
+<a class="sourceLine" id="cb6-8" data-line-number="8">      <span class="va">elixir:</span> <span class="st">&quot;~&gt; 1.5&quot;</span>,</a>
+<a class="sourceLine" id="cb6-9" data-line-number="9">      <span class="va">start_permanent:</span> <span class="cn">Mix</span><span class="op">.</span>env <span class="op">==</span> <span class="va">:prod</span>,</a>
+<a class="sourceLine" id="cb6-10" data-line-number="10">      <span class="va">deps:</span> deps()</a>
+<a class="sourceLine" id="cb6-11" data-line-number="11">    ] <span class="op">|&gt;</span> <span class="cn">Code</span><span class="op">.</span>eval_file(<span class="st">&quot;elchemy.exs&quot;</span>)<span class="op">.</span>init <span class="co"># ココ!</span></a>
+<a class="sourceLine" id="cb6-12" data-line-number="12">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb6-13" data-line-number="13">  <span class="op">...</span></a></code></pre></div>
+<p><code>|&gt; Code.eval_file(&quot;elchemy.exs&quot;).ini</code> の部分を書き加えている．</p>
+<h3 id="ディレクトリ構成">ディレクトリ構成</h3>
+<p><code>elchemy new</code> した結果はこんな感じ(バージョンによっては違うかもしれない)．</p>
+<pre><code>projrct_name
+  |- .elchemy.exs
+  |- .formatter.exs
+  |- .gitignore
+  |- README.md
+  |- config
+  |   \- config.exs
+  |- elm
+  |   \- Hello.elm
+  |- elm-package.json
+  |- lib
+  |   \- project_name.ex
+  |- mix.exs
+  \- test
+      |- elchemy_test.exs
+      |- project_name_test.exs
+      \- test_helper.exs</code></pre>
+<p><code>.elchemy.exs</code> は <code>mix</code> コマンドを Elchemy で上書きするための <code>mix</code> 設定ファイルで，残りは Elixir と Elm のプロジェクトファイルが混ざっている． ちなみに <code>.formatter.exs</code> は Elixir 1.6 で追加された Elixir のフォーマッターの設定ファイルだ．</p>
+<h3 id="関数を定義してみる">関数を定義してみる</h3>
+<p>試しに，総和を求める <code>sum</code> 関数を書いてみる． <code>elm/Hello.elm</code> に書き加えるとして，まずはユニットテストを <code>test\elchemy_test.exs</code> に Elixir の文脈で書き加えてみる．</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="kw">defmodule</span> <span class="cn">ElchemyTest</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-2" data-line-number="2">  <span class="im">use</span> <span class="cn">ExUnit</span><span class="op">.</span><span class="cn">Case</span></a>
+<a class="sourceLine" id="cb8-3" data-line-number="3">  <span class="im">use</span> <span class="cn">Elchemy</span></a>
+<a class="sourceLine" id="cb8-4" data-line-number="4">  doctest <span class="cn">Hello</span></a>
+<a class="sourceLine" id="cb8-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb8-6" data-line-number="6">  test <span class="st">&quot;Hello&quot;</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-7" data-line-number="7">    assert <span class="cn">Hello</span><span class="op">.</span>hello() <span class="op">==</span> <span class="st">&quot;world!&quot;</span></a>
+<a class="sourceLine" id="cb8-8" data-line-number="8">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb8-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb8-10" data-line-number="10">  test <span class="st">&quot;Sum of lists&quot;</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-11" data-line-number="11">     assert <span class="cn">Hello</span><span class="op">.</span>sum([]) <span class="op">==</span> <span class="dv">0</span></a>
+<a class="sourceLine" id="cb8-12" data-line-number="12">     assert <span class="cn">Hello</span><span class="op">.</span>sum([<span class="dv">2</span>]) <span class="op">==</span> <span class="dv">2</span></a>
+<a class="sourceLine" id="cb8-13" data-line-number="13">     assert <span class="cn">Hello</span><span class="op">.</span>sum([<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">-1</span>, <span class="dv">-2</span>, <span class="dv">-3</span>]) <span class="op">==</span> <span class="dv">0</span></a>
+<a class="sourceLine" id="cb8-14" data-line-number="14">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb8-15" data-line-number="15"><span class="kw">end</span></a></code></pre></div>
+<p>次に <code>elm/Hello.elm</code> に以下の関数を書き加える．</p>
+<pre class="elm"><code>sum : List a -&gt; Int
+sum list =
+    case list of
+        first :: rest -&gt;
+            first + sum rest
+
+        [] -&gt;
+            0</code></pre>
+<p>とりあえずビルドしてみる．</p>
+<pre><code>$ mix test
+warning: redefining module ElchemyInit (current version defined in memory)
+  elchemy.exs:1
+
+==&gt; elchemy
+Compiling 24 files (.ex)
+warning: unused alias XMaybe
+  lib/Elchemy/XRegex.elchemy.ex:28
+
+warning: unused import Elchemy.XBasics
+  lib/Elchemy/XChar.elchemy.ex:25
+
+warning: unused import Elchemy.XBasics
+  lib/Elchemy/XBitwise.elchemy.ex:6
+
+warning: unused import Elchemy.Macros
+  lib/Elchemy/Plugins/Ex_unit.elchemy.ex:7
+
+warning: unused import Elchemy.Macros
+  lib/Elchemy/Tests/Ex_unit_test.elchemy.ex:7
+
+Generated elchemy app
+==&gt; article_example_elchemy
+/usr/bin/elchemy
+-- Copying Elixir native files --
+-- Compiling Elm files --
+----------
+Type Checking elm/Hello.elm
+-- TYPE MISMATCH ------------------------------------------------- elm/Hello.elm
+
+The left argument of (+) is causing a type mismatch.
+
+21|             first + sum rest
+                ^^^^^
+(+) is expecting the left argument to be a:
+
+    number
+
+But the left argument is:
+
+    a
+
+Hint: Your type annotation uses type variable `a` which means any type of value
+can flow through. Your code is saying it CANNOT be anything though! Maybe change
+your type annotation to be more specific? Maybe the code has a problem? More at:
+&lt;https://github.com/elm-lang/elm-compiler/blob/0.18.0/hints/type-annotations.md&gt;
+
+Detected errors in 1 module.
+Type Check failed
+** (Mix) Elchemy failed the compilation with an error</code></pre>
+<p>いろいろ出ているが重要なのは <code>The left argument of (+) is causing a type mismatch.</code> の部分． 型検査した結果，型が合わなかったのだ． 念のため型検査器の言い分を補足しておくと，<code>sum</code> 関数の引数として <code>List a</code> 型の値 <code>list</code> の要素である <code>first</code> は <code>a</code> 型と推論されるが，加算 <code>(+)</code> は <code>number</code> 型じゃないといけない，ということだ(<code>number</code> 型は加算や乗算が実装されている多相型)．</p>
+<p>言われた通りに変えてみよう．</p>
+<pre class="elm"><code>sum : List number -&gt; Int
+sum list = ...</code></pre>
+<p>ビルドする．</p>
+<pre><code>$ mix test
+...
+Type Checking elm/Hello.elm
+-- TYPE MISMATCH ------------------------------------------------- elm/Hello.elm
+
+The right side of (+) is causing a type mismatch.
+
+21|             first + sum rest
+                        ^^^^^^^^
+(+) is expecting the right side to be a:
+
+    number
+
+But the right side is:
+
+    Int
+
+Hint: Your type annotation uses type variable `number` which means any type of
+value can flow through. Your code is saying it CANNOT be anything though! Maybe
+change your type annotation to be more specific? Maybe the code has a problem?
+More at:
+&lt;https://github.com/elm-lang/elm-compiler/blob/0.18.0/hints/type-annotations.md&gt;
+
+Hint: With operators like (+) I always check the left side first. If it seems
+fine, I assume it is correct and check the right side. So the problem may be in
+how the left and right arguments interact.
+
+Detected errors in 1 module.
+Type Check failed
+** (Mix) Elchemy failed the compilation with an error</code></pre>
+<p><code>(+) is expecting the right side to be a</code> というエラーメッセージに変わった． これは <code>sum</code> 関数の返り値の型が <code>Int</code> なので <code>sum rest</code> の型は <code>Int</code> と推論されたが，<code>first</code> の型が <code>number</code> なので <code>(+)</code> 演算子の左右の型が合わない，ということだ． なので， <code>sum : List Int -&gt; Int</code> とすると無事ビルドが通る．</p>
+<h3 id="変換された-elixir-コード">変換された Elixir コード</h3>
+<p>ちなみに，次のような Elixir コードに変換されている．</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb13-1" data-line-number="1"><span class="kw">defmodule</span> <span class="cn">Hello</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb13-2" data-line-number="2">  <span class="im">use</span> <span class="cn">Elchemy</span></a>
+<a class="sourceLine" id="cb13-3" data-line-number="3">  <span class="op">...</span></a>
+<a class="sourceLine" id="cb13-4" data-line-number="4">  <span class="ot">@spec</span> sum(list(integer)) :: integer</a>
+<a class="sourceLine" id="cb13-5" data-line-number="5">  curry sum<span class="op">/</span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb13-6" data-line-number="6">  <span class="kw">def</span> sum(list) <span class="kw">do</span></a>
+<a class="sourceLine" id="cb13-7" data-line-number="7">    <span class="kw">case</span> list <span class="kw">do</span></a>
+<a class="sourceLine" id="cb13-8" data-line-number="8">      [first <span class="op">|</span> rest] <span class="op">-&gt;</span></a>
+<a class="sourceLine" id="cb13-9" data-line-number="9">        (first <span class="op">+</span> sum(rest))</a>
+<a class="sourceLine" id="cb13-10" data-line-number="10">      [] <span class="op">-&gt;</span></a>
+<a class="sourceLine" id="cb13-11" data-line-number="11">        <span class="dv">0</span></a>
+<a class="sourceLine" id="cb13-12" data-line-number="12">    <span class="kw">end</span></a>
+<a class="sourceLine" id="cb13-13" data-line-number="13">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb13-14" data-line-number="14"><span class="kw">end</span></a></code></pre></div>
+<h3 id="doctest">doctest</h3>
+<p>また，次のように書くことで doctest も変換してくれる．</p>
+<pre class="elm"><code>{-| Returns a sum of every integer int the function
+
+    sum [1,2,3] == 6
+    sum [10] == 10
+    sum [] == 0
+
+-}
+sum : List Int -&gt; Int
+sum list = ...</code></pre>
+<p>変換先はこうだ．</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb15-1" data-line-number="1">  <span class="ot">@doc &quot;&quot;&quot;</span></a>
+<a class="sourceLine" id="cb15-2" data-line-number="2"><span class="co">  Returns a sum of every integer int the function</span></a>
+<a class="sourceLine" id="cb15-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb15-4" data-line-number="4"><span class="co">      iex&gt; import Hello</span></a>
+<a class="sourceLine" id="cb15-5" data-line-number="5"><span class="co">      iex&gt; sum([1, 2, 3])</span></a>
+<a class="sourceLine" id="cb15-6" data-line-number="6"><span class="co">      6</span></a>
+<a class="sourceLine" id="cb15-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb15-8" data-line-number="8"><span class="co">      iex&gt; import Hello</span></a>
+<a class="sourceLine" id="cb15-9" data-line-number="9"><span class="co">      iex&gt; sum([10])</span></a>
+<a class="sourceLine" id="cb15-10" data-line-number="10"><span class="co">      10</span></a>
+<a class="sourceLine" id="cb15-11" data-line-number="11"></a>
+<a class="sourceLine" id="cb15-12" data-line-number="12"><span class="co">      iex&gt; import Hello</span></a>
+<a class="sourceLine" id="cb15-13" data-line-number="13"><span class="co">      iex&gt; sum([])</span></a>
+<a class="sourceLine" id="cb15-14" data-line-number="14"><span class="co">      0</span></a>
+<a class="sourceLine" id="cb15-15" data-line-number="15"></a>
+<a class="sourceLine" id="cb15-16" data-line-number="16"></a>
+<a class="sourceLine" id="cb15-17" data-line-number="17"><span class="co">  </span><span class="ot">&quot;&quot;&quot;</span></a>
+<a class="sourceLine" id="cb15-18" data-line-number="18">  <span class="ot">@spec</span> sum(list(integer)) :: integer</a>
+<a class="sourceLine" id="cb15-19" data-line-number="19">  curry sum<span class="op">/</span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb15-20" data-line-number="20">  <span class="kw">def</span> sum(list) <span class="kw">do</span></a>
+<a class="sourceLine" id="cb15-21" data-line-number="21">    <span class="op">...</span></a></code></pre></div>
+<h2 id="おしまい">おしまい</h2>
+<p>次はアプリケーションを作りたい．</p>
+  </div>
+</div>
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>Haskell で型安全に YAML ファイルをビルド時に埋め込む</title>
     <link href="https://matsubara0507.github.io/posts/2018-05-13-yaml-th.html" />
     <id>https://matsubara0507.github.io/posts/2018-05-13-yaml-th.html</id>
@@ -2052,144 +2392,6 @@ ghc.EXE: could not execute: tasty-discover</code></pre>
 <p>Stackage (というか Hackage)に置いていないツールを <code>stack install</code> するために，<code>package.yaml</code> と <code>stack.yaml</code> と <code>.gitignore</code> を置いてるけど気にしないで． Travis CI の定期実行を設定しておけば定期的に Qita の記事とかを更新してくれる．</p>
 <h2 id="おしまい">おしまい</h2>
 <p>そーいえば，UNIX 系には <code>whoami</code> というコマンドがあるんでしたね(Windowsユーザー)． 紛らわしい名前にしてしまった．</p>
-  </div>
-</div>
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>「積み木の水槽」問題の Haskell での回答を読み解く</title>
-    <link href="https://matsubara0507.github.io/posts/2018-02-04-water-towers-hs.html" />
-    <id>https://matsubara0507.github.io/posts/2018-02-04-water-towers-hs.html</id>
-    <published>2018-02-04T00:00:00Z</published>
-    <updated>2018-02-04T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
- <div class="card-content">
-  <header class="post-header">
-    <h1 class="post-title" itemprop="name headline">「積み木の水槽」問題の Haskell での回答を読み解く</h1>
-    <p class="post-meta">
-      <time datetime="2018-02-04" itemprop="datePublished">
-        Feb 4, 2018
-      </time>
-      
-      
-      <div class="tags">
-          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a>
-      </div>
-      
-    </p>
-  </header>
-
-  <div class="post-content" itemprop="articleBody">
-    <p>今朝，バイト先で<a href="http://nabetani.sakura.ne.jp/hena/ord13blocktup/">「積み木の水槽」問題</a>の <a href="https://rosettacode.org/wiki/Water_collected_between_towers#Haskell">Haskell での回答</a>について話題になりました． リンク先の解答を見ると，恐ろしいことに，一行で書けてしまいます(正しくは，この解答では <code>nabetani</code> さんの問題は解けませんが…)．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="co">-- 2 == solve [1,5,3,7,2]</span></a>
-<a class="sourceLine" id="cb1-2" data-line-number="2">solve <span class="fu">=</span> sum <span class="fu">.</span> filter (<span class="fu">&gt;</span> <span class="dv">0</span>) <span class="fu">.</span> (zipWith (<span class="fu">-</span>) <span class="fu">=&lt;&lt;</span> (zipWith min <span class="fu">.</span> scanl1 max <span class="fu">&lt;*&gt;</span> scanr1 max))</a></code></pre></div>
-<p>普通の Haskeller であれば，これぐらい目コンパイルして振る舞いを読み解くのは朝飯前でしょうが，Haskell 初学者のために簡単な解説を残しておこうかなと思います．</p>
-<h2 id="手直し">手直し</h2>
-<p>前述したとおり，そもそもこれでは <code>nabetani</code> さんの問題は解けないので，解けるように手直しします． もちろん <strong>1行で</strong> ．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1">solve <span class="fu">=</span> sum <span class="fu">.</span> fmap (sum <span class="fu">.</span> (zipWith (<span class="fu">-</span>) <span class="fu">=&lt;&lt;</span> (zipWith min <span class="fu">.</span> scanl1 max <span class="fu">&lt;*&gt;</span> scanr1 max)) <span class="fu">.</span> fmap (read <span class="fu">.</span> (<span class="fu">:</span> []))) <span class="fu">.</span> words <span class="fu">.</span> fmap (bool <span class="ch">&#39; &#39;</span> <span class="fu">&lt;*&gt;</span> (<span class="fu">/=</span>) <span class="ch">&#39;0&#39;</span>)</a></code></pre></div>
-<p><code>Data.List</code> と <code>Data.Bool</code> を <code>import</code> してる前提だが，一応一行で書けた． 雑に直したのでもう少し短くできるような気もしますが，まぁそもそも本質的なところでないので勘弁してください．</p>
-<p>ちなみに，そもそもなんで元のコードでは解けないのかというと，<code>nabetani</code> さんの問題には <code>0</code> が含むからだ． しかし，<code>0</code> で水槽を切り分けてあげて，元の解答を <code>map</code> してあげれば良いだけなのでコアのところはそのまんま(<code>filter (&gt; 0)</code> は要らない気がしたので消したけど)．</p>
-<h2 id="読み解く">読み解く</h2>
-<p>手直しした最終的なコードはテストコードと共に<a href="https://gist.github.com/matsubara0507/10a44fb2a9676bde9658c3eeec456676">ココ</a>にあげた．</p>
-<h3 id="トップダウンに">トップダウンに</h3>
-<p>順に読み解く． Haskell でプログラミングするとき(というか関数型プログラミング)はトップダウンに書いていくのが基本なので，読み解くときも上から順に切り分けてく．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="ot">solve ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb3-2" data-line-number="2">solve <span class="fu">=</span> sum <span class="fu">.</span> fmap countWater <span class="fu">.</span> splitTank</a>
-<a class="sourceLine" id="cb3-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb3-4" data-line-number="4"><span class="ot">splitTank ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> [<span class="dt">String</span>]</a>
-<a class="sourceLine" id="cb3-5" data-line-number="5">splitTank <span class="fu">=</span>  words <span class="fu">.</span> fmap (bool <span class="ch">&#39; &#39;</span> <span class="fu">&lt;*&gt;</span> (<span class="fu">/=</span>) <span class="ch">&#39;0&#39;</span>)</a>
-<a class="sourceLine" id="cb3-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb3-7" data-line-number="7"><span class="ot">countWater ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb3-8" data-line-number="8">countWater <span class="fu">=</span> sum <span class="fu">.</span> (zipWith (<span class="fu">-</span>) <span class="fu">=&lt;&lt;</span> (zipWith min <span class="fu">.</span> scanl1 max <span class="fu">&lt;*&gt;</span> scanr1 max)) <span class="fu">.</span> fmap (read <span class="fu">.</span> (<span class="fu">:</span> []))</a></code></pre></div>
-<p><code>splitTank</code> 関数は <code>0</code> を区切り文字として文字列を切り分けてるだけだ． 悲しいことに，Haskell (というか GHC)の標準モジュールには「任意の文字で文字列を切り分ける」関数がない． なので，<code>0</code> だけを空白 <code>' '</code> に置換してから，<code>words</code> で切り分けている(空白で切り分ける関数 <code>words</code> は何故か標準にある)．</p>
-<p><code>countWater</code> 関数が各水槽の水の数を数え上げており，それを最後に総和 <code>sum</code> しているだけだ．</p>
-<h3 id="fmap-はわかるよね"><code>fmap</code> はわかるよね？</h3>
-<p>ちなみに，さっきから出てきている <code>fmap</code> という関数はわかりますよね？ 多くの言語でも導入されている，リストや配列の各要素に関数を適用する関数(あるいはメソッド) <code>map :: (a -&gt; b) -&gt; [a] -&gt; [b]</code> をより一般化したものだ． 今回はリストにしか使わないので <code>map</code> と同義だと考えてくれていい(hlint で注意されるので，<code>fmap</code> と書く癖がついた)．</p>
-<h3 id="コアの部分">コアの部分</h3>
-<p>さて，本題でもある <code>countWater</code> 関数を読み解く． まずは切り分けよう．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="ot">countWater ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb4-2" data-line-number="2">countWater <span class="fu">=</span> sum <span class="fu">.</span> toWaterLine <span class="fu">.</span> toInts</a>
-<a class="sourceLine" id="cb4-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb4-4" data-line-number="4"><span class="ot">toInts ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> [<span class="dt">Int</span>]</a>
-<a class="sourceLine" id="cb4-5" data-line-number="5">toInts <span class="fu">=</span> fmap (read <span class="fu">.</span> (<span class="fu">:</span> []))</a>
-<a class="sourceLine" id="cb4-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb4-7" data-line-number="7"><span class="ot">toWaterLine ::</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> [<span class="dt">Int</span>]</a>
-<a class="sourceLine" id="cb4-8" data-line-number="8">toWaterLine <span class="fu">=</span> zipWith (<span class="fu">-</span>) <span class="fu">=&lt;&lt;</span> (zipWith min <span class="fu">.</span> scanl1 max <span class="fu">&lt;*&gt;</span> scanr1 max)</a></code></pre></div>
-<p><code>toInts</code> 関数は数列の文字列から数値のリストに変換している． Haskell で文字列を任意の型に変換するには <code>read :: String -&gt; a</code> 関数を使う． Haskell において <code>String = [Char]</code> なので，<code>fmap (: [])</code> をして <code>String</code> のリストに変換し，各文字列を <code>read</code> をしているというわけだ(<code>singleton</code> みたいな関数が標準にあればいいのに)．</p>
-<p><code>toWaterLine</code> 関数が水槽の各列の水の量を計算し，<code>sum</code> で総和している． なので，重要なのは <code>toWaterLine</code> 関数だ． <code>(&lt;*&gt;)</code> 演算子や <code>(=&lt;&lt;)</code> 演算子などがあって意味不明かもしれないが，この辺りはポイントフリーにするためのツールみたいなもので，アルゴリズムの本質的な部分ではないよ．</p>
-<h3 id="関数も-monad-型クラスのインスタンス">関数も <code>Monad</code> 型クラスのインスタンス</h3>
-<p><code>(&lt;*&gt;)</code> 演算子や <code>(=&lt;&lt;)</code> 演算子が何をしているかと言うのは <strong>関数型 <code>(-&gt;) a</code> も <code>Monad</code> 型クラスのインスタンス</strong> だという事実を知っていれば簡単に読めますね． Haskell 界隈では常識(要出典)なので，説明しなくても良いかもしれないが，初学者のために念のためしておく．</p>
-<p>それぞれの演算子の型は以下の通り(めんどいので <code>Monad</code> で統一)．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="ot">(&lt;*&gt;) ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> m (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> m a <span class="ot">-&gt;</span> m b</a>
-<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="ot">(=&lt;&lt;) ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> m a <span class="ot">-&gt;</span> m b</a></code></pre></div>
-<p>で，前述したとおり，関数型 <code>(c -&gt;)</code> も <code>Monad</code> 型クラスのインスタンスなので，<code>m = (c -&gt;)</code> と置き換えれる．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="ot">(&lt;*&gt;) ::</span> (c <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> b)</a>
-<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="ot">(=&lt;&lt;) ::</span> (a <span class="ot">-&gt;</span> c <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> b)</a></code></pre></div>
-<p>便利そうなコンビネーターになった． なので，<code>toWaterLine</code> 関数のこれらの演算子を同様のラムダ式で置き換えてあげよう．</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="ot">toWaterLine ::</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> [<span class="dt">Int</span>]</a>
-<a class="sourceLine" id="cb7-2" data-line-number="2">toWaterLine</a>
-<a class="sourceLine" id="cb7-3" data-line-number="3">  <span class="fu">=</span> \xs <span class="ot">-&gt;</span> zipWith (<span class="fu">-</span>) ((\ys <span class="ot">-&gt;</span> (zipWith min <span class="fu">.</span> scanl1 max <span class="fu">$</span> ys) (scanr1 max ys)) xs) xs</a>
-<a class="sourceLine" id="cb7-4" data-line-number="4">  <span class="fu">=</span> \xs <span class="ot">-&gt;</span> zipWith (<span class="fu">-</span>) ((\ys <span class="ot">-&gt;</span> zipWith min (scanl1 max ys) (scanr1 max ys)) xs) xs</a>
-<a class="sourceLine" id="cb7-5" data-line-number="5">  <span class="fu">=</span> \xs <span class="ot">-&gt;</span> zipWith (<span class="fu">-</span>) (zipWith min (scanl1 max xs) (scanr1 max xs)) xs</a></code></pre></div>
-<p>ついでに，他の言語の人では分かりにくい演算子も置き換えたので，これでどの言語の人でも読めるはずだ．</p>
-<h3 id="アルゴリズム">アルゴリズム</h3>
-<p>ここからは Haskell 関係ない． ひとつひとつ見ていこう．</p>
-<p><code>scanl :: (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; [b]</code> 関数は左畳み込み関数 <code>foldl :: (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; b</code> の途中経過もリストで残したような関数だ． つまり <code>foldl f x xs = last $ scanl f x xs</code> が成り立つ． <code>scanl1 :: (a -&gt; a -&gt; a) -&gt; [a] -&gt; [a]</code> 関数は初期値を無くしたバージョンだ． <code>scanr1</code> は <code>scanl1</code> の右畳み込みバージョン．</p>
-<h2 id="section"></h2>
-<p><code>scanl max xs</code> は左から順に，水槽の高さを比較して高い方を残しているので，各列の最も高い左側が残る． <code>scanr1 max xs</code> は各列の最も高い右側が残る．</p>
-<p><img src="/assets/water-towers-hs/water1.gif" /></p>
-<p>そして，それらの低い方を残して，もとの高さを引く．</p>
-<p><img src="/assets/water-towers-hs/water2.gif" /></p>
-<p>すごいできた！</p>
-<h2 id="試しに">試しに</h2>
-<p>次のテストコードを走らせてみた．</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="co">-- WalterTowers.hs</span></a>
-<a class="sourceLine" id="cb8-2" data-line-number="2"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb8-3" data-line-number="3">main <span class="fu">=</span> print <span class="fu">$</span> all ((<span class="fu">==</span>) <span class="fu">&lt;$&gt;</span> snd <span class="fu">&lt;*&gt;</span> (show <span class="fu">.</span> solve <span class="fu">.</span> fst)) testSet</a>
-<a class="sourceLine" id="cb8-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb8-5" data-line-number="5">solve <span class="fu">=</span> <span class="fu">...</span></a>
-<a class="sourceLine" id="cb8-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb8-7" data-line-number="7"><span class="ot">testSet ::</span> [(<span class="dt">String</span>, <span class="dt">String</span>)]</a>
-<a class="sourceLine" id="cb8-8" data-line-number="8">testSet <span class="fu">=</span></a>
-<a class="sourceLine" id="cb8-9" data-line-number="9">  [ (<span class="st">&quot;83141310145169154671122&quot;</span>, <span class="st">&quot;24&quot;</span>)</a>
-<a class="sourceLine" id="cb8-10" data-line-number="10">  , (<span class="st">&quot;923111128&quot;</span>, <span class="st">&quot;45&quot;</span>)</a>
-<a class="sourceLine" id="cb8-11" data-line-number="11">  , (<span class="st">&quot;923101128&quot;</span>, <span class="st">&quot;1&quot;</span>)</a>
-<a class="sourceLine" id="cb8-12" data-line-number="12">  , (<span class="st">&quot;903111128&quot;</span>, <span class="st">&quot;9&quot;</span>)</a>
-<a class="sourceLine" id="cb8-13" data-line-number="13">  , (<span class="st">&quot;3&quot;</span>, <span class="st">&quot;0&quot;</span>)</a>
-<a class="sourceLine" id="cb8-14" data-line-number="14">  , (<span class="st">&quot;31&quot;</span>, <span class="st">&quot;0&quot;</span>)</a>
-<a class="sourceLine" id="cb8-15" data-line-number="15">  , (<span class="st">&quot;412&quot;</span>, <span class="st">&quot;1&quot;</span>)</a>
-<a class="sourceLine" id="cb8-16" data-line-number="16">  , (<span class="st">&quot;3124&quot;</span>, <span class="st">&quot;3&quot;</span>)</a>
-<a class="sourceLine" id="cb8-17" data-line-number="17">  , (<span class="st">&quot;11111&quot;</span>, <span class="st">&quot;0&quot;</span>)</a>
-<a class="sourceLine" id="cb8-18" data-line-number="18">  , (<span class="st">&quot;222111&quot;</span>, <span class="st">&quot;0&quot;</span>)</a>
-<a class="sourceLine" id="cb8-19" data-line-number="19">  , (<span class="st">&quot;335544&quot;</span>, <span class="st">&quot;0&quot;</span>)</a>
-<a class="sourceLine" id="cb8-20" data-line-number="20">  , (<span class="st">&quot;1223455321&quot;</span>, <span class="st">&quot;0&quot;</span>)</a>
-<a class="sourceLine" id="cb8-21" data-line-number="21">  , (<span class="st">&quot;000&quot;</span>, <span class="st">&quot;0&quot;</span>)</a>
-<a class="sourceLine" id="cb8-22" data-line-number="22">  , (<span class="st">&quot;000100020003121&quot;</span>, <span class="st">&quot;1&quot;</span>)</a>
-<a class="sourceLine" id="cb8-23" data-line-number="23">  , (<span class="st">&quot;1213141516171819181716151413121&quot;</span>, <span class="st">&quot;56&quot;</span>)</a>
-<a class="sourceLine" id="cb8-24" data-line-number="24">  , (<span class="st">&quot;712131415161718191817161514131216&quot;</span>, <span class="st">&quot;117&quot;</span>)</a>
-<a class="sourceLine" id="cb8-25" data-line-number="25">  , (<span class="st">&quot;712131405161718191817161514031216&quot;</span>, <span class="st">&quot;64&quot;</span>)</a>
-<a class="sourceLine" id="cb8-26" data-line-number="26">  , (<span class="st">&quot;03205301204342100&quot;</span>, <span class="st">&quot;1&quot;</span>)</a>
-<a class="sourceLine" id="cb8-27" data-line-number="27">  , (<span class="st">&quot;0912830485711120342&quot;</span>, <span class="st">&quot;18&quot;</span>)</a>
-<a class="sourceLine" id="cb8-28" data-line-number="28">  , (<span class="st">&quot;1113241120998943327631001&quot;</span>, <span class="st">&quot;20&quot;</span>)</a>
-<a class="sourceLine" id="cb8-29" data-line-number="29">  , (<span class="st">&quot;7688167781598943035023813337019904732&quot;</span>, <span class="st">&quot;41&quot;</span>)</a>
-<a class="sourceLine" id="cb8-30" data-line-number="30">  , (<span class="st">&quot;2032075902729233234129146823006063388&quot;</span>, <span class="st">&quot;79&quot;</span>)</a>
-<a class="sourceLine" id="cb8-31" data-line-number="31">  , (<span class="st">&quot;8323636570846582397534533&quot;</span>, <span class="st">&quot;44&quot;</span>)</a>
-<a class="sourceLine" id="cb8-32" data-line-number="32">  , (<span class="st">&quot;2142555257761672319599209190604843&quot;</span>, <span class="st">&quot;41&quot;</span>)</a>
-<a class="sourceLine" id="cb8-33" data-line-number="33">  , (<span class="st">&quot;06424633785085474133925235&quot;</span>, <span class="st">&quot;51&quot;</span>)</a>
-<a class="sourceLine" id="cb8-34" data-line-number="34">  , (<span class="st">&quot;503144400846933212134&quot;</span>, <span class="st">&quot;21&quot;</span>)</a>
-<a class="sourceLine" id="cb8-35" data-line-number="35">  , (<span class="st">&quot;1204706243676306476295999864&quot;</span>, <span class="st">&quot;21&quot;</span>)</a>
-<a class="sourceLine" id="cb8-36" data-line-number="36">  , (<span class="st">&quot;050527640248767717738306306596466224&quot;</span>, <span class="st">&quot;29&quot;</span>)</a>
-<a class="sourceLine" id="cb8-37" data-line-number="37">  , (<span class="st">&quot;5926294098216193922825&quot;</span>, <span class="st">&quot;65&quot;</span>)</a>
-<a class="sourceLine" id="cb8-38" data-line-number="38">  , (<span class="st">&quot;655589141599534035&quot;</span>, <span class="st">&quot;29&quot;</span>)</a>
-<a class="sourceLine" id="cb8-39" data-line-number="39">  , (<span class="st">&quot;7411279689677738&quot;</span>, <span class="st">&quot;34&quot;</span>)</a>
-<a class="sourceLine" id="cb8-40" data-line-number="40">  , (<span class="st">&quot;268131111165754619136819109839402&quot;</span>, <span class="st">&quot;102&quot;</span>)</a>
-<a class="sourceLine" id="cb8-41" data-line-number="41">  ]</a></code></pre></div>
-<p><code>stack runghc</code> で走らせると．</p>
-<pre><code>$ stack runghc WalterTowers.hs
-True</code></pre>
-<h2 id="おしまい">おしまい</h2>
-<p>こういうのを自分で思いつけるようになりたいね…</p>
   </div>
 </div>
 </article>
