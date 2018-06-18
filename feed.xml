@@ -8,8 +8,436 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2018-06-16T00:00:00Z</updated>
+    <updated>2018-06-18T00:00:00Z</updated>
     <entry>
+    <title>Earlang & Elixir Festa 2018 に参加してきた</title>
+    <link href="https://matsubara0507.github.io/posts/2018-06-18-join-elixir-festa-2108.html" />
+    <id>https://matsubara0507.github.io/posts/2018-06-18-join-elixir-festa-2108.html</id>
+    <published>2018-06-18T00:00:00Z</published>
+    <updated>2018-06-18T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Earlang & Elixir Festa 2018 に参加してきた</h1>
+    <p class="post-meta">
+      <time datetime="2018-06-18" itemprop="datePublished">
+        Jun 18, 2018
+      </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/Elixir.html">Elixir</a> <a href="/tags/event.html">event</a>
+      </div>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>先日(6/16)，<a href="https://elixir-fest.jp/">Earlang &amp; Elixir Festa 2018</a> に参加してきたので，そのメモ書きです． ちなみに，Elixir は普段たいして使ってないけど LT もしてきました．</p>
+<h2 id="section"></h2>
+<p>今年で2回目らしく，去年は Elixir の作者の <a href="https://twitter.com/josevalim">Jose Valim</a> 氏を呼んで Keynote してもらい，全体のセッション内容としては Elixir を導入し始めた・挑戦中という話がメインだったようだ． 今年はどっちかっていうとプロダクトに実践導入・運用してみてどうだったかという話がメインだそうだ． また，並行してハンズオンがあったらしいが，行ってないのでそっちは良く分からない． ハンズオンの資料は GitHub に公開してあるので，いずれやってみたい(同期とかとハンズオンしてみてもいいかも)．</p>
+<ul>
+<li><a href="https://github.com/ohr486/ErlangElixirFestHandsOn">ohr486/ErlangElixirFestHandsOn - GitHub</a></li>
+</ul>
+<p>あと <a href="https://togetter.com/li/1238110">Togetter にまとめてみました</a>．</p>
+<h2 id="メモ">メモ</h2>
+<p>各企業での導入した話が多かったので簡単なメモばっかです．</p>
+<h4 id="らくらく連絡網が-elixir-でリアルタイムメッセージング基盤を刷新した話">「らくらく連絡網」が Elixir でリアルタイムメッセージング基盤を刷新した話</h4>
+<p>(ネットワーク設定にバタバタしてたのでメモが少ない)</p>
+<ul>
+<li><a href="https://github.com/rinosamakanata">rinosamakanata</a> 氏の発表</li>
+<li>もともとは RoR らしい</li>
+<li>技術的課題
+<ul>
+<li>分散の問題</li>
+<li>長い目で見たときの保守・運用</li>
+</ul></li>
+<li>フロントエンドは Elm
+<ul>
+<li>「関数型良いよね」</li>
+</ul></li>
+<li>負荷テストのために不可掛けの Docker コンテナを作った</li>
+<li>Elixir のバージョンアップが多い(リリースしてから9回もあった)
+<ul>
+<li><a href="https://github.com/asdf-vm/asdf-elixir">asdf</a> で難なく</li>
+<li>Ruby や RoR よりぜんぜん簡単</li>
+</ul></li>
+<li>実質的にメンテナンスフリー</li>
+<li>Erlang は書けなくても導入できる
+<ul>
+<li>ただし BEAM の知識はいる</li>
+<li><a href="https://github.com/happi/theBeamBook">The BEAM Book</a> おすすめ</li>
+</ul></li>
+</ul>
+<p>最近 Ruby や Ruby のライブラリのバージョンアップで苦しんでいるのを見てたのでバージョンアップがシームレスなの羨ましい．</p>
+<h4 id="初めてのerlangサーバ開発と運用">初めてのErlangサーバ開発と運用</h4>
+<ul>
+<li><a href="https://github.com/mookjp">mookjp</a> 氏の発表</li>
+<li><a href="https://speakerdeck.com/mookjp/chu-metefalseerlangsahakai-fa-toyun-yong?slide=1">発表スライドはコチラ</a></li>
+<li>Erlang をどう勉強したかや失敗談などの話</li>
+<li>Node.js から Erlang へ (たぶん)</li>
+<li><a href="http://erlang.org/doc/man/observer.html">observer</a> という Erlang プロセスの可視化ツールが便利</li>
+<li>Erlang サーバーをプロダクションに導入するときの設定
+<ul>
+<li>思想の記事ばっか！</li>
+<li>実際の設定に関する記事が少ない！！</li>
+</ul></li>
+<li>不必要なプロセスやその監視プロセスが微妙に残ってじわじわ CPU 使用率が上がってしまった</li>
+<li><a href="https://www.erlang-in-anger.com/">Erlang in Anger</a> を絶対に読む
+<ul>
+<li>運用に役立ちそうなことがたくさん書いてある</li>
+</ul></li>
+<li><a href="https://erlang-slack.herokuapp.com/">Erlang の Slack ワークスペース</a>がおススメ！
+<ul>
+<li>紹介した監視の VMStats もここで教えてもらった</li>
+</ul></li>
+</ul>
+<p>思想の記事が多い話，なんとなく Haskell にも似たようなところがあって笑った</p>
+<h4 id="keep-phoenix-app-productivity">Keep Phoenix App Productivity</h4>
+<ul>
+<li><a href="https://twitter.com/kanmo_ak">kanmo_ak</a> 氏の発表</li>
+<li><a href="https://speakerdeck.com/kanmo/keep-phoenix-app-productivity?slide=1">発表スライドはコチラ</a></li>
+<li>Phoenix Application 開発1年・運用1年してみた結果の話</li>
+<li><a href="https://elixirschool.com/en/lessons/advanced/umbrella-projects/">Umbrella</a> によって Project を分割
+<ul>
+<li>肥大化してきた</li>
+<li>複数のサービスをひとつのリポジトリで別々に開発</li>
+<li>サービス間でコードを共有できる</li>
+</ul></li>
+<li>ひとつのファイルを書き換えるだけでコンパイル対象が膨大…
+<ul>
+<li>ファイル間の依存関係がひどいので切っていく</li>
+<li>マクロを変更するとやり直し</li>
+<li>構造体を変更するとやばい</li>
+<li>プロトコルも依存がある</li>
+<li><a href="https://hexdocs.pm/mix/Mix.Tasks.Xref.html"><code>mix xref</code></a> タスクが便利</li>
+<li>モジュール名を動的に組み立てて依存を無理やり切る黒魔術(使わない方がいい)</li>
+</ul></li>
+<li>Erlang プロセスだと remsh で起動中のプロセスに接続して調査できる</li>
+<li>Elixir バージョンアップは追いやすい
+<ul>
+<li>RoR に比べて(笑)</li>
+</ul></li>
+<li>Type Spec を書いておくとドキュメントになる
+<ul>
+<li>Dializer は使ってない(時間が無かった)</li>
+<li>spec ないとつらいと感じたの私自身です</li>
+</ul></li>
+</ul>
+<p>昔 Type Spec が書いてあったが間違ってるおかげで痛い目にあったので書いたやつを静的にチェックしたいですよね…</p>
+<h4 id="from-python-to-elixir">from Python to Elixir</h4>
+<ul>
+<li><a href="https://github.com/kenichirow">kenichirow</a> 氏の発表</li>
+<li>Python から Elixir に移行
+<ul>
+<li>Python 2020 年問題(2系のサポートが終わる)</li>
+</ul></li>
+<li>Phoenix は最初は使わないつもりだった
+<ul>
+<li>Django からだと暗黙的な何某が多い印象(マクロ)</li>
+<li>PubSub いらない</li>
+<li>なので自作 FW を作ってた</li>
+</ul></li>
+<li>突然 Phoenix 宣言
+<ul>
+<li>「お前 Dis れるほど Phoenix 知ってるのかよ」</li>
+</ul></li>
+<li>Ecto にはいくつかの問題</li>
+<li>なのでライブラリを作った <a href="https://github.com/gumi/yacto">Yacto</a>
+<ul>
+<li>DB分割・XAトランザクションなど</li>
+</ul></li>
+<li>各ゲームの基盤を Template にしていたがバージョン管理がつらいのでライブラリに</li>
+<li>Elixir のサポートチーム
+<ul>
+<li>ググる前に聞け</li>
+<li>最近しんどいので Stack Overflow Team を導入</li>
+</ul></li>
+<li>言語変えて解決した問題は少しだけ
+<ul>
+<li>ただ整備するきっかけにはなった</li>
+</ul></li>
+</ul>
+<p>基盤チームカッコいい</p>
+<h4 id="ステートフルで大規模アクセスのあるsoft-realtimeなゲームサーバーをeasyにつくる">ステートフルで大規模アクセスのあるsoft-realtimeなゲームサーバーをeasyにつくる</h4>
+<ul>
+<li><a href="https://github.com/ne-sachirou">さっちゃん</a> 氏の発表</li>
+<li><a href="https://speakerdeck.com/ne_sachirou/sutetohurudeda-gui-mo-akusesufalsearusoft-realtimenagemusabawoeasynitukuru">発表スライドはコチラ</a></li>
+<li>Phoenix でゲーム作って運用したはなし</li>
+<li>AWS + Kube + Phoenix</li>
+<li>Real time PvP がメインなのに RoR は大変</li>
+<li>どっちみちイロイロ知見が無いので新しい技術使っても苦労はするでしょ
+<ul>
+<li>Elixir の知見はある</li>
+</ul></li>
+<li><a href="https://hexdocs.pm/inner_cotton/readme.html">InnerCotton</a> を作った</li>
+<li>FP は知ってた</li>
+<li>Channel と Redis で PvP</li>
+<li>ホットデプロイはあきらめた</li>
+<li>優先度付きキューを自作 <a href="https://hex.pm/packages/pqueue2">queue2</a>
+<ul>
+<li>既存のモノは間違ってるものが多かったので</li>
+<li>スタックになっているものもあった</li>
+</ul></li>
+<li><a href="https://hub.docker.com/r/nesachirou/elixir/">docker image</a> を作った(Elixir と Erlang の両方が指定できる)</li>
+<li>Elixir の監視つらい</li>
+<li>もっと publish していこうぜ</li>
+</ul>
+<p>社内でやったことドンドン Publish できるのいいなぁ．</p>
+<h4 id="channel先生-pubsubがしたいです">Channel先生…!! PubSubがしたいです…</h4>
+<ul>
+<li><a href="https://github.com/ohr486">ohrdev</a> 氏の発表</li>
+<li><a href="https://speakerdeck.com/ohr486/erlangelixirfest2018-ohr486-session">発表スライドはコチラ</a></li>
+<li>~Erlang in Anger~ PubSub in Channel</li>
+<li>「PubSub しない Phoenix はただの Rails だ」</li>
+<li>Phoenix Channel + PubSub</li>
+<li>PubSub は2種類ある
+<ul>
+<li>ローカル PubSub ・リモート PubSub</li>
+</ul></li>
+<li>「これカッコよくないっすか、見るたびにすごいぞくぞくする」</li>
+<li>PubSub バックエンドは選択できる</li>
+<li>どれだけ知っといた方がいいか？
+<ul>
+<li>基本は知らなくても</li>
+<li>新しい Adaptar を作る場合は知ってないといけない</li>
+</ul></li>
+</ul>
+<p>PubSub 完全に理解した(嘘)</p>
+<h4 id="antikythera-framework-an-elixir-framework-for-multiple-web-services">Antikythera Framework: An Elixir framework for multiple web services</h4>
+<ul>
+<li><a href="https://github.com/skirino">skirino</a> 氏の発表</li>
+<li>社内で作ったフレームワークの紹介 : <a href="https://github.com/access-company/antikythera">antikythera</a></li>
+<li>Antikythera メカニズム
+<ul>
+<li>ギリシャ時代のオーパーツ</li>
+<li>なにかよくわからない</li>
+<li>星の動き？？</li>
+</ul></li>
+<li>複数のサービスをひとつのフレームワークで管理</li>
+<li>Gear : Webサービスの単位・他の Gear に依存しうる
+<ul>
+<li>instance より細かい単位</li>
+</ul></li>
+<li>コア機能
+<ul>
+<li>リソースコントロール</li>
+<li>自動オペレーション(ホットデプロイなど)</li>
+<li>ログなどビルドインに</li>
+</ul></li>
+<li>Gear はマイクロサービスで疎結合だが管理は統一</li>
+<li>リソース管理は ErlangVM なので一長一短</li>
+<li>DB はどうするか？
+<ul>
+<li>DB は知らない(Gear にしない)</li>
+<li>ふつうに Ecto とかで</li>
+</ul></li>
+<li>なぜ Erlang じゃないか？
+<ul>
+<li>mix が優秀</li>
+<li>mix compiler でフックできる</li>
+</ul></li>
+</ul>
+<p>mix すごいのはよくわかる．</p>
+<h4 id="任意のbeam系言語でプラグインを書ける安定したフレームワークの作りかた">任意のBEAM系言語でプラグインを書ける安定したフレームワークの作りかた</h4>
+<ul>
+<li><a href="https://github.com/niku">niku</a> 氏の発表</li>
+<li><a href="https://niku.name/2018/06/16/slide.html">発表スライドはコチラ</a></li>
+<li>BEAM系プラグインを作る上でのノウハウ</li>
+<li>また PubSub の話ですいません</li>
+<li>フレームワークとプラグイン</li>
+<li>プラグイン機構を持つ FW には登場人物が3人
+<ul>
+<li>フレームワークとプラグインを使う人</li>
+</ul></li>
+<li>プラグインでエラーが起きたときフレームワークはどうするか</li>
+<li>「絵にかくとこんな感じ」</li>
+<li>Supervisor は他の言語ではあまりない
+<ul>
+<li>こいつのおかげで別粒度間のプロセス管理が楽</li>
+</ul></li>
+<li>ゆかいに学ぼうの Supervisor の章は良くできている</li>
+</ul>
+<p>絵に書くとこんな感じってのがじわじわ来る．</p>
+<h4 id="erlang-事例紹介-メディアストリーム中継システム">Erlang 事例紹介: メディアストリーム中継システム</h4>
+<ul>
+<li><a href="https://github.com/amutake">amutake</a> 氏の発表</li>
+<li><a href="https://niconare.nicovideo.jp/watch/kn3115">発表スライドはコチラ</a>
+<ul>
+<li>ニコニコのスライド置き場あったんだ(笑)</li>
+</ul></li>
+<li>ニコ生で使われる(予定)のシステムの話(Erlang 製)</li>
+<li>生放送の中継ツリー</li>
+<li>生放送に求められる性質</li>
+<li>ストリーム中継システム : sluicegate の作成
+<ul>
+<li>いつか OSS になる</li>
+</ul></li>
+<li>学術的に研究されたアルゴリズム(独自ではなく)
+<ul>
+<li>HyParView</li>
+<li>Plumtree</li>
+</ul></li>
+<li>簡単にできるけど無駄にメッセージパッシングすると遅くなる
+<ul>
+<li>軽い処理をメッセージパッシングするとだめ</li>
+</ul></li>
+<li>Erlang クラスタは組まない</li>
+<li>Plumtree の性質があれだった
+<ul>
+<li>なので自分たちで改造</li>
+<li>根幹なので定理証明(Coq で実装)
+<ul>
+<li>PPLにて発表した</li>
+<li>生放送ストリーム中継システムのCoqによる形式化と検証</li>
+</ul></li>
+</ul></li>
+<li>ぱぶさぶくん(検証ツール)</li>
+<li>水道局(可視化ツール)
+<ul>
+<li>水路という自作ライブラリを使っている</li>
+</ul></li>
+<li>分散アルゴリズムを書きやすい</li>
+<li>調査しやすい
+<ul>
+<li>reduction の取得のしやすさは Erlang in Anger</li>
+</ul></li>
+<li>Coq のコードから Erlang に変換するものがある</li>
+</ul>
+<p>なんか研究の話聞いてるみたいで聞きやすかった(笑)</p>
+<h3 id="lt">LT</h3>
+<p>自分も LT したので細かいメモは無い</p>
+<ul>
+<li>NOC の話
+<ul>
+<li>朝にアクシデントがあったようで…</li>
+</ul></li>
+<li>個人で Elixir してきた話(日本一 Elixir 本を書いている)</li>
+<li>Elixir 完全に理解した(ちょっとできる人がいればいい)</li>
+<li>Elixir Programming with Type checking (自分)</li>
+<li>ElixirScript の話</li>
+<li>PubSub Redis
+<ul>
+<li>phoenix_pubusu_redis_z</li>
+</ul></li>
+<li>Dialyzer のすすめ</li>
+<li>Erlang on ARM サーバー
+<ul>
+<li>未発表のもの</li>
+<li>秒間40まんリクエストをさばいてる</li>
+<li>ミドルウェアの世界に来い</li>
+</ul></li>
+</ul>
+<p>どうやら MVP は「Elixirを2週間で完全に理解した」新卒の子．</p>
+<h3 id="keynote">Keynote</h3>
+<h4 id="共有からメッセージパッシングへ-erlangotpやelixirと歩んだこの10年">共有からメッセージパッシングへ: Erlang/OTPやElixirと歩んだこの10年</h4>
+<ul>
+<li><a href="https://twitter.com/jj1bdx">力武健次</a>氏</li>
+<li><a href="https://speakerdeck.com/jj1bdx/erlang-and-elixir-fest-2018-keynote?slide=1">発表資料はコチラ</a></li>
+<li>BIND ??? 脆弱性の多い DNS サーバーについて昔やってた
+<ul>
+<li>1000行マクロ</li>
+</ul></li>
+<li>Erlang に出会う
+<ul>
+<li>うるう秒の修正パッチを送る</li>
+<li>SSH のセキュリティの研究</li>
+</ul></li>
+<li>ICFP’11 の Erlang Workshop の実行委員長</li>
+<li>Erlang in Anger のサイン本もらった</li>
+<li>Elixir のロゴは商標登録されている</li>
+<li>Catalyze Changes
+<ul>
+<li>Erlang は読みにくい！</li>
+<li>レコードが難しい！</li>
+<li>ドキュメントがない！</li>
+<li>何とかっしようぜ！</li>
+<li>by Dave Tomas</li>
+<li>大変だった…(jose)</li>
+<li>有言実行しててElixir本を7冊も出版している</li>
+</ul></li>
+<li>Ruby コミュニティをちらほら見かけるようになった</li>
+<li>2018/2 大事件</li>
+<li><a href="https://codesync.global/conferences/code-beam-sf-2018/">Code BEAM 2018</a>
+<ul>
+<li>Open Erlang 20周年</li>
+<li>BEAM コミュニティの融合</li>
+</ul></li>
+<li>共通してどこがおいしいのか</li>
+<li>Immutability ディープコピー 参照を使わない
+<ul>
+<li>自分が思う Erlang のすばらしさ</li>
+</ul></li>
+<li>従来は実態を共有(はやい？)</li>
+<li>「安全よりも効率」</li>
+<li>C++ の愚痴
+<ul>
+<li>参照なの？値なの？</li>
+<li>const の話が大変</li>
+<li>コンストラクタいつ動く？？</li>
+<li>shared_ptr と unique_ptr (参照カウンタと所有権)</li>
+</ul></li>
+<li>例外: ETSやプロセス辞書</li>
+<li>「効率より安全」
+<ul>
+<li>とても遅い</li>
+<li>型検査は無いけど非常に厳格</li>
+</ul></li>
+<li>Joe (Erlang の作者)「processes messgae and links が重要な部分(gen_server は後から)」
+<ul>
+<li>他はどうでもいい</li>
+<li>軽量並行プロセスとエラーハンドリング</li>
+</ul></li>
+<li>綺麗に落とすのは大変
+<ul>
+<li>プロセスキューが詰まると終了</li>
+</ul></li>
+<li>link and monitor
+<ul>
+<li>昔のSDの自分の記事を読み返した</li>
+</ul></li>
+<li>今後
+<ul>
+<li>基本理念 「ほどほどなのが一番良い」</li>
+<li>手を抜かずに高速化</li>
+</ul></li>
+<li>Code BEAM で話題にあがったもの
+<ul>
+<li>組込み分野えの応用</li>
+<li>大規模クラスタ</li>
+<li><a href="https://github.com/josefs/Gradualizer">Gradual Type System</a> (ツールの発表があった)</li>
+<li>Language Server Protcol</li>
+</ul></li>
+<li>英語圏で発表しよう
+<ul>
+<li>Code BEAM 2018 は日本人一人</li>
+</ul></li>
+</ul>
+<p>クライアントの同期の子が，不変性のすばらしさの話を指して「Rust や Elixir を勉強したとに同じことを感じた！」と喜んでいた．</p>
+<h2 id="自分の話">自分の話</h2>
+<p>Elchemy の紹介話をしてきました． スライドはこちら</p>
+<h2 id="section-1"></h2>
+<iframe src="//www.slideshare.net/slideshow/embed_code/key/ocbuQdsbw2EmG5" width="595" height="485" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen>
+</iframe>
+<h2 id="section-2"></h2>
+<p>実は前日(6/15)に別の LT で Elchemy の Docker image を作る話をしてきた． その時のスライドはこちら．</p>
+<h2 id="section-3"></h2>
+<iframe src="//www.slideshare.net/slideshow/embed_code/key/al30fSfPGB5HGN" width="595" height="485" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen>
+</iframe>
+<h2 id="section-4"></h2>
+<p>実は以下の記事でもっと詳しくまとめてあるので，プレゼンを見る必要は無いんです(笑)</p>
+<ul>
+<li><a href="https://matsubara0507.github.io/posts/2018-06-15-introduce-elchemy-part1.html">Elchemy 入門 : その１</a></li>
+<li><a href="https://matsubara0507.github.io/posts/2018-06-16-introduce-elchemy-part2.html">Elchemy 入門 : その２</a></li>
+</ul>
+<h2 id="おしまい">おしまい</h2>
+<p>来年はもっと型のハナシができるといいなぁ．</p>
+  </div>
+</div>
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>Elchemy 入門 : その２</title>
     <link href="https://matsubara0507.github.io/posts/2018-06-16-introduce-elchemy-part2.html" />
     <id>https://matsubara0507.github.io/posts/2018-06-16-introduce-elchemy-part2.html</id>
@@ -2335,301 +2763,6 @@ ghc.EXE: could not execute: tasty-discover</code></pre>
 <h2 id="おしまい">おしまい</h2>
 <p>これぐらいの規模だとメリットが皆無なんですが，もっと CSV の列数が多くなったらどうでしょう？ うーーーん，あんまり変わらないかも(笑) まぁ，少なくとも面白い(不思議な)プログラミングが出来るのは確かです．</p>
 <p>僕は試しにこの方法で，<a href="https://github.com/matsubara0507/source-gh-pages/blob/tangle/app/Rules.hs">このサイトの Hakyll コード</a>を切り刻んでみました．</p>
-  </div>
-</div>
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>このサイトに機能を追加 2018</title>
-    <link href="https://matsubara0507.github.io/posts/2018-02-21-add-feats-mysite-2018.html" />
-    <id>https://matsubara0507.github.io/posts/2018-02-21-add-feats-mysite-2018.html</id>
-    <published>2018-02-21T00:00:00Z</published>
-    <updated>2018-02-21T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
- <div class="card-content">
-  <header class="post-header">
-    <h1 class="post-title" itemprop="name headline">このサイトに機能を追加 2018</h1>
-    <p class="post-meta">
-      <time datetime="2018-02-21" itemprop="datePublished">
-        Feb 21, 2018
-      </time>
-      
-      
-      <div class="tags">
-          <i class="fa fa-tags"></i> <a href="/tags/site.html">site</a> <a href="/tags/Haskell.html">Haskell</a>
-      </div>
-      
-    </p>
-  </header>
-
-  <div class="post-content" itemprop="articleBody">
-    <p>このサイトは Haskell の静的サイトジェネレーター <a href="https://jaspervdj.be/hakyll/">Hakyll</a> を使っています．</p>
-<ul>
-<li><a href="/posts/2016-07-07-started-github-pages.html">GitHub Pages はじめました - ひげメモ</a></li>
-</ul>
-<p>定期的に自分のサイトをいじってるんだけど，久々に本腰入れて改良した． このサイトを作り始めたころと違い「Haskell力」が段違いなのでサクサクできたぜ．</p>
-<h2 id="section"></h2>
-<p>追加したのは以下の7つ．</p>
-<ul>
-<li>リンクチェッカー</li>
-<li>LTS 10 に対応</li>
-<li>可変なキーバリューストアを aeson で</li>
-<li><code>post/</code> 以下のマークダウン置き場を変更</li>
-<li>フィードの生成</li>
-<li>ページネーションの追加</li>
-<li>タグの追加</li>
-</ul>
-<p>最初のリンクチェッカーは <code>stack test</code> で行うのだが，追加したのは実は結構前． 記事にしてなかったので書き足しておく．</p>
-<h2 id="リンクチェッカー">リンクチェッカー</h2>
-<p>記事内にあるリンクを実際に ping して，リンクが有効かを検査するテストを作った． もちろん Haskell で書いて <code>stack test</code> で実行できるようにした． コードはこんな感じ</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span></a>
-<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb1-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb1-4" data-line-number="4"><span class="kw">import</span>           <span class="dt">Prelude</span>                   <span class="kw">hiding</span> (<span class="dt">FilePath</span>, null)</a>
-<a class="sourceLine" id="cb1-5" data-line-number="5"><span class="kw">import</span>           <span class="dt">Data.List</span>                 (nub, sort)</a>
-<a class="sourceLine" id="cb1-6" data-line-number="6"><span class="kw">import</span>           <span class="dt">Data.Maybe</span>                (fromMaybe)</a>
-<a class="sourceLine" id="cb1-7" data-line-number="7"><span class="kw">import</span>           <span class="dt">Data.Text</span>                 (<span class="dt">Text</span>, isPrefixOf, null, unpack)</a>
-<a class="sourceLine" id="cb1-8" data-line-number="8"><span class="kw">import</span>           <span class="dt">Data.Traversable</span>          (traverse)</a>
-<a class="sourceLine" id="cb1-9" data-line-number="9"><span class="kw">import</span>           <span class="dt">Network.HTTP.Client</span></a>
-<a class="sourceLine" id="cb1-10" data-line-number="10"><span class="kw">import</span>           <span class="dt">Network.HTTP.Client.TLS</span></a>
-<a class="sourceLine" id="cb1-11" data-line-number="11"><span class="kw">import</span>           <span class="dt">Network.HTTP.Types.Status</span> (<span class="dt">Status</span>, ok200)</a>
-<a class="sourceLine" id="cb1-12" data-line-number="12"><span class="kw">import</span>           <span class="dt">Shelly</span></a>
-<a class="sourceLine" id="cb1-13" data-line-number="13"><span class="kw">import</span>           <span class="dt">Test.Hspec</span></a>
-<a class="sourceLine" id="cb1-14" data-line-number="14"><span class="kw">import</span>           <span class="dt">Text.HTML.Scalpel.Core</span></a>
-<a class="sourceLine" id="cb1-15" data-line-number="15"></a>
-<a class="sourceLine" id="cb1-16" data-line-number="16"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb1-17" data-line-number="17">main <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb1-18" data-line-number="18">  urls <span class="ot">&lt;-</span> fmap mconcat <span class="fu">.</span> shelly <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb1-19" data-line-number="19">    run_ <span class="st">&quot;stack&quot;</span> [<span class="st">&quot;exec&quot;</span>, <span class="st">&quot;--&quot;</span>, <span class="st">&quot;site&quot;</span>, <span class="st">&quot;build&quot;</span>]</a>
-<a class="sourceLine" id="cb1-20" data-line-number="20">    files <span class="ot">&lt;-</span> ls <span class="st">&quot;_site/posts&quot;</span></a>
-<a class="sourceLine" id="cb1-21" data-line-number="21">    traverse (fmap scrapeLinks <span class="fu">.</span> readfile) files</a>
-<a class="sourceLine" id="cb1-22" data-line-number="22">  hspec <span class="fu">.</span> mapM_ spec <span class="fu">.</span> nub <span class="fu">.</span> sort <span class="fu">$</span> filter check urls</a>
-<a class="sourceLine" id="cb1-23" data-line-number="23"> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb1-24" data-line-number="24">  check url <span class="fu">=</span> not <span class="fu">.</span> or <span class="fu">.</span> (<span class="fu">:</span>) (null url) <span class="fu">$</span> fmap</a>
-<a class="sourceLine" id="cb1-25" data-line-number="25">    (<span class="ot">`isPrefixOf`</span> url)</a>
-<a class="sourceLine" id="cb1-26" data-line-number="26">    [<span class="st">&quot;https://matsubara0507.github.io&quot;</span>, <span class="st">&quot;../&quot;</span>, <span class="st">&quot;#&quot;</span>]</a>
-<a class="sourceLine" id="cb1-27" data-line-number="27">  spec url <span class="fu">=</span> it (unpack url) <span class="fu">$</span> linkStatus url <span class="ot">`shouldReturn`</span> ok200</a>
-<a class="sourceLine" id="cb1-28" data-line-number="28"></a>
-<a class="sourceLine" id="cb1-29" data-line-number="29"><span class="ot">scrapeLinks ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> [<span class="dt">Text</span>]</a>
-<a class="sourceLine" id="cb1-30" data-line-number="30">scrapeLinks txt <span class="fu">=</span> fromMaybe [] <span class="fu">$</span> scrapeStringLike txt scraper</a>
-<a class="sourceLine" id="cb1-31" data-line-number="31">  <span class="kw">where</span> scraper <span class="fu">=</span> attrs <span class="st">&quot;href&quot;</span> <span class="st">&quot;a&quot;</span></a>
-<a class="sourceLine" id="cb1-32" data-line-number="32"></a>
-<a class="sourceLine" id="cb1-33" data-line-number="33"><span class="ot">linkStatus ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Status</span></a>
-<a class="sourceLine" id="cb1-34" data-line-number="34">linkStatus url <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb1-35" data-line-number="35">  manager <span class="ot">&lt;-</span> newManager tlsManagerSettings</a>
-<a class="sourceLine" id="cb1-36" data-line-number="36">  request <span class="ot">&lt;-</span> parseRequest <span class="fu">$</span> unpack url</a>
-<a class="sourceLine" id="cb1-37" data-line-number="37">  responseStatus</a>
-<a class="sourceLine" id="cb1-38" data-line-number="38">    <span class="fu">&lt;$&gt;</span> httpNoBody (request { requestHeaders <span class="fu">=</span> [(<span class="st">&quot;User-Agent&quot;</span>, <span class="st">&quot;&quot;</span>)] }) manager</a></code></pre></div>
-<p>HTTPクライアントには <a href="https://hackage.haskell.org/package/http-client"><code>http-client</code></a> を，スクレイピングには <a href="https://hackage.haskell.org/package/scalpel"><code>scalpel</code></a> を使っている． <a href="https://hackage.haskell.org/package/shelly"><code>shelly</code></a> の <code>ls</code> 関数を使って記事の一覧を取得してきている(これが Windows でも動くからうれしい)． 表示をそれっぽくするために <a href="https://hackage.haskell.org/package/hspec"><code>hspec</code></a> を使っている． <code>check</code> 補助関数で自分のページや空文字を排除している．</p>
-<h2 id="section-1"></h2>
-<p>これでリンク切れや単純にタイポなんかを検出できるようになったんだが，直すのがめんどくさくて結局放置していること(オイ)．</p>
-<h2 id="lts-10-に対応">LTS 10 に対応</h2>
-<p>リンクチェッカを回すために TravisCI を使い始めたが，なぜか GHC8 系の LTS だと OUT OF MEMORY してしまう…</p>
-<pre><code>--  While building custom Setup.hs for package Cabal-2.0.1.1 using:
-      /home/travis/.stack/setup-exe-cache/x86_64-linux/Cabal-simple_mPHDZzAJ_2.0.1.0_ghc-8.2.2 --builddir=.stack-work/dist/x86_64-linux/Cabal-2.0.1.0 build --ghc-options &quot; -ddump-hi -ddump-to-file -fdiagnostics-color=always&quot;
-    Process exited with code: ExitFailure (-9) (THIS MAY INDICATE OUT OF MEMORY)
-    Logs have been written to: /home/travis/build/matsubara0507/source-gh-pages/.stack-work/logs/Cabal-2.0.1.1.log
-    Configuring Cabal-2.0.1.1...
-    Preprocessing library for Cabal-2.0.1.1..
-    Building library for Cabal-2.0.1.1..</code></pre>
-<p>かなーーり古い LTS だとうまくいくので，仕方なくそれを使っていたのだが直すことにした． というか知り合いが直し方を記事にしてくれてたのでやってみた．</p>
-<ul>
-<li><a href="https://haskell.e-bigmoon.com/posts/2017-12-31-travis-out-of-memory.html">travis-ci の初回ビルドで OUT OF MEMORY が出た時の対処法</a></li>
-</ul>
-<p>戦犯は <code>Cabal</code> パッケージなので，こいつだけ先に <code>-j 1</code> オプション(メモリを節約するが速度が遅い)でビルドしてしまうという戦略． この記事のサイトの <a href="https://github.com/e-bigmoon/haskell-blog/blob/a229f118f121e0ad843faae1412e938e3e4f3a6b/.travis.yml"><code>.travis.yml</code></a> を <del>コピペ</del> 参考にして次のようにした</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="fu">install:</span></a>
-<a class="sourceLine" id="cb3-2" data-line-number="2">  <span class="kw">-</span> mkdir -p ~/.local/bin</a>
-<a class="sourceLine" id="cb3-3" data-line-number="3">  <span class="kw">-</span> <span class="fu">export PATH=$HOME/.local/bin:</span><span class="at">$PATH</span></a>
-<a class="sourceLine" id="cb3-4" data-line-number="4">  <span class="kw">-</span> <span class="fu">travis_retry curl -L https:</span><span class="at">//www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin &#39;*/stack&#39;</span></a>
-<a class="sourceLine" id="cb3-5" data-line-number="5"><span class="fu">jobs:</span></a>
-<a class="sourceLine" id="cb3-6" data-line-number="6">  <span class="fu">include:</span></a>
-<a class="sourceLine" id="cb3-7" data-line-number="7">    <span class="kw">-</span> <span class="fu">stage:</span><span class="at"> install cabal</span></a>
-<a class="sourceLine" id="cb3-8" data-line-number="8">      <span class="fu">script:</span><span class="at"> stack --no-terminal build -j 1 Cabal</span></a>
-<a class="sourceLine" id="cb3-9" data-line-number="9">    <span class="kw">-</span> <span class="fu">stage:</span><span class="at"> install pandoc</span></a>
-<a class="sourceLine" id="cb3-10" data-line-number="10">      <span class="fu">script:</span><span class="at"> travis_wait 30 stack --no-terminal build pandoc</span></a>
-<a class="sourceLine" id="cb3-11" data-line-number="11">    <span class="kw">-</span> <span class="fu">stage:</span><span class="at"> install deprndences</span></a>
-<a class="sourceLine" id="cb3-12" data-line-number="12">      <span class="fu">script:</span><span class="at"> stack --no-terminal test --only-dependencies</span></a>
-<a class="sourceLine" id="cb3-13" data-line-number="13">    <span class="kw">-</span> <span class="fu">stage:</span><span class="at"> stack test</span></a>
-<a class="sourceLine" id="cb3-14" data-line-number="14">      <span class="fu">script:</span><span class="at"> stack --no-terminal test --no-run-benchmarks --no-haddock-deps</span></a></code></pre></div>
-<h3 id="hakyll-4.10-が落ちる">hakyll-4.10 が落ちる</h3>
-<p>OUT OF MEMORY は突破したが…</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1">    <span class="fu">/</span>tmp<span class="fu">/</span>stack3402<span class="fu">/</span>hakyll<span class="fu">-</span><span class="fl">4.10</span><span class="fu">.</span><span class="fl">0.0</span><span class="fu">/</span>rts<span class="fu">/</span>posix<span class="fu">/</span>OSThreads.c<span class="fu">:</span><span class="dv">137</span><span class="fu">:</span><span class="dv">0</span><span class="fu">:</span> error<span class="fu">:</span></a>
-<a class="sourceLine" id="cb4-2" data-line-number="2">         error<span class="fu">:</span> undefined reference to <span class="ch">&#39;pthread_create&#39;</span></a></code></pre></div>
-<p>なぜだ… 最新の <a href="https://github.com/jaspervdj/hakyll/commit/480da307d22aff8ab3817d1586710c5f4ff6d779"><code>hakyll-4.11</code> では直ってるみたい</a>なので，<code>stack.yaml</code> に追加したら上手くいった．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="fu">extra-deps:</span></a>
-<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="kw">-</span> hakyll-4.11.0.0</a>
-<a class="sourceLine" id="cb5-3" data-line-number="3"><span class="kw">-</span> pandoc-citeproc-0.13.0.1</a></code></pre></div>
-<h3 id="シンタックスハイライトが">シンタックスハイライトが…</h3>
-<p>おかしくなった． 理由は簡単で，Hakyll というか Pandoc がシンタックスハイライトにもともと使っていた <a href="https://hackage.haskell.org/package/highlighting-kate"><code>highlighting-kate</code></a> をやめて <a href="https://hackage.haskell.org/package/skylighting"><code>skylighting</code></a> に対応したからみたいだ．</p>
-<ul>
-<li><a href="http://fixpt.de/blog/2017-12-03-hakyll-highlighting-themes.html">fixpt - Hakyll Code Highlighting Themes</a></li>
-</ul>
-<p>なので，パッケージを変えたら元に戻った．</p>
-<h2 id="可変なキーバリューストアを-aeson-で">可変なキーバリューストアを aeson で</h2>
-<p>テンプレートの方だけで出てくる変数(e.g. <code>$github$</code> とか)は <code>site.hs</code> の実装に依存したくなくて，Hakyll をビルドせずとも <code>config.yaml</code> に好きに追加できるようにしたかった． <a href="https://hackage.haskell.org/package/yaml">yaml</a> パッケージ(というか <a href="https://hackage.haskell.org/package/aeson"><code>aeson</code></a>)ではそういうのを出来ないと <strong>思い込んでいたが <code>Map k v</code> 型を使えばできる</strong> と最近分かった(インスタンスのリストを眺めてたら気づいた)． なので，今まで使ってた <a href="https://hackage.haskell.org/package/yaml-light"><code>yaml-light</code></a> パッケージを捨てて <code>yaml</code> パッケージで次のように実装した．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">import</span>           <span class="dt">Data.Yaml</span>   (decodeFileEither)</a>
-<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="kw">import</span>           <span class="dt">Data.Map</span>    (<span class="dt">Map</span>, foldMapWithKey)</a>
-<a class="sourceLine" id="cb6-3" data-line-number="3"><span class="kw">import</span>           <span class="dt">Hakyll</span></a>
-<a class="sourceLine" id="cb6-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb6-5" data-line-number="5"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb6-6" data-line-number="6">main <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb6-7" data-line-number="7">  configYaml <span class="ot">&lt;-</span> either (error <span class="fu">.</span> show) id <span class="fu">&lt;$&gt;</span> decodeFileEither <span class="st">&quot;config.yaml&quot;</span></a>
-<a class="sourceLine" id="cb6-8" data-line-number="8">  <span class="kw">let</span></a>
-<a class="sourceLine" id="cb6-9" data-line-number="9">    siteCtx <span class="fu">=</span> mkSiteCtx configYaml</a>
-<a class="sourceLine" id="cb6-10" data-line-number="10">  hakyllWith config <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb6-11" data-line-number="11">    <span class="fu">...</span></a>
-<a class="sourceLine" id="cb6-12" data-line-number="12"></a>
-<a class="sourceLine" id="cb6-13" data-line-number="13"><span class="kw">type</span> <span class="dt">Config</span> <span class="fu">=</span> <span class="dt">Map</span> <span class="dt">String</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb6-14" data-line-number="14"></a>
-<a class="sourceLine" id="cb6-15" data-line-number="15"><span class="ot">mkSiteCtx ::</span> <span class="dt">Config</span> <span class="ot">-&gt;</span> <span class="dt">Context</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb6-16" data-line-number="16">mkSiteCtx <span class="fu">=</span> foldMapWithKey constField</a></code></pre></div>
-<p>こういう <code>config.yaml</code> を書いておくと，全てテンプレートの中で参照できる．</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="fu">site_title:</span><span class="at"> ひげメモ</span></a>
-<a class="sourceLine" id="cb7-2" data-line-number="2"><span class="fu">description:</span><span class="at"> </span><span class="st">&quot;自分用のメモ書きだったり，イロイロといじって遊ぶようだったり&quot;</span></a>
-<a class="sourceLine" id="cb7-3" data-line-number="3"><span class="fu">baseurl:</span><span class="at"> </span><span class="st">&quot;https://matsubara0507.github.io&quot;</span></a>
-<a class="sourceLine" id="cb7-4" data-line-number="4"><span class="fu">github:</span><span class="at">  matsubara0507</span></a></code></pre></div>
-<h2 id="post-以下のマークダウン置き場を変更"><code>post/</code> 以下のマークダウン置き場を変更</h2>
-<p>記事のマークダウンは全て <code>posts/</code> 以下に置いていたのだが，各年ごとにディレクトリを切りたいなぁと思った． 例えば <code>posts/2018/02-21-add-feats-mysite-2018.md</code> といった具合に． しかし，出力は今まで通り <code>posts/2018-02-21-add-feats-mysite-2018.html</code> としたい(リンクが変わっちゃうからね)． まんま<a href="http://daimatz.net/text/2014/0126-hakyll.html">同じことをしてくれている記事</a>があったので，参考にして次のように書き換えた．</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb8-2" data-line-number="2">main <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb8-3" data-line-number="3">  <span class="fu">...</span></a>
-<a class="sourceLine" id="cb8-4" data-line-number="4">  match <span class="st">&quot;posts/*/*&quot;</span> <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb8-5" data-line-number="5">    route <span class="fu">$</span> composeRoutes (gsubRoute <span class="st">&quot;/[0-9]{4}/&quot;</span> <span class="fu">$</span> (<span class="fu">++</span> <span class="st">&quot;-&quot;</span>) <span class="fu">.</span> init)</a>
-<a class="sourceLine" id="cb8-6" data-line-number="6">                          (setExtension <span class="st">&quot;html&quot;</span>)</a>
-<a class="sourceLine" id="cb8-7" data-line-number="7">    compile</a>
-<a class="sourceLine" id="cb8-8" data-line-number="8">      <span class="fu">$</span>   pandocCompiler</a>
-<a class="sourceLine" id="cb8-9" data-line-number="9">      <span class="fu">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/post.html&quot;</span> postCtx</a>
-<a class="sourceLine" id="cb8-10" data-line-number="10">      <span class="fu">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/default.html&quot;</span> (postCtx <span class="fu">&lt;&gt;</span> siteCtx)</a>
-<a class="sourceLine" id="cb8-11" data-line-number="11">      <span class="fu">&gt;&gt;=</span> relativizeUrls</a></code></pre></div>
-<p><code>gsubRoute</code> 関数を使うことで，ファイル名を特有のパターン記法(？)でマッチさせ置換できる． <code>gsubRoute &quot;/[0-9]{4}/&quot; $ (++ &quot;-&quot;) . init</code> の場合，<code>/2018/</code> をマッチさせ <code>init</code> して <code>/2018</code> となり，末尾に <code>&quot;-&quot;</code> を追加している．</p>
-<h2 id="section-2"></h2>
-<p>さて実はもう一つ問題があって，Hakyll は日時を表すテンプレート変数(<code>$date$</code> とか)を次のように取得する．</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="ot">postCtx ::</span> <span class="dt">Context</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb9-2" data-line-number="2">postCtx <span class="fu">=</span> mconcat</a>
-<a class="sourceLine" id="cb9-3" data-line-number="3">  [ dateField <span class="st">&quot;time&quot;</span> <span class="st">&quot;%Y-%m-%d&quot;</span></a>
-<a class="sourceLine" id="cb9-4" data-line-number="4">  , dateField <span class="st">&quot;date&quot;</span> <span class="st">&quot;%b %-d, %Y&quot;</span></a>
-<a class="sourceLine" id="cb9-5" data-line-number="5">  , defaultContext</a>
-<a class="sourceLine" id="cb9-6" data-line-number="6">  ]</a></code></pre></div>
-<p><code>dateField</code> 関数が記事のファイル名(<code>yyyy-mm-dd-*.md</code> の部分)かマークダウンのメタ変数から取得している． つまり，<code>posts/2018/02-21-add-feats-mysite-2018.md</code> というファイル名じゃ日時の変数を取得できない． しょうがないので Hakyll のソースコードを読んで無理やり書き換えた．</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw">import</span>           <span class="dt">Data.Time</span></a>
-<a class="sourceLine" id="cb10-2" data-line-number="2"><span class="kw">import</span>           <span class="dt">System.FilePath</span></a>
-<a class="sourceLine" id="cb10-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb10-4" data-line-number="4"><span class="ot">dateField&#39; ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Context</span> a</a>
-<a class="sourceLine" id="cb10-5" data-line-number="5">dateField&#39; key format <span class="fu">=</span> field key <span class="fu">$</span> \item <span class="ot">-&gt;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb10-6" data-line-number="6">  time <span class="ot">&lt;-</span> getItemUTC&#39; defaultTimeLocale <span class="fu">$</span> itemIdentifier item</a>
-<a class="sourceLine" id="cb10-7" data-line-number="7">  return <span class="fu">$</span> formatTime defaultTimeLocale format time</a>
-<a class="sourceLine" id="cb10-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb10-9" data-line-number="9"><span class="ot">getItemUTC&#39; ::</span> <span class="dt">MonadMetadata</span> m <span class="ot">=&gt;</span> <span class="dt">TimeLocale</span> <span class="ot">-&gt;</span> <span class="dt">Identifier</span> <span class="ot">-&gt;</span> m <span class="dt">UTCTime</span></a>
-<a class="sourceLine" id="cb10-10" data-line-number="10">getItemUTC&#39; locale ident <span class="fu">=</span></a>
-<a class="sourceLine" id="cb10-11" data-line-number="11">  pure <span class="fu">$</span> parseTimeOrError <span class="dt">True</span> locale <span class="st">&quot;%Y%m-%d&quot;</span> (yyyy <span class="fu">++</span> mmdd)</a>
-<a class="sourceLine" id="cb10-12" data-line-number="12">  <span class="kw">where</span></a>
-<a class="sourceLine" id="cb10-13" data-line-number="13">    path <span class="fu">=</span> toFilePath ident</a>
-<a class="sourceLine" id="cb10-14" data-line-number="14">    yyyy <span class="fu">=</span> takeFileName <span class="fu">$</span> takeDirectory path</a>
-<a class="sourceLine" id="cb10-15" data-line-number="15">    mmdd <span class="fu">=</span> take <span class="dv">5</span> <span class="fu">$</span> takeBaseName path</a></code></pre></div>
-<p>さっきの <code>dateField</code> の部分を <code>dateField'</code> にすれば記事のビルドが出来る！</p>
-<h3 id="vs-recentfirst-関数">vs <code>recentFirst</code> 関数</h3>
-<p>記事を日時順に並び変えてくれる <code>recentFirst</code> 関数もファイル名に依存してる． しょうがないので力技で書き換える．</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="kw">import</span>           <span class="dt">Data.List</span>       (sortBy)</a>
-<a class="sourceLine" id="cb11-2" data-line-number="2"><span class="kw">import</span>           <span class="dt">Data.Ord</span>        (comparing)</a>
-<a class="sourceLine" id="cb11-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb11-4" data-line-number="4"><span class="ot">recentFirst&#39; ::</span> <span class="dt">MonadMetadata</span> m <span class="ot">=&gt;</span> [<span class="dt">Item</span> a] <span class="ot">-&gt;</span> m [<span class="dt">Item</span> a]</a>
-<a class="sourceLine" id="cb11-5" data-line-number="5">recentFirst&#39; <span class="fu">=</span> fmap reverse <span class="fu">.</span> chronological&#39;</a>
-<a class="sourceLine" id="cb11-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb11-7" data-line-number="7"><span class="ot">chronological&#39; ::</span> <span class="dt">MonadMetadata</span> m <span class="ot">=&gt;</span> [<span class="dt">Item</span> a] <span class="ot">-&gt;</span> m [<span class="dt">Item</span> a]</a>
-<a class="sourceLine" id="cb11-8" data-line-number="8">chronological&#39; <span class="fu">=</span></a>
-<a class="sourceLine" id="cb11-9" data-line-number="9">  sortByM <span class="fu">$</span> getItemUTC&#39; defaultTimeLocale <span class="fu">.</span> itemIdentifier</a>
-<a class="sourceLine" id="cb11-10" data-line-number="10"></a>
-<a class="sourceLine" id="cb11-11" data-line-number="11"><span class="ot">sortByM ::</span> (<span class="dt">Monad</span> m, <span class="dt">Ord</span> k) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m k) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> m [a]</a>
-<a class="sourceLine" id="cb11-12" data-line-number="12">sortByM f <span class="fu">=</span> fmap (map fst <span class="fu">.</span> sortBy (comparing snd)) <span class="fu">.</span> mapM (fmap <span class="fu">&lt;$&gt;</span> (,) <span class="fu">&lt;*&gt;</span> f)</a></code></pre></div>
-<p><code>sortByM</code> 関数は <code>sortBy</code> の <code>Monad</code> 版． <code>[a]</code> を <code>[(a, m k)]</code> とし <code>[m (a, k)]</code> にして <code>m [(a, k)]</code> にしてから <code>k</code> でソートし最後に <code>a</code> だけ取り出している． ちなみに，<code>fmap &lt;$&gt; (,) &lt;*&gt; f</code> の部分は分かりますか？ <code>\x -&gt; (,) x &lt;$&gt; f x</code> をしてるだけですよ．</p>
-<h2 id="フィードページネーションタグ">フィード・ページネーション・タグ</h2>
-<p>実はフィード生成・ページネーション・タグは，もとから Hakyll で提供されている機能だ． どれもこの記事に日本語で書いてある．</p>
-<ul>
-<li><a href="https://imokuri123.com/blog/2015/12/how-to-create-blog-with-hakyll-part2.html">Hakyllでブログを作る(実践編2) - Wake up! Good night*</a></li>
-<li><a href="https://imokuri123.com/blog/2015/12/how-to-create-blog-with-hakyll-part3.html">Hakyllでブログを作る(実践編3) - Wake up! Good night*</a></li>
-</ul>
-<p>だが躓きポイントはいくつかあった(だいたい日時のやつだけど…)．</p>
-<h3 id="フィードを生成">フィードを生成</h3>
-<p>記事の通りに作っても <code>$published$</code> 変数が無いと怒られる． <code>renderAtom</code> 関数の中で <code>dateField</code> 関数を使っているからだ． さすがに書き換えるのはめんどいので，自分で取ってくることにした．</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" data-line-number="1"><span class="ot">postCtx ::</span> <span class="dt">Context</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb12-2" data-line-number="2">postCtx <span class="fu">=</span> mconcat</a>
-<a class="sourceLine" id="cb12-3" data-line-number="3">  [ dateField <span class="st">&quot;time&quot;</span> <span class="st">&quot;%Y-%m-%d&quot;</span></a>
-<a class="sourceLine" id="cb12-4" data-line-number="4">  , dateField <span class="st">&quot;date&quot;</span> <span class="st">&quot;%b %-d, %Y&quot;</span></a>
-<a class="sourceLine" id="cb12-5" data-line-number="5">  , dateField&#39; <span class="st">&quot;published&quot;</span> <span class="st">&quot;%Y-%m-%dT%H:%M:%SZ&quot;</span></a>
-<a class="sourceLine" id="cb12-6" data-line-number="6">  , dateField&#39; <span class="st">&quot;updated&quot;</span> <span class="st">&quot;%Y-%m-%dT%H:%M:%SZ&quot;</span></a>
-<a class="sourceLine" id="cb12-7" data-line-number="7">  , defaultContext</a>
-<a class="sourceLine" id="cb12-8" data-line-number="8">  ]</a></code></pre></div>
-<p>あと，<a href="https://hackage.haskell.org/package/hakyll-4.11.0.0/docs/Hakyll-Web-Feed.html#t:FeedConfiguration">フィードに渡す変数</a>は <code>config.yaml</code> に書くことにした．</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb13-1" data-line-number="1"><span class="fu">site_title:</span><span class="at"> ひげメモ</span></a>
-<a class="sourceLine" id="cb13-2" data-line-number="2"><span class="fu">author:</span><span class="at"> MATSUBARA Nobutada</span></a>
-<a class="sourceLine" id="cb13-3" data-line-number="3"><span class="fu">email:</span><span class="at"> </span><span class="st">&quot;&quot;</span></a>
-<a class="sourceLine" id="cb13-4" data-line-number="4"><span class="fu">description:</span><span class="at"> </span><span class="st">&quot;自分用のメモ書きだったり，イロイロといじって遊ぶようだったり&quot;</span></a>
-<a class="sourceLine" id="cb13-5" data-line-number="5"><span class="fu">baseurl:</span><span class="at"> </span><span class="st">&quot;https://matsubara0507.github.io&quot;</span></a>
-<a class="sourceLine" id="cb13-6" data-line-number="6"><span class="fu">val:</span></a>
-<a class="sourceLine" id="cb13-7" data-line-number="7">  <span class="fu">github:</span><span class="at"> matsubara0507</span></a></code></pre></div>
-<p>これを <code>Config</code> 型という拡張可能レコードにマッピングし，そのあとに <code>FeedConfiguration</code> 型に変換する．</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Control.Lens</span> ((^.))</a>
-<a class="sourceLine" id="cb14-2" data-line-number="2"><span class="kw">import</span> <span class="dt">Data.Extensible</span></a>
-<a class="sourceLine" id="cb14-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb14-4" data-line-number="4"><span class="kw">type</span> <span class="dt">Config</span> <span class="fu">=</span> <span class="dt">Record</span></a>
-<a class="sourceLine" id="cb14-5" data-line-number="5">  <span class="ch">&#39;[ &quot;site_title&quot; &gt;: String</span></a>
-<a class="sourceLine" id="cb14-6" data-line-number="6">   , <span class="st">&quot;author&quot;</span> <span class="fu">&gt;:</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb14-7" data-line-number="7">   , <span class="st">&quot;email&quot;</span> <span class="fu">&gt;:</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb14-8" data-line-number="8">   , <span class="st">&quot;description&quot;</span> <span class="fu">&gt;:</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb14-9" data-line-number="9">   , <span class="st">&quot;baseurl&quot;</span> <span class="fu">&gt;:</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb14-10" data-line-number="10">   , <span class="st">&quot;val&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Map</span> <span class="dt">String</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb14-11" data-line-number="11">   ]</a>
-<a class="sourceLine" id="cb14-12" data-line-number="12"></a>
-<a class="sourceLine" id="cb14-13" data-line-number="13"><span class="ot">mkFeedConfig ::</span> <span class="dt">Config</span> <span class="ot">-&gt;</span> <span class="dt">FeedConfiguration</span></a>
-<a class="sourceLine" id="cb14-14" data-line-number="14">mkFeedConfig conf <span class="fu">=</span> <span class="dt">FeedConfiguration</span></a>
-<a class="sourceLine" id="cb14-15" data-line-number="15">  { feedTitle       <span class="fu">=</span> conf <span class="fu">^.</span> <span class="fu">#</span>site_title</a>
-<a class="sourceLine" id="cb14-16" data-line-number="16">  , feedDescription <span class="fu">=</span> conf <span class="fu">^.</span> <span class="fu">#</span>description</a>
-<a class="sourceLine" id="cb14-17" data-line-number="17">  , feedAuthorName  <span class="fu">=</span> conf <span class="fu">^.</span> <span class="fu">#</span>author</a>
-<a class="sourceLine" id="cb14-18" data-line-number="18">  , feedAuthorEmail <span class="fu">=</span> conf <span class="fu">^.</span> <span class="fu">#</span>email</a>
-<a class="sourceLine" id="cb14-19" data-line-number="19">  , feedRoot        <span class="fu">=</span> conf <span class="fu">^.</span> <span class="fu">#</span>baseurl</a>
-<a class="sourceLine" id="cb14-20" data-line-number="20">  }</a></code></pre></div>
-<p>もちろん，<code>siteCtx</code> も書き換える必要がある．</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" data-line-number="1"><span class="ot">mkSiteCtx ::</span> <span class="dt">Config</span> <span class="ot">-&gt;</span> <span class="dt">Context</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb15-2" data-line-number="2">mkSiteCtx <span class="fu">=</span> hfoldMapFor</a>
-<a class="sourceLine" id="cb15-3" data-line-number="3">  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">ToContext</span>))</a>
-<a class="sourceLine" id="cb15-4" data-line-number="4">  (toContext <span class="fu">&lt;$&gt;</span> symbolVal <span class="fu">.</span> proxyAssocKey <span class="fu">&lt;*&gt;</span> getField)</a>
-<a class="sourceLine" id="cb15-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb15-6" data-line-number="6"><span class="kw">class</span> <span class="dt">ToContext</span> a <span class="kw">where</span></a>
-<a class="sourceLine" id="cb15-7" data-line-number="7"><span class="ot">  toContext ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Context</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb15-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb15-9" data-line-number="9"><span class="kw">instance</span> <span class="dt">ToContext</span> <span class="dt">String</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb15-10" data-line-number="10">  toContext _ <span class="st">&quot;&quot;</span> <span class="fu">=</span> mempty</a>
-<a class="sourceLine" id="cb15-11" data-line-number="11">  toContext k v  <span class="fu">=</span> constField k v</a>
-<a class="sourceLine" id="cb15-12" data-line-number="12"></a>
-<a class="sourceLine" id="cb15-13" data-line-number="13"><span class="kw">instance</span> <span class="dt">ToContext</span> a <span class="ot">=&gt;</span> <span class="dt">ToContext</span> (<span class="dt">Map</span> <span class="dt">String</span> a) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb15-14" data-line-number="14">  toContext _ <span class="fu">=</span> foldMapWithKey toContext</a>
-<a class="sourceLine" id="cb15-15" data-line-number="15"></a>
-<a class="sourceLine" id="cb15-16" data-line-number="16"><span class="kw">instance</span> <span class="dt">ToContext</span> a <span class="ot">=&gt;</span> <span class="dt">ToContext</span> (<span class="dt">Identity</span> a) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb15-17" data-line-number="17">  toContext k <span class="fu">=</span> toContext k <span class="fu">.</span> runIdentity</a></code></pre></div>
-<p>拡張可能レコード最高です．</p>
-<h3 id="ページネーションを追加">ページネーションを追加</h3>
-<p><a href="https://imokuri123.com/blog/2015/12/how-to-create-blog-with-hakyll-part2.html#%E3%83%9A%E3%83%BC%E3%82%B8%E3%83%8D%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3">参考記事</a>の中で使われている <code>sortRecentFirst</code> も日時を取得しているので書き換える．</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" data-line-number="1"><span class="ot">sortRecentFirst&#39; ::</span> <span class="dt">MonadMetadata</span> m <span class="ot">=&gt;</span> [<span class="dt">Identifier</span>] <span class="ot">-&gt;</span> m [<span class="dt">Identifier</span>]</a>
-<a class="sourceLine" id="cb16-2" data-line-number="2">sortRecentFirst&#39; <span class="fu">=</span></a>
-<a class="sourceLine" id="cb16-3" data-line-number="3">  fmap (fmap itemIdentifier) <span class="fu">.</span> recentFirst&#39; <span class="fu">.</span> fmap (flip <span class="dt">Item</span> ())</a></code></pre></div>
-<h3 id="タグを追加">タグを追加</h3>
-<p>躓きと言うかデザインの問題なのだが，タグのテンプレート変数を生成する <a href="https://hackage.haskell.org/package/hakyll-4.11.0.0/docs/Hakyll-Web-Tags.html#v:tagsField"><code>tagsField</code></a> 関数が，タグをカンマ区切りの文字列にしちゃうのがあった． 個人的には空白区切りにして欲しいので書き換えた．</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" data-line-number="1"><span class="kw">import</span>           <span class="dt">Data.List</span>                   (intersperse)</a>
-<a class="sourceLine" id="cb17-2" data-line-number="2"><span class="kw">import</span>           <span class="dt">Text.Blaze.Html</span>             (toHtml, toValue, (!))</a>
-<a class="sourceLine" id="cb17-3" data-line-number="3"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Text.Blaze.Html5</span>            <span class="kw">as</span> <span class="dt">H</span></a>
-<a class="sourceLine" id="cb17-4" data-line-number="4"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Text.Blaze.Html5.Attributes</span> <span class="kw">as</span> <span class="dt">A</span></a>
-<a class="sourceLine" id="cb17-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb17-6" data-line-number="6"><span class="ot">tagsFieldWithSep ::</span> <span class="dt">H.Html</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Tags</span> <span class="ot">-&gt;</span> <span class="dt">Context</span> a</a>
-<a class="sourceLine" id="cb17-7" data-line-number="7">tagsFieldWithSep sep <span class="fu">=</span></a>
-<a class="sourceLine" id="cb17-8" data-line-number="8">  tagsFieldWith getTags simpleRenderLink (mconcat <span class="fu">.</span> intersperse sep)</a>
-<a class="sourceLine" id="cb17-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb17-10" data-line-number="10"><span class="ot">simpleRenderLink ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> FilePath <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">H.Html</span></a>
-<a class="sourceLine" id="cb17-11" data-line-number="11">simpleRenderLink tag <span class="fu">=</span></a>
-<a class="sourceLine" id="cb17-12" data-line-number="12">  fmap (\path <span class="ot">-&gt;</span> H.a <span class="fu">!</span> A.href (toValue <span class="fu">$</span> toUrl path) <span class="fu">$</span> toHtml tag)</a></code></pre></div>
-<p><code>tagsFieldWithSep &quot; &quot;</code> とすれば空白区切りになる．</p>
-<h2 id="おしまい">おしまい</h2>
-<p>ずーーとやろうやろうと思ってたことをいっきに片したぜ．</p>
   </div>
 </div>
 </article>
