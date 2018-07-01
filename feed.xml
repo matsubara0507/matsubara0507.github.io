@@ -8,8 +8,81 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2018-06-21T00:00:00Z</updated>
+    <updated>2018-07-01T00:00:00Z</updated>
     <entry>
+    <title>Ruby Hack Challenge ＃4 に参加してきた</title>
+    <link href="https://matsubara0507.github.io/posts/2018-07-01-join-ruby-hack-challenge4.html" />
+    <id>https://matsubara0507.github.io/posts/2018-07-01-join-ruby-hack-challenge4.html</id>
+    <published>2018-07-01T00:00:00Z</published>
+    <updated>2018-07-01T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Ruby Hack Challenge ＃4 に参加してきた</h1>
+    <p class="post-meta">
+      <time datetime="2018-07-01" itemprop="datePublished">
+        Jul 1, 2018
+      </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/Ruby.html">Ruby</a> <a href="/tags/event.html">event</a>
+      </div>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>先週 <a href="https://cookpad.connpass.com/event/88471/">Ruby Hack Cavalage #4</a> に参加してきたので，そのメモ書きです．</p>
+<p>ちなみに，Ruby は自分が最初に触ったスクリプト言語で，現在仕事で使っているメインの言語です． 推し言語(Haskell)とは異なり，動的型付けではありますが，「<a href="http://i.loveruby.net/ja/rhg/book/">Rubyソースコード完全解説</a>」や「<a href="https://tatsu-zine.com/books/ruby-under-a-microscope-ja">Rubyのしくみ</a>」のような処理系内部を紹介してる読み物も多く，かなり好きな方な言語です.</p>
+<h2 id="ruby-hack-challenge">Ruby Hack Challenge</h2>
+<p>Ruby 処理系をハックしようというイベントで，コアコミッタの <a href="https://github.com/mame">mame</a> 氏と <a href="https://github.com/ko1">ko1</a> 氏が講師として企画してくれている． ふたりが在籍しているということで，会場はクックパッドで行っている．</p>
+<p>毎回，前半に講義的なものがあり，後半で実際に手を動かして Ruby にコミットするといった感じらしい． ただし，2日開催だったり，半日だったり時間はまちまち(今回は半日だった)． イベント名的に Ruby のハッカソンみたいだが，Ruby 処理系はC言語で書かれているためC言語を書くことになる(笑)</p>
+<h3 id="カバレッジ特別会">カバレッジ特別会</h3>
+<p>しかし，4回目(となっているが3回目が見当たらないので3回目かも？？)となる今回は，カバレッジ特別会ということで多くの人たちが Ruby を読み書きしていた． なぜかというと，標準ライブラリは Ruby で書かれており，今回は標準ライブラリのテストカバレッジをあげても良かったからだ． というか，C で書かれているコア部分は mame 氏が昔に大分カバレッジをあげてしまったため，そっちをやるのは難しいと言っていた．</p>
+<h2 id="section"></h2>
+<p>C言語の部分で残っているとすれば本質的に難しい部分(副作用とか並行並列とか)か最近追加された部分か(JITとか？)だそうだ．</p>
+<h3 id="資料">資料</h3>
+<p>今までのも含め，資料は(いくつか？)公開されているので誰でも見れる．</p>
+<ul>
+<li><a href="https://github.com/ko1/rubyhackchallenge">ko1/rubyhackchallenge - GitHub</a></li>
+<li><a href="https://www.slideshare.net/mametter/ruby-hack-challenge-4">Ruby Hack Challenge #4 カバレッジ特別回 資料 - SlideShare</a></li>
+</ul>
+<p>また Gitter で連絡を取り合っており，実は誰でも参加できる(たぶん)．</p>
+<ul>
+<li><a href="https://gitter.im/rubyhackchallenge/Lobby">rubyhackchallenge/Lobby - Gitter</a></li>
+</ul>
+<h2 id="section-1"></h2>
+<p>ちなみに，ボクはもともとこのイベントは参加したいなぁと思っていた(言語好きなので)．</p>
+<h2 id="ruby-のテストカバレッジ">Ruby のテストカバレッジ</h2>
+<p>Ruby のテストカバレッジは Web から確認できる．</p>
+<ul>
+<li><a href="https://rubyci.s3.amazonaws.com/debian8-coverage/ruby-trunk/lcov/index.html">LCOV - code coverage report</a></li>
+</ul>
+<p>これを見てカバレッジの低いところにねらい目を付けてテストを追加する(ないしは不要な実装なら削る)． 標準ライブラリのいくつかは個別に GitHub で管理されているので，GitHub で管理されてる場合はそっちに PR を投げれば良いようだ(今回は事情が共有されてたせいかすぐマージされた)．</p>
+<h2 id="section-2"></h2>
+<p>ちなみに，<a href="https://github.com/ruby/ruby/blob/trunk/doc/maintainers.rdoc">ココ</a>を見ると誰がメンテナーで，どこに報告すれば良いかが書いてある．</p>
+<h3 id="環境構築">環境構築</h3>
+<p>は事前にやっとくと，当日はすんなりコミットできた(構築方法はスライドに書いてある)． 事前にって言ってもぼくは行きの電車でやったけど(笑)</p>
+<p>Windows と Mac を持ってるけど，どっちも素でやるのは難しいので，Debian の Docker コンテナの上で構築した． Docker ありがとう！ ビルドがめっちゃ遅いけどね！</p>
+<h2 id="当日やったこと">当日やったこと</h2>
+<p>すっっっごい簡単にカバレッジをあげれそうなのがあったのサクッと直して PR をだした．</p>
+<ul>
+<li><a href="https://github.com/ruby/cmath/pull/2">Add test for coverage by matsubara0507 · Pull Request #2 · ruby/cmath</a></li>
+</ul>
+<p><code>CMath</code> モジュールは <code>Math</code> モジュールをラップして複素数(Complex number)にまで対応させたものだ． そのため，虚数を含む複素数に関するテストしかなく，実数に関するテストが無かったためカバレッジが低かった． 愚直に全部書いたら100%まで行きましたちゃんちゃんってだけです．</p>
+<h2 id="section-3"></h2>
+<p>ちなみに，他にも4,5個ほど PR が出ていた． すごいね！</p>
+<h2 id="もくもく会">もくもく会</h2>
+<p>あと，Ruby Hack Challenge もくもく会というのがあるらしいので行ってみたい(<a href="https://connpass.com/event/93131/">次回はこれ</a>)． MJIT のコードとか読んでみたいよね． それと型検査(はどうなるかまだ分からないらしいけど)．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>そういえば，ko1 氏がお子さんと奥さんを連れてきていた(たぶん)． そういう事に理解のある会社っていいなぁと感じた．</p>
+  </div>
+</div>
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>rust-reversi やってみた</title>
     <link href="https://matsubara0507.github.io/posts/2018-06-21-challenge-rust-reversi.html" />
     <id>https://matsubara0507.github.io/posts/2018-06-21-challenge-rust-reversi.html</id>
@@ -2699,86 +2772,6 @@ ViewPatterns</code></pre>
 <p>ことができた．</p>
 <h2 id="おしまい">おしまい</h2>
 <p>組込みでこれらの機能がある OCaml はいいなぁとなった．</p>
-  </div>
-</div>
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>tasty-discover が Windows+日本語環境で動かなかったので直す</title>
-    <link href="https://matsubara0507.github.io/posts/2018-03-04-fix-tasty-discover-windows.html" />
-    <id>https://matsubara0507.github.io/posts/2018-03-04-fix-tasty-discover-windows.html</id>
-    <published>2018-03-04T00:00:00Z</published>
-    <updated>2018-03-04T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
- <div class="card-content">
-  <header class="post-header">
-    <h1 class="post-title" itemprop="name headline">tasty-discover が Windows+日本語環境で動かなかったので直す</h1>
-    <p class="post-meta">
-      <time datetime="2018-03-04" itemprop="datePublished">
-        Mar 4, 2018
-      </time>
-      
-      
-      <div class="tags">
-          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a>
-      </div>
-      
-    </p>
-  </header>
-
-  <div class="post-content" itemprop="articleBody">
-    <p>おそらく少数派であろう Windows + 日本語環境の Haskeller のひげです．</p>
-<p>最近は知人のすゝめで，Haskell のテストフレームワークに <a href="https://hackage.haskell.org/package/tasty"><code>tasty</code></a> を使ってます． <code>tasty</code> にも例に漏れず <a href="http://hackage.haskell.org/package/tasty-discover"><code>tasty-discover</code></a> というテスト用の関数を <code>.hs</code> ファイルから集めてきてくれるツールがある． しかし，悲しいことに <code>tasty-discover</code> がマルチバイト文字(日本語とか)を Windows で読み込むと <strong>いつもの</strong> エラーで死んでしまう．</p>
-<p>なので，直して PR 出した． この記事はそのメモです．</p>
-<h2 id="問題のエラー">問題のエラー</h2>
-<pre><code>Building test suite &#39;test&#39; for tasty-discover-4.1.3..
-tasty-discover: test\ConfigTest.hs: hGetContents: invalid argument (invalid byte sequence)
-`tasty-discover&#39; failed in phase `Haskell pre-processor&#39;. (Exit code: 1)
-Progress: 1/2
---  While building custom Setup.hs for package tasty-discover-4.1.3 using:
-      C:\Users\Hoge\AppData\Roaming\stack\setup-exe-cache\i386-windows\Cabal-simple_Z6RU0evB_2.0.1.0_ghc-8.2.2.exe --builddir=.stack-work\dist\010ee936 build lib:tasty-discover exe:tasty-discover test:test --ghc-options &quot; -ddump-hi -ddump-to-file -fdiagnostics-color=always&quot;
-    Process exited with code: ExitFailure 1</code></pre>
-<p><code>hGetContents: invalid argument (invalid byte sequence)</code> は 日本語 Windows Haskeller なら親の顔より良く見るエラーメッセージですね(そんなことは無い)． このエラーは <code>hGetContents</code> で読み込もうとしているファイルの文字コードが，<code>hGetContents</code> で設定されている文字コードと違うために起きている(<code>hGetContents</code> 関数は，例えば <code>readFile</code> 関数などで呼び出されている)．</p>
-<h2 id="対処法">対処法</h2>
-<p>日本語 Windows Haskeller 筆頭の igrep 氏が Haskell-jp Blog に投稿してくれてる．</p>
-<ul>
-<li><a href="https://haskell.jp/blog/posts/2017/windows-gotchas.html">WindowsでHaskellを扱う時によく遭遇するエラーと対処法 - Haskell-jp</a></li>
-</ul>
-<p>今回は(孫プロセスとして読んでるせいか)「それでもダメな場合」に当たる． つまり，場当たり的な解決方法(<code>chcp 65001</code> と打つとか)ではダメで，プログラムを修正するしかない．</p>
-<h2 id="section"></h2>
-<p>神な igrep 氏は，この場合の解決策も書いておいてくれた． この <a href="https://github.com/haskell/haddock/pull/566">PR</a> を参考にして書き換えてやればよい．</p>
-<p><code>tasty-discover</code> も<a href="https://github.com/lwm/tasty-discover/pull/138/files">こんな感じに書き加えた</a>．</p>
-<h2 id="pr-を出す">PR を出す</h2>
-<p>修正自体は1時間ほどで終わり(移動中の新幹線の中で直した)，これでテストを実行できるようになったので PR を出さずに満足してしまった(あるある)． 半月ほどほっといてたら，同じケースで困った知り合いに <a href="https://github.com/lwm/tasty-discover/issues/135">Issue</a> を出されてしまった(笑)</p>
-<p>しょうがないので PR を出そうとしたら，「Windows は良く分からないから，ぜひ Windows 環境用の自動テストも欲しい！」と<a href="https://github.com/lwm/tasty-discover/issues/127">作者に言われてしまった</a>(「時間があればやって」とね)．</p>
-<h2 id="section-1"></h2>
-<p><a href="https://www.appveyor.com/">AppVeyor</a> と言うのを使えばいいみたい． 調べたらサクッとできそうなので，やってみた．</p>
-<ul>
-<li><a href="https://www.snoyman.com/blog/2016/08/appveyor-haskell-windows-ci">Using AppVeyor for Haskell+Windows CI</a></li>
-</ul>
-<p>記事にある設定ファイルをそのままコピペしてやってみたが，問題がふたつあった． ひとつ目は，<code>tasty-discover</code> のテスト自体に <code>tasty-discover</code> を使っている点だ． 最初に <code>stack test</code> を実行するときにはまだ <code>tasty-discover</code> はインストールされてないのでテストが落ちてしまう．</p>
-<pre><code>[2 of 2] Compiling Paths_tasty_discover ( .stack-work\dist\010ee936\build\tasty-discover\autogen\Paths_tasty_discover.hs, .stack-work\dist\010ee936\build\tasty-discover\tasty-discover-tmp\Paths_tasty_discover.o )
-Linking .stack-work\dist\010ee936\build\tasty-discover\tasty-discover.exe ...
-Preprocessing test suite &#39;test&#39; for tasty-discover-4.1.3..
-Building test suite &#39;test&#39; for tasty-discover-4.1.3..
-ghc.EXE: could not execute: tasty-discover</code></pre>
-<p>なので，<code>stack test</code> する前に <code>stack install</code> することにした．</p>
-<h2 id="section-2"></h2>
-<p>ふたつ目は，そもそも WIndows のビルドが落ちる点． <code>System.FilePath</code> に関するバグだったので，<a href="https://github.com/lwm/tasty-discover/pull/136/files#diff-383b12983902facd1ce205458e1061b6">サクッと直した</a>． Windows のテストに関する <a href="https://github.com/lwm/tasty-discover/pull/136">PR</a> もマージされたので，本命の <a href="https://github.com/lwm/tasty-discover/pull/138">PR</a> も出した(これもマージされた)．</p>
-<h2 id="今回の問題をテストする">今回の問題をテストする(？)</h2>
-<p>今回の問題のテストも欲しいと言われた． <code>tasty-discover</code> のテスト自体が <code>tasty-discover</code> を使うため，ユニットテストとして表現できない． <code>stack test</code> そのものが落ちるか落ちないかのテストはできるが，それはなんか違うなぁと思い，結局コミットはしていない．</p>
-<p>ただし，いちおう AppVeyor で<a href="https://ci.appveyor.com/project/matsubara0507/tasty-discover/build/1.0.9">再現できるようにはした</a>． AppVeyor はデフォルトだと日本語環境になっていない(即ち Shift-JIS じゃない)ため落ちない． なので，以下を参考にして日本語環境にして実行した．</p>
-<ul>
-<li><a href="https://github.com/appveyor/ci/issues/846">Support a different code page · Issue #846 · appveyor/ci</a></li>
-</ul>
-<pre><code>init:
-- ps: Set-WinSystemLocale ja-JP
-- ps: Start-Sleep -s 5
-- ps: Restart-Computer</code></pre>
-<p>というのを <code>appveyor.yml</code> に書き加えるだけで良い．</p>
-<h2 id="おしまい">おしまい</h2>
-<p>なんか <a href="https://github.com/lwm/tasty-discover/issues/139">Push 権限を貰った</a>． こういうこともあるんですね(OSS歴が浅いので驚いた)．</p>
   </div>
 </div>
 </article>

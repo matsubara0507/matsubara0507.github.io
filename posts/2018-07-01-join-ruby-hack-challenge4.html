@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="Ruby Hack Challenge ＃4 に参加してきた" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        Ruby Hack Challenge ＃4 に参加してきた
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Ruby Hack Challenge ＃4 に参加してきた</h1>
+    <p class="post-meta">
+      <time datetime="2018-07-01" itemprop="datePublished">
+        Jul 1, 2018
+      </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="../tags/Ruby.html">Ruby</a> <a href="../tags/event.html">event</a>
+      </div>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>先週 <a href="https://cookpad.connpass.com/event/88471/">Ruby Hack Cavalage #4</a> に参加してきたので，そのメモ書きです．</p>
+<p>ちなみに，Ruby は自分が最初に触ったスクリプト言語で，現在仕事で使っているメインの言語です． 推し言語(Haskell)とは異なり，動的型付けではありますが，「<a href="http://i.loveruby.net/ja/rhg/book/">Rubyソースコード完全解説</a>」や「<a href="https://tatsu-zine.com/books/ruby-under-a-microscope-ja">Rubyのしくみ</a>」のような処理系内部を紹介してる読み物も多く，かなり好きな方な言語です.</p>
+<h2 id="ruby-hack-challenge">Ruby Hack Challenge</h2>
+<p>Ruby 処理系をハックしようというイベントで，コアコミッタの <a href="https://github.com/mame">mame</a> 氏と <a href="https://github.com/ko1">ko1</a> 氏が講師として企画してくれている． ふたりが在籍しているということで，会場はクックパッドで行っている．</p>
+<p>毎回，前半に講義的なものがあり，後半で実際に手を動かして Ruby にコミットするといった感じらしい． ただし，2日開催だったり，半日だったり時間はまちまち(今回は半日だった)． イベント名的に Ruby のハッカソンみたいだが，Ruby 処理系はC言語で書かれているためC言語を書くことになる(笑)</p>
+<h3 id="カバレッジ特別会">カバレッジ特別会</h3>
+<p>しかし，4回目(となっているが3回目が見当たらないので3回目かも？？)となる今回は，カバレッジ特別会ということで多くの人たちが Ruby を読み書きしていた． なぜかというと，標準ライブラリは Ruby で書かれており，今回は標準ライブラリのテストカバレッジをあげても良かったからだ． というか，C で書かれているコア部分は mame 氏が昔に大分カバレッジをあげてしまったため，そっちをやるのは難しいと言っていた．</p>
+<h2 id="section"></h2>
+<p>C言語の部分で残っているとすれば本質的に難しい部分(副作用とか並行並列とか)か最近追加された部分か(JITとか？)だそうだ．</p>
+<h3 id="資料">資料</h3>
+<p>今までのも含め，資料は(いくつか？)公開されているので誰でも見れる．</p>
+<ul>
+<li><a href="https://github.com/ko1/rubyhackchallenge">ko1/rubyhackchallenge - GitHub</a></li>
+<li><a href="https://www.slideshare.net/mametter/ruby-hack-challenge-4">Ruby Hack Challenge #4 カバレッジ特別回 資料 - SlideShare</a></li>
+</ul>
+<p>また Gitter で連絡を取り合っており，実は誰でも参加できる(たぶん)．</p>
+<ul>
+<li><a href="https://gitter.im/rubyhackchallenge/Lobby">rubyhackchallenge/Lobby - Gitter</a></li>
+</ul>
+<h2 id="section-1"></h2>
+<p>ちなみに，ボクはもともとこのイベントは参加したいなぁと思っていた(言語好きなので)．</p>
+<h2 id="ruby-のテストカバレッジ">Ruby のテストカバレッジ</h2>
+<p>Ruby のテストカバレッジは Web から確認できる．</p>
+<ul>
+<li><a href="https://rubyci.s3.amazonaws.com/debian8-coverage/ruby-trunk/lcov/index.html">LCOV - code coverage report</a></li>
+</ul>
+<p>これを見てカバレッジの低いところにねらい目を付けてテストを追加する(ないしは不要な実装なら削る)． 標準ライブラリのいくつかは個別に GitHub で管理されているので，GitHub で管理されてる場合はそっちに PR を投げれば良いようだ(今回は事情が共有されてたせいかすぐマージされた)．</p>
+<h2 id="section-2"></h2>
+<p>ちなみに，<a href="https://github.com/ruby/ruby/blob/trunk/doc/maintainers.rdoc">ココ</a>を見ると誰がメンテナーで，どこに報告すれば良いかが書いてある．</p>
+<h3 id="環境構築">環境構築</h3>
+<p>は事前にやっとくと，当日はすんなりコミットできた(構築方法はスライドに書いてある)． 事前にって言ってもぼくは行きの電車でやったけど(笑)</p>
+<p>Windows と Mac を持ってるけど，どっちも素でやるのは難しいので，Debian の Docker コンテナの上で構築した． Docker ありがとう！ ビルドがめっちゃ遅いけどね！</p>
+<h2 id="当日やったこと">当日やったこと</h2>
+<p>すっっっごい簡単にカバレッジをあげれそうなのがあったのサクッと直して PR をだした．</p>
+<ul>
+<li><a href="https://github.com/ruby/cmath/pull/2">Add test for coverage by matsubara0507 · Pull Request #2 · ruby/cmath</a></li>
+</ul>
+<p><code>CMath</code> モジュールは <code>Math</code> モジュールをラップして複素数(Complex number)にまで対応させたものだ． そのため，虚数を含む複素数に関するテストしかなく，実数に関するテストが無かったためカバレッジが低かった． 愚直に全部書いたら100%まで行きましたちゃんちゃんってだけです．</p>
+<h2 id="section-3"></h2>
+<p>ちなみに，他にも4,5個ほど PR が出ていた． すごいね！</p>
+<h2 id="もくもく会">もくもく会</h2>
+<p>あと，Ruby Hack Challenge もくもく会というのがあるらしいので行ってみたい(<a href="https://connpass.com/event/93131/">次回はこれ</a>)． MJIT のコードとか読んでみたいよね． それと型検査(はどうなるかまだ分からないらしいけど)．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>そういえば，ko1 氏がお子さんと奥さんを連れてきていた(たぶん)． そういう事に理解のある会社っていいなぁと感じた．</p>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+  <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+    <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+      <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+    </a>
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>
