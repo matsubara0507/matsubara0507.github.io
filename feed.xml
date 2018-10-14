@@ -8,8 +8,180 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2018-08-18T00:00:00Z</updated>
+    <updated>2018-10-14T00:00:00Z</updated>
     <entry>
+    <title>stack-templates を集める with GraphQL</title>
+    <link href="https://matsubara0507.github.io/posts/2018-10-14-collect-stack-templates.html" />
+    <id>https://matsubara0507.github.io/posts/2018-10-14-collect-stack-templates.html</id>
+    <published>2018-10-14T00:00:00Z</published>
+    <updated>2018-10-14T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">stack-templates を集める with GraphQL</h1>
+    <p class="post-meta">
+      <time datetime="2018-10-14" itemprop="datePublished">
+        Oct 14, 2018
+      </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a> <a href="/tags/GraphQL.html">GraphQL</a>
+      </div>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>Haskell Day の仕込みパート1です(2があるかは知らない)． stack の次期バージョン v1.9 で追加される namespaced template を試してみました．</p>
+<p>ちなみに，現在 v1.9 はプレリリースになったので，下記コマンドで簡単にアップデートできます．</p>
+<pre><code>$ stack upgrade --binary-version 1.9.0.1</code></pre>
+<h2 id="namespaced-template">namespaced template</h2>
+<p><code>stack new</code> で指定できるテンプレートを，GitHub などのオンラインからも取ってこれるようになった機能． 詳しくは開発段階からキャッチアップしてる e-bigmoon さんの記事を読むと良い．</p>
+<ul>
+<li><a href="https://haskell.e-bigmoon.com/posts/2018/06-27-namespaced-templates.html">namespaced templates - BIGMOON haskellers blog</a></li>
+</ul>
+<h3 id="作ってみた">作ってみた</h3>
+<p>GitHub などで <code>stack-templates</code> という名前のリポジトリを作り，<code>hsfiles</code> という拡張子のテンプレートファイルをトップレベルに置く． 今回ぼくは <a href="https://github.com/matsubara0507/stack-templates">matsubara0507/stack-templates</a> というリポジトリを作り，２つ程作ってみた．</p>
+<ul>
+<li><code>get-opt-cli.hsfiles</code> : <a href="http://hackage.haskell.org/package/base/docs/System-Console-GetOpt.html"><code>System.Console.GetOpt</code></a> を用いたCLIのテンプレート</li>
+<li><code>optparse-applicative-cli.hsfiles</code> : <a href="http://hackage.haskell.org/package/optparse-applicative">optparse-applicative</a> を用いたCLIのテンプレート</li>
+</ul>
+<p>どちらも，よくCLIを作るときの書き方をテンプレートとして起こしたもの． 普段は <a href="http://hackage.haskell.org/package/rio">rio</a> と <a href="http://hackage.haskell.org/package/extensible">extensible</a> を使っているので，単純に optparse-applicative などを使ったテンプレートという訳でもない．</p>
+<h3 id="テストする">テストする</h3>
+<p>できれば，テンプレートを <code>stack new</code> して <code>stack build</code> した時点ではコンパイルを通ってほしい． ということで <code>stack new</code> して <code>stack build</code> を試してくれるテストを <a href="https://github.com/matsubara0507/stack-templates/blob/7abc95184241c2df9f81ec1a45f9a662a98db05a/.travis.yml">TravisCI</a> に書いた．</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="fu">matrix:</span></a>
+<a class="sourceLine" id="cb2-2" data-line-number="2">  <span class="fu">include:</span></a>
+<a class="sourceLine" id="cb2-3" data-line-number="3">  <span class="kw">-</span> <span class="fu">env:</span><span class="at"> TEMPLATE=&quot;get-opt-cli&quot; ARGS=&quot;--resolver lts-12&quot;</span></a>
+<a class="sourceLine" id="cb2-4" data-line-number="4">    <span class="fu">compiler:</span><span class="at"> </span><span class="st">&quot;: #stack 8.4.3&quot;</span></a>
+<a class="sourceLine" id="cb2-5" data-line-number="5">    <span class="fu">addons:</span><span class="at"> </span><span class="kw">{</span><span class="fu">apt:</span><span class="at"> </span><span class="kw">{</span><span class="fu">packages:</span><span class="at"> </span><span class="kw">[</span>libgmp-dev<span class="kw">]}}</span></a>
+<a class="sourceLine" id="cb2-6" data-line-number="6">  <span class="kw">-</span> <span class="fu">env:</span><span class="at"> TEMPLATE=&quot;optparse-applicative-cli&quot; ARGS=&quot;--resolver lts-12&quot;</span></a>
+<a class="sourceLine" id="cb2-7" data-line-number="7">    <span class="fu">compiler:</span><span class="at"> </span><span class="st">&quot;: #stack 8.4.3&quot;</span></a>
+<a class="sourceLine" id="cb2-8" data-line-number="8">    <span class="fu">addons:</span><span class="at"> </span><span class="kw">{</span><span class="fu">apt:</span><span class="at"> </span><span class="kw">{</span><span class="fu">packages:</span><span class="at"> </span><span class="kw">[</span>libgmp-dev<span class="kw">]}}</span></a>
+<a class="sourceLine" id="cb2-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb2-10" data-line-number="10"><span class="fu">before_install:</span></a>
+<a class="sourceLine" id="cb2-11" data-line-number="11"><span class="co"># install stack</span></a>
+<a class="sourceLine" id="cb2-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb2-13" data-line-number="13"><span class="fu">install:</span></a>
+<a class="sourceLine" id="cb2-14" data-line-number="14"><span class="kw">-</span> stack new sample <span class="st">&quot;./$TEMPLATE&quot;</span></a>
+<a class="sourceLine" id="cb2-15" data-line-number="15"><span class="kw">-</span> |</a>
+<a class="sourceLine" id="cb2-16" data-line-number="16">  set -ex</a>
+<a class="sourceLine" id="cb2-17" data-line-number="17">  cd sample</a>
+<a class="sourceLine" id="cb2-18" data-line-number="18">  stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies</a>
+<a class="sourceLine" id="cb2-19" data-line-number="19">  set +ex</a>
+<a class="sourceLine" id="cb2-20" data-line-number="20"><span class="fu">script:</span></a>
+<a class="sourceLine" id="cb2-21" data-line-number="21"><span class="kw">-</span> |</a>
+<a class="sourceLine" id="cb2-22" data-line-number="22">  set -ex</a>
+<a class="sourceLine" id="cb2-23" data-line-number="23">  stack --no-terminal $ARGS test --bench --no-run-benchmarks --no-haddock-deps</a>
+<a class="sourceLine" id="cb2-24" data-line-number="24">  set +ex</a></code></pre></div>
+<p><a href="https://github.com/commercialhaskell/stack-templates/blob/879f95dc44b24201bc64fcf8f4b9e2192c23dad4/test-templates.hs">commercialhaskell/stack-templates でもテストは書いてある</a>がぼくのはすごいシンプルだ．</p>
+<h2 id="stack-templates-を集める">stack-templates を集める</h2>
+<p>さて，これだけでは完全に e-bigmoon さんの劣化記事だ． なので，stack-templates を GitHub から集めてくる CLI ツールを作ることにした．</p>
+<p>試したところ，GitHub の検索で <code>stack-template in:name</code> と検索すれば，それなりにヒットすることがわかった(間違いも多いが)． なので，ざっくりとした手順は:</p>
+<ol type="1">
+<li>検索系の GitHub API を叩く</li>
+<li>stack-templates という名前のリポジトリの <code>*.hsfiles</code> というファイルだけ抽出</li>
+<li>それらを出力</li>
+</ol>
+<p>ここで GitHub API v3 (RESTful API)を利用すると，リポジトリのファイル群を取得するのに検索系の API を叩いてから，各リポジトリの API を叩く必要がある． それは面倒だ． なので，ここ数年注目を集めている(？) GraphQL API (GitHub API v4)を試してみることにした．</p>
+<h3 id="graphql">GraphQL</h3>
+<p>ちょうどこの前に，友人から「GraphQL はいいぞ，API をなんども叩く必要がない．」と紹介されたので試してみた．</p>
+<p>GitHub の API では <code>api.github.com/graphql</code> というエンドポイントに対し，POST メソッドでクエリを送信する．</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><a class="sourceLine" id="cb3-1" data-line-number="1">$ <span class="ex">curl</span> \</a>
+<a class="sourceLine" id="cb3-2" data-line-number="2">  -H <span class="st">&quot;Authorization: bearer token&quot;</span> \</a>
+<a class="sourceLine" id="cb3-3" data-line-number="3">  -X POST \</a>
+<a class="sourceLine" id="cb3-4" data-line-number="4">  -d <span class="st">&quot;{ </span><span class="dt">\&quot;</span><span class="st">query</span><span class="dt">\&quot;</span><span class="st">: </span><span class="dt">\&quot;</span><span class="st"> ... </span><span class="dt">\&quot;</span><span class="st"> }&quot;</span> \</a>
+<a class="sourceLine" id="cb3-5" data-line-number="5">  https://api.github.com/graphql</a></code></pre></div>
+<p><code>...</code> のところにクエリを記述する． クエリは簡単な DSL のようになっており，クエリによってどんな形の JSON が返ってくるか(型のようなもの)やどんな値が返ってくるかが決まる． 例えば <code>stack-template in:name</code> 検索してヒットしたリポジトリの名前だけを取得してみよう． その場合は次のようなクエリを書く．</p>
+<pre><code>query{
+  search(query: &quot;stack-template in:name&quot;, type: REPOSITORY, first: 2) {
+    repositoryCount,
+    edges{
+      node{ ... on Repository{ nameWithOwner } }
+    }
+  }
+}</code></pre>
+<p><code>first</code> は検索にヒットした最初の2つを返すという意味． 上限は 100 で，<code>first</code> ないしは逆の意味の <code>last</code> のどちらかは指定をする必要がある(そういうエラーが返ってくる)． <code>repositoryCount</code> は検索でヒットしたリポジトリの総数で，<code>edges</code> のところはリポジトリの <code>nameWithOwner</code> を返すように指定している． このように <code>{}</code> の中ではカンマ区切りで，返す JSON の形を指定できる． 具体的に何が指定できるかは <a href="https://developer.github.com/v4/query/">GitHub API v4 のドキュメント</a>を見ると良い． 試しに curl で叩いてみる(クエリ内の <code>&quot;</code> をエスケープすることを忘れずに):</p>
+<pre><code>$ curl -H &quot;Authorization: bearer XXX&quot; -X POST -d &quot;{ \&quot;query\&quot;: \&quot; ... \&quot; }&quot; https://api.github.com/graphql
+{&quot;data&quot;:{&quot;search&quot;:{&quot;repositoryCount&quot;:76,&quot;edges&quot;:[{&quot;node&quot;:{&quot;nameWithOwner&quot;:&quot;Azure/AzureStack-QuickStart-Templates&quot;}},{&quot;node&quot;:{&quot;nameWithOwner&quot;:&quot;commercialhaskell/stack-templates&quot;}}]}}}</code></pre>
+<p>Connection とか Fields とかの用語については自分もよくわかってないので自分で調べてください． 今のところ，雰囲気で使ってる(笑)</p>
+<h3 id="ファイルを集める">ファイルを集める</h3>
+<p>さて，前述した結果(リポジトリ名)だけが欲しいなら GitHub API v3 でも十分だ． さらに，ファイルも取得してみよう． <a href="https://developer.github.com/v4/object/repository/">Repository のドキュメント</a> を眺めると <code>object</code> という Field がある． 察するに，リポジトリの任意のブランチ(<code>expression</code> で指定したもの)のコミットオブジェクトを返してくれるのだろう． (たぶん)stack-templates は全部 master が前提なので，master のコミットオブジェクトを取ってくる．</p>
+<pre><code>... on Repository{
+  nameWithOwner,
+  object(expression:&quot;master&quot;){
+    ... on Commit { }
+  }
+}</code></pre>
+<p>ちなみに <code>... on Commit</code> というのは Inline Fragments と呼ばれるもので，object の型(サブタイプ？)が <code>Commit</code> だった場合に <code>Commit{}</code> 以下の Field を返すそうだ． git オブジェクトなので他にも <code>Tree</code> や <code>Blob</code> がある．</p>
+<p>さて，あとは git オブジェクトの知識があれば簡単にかける． コミットオブジェクトにはツリーオブジェクト，要するにトップレベルのディレクトリのハッシュが記載されているので<a href="https://developer.github.com/v4/object/commit/">ドキュメント</a>からそれっぽいのを見つける． ツリーオブジェクトには，そのディレクトリに含まれるブロブオブジェクト(ファイル)とツリーオブジェクト(ディレクトリ)のハッシュが記載されてる． stack-templates は(今のところ)トップレベルに <code>*.hsfiles</code> を置かないといけないので，トップレベルのオブジェクトたちの名前を取得しよう:</p>
+<pre><code>... on Repository{
+  nameWithOwner,
+  object(expression:&quot;master&quot;){
+    ... on Commit { tree{ entries{ name, type } } }
+  }
+}</code></pre>
+<p><code>type</code> には <code>blob</code> やら <code>tree</code> やらが入る． これで，検索にヒットした全てのリポジトリから <code>master</code> のトップレベルにあるファイルを取得するクエリが出来上がった．</p>
+<h3 id="ページネーション">ページネーション</h3>
+<p>今のところ，検索にヒットするリポジトリ数は76個なので <code>first: 100</code> とすれば全て取得できるが，今後ヒット数が100を超えたときようにページネーションの仕組みを整えておく． やり方は簡単で，<code>search</code> Connection のところで <a href=""><code>pageInfo</code></a> という Field を追加する．</p>
+<pre><code>search(query: &quot;stack-template in:name&quot;, type: REPOSITORY, first: 1) {
+  repositoryCount,
+  pageInfo{
+    endCursor,
+    hasNextPage
+  },
+  edges{
+    node{ ... on Repository{ .... } }
+  }
+}</code></pre>
+<p><code>hasNextPage</code> は次のページが存在するかどうかを真偽値で返してくれる． <code>endCursor</code> はこのページの最後を表すハッシュ値？で，<code>search</code> Connection の引数(<code>type</code> とか <code>first</code> とかのとこ)に <code>after</code> で指定することで，それ以降の結果を取ってくる． このような <code>pageInfo</code> の情報さえあれば，プログラム内でループさせることは容易だろう．</p>
+<h3 id="まとめると">まとめると</h3>
+<p>次のようなクエリになった:</p>
+<pre><code>query{
+  search(query: &quot;stack-template in:name&quot;, type: REPOSITORY, first: 100) {
+    repositoryCount,
+    pageInfo{
+      endCursor,
+      hasNextPage
+    },
+    edges{
+      node{ ... on Repository{
+        nameWithOwner,
+        object(expression:&quot;master&quot;){
+          ... on Commit { tree{ entries{ name, type } } }
+        }
+      } }
+    }
+  }
+}</code></pre>
+<p>これを curl の引数に与えて叩くだけで 100 個分のリポジトリの全てのトップレベルファイル群を取得できる．</p>
+<h3 id="stack-tpls">stack-tpls</h3>
+<p>実際に作った CLI ツールは <a href="https://github.com/matsubara0507/stack-tpls"><code>matsubara0507/stack-tpls</code></a> というリポジトリに置いてある． 使い方は README に書いてある． 一覧を取得するには <code>stack-tpls --list</code> と打てば良い．</p>
+<pre><code>$ stack-tpls --list
+github:commercialhaskell/chrisdone.hsfiles
+github:commercialhaskell/foundation.hsfiles
+ .
+ .
+ .</code></pre>
+<p>この結果を <code>stack new</code> の引数に与えることでそのまま利用できる． また，テンプレートの中身を確認したい場合は，<code>stack-tpls github:commercialhaskell/chrisdone.hsfiles</code> と引数に与えることで Raw を取ってきてくれる． リンクだけが欲しい場合は <code>--link</code> オプションを指定すると良い．</p>
+<pre><code>$ stack-tpls --link github:commercialhaskell/rio.hsfiles
+https://github.com/commercialhaskell/stack-templates/blob/master/rio.hsfiles</code></pre>
+<h3 id="todo">ToDo</h3>
+<p>一週間ほど前の思いつきからの突貫で作ったのでイロイロと抜けてる箇所があって:</p>
+<ul>
+<li>エラーハンドリングが雑</li>
+<li>GitLab と BitBucket には対応していない</li>
+<li>GraphQL の使い方がエレガントじゃない</li>
+</ul>
+<p>特に最後のがすごい気になっていて，現状は完全に文字列を埋め込んでいるだけなのだ． できれば，強力な型システムを利用した GitHub GraphQL Client ライブラリを作りたい(なんか昔に Haskell-jp で話題に上がったなぁ)．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>GraphQL，クライアント側に取ってすごい便利．</p>
+  </div>
+</div>
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>Haskell Servant で GitHub Webhook</title>
     <link href="https://matsubara0507.github.io/posts/2018-08-18-haskell-github-webhook.html" />
     <id>https://matsubara0507.github.io/posts/2018-08-18-haskell-github-webhook.html</id>
@@ -2529,201 +2701,6 @@ ViewPatterns</code></pre>
 <p>コンソールに対する I/O はどれを使うべきかはまだ<a href="https://github.com/commercialhaskell/rio/issues/5">議論中</a>みたいだ．</p>
 <h1 id="おしまい">おしまい</h1>
 <p>何となく<a href="https://github.com/matsubara0507/scrapbook/tree/rio">置き換えはできた</a>けど，例外や I/O 回りは良く分かってない… また試していこう．</p>
-  </div>
-</div>
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>ML Day ＃1 に行ってきた</title>
-    <link href="https://matsubara0507.github.io/posts/2018-04-02-ml-day-1.html" />
-    <id>https://matsubara0507.github.io/posts/2018-04-02-ml-day-1.html</id>
-    <published>2018-04-02T00:00:00Z</published>
-    <updated>2018-04-02T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
- <div class="card-content">
-  <header class="post-header">
-    <h1 class="post-title" itemprop="name headline">ML Day ＃1 に行ってきた</h1>
-    <p class="post-meta">
-      <time datetime="2018-04-02" itemprop="datePublished">
-        Apr 2, 2018
-      </time>
-      
-      
-      <div class="tags">
-          <i class="fa fa-tags"></i> <a href="/tags/event.html">event</a>
-      </div>
-      
-    </p>
-  </header>
-
-  <div class="post-content" itemprop="articleBody">
-    <p><a href="https://ml-lang.connpass.com/event/78199/">ML Day #1</a> というイベントに参加してきたので，そのメモ？まとめ？みたいな感じの記事です．</p>
-<h2 id="section"></h2>
-<p>ML Day は毎年やってるML勉強会というML系の発表会形式の勉強会のこと． (なぜか)名前を変えたらしい． ちなみに，今後は半年に一回ペースでやりたいらしい．</p>
-<h2 id="ぼくのはなし">ぼくのはなし</h2>
-<p>新設された LT 枠で発表してきた．</p>
-<p>スライドはこれ</p>
-<iframe src="//www.slideshare.net/slideshow/embed_code/key/o84VhGTUREO4No" width="595" height="485" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen>
-</iframe>
-<p>さすがに Haskell の話をするのはアレだったので，Haskell の新しいモジュールシステム Backpack のベースになった MixML の話をした． この日までに(Haskellで)実装完了してドヤ顔する予定だったのだが全然終わらなかった orz (Alt braif*ck じゃなくて)ちゃんとした規模の処理系を実装するのって，大変なんですね…</p>
-<h2 id="section-1"></h2>
-<p>ちなみに，<a href="https://github.com/rossberg/mixml">SML/NJ で実装されたもの</a>があり，実質これを参考に Haskell で書き直すだけの作業． だけど SML -&gt; Haskell に直すのって大変，非純粋なものを純粋な世界にするって大変(そりゃそう)． 気軽に状態を持ちやがって…</p>
-<h2 id="自分的ハイライト">自分的ハイライト</h2>
-<p>濃い目の話が多かったのでざっくりと．</p>
-<p>資料は既に<a href="https://ml-lang.connpass.com/event/78199/presentation/">ほとんど上がっている</a>．</p>
-<h3 id="ml型付の基礎の基礎">ML型付の基礎の基礎</h3>
-<ul>
-<li>発表者は <a href="https://twitter.com/haochenxie">Haochen</a> くん
-<ul>
-<li>名〇屋で <a href="https://sicss.connpass.com/event/71199/">TaPL の読書会</a>を主催してるひと</li>
-<li>こんど<a href="https://nupsc.sicss.org/">名古屋でプロコン</a>やるんだって</li>
-</ul></li>
-<li><a href="https://haochenxie.name/dl/the_introduction_of_foundation_of_ml_type_checking.pdf">資料はコレ</a></li>
-<li>基礎 (foundation) の 基礎 (introduction) の話
-<ol type="1">
-<li>型は素晴らしい</li>
-<li>でも型を書きたくない
-<ul>
-<li>プログラマは怠惰を美徳にしている生き物だもんね</li>
-</ul></li>
-<li>再構築すればいいじゃない！
-<ul>
-<li><del>型検査無しにもどるなんてのは論外</del></li>
-</ul></li>
-</ol></li>
-<li>素晴らしい本(TaPL)と素晴らしい先生(ピアース先生)
-<ul>
-<li><del>ML Day 出る以上読め</del></li>
-</ul></li>
-<li>おまけとして let 多相の話もしてた</li>
-<li><a href="https://sicss.connpass.com/event/83801/">5/6に論理プログラミング言語の第一人者の講演</a>を企画しているらしい
-<ul>
-<li><a href="https://readcoqart.connpass.com/event/83722/">Coq 勉強会</a>と被ってるのがなぁぁぁぁ</li>
-</ul></li>
-</ul>
-<h2 id="tba">TBA</h2>
-<ul>
-<li>発表者は<a href="https://twitter.com/pi8027">坂口和彦</a>さん
-<ul>
-<li>PPL2018 のポスター賞の人でその話を</li>
-</ul></li>
-<li>発表スライドは上がってないけど <a href="http://logic.cs.tsukuba.ac.jp/~sakaguchi/posters/ppl2018.pdf">PPL2018 のポスター</a>はあった</li>
-<li>Coq でリストの置換(permutation)の自動証明(だったかな)
-<ul>
-<li>証明の過程をいろいろ話してくれた</li>
-<li>(がぼくはよくわかってない)</li>
-</ul></li>
-<li><a href="http://www.sqlab.jp/FLOPS2018/">FLOPS’18</a> に通ったので発表するらしい</li>
-<li>質問: 項書き換えでできないの？
-<ul>
-<li>中野先生に聞かれた(PPLで？？)</li>
-<li>出来たら教えてといって何もないのでできないんじゃない？</li>
-</ul></li>
-</ul>
-<h2 id="型つき組版処理システムsatysfi">型つき組版処理システムSATySFi</h2>
-<ul>
-<li>発表者は <a href="https://twitter.com/bd_gfngfn">bd_gfngfn</a> 氏</li>
-<li>資料は<a href="https://drive.google.com/file/d/1BB7ZAiwPO3hVtq7PGImPtMs1-kOd7SzW/view">コレ</a></li>
-<li>彼の有名な <a href="https://github.com/gfngfn/SATySFi">型つき組版処理システムSATySFi</a> の話
-<ul>
-<li>目標: L〇TeX を倒す</li>
-<li>目標: エラーの可読性向上(大事)</li>
-<li>ML系に似た組版用型システムが載っている
-<ul>
-<li>let 多相もレコード多相もある</li>
-<li>しかし GADT や Functor はまだ</li>
-</ul></li>
-<li>「いきなり PDF がでまして」をよく言っていた(笑)<br />
-</li>
-</ul></li>
-<li>質問: 構文にポリシーはあるの？
-<ul>
-<li>ML系の文法にしたい(けど LaTeX に寄せたほうが…)</li>
-</ul></li>
-</ul>
-<h2 id="mlでつくる拡張可能インタプリタ">MLでつくる拡張可能インタプリタ</h2>
-<ul>
-<li>発表者は <a href="https://twitter.com/linerlock">linerlock</a> 氏
-<ul>
-<li>今日までつくば大生
-<ul>
-<li><del>これのせいで二番煎じに</del></li>
-</ul></li>
-</ul></li>
-<li>資料は<a href="https://speakerdeck.com/takahisa/extensible-interpreter-in-ml">コレ</a></li>
-<li>言語開発 <strong>も</strong> モジュラーにしたいので拡張可能なインタプリタを作ればいいじゃない
-<ul>
-<li><a href="https://github.com/takahisa/kennel">コレ</a>のことかな？</li>
-<li>例えば超簡易的な自作言語に新しくリスト追加してと言われても簡単にできるように</li>
-<li>評価器は楽しいので(拡張可能な評価器の)研究が多い</li>
-<li>構文解析は無い…なのでここをサイボウズラボユースでやった(？)
-<ul>
-<li>構文解析の無い言語なんてないのにね</li>
-<li>作ったの<a href="https://github.com/takahisa/finale">コレ</a>かな？</li>
-</ul></li>
-<li>「(BNFに新しい構文を)上に足すか下に足すか、花火じゃないけど」
-<ul>
-<li>上に足すか下に足すかで意味が変わることが…</li>
-<li>そこで最長一致法 : 全部試して一番長いのをとる</li>
-</ul></li>
-<li>型とか最適化とかできてない</li>
-</ul></li>
-</ul>
-<h3 id="lt">LT</h3>
-<p>は割愛(つかれた)． ラインナップは</p>
-<ul>
-<li>自作言語を OCaml で作り直したら ML みたいなコア言語になってしまったという話</li>
-<li>Elm の紹介</li>
-<li>OCaml の祖先 CAML の解説</li>
-<li>自作したパーサージェネレーターの紹介</li>
-<li>Verifastの辛い話(<del>古いOCamlを使うのつらいという愚痴</del>)</li>
-</ul>
-<p>LT の資料は全部 connpass にあがっている．</p>
-<h3 id="コンパイラバックエンド">コンパイラバックエンド</h3>
-<ul>
-<li>発表者は<a href="">インターネットの闇</a>さん
-<ul>
-<li>この会の主催者(？)</li>
-</ul></li>
-<li>OCaml のソースコードを皆で読もうの会
-<ul>
-<li><strong>バックエンドはコンパイラのコト</strong>
-<ul>
-<li>not Webバックエンド</li>
-</ul></li>
-<li>ガリグ先生しか読めない化け物(type系)</li>
-<li>OCaml のバックは副作用ガンガン使う、FPとは？GC付きのC</li>
-</ul></li>
-</ul>
-<h3 id="bucklescriptでノベルゲームdslを作る">BuckleScriptでノベルゲームDSLを作る</h3>
-<ul>
-<li>発表者は[pocketberserker]氏
-<ul>
-<li>普段は F# の人</li>
-<li>F# ネタが切れた</li>
-</ul></li>
-<li>資料は<a href="https://github.com/pocketberserker/ml_day_1">ココ</a>
-<ul>
-<li>資料もこの DSL で書かれたもの(？？)</li>
-<li>ノベルゲーなのでバックができない(笑)</li>
-<li>発表者はデバッグモードで戻ってた</li>
-</ul></li>
-<li>ノベルゲーDSLを作りたい遺伝子を持ってしまったので作るという話
-<ul>
-<li><a href="https://github.com/cowlick/cowlick">つくったやつ</a></li>
-<li>自分が今書いてるのはS式なのか？？？？S式が分からなくなる</li>
-<li><del><strong>Reason を ML ユーザーが触るべきではない！</strong></del></li>
-</ul></li>
-</ul>
-<h2 id="感想">感想</h2>
-<ul>
-<li>濃い(誉め言葉)</li>
-<li>後半は疲れてしまった(ごめん)</li>
-<li><strong>質問時間を含めて発表時間(律儀に終わる必要はない)</strong></li>
-</ul>
-<h2 id="おしまい">おしまい</h2>
-<p>MixML 完成させてリベンジ発表したい</p>
   </div>
 </div>
 </article>
