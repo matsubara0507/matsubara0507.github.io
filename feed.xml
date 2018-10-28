@@ -8,8 +8,84 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2018-10-14T00:00:00Z</updated>
+    <updated>2018-10-28T00:00:00Z</updated>
     <entry>
+    <title>GHC 8.6 がインストールできなかった</title>
+    <link href="https://matsubara0507.github.io/posts/2018-10-28-ghc-8-6-error-no-gmp.html" />
+    <id>https://matsubara0507.github.io/posts/2018-10-28-ghc-8-6-error-no-gmp.html</id>
+    <published>2018-10-28T00:00:00Z</published>
+    <updated>2018-10-28T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">GHC 8.6 がインストールできなかった</h1>
+    <p class="post-meta">
+      <time datetime="2018-10-28" itemprop="datePublished">
+        Oct 28, 2018
+      </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a>
+      </div>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>対したことではないんだけど，日本語の記事が無っかたのでメモ． ちなみに OS は macOS Sierra (10.12.6) です．</p>
+<h2 id="ghc-8.6-でビルドできない">GHC 8.6 でビルドできない</h2>
+<p>現在 stackage の Nightly は最新の GHC バージョンである 8.6 がインストールされる． 結構パッケージも揃ってきたので，自分のパッケージもビルドしてみようかなと思って，resolver を Nightly に変えて <code>stack build</code> したら下記のようなエラーが出た．</p>
+<pre class="shell"><code>$ stack build
+Downloaded nightly-2018-10-26 build plan.    
+Preparing to install GHC to an isolated location.
+This will not interfere with any system-level installation.
+Downloaded ghc-8.6.1.                                      
+Installing GHC ...                                                                         
+Received ExitFailure 2 when running
+Raw command: /usr/bin/make install
+Run from: /Users/username/.stack/programs/x86_64-osx/ghc-8.6.1.temp/ghc-8.6.1/</code></pre>
+<p><code>--vebose</code> を付けて詳細を見てみる．</p>
+<pre class="shell"><code>$ stack build --verbose
+Version 1.9.1, Git revision f9d0042c141660e1d38f797e1d426be4a99b2a3c (6168 commits) x86_64 hpack-0.31.0
+2018-10-28 13:31:22.068195: [debug] Checking for project config at: /Users/username/git/haskell/servant-kotlin/stack.yaml
+2018-10-28 13:31:22.069706: [debug] Loading project config file stack.yaml
+ .
+ .
+ .
+2018-10-28 13:32:21.355443: [debug] /Library/Developer/CommandLineTools/usr/bin/ranlib: file: /Users/username/.stack/programs/x86_64-osx/ghc-8.6.1/lib/ghc-8.6.1/rts/libHSrts_thr_p.a(Select.thr_p_o) has no symbols
+2018-10-28 13:32:21.621133: [debug] &quot;utils/ghc-cabal/dist-install/build/tmp/ghc-cabal-bindist&quot; copy libraries/ghc-prim dist-install &quot;strip&quot; &#39;&#39; &#39;/Users/username/.stack/programs/x86_64-osx/ghc-8.6.1&#39; &#39;/Users/username/.stack/programs/x86_64-osx/ghc-8.6.1/lib/ghc-8.6.1&#39; &#39;/Users/username/.stack/programs/x86_64-osx/ghc-8.6.1/share/doc/ghc-8.6.1/html/libraries&#39; &#39;v p dyn&#39;  
+2018-10-28 13:32:21.841900: [debug] dyld: Library not loaded: /usr/local/opt/gmp/lib/libgmp.10.dylib
+2018-10-28 13:32:21.842003: [debug]   Referenced from: /Users/username/.stack/programs/x86_64-osx/ghc-8.6.1.temp/ghc-8.6.1/libraries/base/dist-install/build/libHSbase-4.12.0.0-ghc8.6.1.dylib
+2018-10-28 13:32:21.842062: [debug]   Reason: image not found
+2018-10-28 13:32:21.842273: [debug] make[1]: *** [install_packages] Abort trap: 6
+2018-10-28 13:32:21.844303: [debug] make: *** [install] Error 2
+Installing GHC ...
+Received ExitFailure 2 when running
+Raw command: /usr/bin/make install
+Run from: /Users/username/.stack/programs/x86_64-osx/ghc-8.6.1.temp/ghc-8.6.1/</code></pre>
+<p>どうやら <code>/usr/local/opt/gmp/lib/libgmp.10.dylib</code> が無いみたいだ．</p>
+<pre class="shell"><code>$ ls /usr/local/opt/gmp/lib/libgmp.10.dylib
+ls: /usr/local/opt/gmp/lib/libgmp.10.dylib: No such file or directory</code></pre>
+<p>これで検索すると，Ruby に関することだが <a href="https://stackoverflow.com/questions/34912946">StackOverflow があった</a>． 曰く，<code>gmp</code> パッケージを入れれば良いらしい（多くの人は他のどこかのタイミングで入ってるのかも）．</p>
+<pre class="shell"><code>$ brew reinstall gmp
+==&gt; Reinstalling gmp
+==&gt; Downloading https://homebrew.bintray.com/bottles/gmp-6.1.2_2.sierra.bottle.tar.gz
+######################################################################## 100.0%
+==&gt; Pouring gmp-6.1.2_2.sierra.bottle.tar.gz
+🍺  /usr/local/Cellar/gmp/6.1.2_2: 18 files, 3.1MB
+
+$ ls /usr/local/opt/gmp/lib/libgmp.10.dylib
+/usr/local/opt/gmp/lib/libgmp.10.dylib</code></pre>
+<p>これで GHC 8.6 で <code>stack build</code> できるようになった．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>まぁ一応ね，一応メモした．</p>
+  </div>
+</div>
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>stack-templates を集める with GraphQL</title>
     <link href="https://matsubara0507.github.io/posts/2018-10-14-collect-stack-templates.html" />
     <id>https://matsubara0507.github.io/posts/2018-10-14-collect-stack-templates.html</id>
@@ -2453,254 +2529,6 @@ Available commands:
 <p><code>LogFunc</code> 型の値を得るには <a href="https://hackage.haskell.org/package/rio-0.1.2.0/docs/RIO.html#v:withLogFunc"><code>withLogFunc</code></a> 関数を用いるのが良いだろう． <a href="https://hackage.haskell.org/package/rio-0.1.2.0/docs/RIO.html#t:LogOptions"><code>LogOptions</code></a> 型の値(ここでいう <code>logOpts</code>)を生成する <a href="https://hackage.haskell.org/package/rio-0.1.2.0/docs/RIO.html#v:logOptionsHandle"><code>logOptionsHandle</code></a> 関数の二引数目に <code>True</code> を与えることでログがデバッグ仕様になる(そういえば <code>Options</code> 型には <code>--verbose</code> オプションがあった)． ちなみに，デバッグ仕様のときにだけ表示するロギング関数として <a href="https://hackage.haskell.org/package/rio-0.1.2.0/docs/RIO.html#v:logDebug"><code>logDebug</code></a> 関数がある．</p>
 <h2 id="おしまい">おしまい</h2>
 <p>早く完成させるぞ</p>
-  </div>
-</div>
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>rio ライブラリを試す その１</title>
-    <link href="https://matsubara0507.github.io/posts/2018-04-13-try-rio-1.html" />
-    <id>https://matsubara0507.github.io/posts/2018-04-13-try-rio-1.html</id>
-    <published>2018-04-13T00:00:00Z</published>
-    <updated>2018-04-13T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
- <div class="card-content">
-  <header class="post-header">
-    <h1 class="post-title" itemprop="name headline">rio ライブラリを試す その１</h1>
-    <p class="post-meta">
-      <time datetime="2018-04-13" itemprop="datePublished">
-        Apr 13, 2018
-      </time>
-      
-      
-      <div class="tags">
-          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a> <a href="/tags/rio.html">rio</a>
-      </div>
-      
-    </p>
-  </header>
-
-  <div class="post-content" itemprop="articleBody">
-    <p>先日，alt. <code>Prelude</code> を目指している <a href="https://hackage.haskell.org/package/rio"><code>rio</code></a> ライブラリの ver.0.1 がリリースされました． 自作している CLI ツールを試しに <code>rio</code> で置き換えようかとしてまして，自分の整理のためにまとめてみようと思います．</p>
-<h2 id="section"></h2>
-<p>ただし，<code>rio</code> 作者ではないし，全部をちゃんと追っていないので間違っているかも． 間違っている場合は<a href="https://github.com/matsubara0507/source-gh-pages">このリポジトリに Issue</a> するか <a href="https://www.reddit.com/r/haskell_jp">Reddit</a> でコメントでもしてください m(_ _ )m</p>
-<h1 id="readme-でひとめぐり">README でひとめぐり</h1>
-<p>もともとはビルドツール Stack を作成するために考えたデザインパターンをまとめたものっぽい．</p>
-<ul>
-<li><a href="https://www.fpcomplete.com/blog/2017/07/the-rio-monad">The RIO Monad</a></li>
-</ul>
-<p><code>rio</code> ライブラリの README にはライブラリのゴール・目的の他に(彼らにとっての)ベストプラクティスが書いてある(<code>rio</code> 自体がそれに則って作られてる)． ここには翻訳というより，README の各項目の要約を記述する．</p>
-<h2 id="goal">Goal</h2>
-<p><code>rio</code> ライブラリのゴール(目的)は以下の3つ．</p>
-<ol type="1">
-<li>よく設計された信頼できるライブラリのコレクション</li>
-<li>より優れた Prelude の代替え</li>
-<li>高品質な Haskell コードを書くためのベストプラクティス</li>
-</ol>
-<p>(1)により <code>text</code> や <code>bytesyring</code> のような，ほとんど <code>base</code> のようなパッケージを <code>dependencies</code> に列挙する必要が無くなる． (3)は大域変数(<code>Reader</code> モナド)やロガーのような実用モナド回りのベストプラクティスが目玉かな(他にもあるけど)．</p>
-<h2 id="標準ライブラリ">標準ライブラリ</h2>
-<p>いくつかのパッケージを「標準」ライブラリとして再エクスポートしている． <code>rio</code> の<a href="https://github.com/commercialhaskell/rio/blob/311549f5a7c29abf6fc25e3ba7ec5ab6647e2d96/rio/package.yaml#L14">依存関係</a>を見る限り，次のパッケージを再エクスポートしているようだ．</p>
-<ul>
-<li>bytestring</li>
-<li>containers</li>
-<li>deepseq</li>
-<li>directory</li>
-<li>exceptions</li>
-<li>filepath</li>
-<li>hashable</li>
-<li>lens(microlens)</li>
-<li>process</li>
-<li>text</li>
-<li>time</li>
-<li>unliftio</li>
-<li>unordered-containers</li>
-<li>vector</li>
-</ul>
-<p>もちろん，元のパッケージの全ての関数や型を再エクスポートしているのではなく，取捨選択して再エクスポートしている． また，後述する <code>Prelude</code> の代わりである <a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO.html"><code>RIO</code></a> モジュールに含まれるものもあれば，<code>RIO.XXX</code> として別のモジュールとして提供されているものもある．</p>
-<h3 id="lens">Lens</h3>
-<p><code>lens</code> の場合，申し訳程度の関数しか再エクスポートされていない． 基本的に <code>set</code>・<code>sets</code>・<code>over</code>・<code>to</code> だけだ． 演算子は参照の <code>(.^)</code> しかない． 今後どうなるか分からないが，現状 <code>(.~)</code> や <code>(%~)</code> は無いので替わりに関数を中置演算子にして使うしか無さそうだ．</p>
-<h2 id="prelude-の代替え"><code>Prelude</code> の代替え</h2>
-<p><code>Prelude</code> の代替えとして <a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO.html"><code>RIO</code></a> モジュールというのがある． README には部分関数や遅延 I/O のような，よく問題になるものを削除していると書いてある． また，<code>Data.Maybe</code> や <code>Control.Arrow</code> のような良く使う <code>base</code> ライブラリのモジュールが再エクスポートされていたり，<code>mapLeft</code> や <code>whenM</code> のような良く使いそうなのに <code>base</code> には無い関数が<a href="https://github.com/commercialhaskell/rio/blob/e8c4cba69599aecd9f91c4398aea47ab4eadbb07/rio/src/RIO/Prelude/Extra.hs">定義されている</a>． 正直，この辺りがすごい便利．</p>
-<h2 id="ベストプラクティス">ベストプラクティス</h2>
-<p>ココからが長い + 意見の分かれるところ． 結構 <code>TODO</code> と書いてあるところも多いので彼らの中でもまとまってないのかな？？</p>
-<h3 id="インポートプラクティス">インポートプラクティス</h3>
-<p>以下をやってほしいらしい</p>
-<ul>
-<li><code>NoImplicitPrelude</code> 言語拡張をオン</li>
-<li>全てのモジュールに <code>import RIO</code> を追加 (すごいめんどい)</li>
-<li>必要に応じて <code>RIO.XXX</code> モジュールを <code>qualified</code> を使ってインポート
-<ul>
-<li>適切な <code>qualified</code> の付け方は各モジュールの Haddock の冒頭に書いてある</li>
-<li>例えば <a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO-ByteString.html"><code>import qualified RIO.ByteString as B</code></a> とか</li>
-<li>ドキュメントに <code>qualified</code> が書いてない場合は <code>qualified</code> しなくていいのかな？？(例えば <a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO-Directory.html"><code>RIO.Directory</code></a> とか)</li>
-</ul></li>
-<li>中置演算子は <code>qualified</code> しなくていい(他のモジュールと衝突しない限りは)</li>
-</ul>
-<h3 id="言語拡張">言語拡張</h3>
-<p>「言語拡張を使わないプロジェクトなんて，最近じゃほとんどないよね」とか書いてある． 以下の観点を基にデフォルトで利用しても良さそうな言語拡張を選定したそうだ．</p>
-<ul>
-<li>コミュニティで受け入れられている</li>
-<li>コードを壊すようなことが <strong>ほとんど</strong> ない</li>
-<li><strong>一般的に</strong> 安全だと考えられている</li>
-</ul>
-<p>割と断言していないのが面白い(笑) 推奨する言語拡張はこちら</p>
-<pre><code>AutoDeriveTypeable
-BangPatterns
-BinaryLiterals
-ConstraintKinds
-DataKinds
-DefaultSignatures
-DeriveDataTypeable
-DeriveFoldable
-DeriveFunctor
-DeriveGeneric
-DeriveTraversable
-DoAndIfThenElse
-EmptyDataDecls
-ExistentialQuantification
-FlexibleContexts
-FlexibleInstances
-FunctionalDependencies
-GADTs
-GeneralizedNewtypeDeriving
-InstanceSigs
-KindSignatures
-LambdaCase
-MultiParamTypeClasses
-MultiWayIf
-NamedFieldPuns
-NoImplicitPrelude
-OverloadedStrings
-PartialTypeSignatures
-PatternGuards
-PolyKinds
-RankNTypes
-RecordWildCards
-ScopedTypeVariables
-StandaloneDeriving
-TupleSections
-TypeFamilies
-TypeSynonymInstances
-ViewPatterns</code></pre>
-<p><code>RecordWildCards</code> と <code>OverloadedStrings</code> は議論の余地あり的なことが書いてある(詳しくはもとの README を見て)．</p>
-<h3 id="ghcオプション">GHCオプション</h3>
-<p>以下を使いなさいとのコト．</p>
-<pre><code>-Wall
--Wcompat
--Wincomplete-record-updates
--Wincomplete-uni-patterns
--Wredundant-constraints</code></pre>
-<p>どういう形で指定してもいいけど，<code>package.yaml</code> で書くと楽だし，後述するテンプレートにも書く予定だそうだ． あと，プロダクションコードなら <code>-Werror</code> をオンにして，最後には確認した方が良いとも書いてある(CIとかでチェックしたいよね)．</p>
-<h3 id="monads">Monads</h3>
-<p>まってました！ モナドです． 実用的なプロジェクトを考えるとき，必要になってくるのが大域変数・ロガー・例外・IO だと思うので，気になるのはこの辺りだよね．</p>
-<p>全体としての推奨事項は以下の通り．</p>
-<ul>
-<li><code>IO</code> を使いたいときは <code>RIO</code> モナドを使いなさい．
-<ul>
-<li><code>RIO</code> モナドは <code>ReaderT env IO</code> と同じだけど，<code>rio</code> には <code>RIO</code> モナドに対する補助関数が含まれるのでぜひ使って．<br />
-</li>
-</ul></li>
-<li><code>RIO</code> モナドで <code>env</code> の参照関数を書くときは，具体的な型に対する参照関数を書かずに，型クラスを用いた多相的な関数を書くべき(詳しくは後述)
-<ul>
-<li><code>Has</code> スタイルの型クラスを使えば lens を利用することが出来るよ</li>
-</ul></li>
-<li>いくつかの良い <code>mtl</code> スタイルの型クラスも利用する必要は出てくるはず
-<ul>
-<li>ただし，推奨しているのは <code>MonadReader</code> <code>MonadIO</code> <code>MonadUnliftIO</code> <code>PrimMonad</code></li>
-<li><code>MonadReader</code> + <code>Has</code> の方が <code>MonadLogger</code> のように新しい型クラスを作るより優れていると思う</li>
-<li>特に <code>MonadBase</code> <code>MonadBaseControl</code> <code>MonadMask</code> <code>MonadCatch</code> は避けるべき</li>
-</ul></li>
-</ul>
-<h4 id="大域変数">大域変数</h4>
-<p><code>env</code> 回りについて． <code>Has</code> スタイル(パターン)というのがあって，それ自体はこの<a href="https://hackernoon.com/the-has-type-class-pattern-ca12adab70ae">ページ</a>が参考になるのかな？ <code>env</code> から何らかの値を参照する場合には</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="ot">myFunction ::</span> <span class="dt">RIO</span> <span class="dt">Config</span> <span class="dt">Foo</span></a></code></pre></div>
-<p>のような関数は <strong>やめて</strong> ，次のように書くのを推奨している．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">class</span> <span class="dt">HasConfig</span> env <span class="kw">where</span></a>
-<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="ot">  configL ::</span> <span class="dt">Lens&#39;</span> env <span class="dt">Config</span> <span class="co">-- more on this in a moment</span></a>
-<a class="sourceLine" id="cb4-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb4-4" data-line-number="4"><span class="ot">myFunction ::</span> <span class="dt">HasConfig</span> env <span class="ot">=&gt;</span> <span class="dt">RIO</span> env <span class="dt">Foo</span></a></code></pre></div>
-<p>ここで，<code>env</code> は次のようなレコードを想定しており</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Env</span> <span class="fu">=</span> <span class="dt">Env</span> {<span class="ot"> envConfig ::</span> <span class="fu">!</span><span class="dt">Config</span> }</a></code></pre></div>
-<p>こうすることで，<code>env</code> に複数の大域変数を持たせても，うまく機能させることが出来る． また，次のように <code>Env</code> と <code>Config</code> それぞれでインスタンスを定義することで，それぞれで利用できる．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">HasConfig</span> <span class="dt">Config</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb6-2" data-line-number="2">  configL <span class="fu">=</span> id</a>
-<a class="sourceLine" id="cb6-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb6-4" data-line-number="4"><span class="kw">instance</span> <span class="dt">HasConfig</span> <span class="dt">Env</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb6-5" data-line-number="5">  configL <span class="fu">=</span> lens envConfig (\x y <span class="ot">-&gt;</span> x { envConfig <span class="fu">=</span> y })</a></code></pre></div>
-<h4 id="ロガー">ロガー</h4>
-<p>ロガーも同様に <code>Has</code> スタイルを推奨している． <code>env</code> にログを出力するための関数(<a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO.html#t:LogFunc"><code>LogFunc</code></a> 型のもの)を持たせる．</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Env</span> <span class="fu">=</span> <span class="dt">Env</span> {<span class="ot"> envLogFunc ::</span> <span class="fu">!</span><span class="dt">LogFunc</span>,<span class="ot"> envConfig ::</span> <span class="fu">!</span><span class="dt">Config</span> }</a></code></pre></div>
-<p>これの <code>Has</code> スタイル型クラスは <code>RIO</code> モジュールに<a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO.html#t:HasLogFunc">定義してある</a>．</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">HasLogFunc</span> <span class="dt">Env</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb8-2" data-line-number="2">  logFuncL <span class="fu">=</span> lens envLogFunc (\x y <span class="ot">-&gt;</span> x { envLogFunc <span class="fu">=</span> y })</a></code></pre></div>
-<p><code>LogFunc</code> 型の値を渡すには <a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO.html#v:withLogFunc"><code>withLogFunc</code></a> 関数を用いるようだ(<a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO.html#v:mkLogFunc"><code>mkLogFunc</code></a> 関数もあるがアドバンスドと書いてある．)．</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb9-2" data-line-number="2">main <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb9-3" data-line-number="3">  envConfig <span class="ot">&lt;-</span> getConfig</a>
-<a class="sourceLine" id="cb9-4" data-line-number="4">  logOpts <span class="ot">&lt;-</span> logOptionsHandle stdout <span class="dt">False</span></a>
-<a class="sourceLine" id="cb9-5" data-line-number="5">  withLogFunc logOpts <span class="fu">$</span> \envLogFunc <span class="ot">-&gt;</span> runRIO <span class="dt">Env</span>{<span class="fu">..</span>} action</a>
-<a class="sourceLine" id="cb9-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb9-7" data-line-number="7"><span class="ot">action ::</span> <span class="dt">RIO</span> <span class="dt">Env</span> ()</a>
-<a class="sourceLine" id="cb9-8" data-line-number="8">action <span class="fu">=</span> <span class="fu">...</span></a></code></pre></div>
-<h4 id="例外">例外</h4>
-<p>例外をどのように表現すべきかは結構議論されており，今のところの基本的アイデアは以下の通り．</p>
-<ul>
-<li><code>lookup</code> のような単純に失敗する関数(部分関数になり得る？)の場合は <code>Maybe</code> や <code>Either</code> を返そう</li>
-<li>それらを使いたくない場合(大域脱出とか？)は例外を使って
-<ul>
-<li>純粋なコード(IOではなく)の場合は <code>MonadThrow</code> 制約を使う</li>
-<li><code>IO</code> の場合は <code>thorowIO</code> を介した実行時例外を使う(<code>RIO</code> モナドも同じ)</li>
-</ul></li>
-<li>「IOアクションがどのように失敗するかを正確に把握できないことにより，不安と不満を感じるかもしれない．しかし，その痛みを受け入れて共存し内在化して，<code>tryAny</code> を用いて移動してください．これは非同期例外に対して支払う代償です．」
-<ul>
-<li>ちょっと何言ってるかよくわからない…</li>
-</ul></li>
-<li>全てのリソース割り当ては <code>bracket</code> や <code>finally</code> のような関数で行う</li>
-</ul>
-<p>以下のようにして，アプリ専用の例外を定義し使用することが推奨されている．</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw">data</span> <span class="dt">AppExceptions</span></a>
-<a class="sourceLine" id="cb10-2" data-line-number="2">  <span class="fu">=</span> <span class="dt">NetworkChangeError</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb10-3" data-line-number="3">  <span class="fu">|</span> <span class="dt">FilePathError</span> FilePath</a>
-<a class="sourceLine" id="cb10-4" data-line-number="4">  <span class="fu">|</span> <span class="dt">ImpossibleError</span></a>
-<a class="sourceLine" id="cb10-5" data-line-number="5">  <span class="kw">deriving</span> (<span class="dt">Typeable</span>)</a>
-<a class="sourceLine" id="cb10-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb10-7" data-line-number="7"><span class="kw">instance</span> <span class="dt">Exception</span> <span class="dt">AppExceptions</span></a>
-<a class="sourceLine" id="cb10-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb10-9" data-line-number="9"><span class="kw">instance</span> <span class="dt">Show</span> <span class="dt">AppExceptions</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb10-10" data-line-number="10">  show <span class="fu">=</span> \<span class="kw">case</span></a>
-<a class="sourceLine" id="cb10-11" data-line-number="11">    <span class="dt">NetworkChangeError</span> err <span class="ot">-&gt;</span> <span class="st">&quot;network error: &quot;</span> <span class="fu">&lt;&gt;</span> (unpack err)</a>
-<a class="sourceLine" id="cb10-12" data-line-number="12">    <span class="dt">FilePathError</span> fp <span class="ot">-&gt;</span> <span class="st">&quot;error accessing filepath at: &quot;</span> <span class="fu">&lt;&gt;</span> fp</a>
-<a class="sourceLine" id="cb10-13" data-line-number="13">    <span class="dt">ImpossibleError</span> <span class="ot">-&gt;</span> <span class="st">&quot;this codepath should never have been executed. Please report a bug.&quot;</span></a></code></pre></div>
-<p>ちなみに，<code>Exception</code> 型クラス(というか <a href="https://hackage.haskell.org/package/base-4.11.0.0/docs/Control-Exception-Base.html#t:SomeException"><code>SomeException</code></a> 型)は，いわゆる存在型を利用して具体型(<code>AppExceptions</code> とか)を隠蔽している．</p>
-<h2 id="section-1"></h2>
-<p>疑問なところは，投げた例外を <code>catch</code> してからディスパッチして良いのだろうか？ 実行時例外じゃなくて大域脱出をしたいだけなんだけどな． ちょっとイマイチ使い方が分からない．</p>
-<h3 id="strict">Strict</h3>
-<p>特別な理由が無い限り，データフィールド(レコードのフィールド？？)は正格にすべき，とのこと． 割と重要そうなのに一文しかない．</p>
-<h3 id="プロジェクトテンプレート">プロジェクトテンプレート</h3>
-<p>そのうち，新しい Stack テンプレートを作るそうだ． もちろん，<code>cabal</code> ファイルは使わず <code>hpack</code> を使用する．</p>
-<h3 id="安全第一">安全第一</h3>
-<p><code>rio</code> は安全性を最優先しており，そのため部分関数と遅延 I/O を全力で避けている． もし，遅延 I/O を使いたい場合は <code>conduit</code> のようなストリーミングライブラリを使いなさい，とのこと．</p>
-<h3 id="一般化">一般化</h3>
-<p>Haskell のよくある疑問として，いつ一般化すべきか，というのがある(いつ？)． README にはいくつかの簡単なガイドラインが書いてある．</p>
-<p>パラメトリック多相の場合，わりと議論の余地が無く，多相的な方が有用． つまり，<code>reverse :: [a] -&gt; [a]</code> は <code>reverse :: [Int] -&gt; [Int]</code> より優れている．</p>
-<p>型クラスの場合は話が微妙になる． <code>Foldable</code> や <code>Traversable</code> のような <code>RIO</code> で定義済みの型クラスには可能な限り一般化(インスタンスを定義)するのが良いだろう． しかし，本当の疑問は <strong>自身で型クラスを定義すべきかどうか</strong> の場合． 原則としては可能な限りそれは避けるべきだ． もし，自身で型クラスを定義している場合は，<strong>自分が期待していなかった型がインスタンス化されてもバグが起きないよう</strong> に気を付けること，とのこと．</p>
-<h3 id="コーディングスタイル">コーディングスタイル</h3>
-<p>議論中だそうだ．</p>
-<h3 id="モジュール階層">モジュール階層</h3>
-<p><code>RIO.Prelude.XXX</code> モジュールはドキュメントを Haddock で読みやすくするための階層で，個別にインポートすることを想定しているわけではない． と書いてあるが，結局 <a href="https://github.com/commercialhaskell/rio/pull/72">ver.0.1 からは Haddock からも消えてしまった</a>ので気にする必要はない．</p>
-<h1 id="io-まわり">I/O まわり</h1>
-<p>(この話は README に書いてあるわけではないです)</p>
-<p><code>RIO</code> モジュールには文字列型(<code>String</code>)の一般的な <code>putStr</code> や <code>getLine</code> のような I/O 関数は無い． 実用コードの場合，これらの関数を直接呼ぶことは稀だろうが，例えば CLI を作ったときに <code>--version</code> オプションでバージョン情報を出力したい場合などがある．</p>
-<p>替わりとして次のような I/O 関数が提供されている．</p>
-<ul>
-<li><code>Strict.ByteString</code> 型の <code>putStr</code> や <code>getLine</code> であれば <code>RIO.ByteString</code> モジュールで再定義されている</li>
-<li>ファイルの入出力であれば <code>RIO</code> モジュールに <code>Strict.ByteString</code> 版と <code>Text</code> 版が提供されている</li>
-<li><code>Builder</code> 型の標準出力 <a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO.html#v:hPutBuilder"><code>hPutBuilder</code></a> 関数ならある</li>
-</ul>
-<p>コンソールに対する I/O はどれを使うべきかはまだ<a href="https://github.com/commercialhaskell/rio/issues/5">議論中</a>みたいだ．</p>
-<h1 id="おしまい">おしまい</h1>
-<p>何となく<a href="https://github.com/matsubara0507/scrapbook/tree/rio">置き換えはできた</a>けど，例外や I/O 回りは良く分かってない… また試していこう．</p>
   </div>
 </div>
 </article>

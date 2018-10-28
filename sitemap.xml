@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
     <url>
+        <loc>https://matsubara0507.github.io/posts/2018-10-28-ghc-8-6-error-no-gmp.html</loc>
+        <changefreq>never</changefreq>
+        <lastmod>2018-10-28</lastmod>
+        <priority>0.8</priority>
+    </url>
+
+    <url>
         <loc>https://matsubara0507.github.io/posts/2018-10-14-collect-stack-templates.html</loc>
         <changefreq>never</changefreq>
         <lastmod>2018-10-14</lastmod>

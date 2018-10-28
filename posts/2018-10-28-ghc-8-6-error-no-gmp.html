@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="GHC 8.6 がインストールできなかった" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        GHC 8.6 がインストールできなかった
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">GHC 8.6 がインストールできなかった</h1>
+    <p class="post-meta">
+      <time datetime="2018-10-28" itemprop="datePublished">
+        Oct 28, 2018
+      </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="../tags/Haskell.html">Haskell</a>
+      </div>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>対したことではないんだけど，日本語の記事が無っかたのでメモ． ちなみに OS は macOS Sierra (10.12.6) です．</p>
+<h2 id="ghc-8.6-でビルドできない">GHC 8.6 でビルドできない</h2>
+<p>現在 stackage の Nightly は最新の GHC バージョンである 8.6 がインストールされる． 結構パッケージも揃ってきたので，自分のパッケージもビルドしてみようかなと思って，resolver を Nightly に変えて <code>stack build</code> したら下記のようなエラーが出た．</p>
+<pre class="shell"><code>$ stack build
+Downloaded nightly-2018-10-26 build plan.    
+Preparing to install GHC to an isolated location.
+This will not interfere with any system-level installation.
+Downloaded ghc-8.6.1.                                      
+Installing GHC ...                                                                         
+Received ExitFailure 2 when running
+Raw command: /usr/bin/make install
+Run from: /Users/username/.stack/programs/x86_64-osx/ghc-8.6.1.temp/ghc-8.6.1/</code></pre>
+<p><code>--vebose</code> を付けて詳細を見てみる．</p>
+<pre class="shell"><code>$ stack build --verbose
+Version 1.9.1, Git revision f9d0042c141660e1d38f797e1d426be4a99b2a3c (6168 commits) x86_64 hpack-0.31.0
+2018-10-28 13:31:22.068195: [debug] Checking for project config at: /Users/username/git/haskell/servant-kotlin/stack.yaml
+2018-10-28 13:31:22.069706: [debug] Loading project config file stack.yaml
+ .
+ .
+ .
+2018-10-28 13:32:21.355443: [debug] /Library/Developer/CommandLineTools/usr/bin/ranlib: file: /Users/username/.stack/programs/x86_64-osx/ghc-8.6.1/lib/ghc-8.6.1/rts/libHSrts_thr_p.a(Select.thr_p_o) has no symbols
+2018-10-28 13:32:21.621133: [debug] &quot;utils/ghc-cabal/dist-install/build/tmp/ghc-cabal-bindist&quot; copy libraries/ghc-prim dist-install &quot;strip&quot; '' '/Users/username/.stack/programs/x86_64-osx/ghc-8.6.1' '/Users/username/.stack/programs/x86_64-osx/ghc-8.6.1/lib/ghc-8.6.1' '/Users/username/.stack/programs/x86_64-osx/ghc-8.6.1/share/doc/ghc-8.6.1/html/libraries' 'v p dyn'  
+2018-10-28 13:32:21.841900: [debug] dyld: Library not loaded: /usr/local/opt/gmp/lib/libgmp.10.dylib
+2018-10-28 13:32:21.842003: [debug]   Referenced from: /Users/username/.stack/programs/x86_64-osx/ghc-8.6.1.temp/ghc-8.6.1/libraries/base/dist-install/build/libHSbase-4.12.0.0-ghc8.6.1.dylib
+2018-10-28 13:32:21.842062: [debug]   Reason: image not found
+2018-10-28 13:32:21.842273: [debug] make[1]: *** [install_packages] Abort trap: 6
+2018-10-28 13:32:21.844303: [debug] make: *** [install] Error 2
+Installing GHC ...
+Received ExitFailure 2 when running
+Raw command: /usr/bin/make install
+Run from: /Users/username/.stack/programs/x86_64-osx/ghc-8.6.1.temp/ghc-8.6.1/</code></pre>
+<p>どうやら <code>/usr/local/opt/gmp/lib/libgmp.10.dylib</code> が無いみたいだ．</p>
+<pre class="shell"><code>$ ls /usr/local/opt/gmp/lib/libgmp.10.dylib
+ls: /usr/local/opt/gmp/lib/libgmp.10.dylib: No such file or directory</code></pre>
+<p>これで検索すると，Ruby に関することだが <a href="https://stackoverflow.com/questions/34912946">StackOverflow があった</a>． 曰く，<code>gmp</code> パッケージを入れれば良いらしい（多くの人は他のどこかのタイミングで入ってるのかも）．</p>
+<pre class="shell"><code>$ brew reinstall gmp
+==&gt; Reinstalling gmp
+==&gt; Downloading https://homebrew.bintray.com/bottles/gmp-6.1.2_2.sierra.bottle.tar.gz
+######################################################################## 100.0%
+==&gt; Pouring gmp-6.1.2_2.sierra.bottle.tar.gz
+🍺  /usr/local/Cellar/gmp/6.1.2_2: 18 files, 3.1MB
+
+$ ls /usr/local/opt/gmp/lib/libgmp.10.dylib
+/usr/local/opt/gmp/lib/libgmp.10.dylib</code></pre>
+<p>これで GHC 8.6 で <code>stack build</code> できるようになった．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>まぁ一応ね，一応メモした．</p>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+  <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+    <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+      <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+    </a>
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>
