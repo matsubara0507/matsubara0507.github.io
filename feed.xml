@@ -26,7 +26,7 @@
       
       
       <div class="tags">
-          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a>
+          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a> <a href="/tags/application.html">application</a>
       </div>
       
     </p>
@@ -271,7 +271,7 @@ $ ls /usr/local/opt/gmp/lib/libgmp.10.dylib
       
       
       <div class="tags">
-          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a> <a href="/tags/GraphQL.html">GraphQL</a>
+          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a> <a href="/tags/GraphQL.html">GraphQL</a> <a href="/tags/application.html">application</a>
       </div>
       
     </p>
@@ -295,30 +295,30 @@ $ ls /usr/local/opt/gmp/lib/libgmp.10.dylib
 <p>どちらも，よくCLIを作るときの書き方をテンプレートとして起こしたもの． 普段は <a href="http://hackage.haskell.org/package/rio">rio</a> と <a href="http://hackage.haskell.org/package/extensible">extensible</a> を使っているので，単純に optparse-applicative などを使ったテンプレートという訳でもない．</p>
 <h3 id="テストする">テストする</h3>
 <p>できれば，テンプレートを <code>stack new</code> して <code>stack build</code> した時点ではコンパイルを通ってほしい． ということで <code>stack new</code> して <code>stack build</code> を試してくれるテストを <a href="https://github.com/matsubara0507/stack-templates/blob/7abc95184241c2df9f81ec1a45f9a662a98db05a/.travis.yml">TravisCI</a> に書いた．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="fu">matrix:</span></a>
-<a class="sourceLine" id="cb2-2" data-line-number="2">  <span class="fu">include:</span></a>
-<a class="sourceLine" id="cb2-3" data-line-number="3">  <span class="kw">-</span> <span class="fu">env:</span><span class="at"> TEMPLATE=&quot;get-opt-cli&quot; ARGS=&quot;--resolver lts-12&quot;</span></a>
-<a class="sourceLine" id="cb2-4" data-line-number="4">    <span class="fu">compiler:</span><span class="at"> </span><span class="st">&quot;: #stack 8.4.3&quot;</span></a>
-<a class="sourceLine" id="cb2-5" data-line-number="5">    <span class="fu">addons:</span><span class="at"> </span><span class="kw">{</span><span class="fu">apt:</span><span class="at"> </span><span class="kw">{</span><span class="fu">packages:</span><span class="at"> </span><span class="kw">[</span>libgmp-dev<span class="kw">]}}</span></a>
-<a class="sourceLine" id="cb2-6" data-line-number="6">  <span class="kw">-</span> <span class="fu">env:</span><span class="at"> TEMPLATE=&quot;optparse-applicative-cli&quot; ARGS=&quot;--resolver lts-12&quot;</span></a>
-<a class="sourceLine" id="cb2-7" data-line-number="7">    <span class="fu">compiler:</span><span class="at"> </span><span class="st">&quot;: #stack 8.4.3&quot;</span></a>
-<a class="sourceLine" id="cb2-8" data-line-number="8">    <span class="fu">addons:</span><span class="at"> </span><span class="kw">{</span><span class="fu">apt:</span><span class="at"> </span><span class="kw">{</span><span class="fu">packages:</span><span class="at"> </span><span class="kw">[</span>libgmp-dev<span class="kw">]}}</span></a>
-<a class="sourceLine" id="cb2-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb2-10" data-line-number="10"><span class="fu">before_install:</span></a>
-<a class="sourceLine" id="cb2-11" data-line-number="11"><span class="co"># install stack</span></a>
-<a class="sourceLine" id="cb2-12" data-line-number="12"></a>
-<a class="sourceLine" id="cb2-13" data-line-number="13"><span class="fu">install:</span></a>
-<a class="sourceLine" id="cb2-14" data-line-number="14"><span class="kw">-</span> stack new sample <span class="st">&quot;./$TEMPLATE&quot;</span></a>
-<a class="sourceLine" id="cb2-15" data-line-number="15"><span class="kw">-</span> |</a>
-<a class="sourceLine" id="cb2-16" data-line-number="16">  set -ex</a>
-<a class="sourceLine" id="cb2-17" data-line-number="17">  cd sample</a>
-<a class="sourceLine" id="cb2-18" data-line-number="18">  stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies</a>
-<a class="sourceLine" id="cb2-19" data-line-number="19">  set +ex</a>
-<a class="sourceLine" id="cb2-20" data-line-number="20"><span class="fu">script:</span></a>
-<a class="sourceLine" id="cb2-21" data-line-number="21"><span class="kw">-</span> |</a>
-<a class="sourceLine" id="cb2-22" data-line-number="22">  set -ex</a>
-<a class="sourceLine" id="cb2-23" data-line-number="23">  stack --no-terminal $ARGS test --bench --no-run-benchmarks --no-haddock-deps</a>
-<a class="sourceLine" id="cb2-24" data-line-number="24">  set +ex</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb2-1" title="1"><span class="fu">matrix:</span></a>
+<a class="sourceLine" id="cb2-2" title="2">  <span class="fu">include:</span></a>
+<a class="sourceLine" id="cb2-3" title="3">  <span class="kw">-</span> <span class="fu">env:</span><span class="at"> TEMPLATE=&quot;get-opt-cli&quot; ARGS=&quot;--resolver lts-12&quot;</span></a>
+<a class="sourceLine" id="cb2-4" title="4">    <span class="fu">compiler:</span><span class="at"> </span><span class="st">&quot;: #stack 8.4.3&quot;</span></a>
+<a class="sourceLine" id="cb2-5" title="5">    <span class="fu">addons:</span><span class="at"> </span><span class="kw">{</span><span class="fu">apt:</span><span class="at"> </span><span class="kw">{</span><span class="fu">packages:</span><span class="at"> </span><span class="kw">[</span>libgmp-dev<span class="kw">]}}</span></a>
+<a class="sourceLine" id="cb2-6" title="6">  <span class="kw">-</span> <span class="fu">env:</span><span class="at"> TEMPLATE=&quot;optparse-applicative-cli&quot; ARGS=&quot;--resolver lts-12&quot;</span></a>
+<a class="sourceLine" id="cb2-7" title="7">    <span class="fu">compiler:</span><span class="at"> </span><span class="st">&quot;: #stack 8.4.3&quot;</span></a>
+<a class="sourceLine" id="cb2-8" title="8">    <span class="fu">addons:</span><span class="at"> </span><span class="kw">{</span><span class="fu">apt:</span><span class="at"> </span><span class="kw">{</span><span class="fu">packages:</span><span class="at"> </span><span class="kw">[</span>libgmp-dev<span class="kw">]}}</span></a>
+<a class="sourceLine" id="cb2-9" title="9"></a>
+<a class="sourceLine" id="cb2-10" title="10"><span class="fu">before_install:</span></a>
+<a class="sourceLine" id="cb2-11" title="11"><span class="co"># install stack</span></a>
+<a class="sourceLine" id="cb2-12" title="12"></a>
+<a class="sourceLine" id="cb2-13" title="13"><span class="fu">install:</span></a>
+<a class="sourceLine" id="cb2-14" title="14"><span class="kw">-</span> stack new sample <span class="st">&quot;./$TEMPLATE&quot;</span></a>
+<a class="sourceLine" id="cb2-15" title="15"><span class="kw">- </span><span class="st">|</span></a>
+<a class="sourceLine" id="cb2-16" title="16">  set -ex</a>
+<a class="sourceLine" id="cb2-17" title="17">  cd sample</a>
+<a class="sourceLine" id="cb2-18" title="18">  stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies</a>
+<a class="sourceLine" id="cb2-19" title="19">  set +ex</a>
+<a class="sourceLine" id="cb2-20" title="20"><span class="fu">script:</span></a>
+<a class="sourceLine" id="cb2-21" title="21"><span class="kw">- </span><span class="st">|</span></a>
+<a class="sourceLine" id="cb2-22" title="22">  set -ex</a>
+<a class="sourceLine" id="cb2-23" title="23">  stack --no-terminal $ARGS test --bench --no-run-benchmarks --no-haddock-deps</a>
+<a class="sourceLine" id="cb2-24" title="24">  set +ex</a></code></pre></div>
 <p><a href="https://github.com/commercialhaskell/stack-templates/blob/879f95dc44b24201bc64fcf8f4b9e2192c23dad4/test-templates.hs">commercialhaskell/stack-templates でもテストは書いてある</a>がぼくのはすごいシンプルだ．</p>
 <h2 id="stack-templates-を集める">stack-templates を集める</h2>
 <p>さて，これだけでは完全に e-bigmoon さんの劣化記事だ． なので，stack-templates を GitHub から集めてくる CLI ツールを作ることにした．</p>
@@ -332,11 +332,11 @@ $ ls /usr/local/opt/gmp/lib/libgmp.10.dylib
 <h3 id="graphql">GraphQL</h3>
 <p>ちょうどこの前に，友人から「GraphQL はいいぞ，API をなんども叩く必要がない．」と紹介されたので試してみた．</p>
 <p>GitHub の API では <code>api.github.com/graphql</code> というエンドポイントに対し，POST メソッドでクエリを送信する．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><a class="sourceLine" id="cb3-1" data-line-number="1">$ <span class="ex">curl</span> \</a>
-<a class="sourceLine" id="cb3-2" data-line-number="2">  -H <span class="st">&quot;Authorization: bearer token&quot;</span> \</a>
-<a class="sourceLine" id="cb3-3" data-line-number="3">  -X POST \</a>
-<a class="sourceLine" id="cb3-4" data-line-number="4">  -d <span class="st">&quot;{ </span><span class="dt">\&quot;</span><span class="st">query</span><span class="dt">\&quot;</span><span class="st">: </span><span class="dt">\&quot;</span><span class="st"> ... </span><span class="dt">\&quot;</span><span class="st"> }&quot;</span> \</a>
-<a class="sourceLine" id="cb3-5" data-line-number="5">  https://api.github.com/graphql</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><a class="sourceLine" id="cb3-1" title="1">$ <span class="ex">curl</span> \</a>
+<a class="sourceLine" id="cb3-2" title="2">  -H <span class="st">&quot;Authorization: bearer token&quot;</span> \</a>
+<a class="sourceLine" id="cb3-3" title="3">  -X POST \</a>
+<a class="sourceLine" id="cb3-4" title="4">  -d <span class="st">&quot;{ </span><span class="dt">\&quot;</span><span class="st">query</span><span class="dt">\&quot;</span><span class="st">: </span><span class="dt">\&quot;</span><span class="st"> ... </span><span class="dt">\&quot;</span><span class="st"> }&quot;</span> \</a>
+<a class="sourceLine" id="cb3-5" title="5">  https://api.github.com/graphql</a></code></pre></div>
 <p><code>...</code> のところにクエリを記述する． クエリは簡単な DSL のようになっており，クエリによってどんな形の JSON が返ってくるか(型のようなもの)やどんな値が返ってくるかが決まる． 例えば <code>stack-template in:name</code> 検索してヒットしたリポジトリの名前だけを取得してみよう． その場合は次のようなクエリを書く．</p>
 <pre><code>query{
   search(query: &quot;stack-template in:name&quot;, type: REPOSITORY, first: 2) {
