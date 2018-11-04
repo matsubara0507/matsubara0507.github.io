@@ -8,8 +8,101 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2018-10-29T00:00:00Z</updated>
+    <updated>2018-11-04T00:00:00Z</updated>
     <entry>
+    <title>Markdownで書いたテキストをMediumへポストする(mdium)</title>
+    <link href="https://matsubara0507.github.io/posts/2018-11-04-create-mdium.html" />
+    <id>https://matsubara0507.github.io/posts/2018-11-04-create-mdium.html</id>
+    <published>2018-11-04T00:00:00Z</published>
+    <updated>2018-11-04T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Markdownで書いたテキストをMediumへポストする(mdium)</h1>
+    <p class="post-meta">
+      <time datetime="2018-11-04" itemprop="datePublished">
+        Nov 4, 2018
+      </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a>
+      </div>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>完全な二番煎じです。</p>
+<ul>
+<li><a href="https://namaraii.com/markdownで書いたテキストをmediumへポストする-md2mid-60c6ff9efde">Markdownで書いたテキストをMediumへポストする(md2mid) – namaraii.com</a></li>
+</ul>
+<p>上記記事は，Go 言語で作った「Markdownで書いたテキストをMediumへポストする」CLIツールです． 弊社の技術記事置き場が Medium だったので，なんとか，ここのように Markdown で書けないかと調べていたら上記記事が出て来ました． もっといいのできないかなと車輪の再発明してみたけど，正直大して変わらなかったと思います．</p>
+<h2 id="作ったもの">作ったもの</h2>
+<p>md2mid と同様に Markdown で書いた記事を Medium に送信する CLI ツールを作った． 言わずもがな Haskell 製．</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/mdium">matsubara0507/mdium - GitHub</a></li>
+</ul>
+<p>違いがあるとすれば:</p>
+<ul>
+<li>Haskell 製（しつこい）</li>
+<li>環境変数を使ったトークンの管理</li>
+<li><a href="https://hub.docker.com/r/matsubara0507/mdium/">Docker Image</a> 化してる</li>
+</ul>
+<h2 id="使い方">使い方</h2>
+<p>まず CLI ツールをインストールするには，リポジトリをクローンして Haskell Stack で直接ビルド・インストールする:</p>
+<pre><code>$ git clone https://github.com/matsubara0507/mdium.git
+$ cd mdium
+$ stack install mdium</code></pre>
+<p>あるいは，Docker Image をプルしてくる:</p>
+<pre><code>$ docker pull matsubara0507/mdium</code></pre>
+<p>コマンドを使うには，まず Medium のトークンを<a href="https://medium.com/me/settings">設定</a>から生成する．</p>
+<p><img src="/assets/create-mdium/generate-token.png" /></p>
+<p>これを環境変数 <code>MEDIUM_TOKEN</code> にセットする． 直接でも良いし，<code>./.env</code> か <code>~/.env</code> に描いても良い． 下記のコマンドを実行することでトークンをチェックできる:</p>
+<pre><code>$ mdium --me
+Hi MATSUBARA Nobutada!!</code></pre>
+<p>Docker イメージを使う場合にはこう:</p>
+<pre><code>$ docker run --rm --env-file=&quot;$HOME/.env&quot; matsubara0507/mdium /bin/bash -c &quot;mdium --me&quot;</code></pre>
+<p>トークンを渡すのは <code>--env-file</code> オプションでも <code>-e</code> オプションでも何でも良い． 実際に送信するには引数に送信したいファイルのパスを渡すだけ:</p>
+<pre><code>$ medium example.md
+post success, browse to: https://medium.com/@nobutada/e31f70013b36</code></pre>
+<p>こうすることで指定した Markdown ファイルを draft として記事にしてくれる． ちなみに，<a href="https://github.com/matsubara0507/mdium/blob/master/example/example.md">これ</a>が下記のようになる．</p>
+<p><img src="https://github.com/matsubara0507/mdium/raw/master/example/example.png" /></p>
+<h2 id="medium-api">Medium API</h2>
+<p>こっからは中身の話を少し． 中では Medium の API を使っている．</p>
+<ul>
+<li><a href="https://github.com/Medium/medium-api-docs#readme">Medium’s API documentation - GitHub</a></li>
+</ul>
+<p>その中に記事を送信する API があるのだが，驚いたことに送信できるファイルフォーマットに HTML と <strong>Markdown</strong> があったのだ． つまり，特別な処理をせずともこの API を使ってマークダウンを送信すれば良い．</p>
+<h2 id="dockerise">Dockerise</h2>
+<p>Haskell Stack には Docker integration というのがある（あんまりドキュメントにまとまっていない機能）． これを使うことで，指定した Docker image 内で Haskell プロジェクトをビルドしたり，ビルドした実行ファイルを突っ込んだ Docker image を作成したりできる．</p>
+<p>今回は次のような設定を書き:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb6-1" title="1"><span class="fu">docker:</span></a>
+<a class="sourceLine" id="cb6-2" title="2">  <span class="fu">repo:</span><span class="at"> fpco/stack-build</span></a>
+<a class="sourceLine" id="cb6-3" title="3">  <span class="fu">enable:</span><span class="at"> </span><span class="ch">false</span></a>
+<a class="sourceLine" id="cb6-4" title="4"><span class="fu">image:</span></a>
+<a class="sourceLine" id="cb6-5" title="5">  <span class="fu">container:</span></a>
+<a class="sourceLine" id="cb6-6" title="6">    <span class="fu">name:</span><span class="at"> matsubara0507/mdium</span></a>
+<a class="sourceLine" id="cb6-7" title="7">    <span class="fu">base:</span><span class="at"> fpco/ubuntu-with-libgmp</span></a></code></pre></div>
+<p>次のようなコマンドを実行することで Docker image を作成している:</p>
+<pre><code>$ stack docker pull
+$ stack --docker image container</code></pre>
+<p>作成した Image は <code>docker push</code> コマンドでアップロードしている． また，この一連の流れを TraviCI で自動化している．</p>
+<h2 id="todo">ToDo</h2>
+<p>突貫で作ったのでいくつかやり残しがある．</p>
+<ul>
+<li>エラーハンドリング : 特に何も例外処理していないので</li>
+<li>記事の更新 : 今はひたすら新しい記事を生成してしまう</li>
+<li>タグやファイルフォーマットなどの細かい指定</li>
+</ul>
+<h1 id="おしまい">おしまい</h1>
+<p>だいたい1日とちょっとでサクッと作った割にはいい感じのものができて満足． どんどん再発明していこ．</p>
+  </div>
+</div>
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>Hacktoberfest 2018 なので PR を5つ以上出してみた</title>
     <link href="https://matsubara0507.github.io/posts/2018-10-29-join-hacktoberfest-2018.html" />
     <id>https://matsubara0507.github.io/posts/2018-10-29-join-hacktoberfest-2018.html</id>
@@ -2072,196 +2165,6 @@ sum list = ...</code></pre>
 <a class="sourceLine" id="cb15-21" data-line-number="21">    <span class="op">...</span></a></code></pre></div>
 <h2 id="おしまい">おしまい</h2>
 <p>次はアプリケーションを作りたい．</p>
-  </div>
-</div>
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>Haskell で型安全に YAML ファイルをビルド時に埋め込む</title>
-    <link href="https://matsubara0507.github.io/posts/2018-05-13-yaml-th.html" />
-    <id>https://matsubara0507.github.io/posts/2018-05-13-yaml-th.html</id>
-    <published>2018-05-13T00:00:00Z</published>
-    <updated>2018-05-13T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
- <div class="card-content">
-  <header class="post-header">
-    <h1 class="post-title" itemprop="name headline">Haskell で型安全に YAML ファイルをビルド時に埋め込む</h1>
-    <p class="post-meta">
-      <time datetime="2018-05-13" itemprop="datePublished">
-        May 13, 2018
-      </time>
-      
-      
-      <div class="tags">
-          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a> <a href="/tags/extensible-package.html">extensible-package</a>
-      </div>
-      
-    </p>
-  </header>
-
-  <div class="post-content" itemprop="articleBody">
-    <p>ザックリ言えば「<a href="https://ryota-ka.hatenablog.com/entry/2018/02/14/103000">Template Haskell でコード中に JSON を埋め込んだりコンパイル時にファイルから型安全に読み込んだりする - ryota-ka’s blog</a>」という記事の YAML 版です．</p>
-<p>ただし，ryota さんの記事では Template Haskell を解説しながら JSON を読み込む関数を定義していますが， YAML 版は <a href="https://hackage.haskell.org/package/yaml">yaml</a> パッケージに同様の関数が既にあるので特に解説はしません． あくまでも Haskell の型システムとメタプログラミングを感じてもらえたらなぁと．</p>
-<h2 id="section"></h2>
-<p>ソースコードは全てこの<a href="https://github.com/matsubara0507/sample-yaml-th">リポジトリ</a>にまとめてある．</p>
-<h1 id="yaml-を埋め込む">YAML を埋め込む</h1>
-<p>次のような設定ファイルに関する型があったとします．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Config</span> <span class="fu">=</span> <span class="dt">Config</span></a>
-<a class="sourceLine" id="cb1-2" data-line-number="2">  {<span class="ot"> columns ::</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb1-3" data-line-number="3">  ,<span class="ot"> languageExtensions ::</span> [<span class="dt">String</span>]</a>
-<a class="sourceLine" id="cb1-4" data-line-number="4">  } <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</a></code></pre></div>
-<p>yaml パッケージで YAML にデコードするためには <a href="https://hackage.haskell.org/package/aeson">aeson</a> の <a href="https://hackage.haskell.org/package/aeson-1.3.1.1/docs/Data-Aeson.html#t:FromJSON"><code>FromJSON</code></a> 型クラスのインスタンスである必要がある． <code>FromJSON</code> のインスタンスに凝ってもしょうがないので，今回は <code>Generics</code> を使って適当に定義する．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="ot">{-# LANGUAGE DeriveGeneric #-}</span></a>
-<a class="sourceLine" id="cb2-2" data-line-number="2"><span class="kw">import</span> <span class="dt">GHC.Generics</span></a>
-<a class="sourceLine" id="cb2-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb2-4" data-line-number="4"><span class="kw">data</span> <span class="dt">Config</span> <span class="fu">=</span> <span class="dt">Config</span></a>
-<a class="sourceLine" id="cb2-5" data-line-number="5">  {<span class="ot"> columns ::</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb2-6" data-line-number="6">  ,<span class="ot"> languageExtensions ::</span> [<span class="dt">String</span>]</a>
-<a class="sourceLine" id="cb2-7" data-line-number="7">  } <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>, <span class="dt">Generic</span>)</a>
-<a class="sourceLine" id="cb2-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb2-9" data-line-number="9"><span class="kw">instance</span> <span class="dt">FromJSON</span> <span class="dt">Config</span></a></code></pre></div>
-<p><code>Config</code> 型のデフォルト値を YAML ファイルで記述したいとする．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="co"># template/.config.yaml</span></a>
-<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="fu">columns:</span><span class="at"> 80</span></a>
-<a class="sourceLine" id="cb3-3" data-line-number="3"><span class="fu">languageExtensions:</span><span class="at"> </span><span class="kw">[]</span></a></code></pre></div>
-<p>これをコンパイル時に埋め込んでかつ型検査も行いたい． そのためには Template Haskell と yaml パッケージの <a href="https://hackage.haskell.org/package/yaml-0.8.30/docs/Data-Yaml-TH.html#v:decodeFile"><code>Data.Yaml.TH.decodeFile</code></a> 関数を用いる．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="ot">decodeFile ::</span> (<span class="dt">Lift</span> a, <span class="dt">FromJSON</span> a) <span class="ot">=&gt;</span> FilePath <span class="ot">-&gt;</span> <span class="dt">Q</span> (<span class="dt">TExp</span> a)</a></code></pre></div>
-<p><code>TExp a</code> 型というのは型付きの <code>Exp</code> 型らしいが，ぼくはあまりよく分からないので割愛． 型を見ればわかるように，<code>Lift</code> 型クラスのインスタンスにもなってなきゃいけない． <code>DerivingLift</code> 言語拡張を使えば簡単に定義できる．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="ot">{-# LANGUAGE DeriveLift #-}</span></a>
-<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="kw">import</span> import <span class="dt">Language.Haskell.TH.Syntax</span> <span class="co">-- template-haskell package</span></a>
-<a class="sourceLine" id="cb5-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb5-4" data-line-number="4"><span class="kw">data</span> <span class="dt">Config</span> <span class="fu">=</span> <span class="dt">Config</span></a>
-<a class="sourceLine" id="cb5-5" data-line-number="5">  {<span class="ot"> columns ::</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb5-6" data-line-number="6">  ,<span class="ot"> languageExtensions ::</span> [<span class="dt">String</span>]</a>
-<a class="sourceLine" id="cb5-7" data-line-number="7">  } <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>, <span class="dt">Generic</span>, <span class="dt">Lift</span>)</a></code></pre></div>
-<p>使い方は簡単で，次のようにすればよい．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="ot">{-# LANGUAGE TemplateHaskell #-}</span></a>
-<a class="sourceLine" id="cb6-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb6-3" data-line-number="3"><span class="ot">defaultConfig ::</span> <span class="dt">Config</span></a>
-<a class="sourceLine" id="cb6-4" data-line-number="4">defaultConfig <span class="fu">=</span> <span class="fu">$$</span>(decodeFile <span class="st">&quot;./template/.config.yaml&quot;</span>)</a></code></pre></div>
-<p>注意点として，Template Haskell の制約より <code>Config</code> 型の定義と <code>defaultConfig</code> 関数の定義は別ファイルに分けなければいけない．</p>
-<h2 id="試す">試す</h2>
-<pre><code>$ stack ghci
-&gt;&gt; defaultConfig
-Config {columns = 80, languageExtensions = []}</code></pre>
-<p>試しに間違えてみよう</p>
-<pre><code>$ cat template/.config.yaml
-column: 80
-languageExtensions: []
-$ stack build
-sample-yaml-th-0.1.0.0: build (lib)
-Preprocessing library for sample-yaml-th-0.1.0.0..
-Building library for sample-yaml-th-0.1.0.0..
-[1 of 2] Compiling Sample.Config.Internal ( src\Sample\Config\Internal.hs, .stack work\dist\5c8418a7\build\Sample\Config\Internal.o )
-[2 of 2] Compiling Sample.Config    ( src\Sample\Config.hs, .stack-work\dist\5c8418a7\build\Sample\Config.o )
-
-C:\Users\hoge\haskell\sample-yaml-th\src\Sample\Config.hs:14:20: error:
-    • Aeson exception:
-Error in $: key &quot;columns&quot; not present
-    • In the Template Haskell splice
-        $$(Y.decodeFile &quot;./template/.config.yaml&quot;)
-      In the expression: $$(Y.decodeFile &quot;./template/.config.yaml&quot;)
-      In an equation for ‘defaultConfig’:
-          defaultConfig = $$(Y.decodeFile &quot;./template/.config.yaml&quot;)
-   |
-14 | defaultConfig = $$(Y.decodeFile &quot;./template/.config.yaml&quot;)
-   |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</code></pre>
-<h1 id="おまけ-with-extensible">おまけ : with Extensible</h1>
-<p>さぁココからが本題！ <a href="https://hackage.haskell.org/package/extensible">extensible</a> という神パッケージを使ってリファクタリングをしてみよう！！</p>
-<h2 id="問題点">問題点</h2>
-<p>大した問題ではないんだけど</p>
-<ol type="1">
-<li>ファイルを分けなければいけないのが悲しい</li>
-<li>YAML のキーがキャメルケース(<code>languageExtensions</code>)</li>
-</ol>
-<h2 id="extensible-パッケージ">extensible パッケージ</h2>
-<p>言わずもがな，拡張可能なレコードやバリアントを提供するパッケージだ． (詳しくは，最近急ピッチで充実されている<a href="https://wiki.hask.moe/">攻略Wiki</a>を読むといいんじゃないんかな？)</p>
-<p>例えば，さっきから使っている <code>Config</code> 型を <code>extensible</code> レコード型で書くと次のように書ける</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="ot">{-# LANGUAGE DataKinds     #-}</span></a>
-<a class="sourceLine" id="cb9-2" data-line-number="2"><span class="ot">{-# LANGUAGE TypeOperators #-}</span></a>
-<a class="sourceLine" id="cb9-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb9-4" data-line-number="4"><span class="kw">type</span> <span class="dt">Config</span> <span class="fu">=</span> <span class="dt">Record</span></a>
-<a class="sourceLine" id="cb9-5" data-line-number="5">  <span class="ch">&#39;[ &quot;root&quot; &gt;: Text</span></a>
-<a class="sourceLine" id="cb9-6" data-line-number="6">   , <span class="st">&quot;path-format&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb9-7" data-line-number="7">   ]</a></code></pre></div>
-<p>地味にうれしいことに，extensible であれば関数名では許されないハイフンが含んだフィールド名も定義できるのだ．</p>
-<h2 id="リファクタリング">リファクタリング</h2>
-<p><code>Data.Yaml.TH.decodeFile</code> を使うには <code>FromJSON</code> 型クラスと <code>Lift</code> 型クラスのインスタンスにしなければいけない． でも安心して欲しい． どちらも最新の extensible-0.4.9 では定義済みだ(そして extensible のレコードは <code>type</code> 宣言なので追加でインスタンスを定義する必要は無い)．</p>
-<p>ただし，extensible-0.4.9 はまだ Stackage の LTS にも nightly にも追加されていないので <code>stack.yaml</code> に追加する必要がある．</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="fu">resolver:</span><span class="at"> lts-11.9</span></a>
-<a class="sourceLine" id="cb10-2" data-line-number="2"><span class="fu">packages:</span></a>
-<a class="sourceLine" id="cb10-3" data-line-number="3"><span class="kw">-</span> .</a>
-<a class="sourceLine" id="cb10-4" data-line-number="4"><span class="fu">extra-deps:</span></a>
-<a class="sourceLine" id="cb10-5" data-line-number="5"><span class="kw">-</span> extensible-0.4.9</a></code></pre></div>
-<p><code>Lift</code> 型クラスのインスタンスは extensible で定義済みなので1つ目のファイルを分けるはクリアーだ． 実は2つもクリアーしている． 拡張可能レコードの <code>FromJson</code> 型クラスのインスタンスは <code>&quot;path-format&quot;</code> のようなハイフンを含んだ文字列もそのまま扱ってくれる．</p>
-<p>以下が extensible 版の <code>Config</code> 型に対応する YAML ファイルだ．</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="co"># template/.extensible-config.yaml</span></a>
-<a class="sourceLine" id="cb11-2" data-line-number="2"><span class="fu">columns:</span><span class="at"> 80</span></a>
-<a class="sourceLine" id="cb11-3" data-line-number="3"><span class="fu">language-extensions:</span><span class="at"> </span><span class="kw">[]</span></a></code></pre></div>
-<p>試しに実行してみよう！</p>
-<pre><code>$ stack ghci
-&gt;&gt; Sample.Extensible.Config.defaultConfig
-columns @= 80 &lt;: language-extensions @= [] &lt;: nil</code></pre>
-<h2 id="デフォルトで置き換える">デフォルトで置き換える</h2>
-<p>最後に簡単な実行ファイルを実装してみる． 設定ファイルのパスを与えると読みに行き，足りない部分は先ほどから埋め込んでるデフォルト値に置き換えて出力するモノだ．</p>
-<pre><code>$ cat &quot;./template/.example.yaml&quot;
-columns: 100
-$ stack exec -- pconfig &quot;./template/.example.yaml&quot;
-columns @= 100 &lt;: language-extensions @= [] &lt;: nil
-$ stack exec -- pconfig
-columns @= 80 &lt;: language-extensions @= [] &lt;: nil</code></pre>
-<p>もちろんパスにファイルが無ければデフォルトのモノを出力するだけだ．</p>
-<h2 id="section-1"></h2>
-<p>さてどうすれば良いだろうか？ 例えば，<code>FromJSON</code> 型クラスの <code>Meybe a</code> 型のインスタンスはフィールドが無い場合に <code>Nothing</code> を与えてくれるので， <code>Config</code> 型の各フィールドを <code>Maybe</code> でラップするというのはどうだろう．</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="kw">type</span> <span class="dt">Config</span> <span class="fu">=</span> <span class="dt">Record</span></a>
-<a class="sourceLine" id="cb14-2" data-line-number="2">  <span class="ch">&#39;[ &quot;root&quot; &gt;: Maybe Text</span></a>
-<a class="sourceLine" id="cb14-3" data-line-number="3">   , <span class="st">&quot;path-format&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Maybe</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb14-4" data-line-number="4">   ]</a></code></pre></div>
-<p>フィールドが2つなら良いが多くなってきたら辛そうだ…</p>
-<h3 id="必殺-nullable">必殺 Nullable</h3>
-<p>全てを <code>Meybe</code> でラップする場合は <a href="https://hackage.haskell.org/package/extensible-0.4.9/docs/Data-Extensible-Nullable.html"><code>Nullable</code></a> を使うと良いだろう(ないしは <code>RecordOf Maybe</code>)．</p>
-<p><code>Nullable h :* xs</code> も既に <code>FromJson</code> 型クラスのインスタンスになっているのでそのまま YAML を読み込める． あとは次のようなデフォルト値と <code>Nullable</code> を与えたら <code>Nothing</code> の部分だけデフォルト値で置き換えた値を返す関数を実装してやればよい．</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" data-line-number="1"><span class="ot">fromNullable ::</span> <span class="dt">RecordOf</span> h xs <span class="ot">-&gt;</span> <span class="dt">Nullable</span> (<span class="dt">Field</span> h) <span class="fu">:*</span> xs <span class="ot">-&gt;</span> <span class="dt">RecordOf</span> h xs</a>
-<a class="sourceLine" id="cb15-2" data-line-number="2">fromNullable def <span class="fu">=</span></a>
-<a class="sourceLine" id="cb15-3" data-line-number="3">  hmapWithIndex <span class="fu">$</span> \m x <span class="ot">-&gt;</span> fromMaybe (hlookup m def) (getNullable x)</a></code></pre></div>
-<p>extensible ならこうやって全てのフィールドに対し走査する関数が使える．</p>
-<h2 id="section-2"></h2>
-<p>あとはこんな感じ</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" data-line-number="1"><span class="ot">{-# LANGUAGE NoImplicitPrelude #-}</span></a>
-<a class="sourceLine" id="cb16-2" data-line-number="2"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span></a>
-<a class="sourceLine" id="cb16-3" data-line-number="3"><span class="ot">{-# LANGUAGE PolyKinds         #-}</span></a>
-<a class="sourceLine" id="cb16-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb16-5" data-line-number="5"><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb16-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb16-7" data-line-number="7"><span class="kw">import</span>           <span class="dt">RIO</span></a>
-<a class="sourceLine" id="cb16-8" data-line-number="8"><span class="kw">import</span>           <span class="dt">RIO.Directory</span>      (doesFileExist)</a>
-<a class="sourceLine" id="cb16-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb16-10" data-line-number="10"><span class="kw">import</span>           <span class="dt">Data.Extensible</span></a>
-<a class="sourceLine" id="cb16-11" data-line-number="11"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Yaml</span>          <span class="kw">as</span> <span class="dt">Y</span></a>
-<a class="sourceLine" id="cb16-12" data-line-number="12"><span class="kw">import</span>           <span class="dt">System.Environment</span> (getArgs)</a>
-<a class="sourceLine" id="cb16-13" data-line-number="13"></a>
-<a class="sourceLine" id="cb16-14" data-line-number="14"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb16-15" data-line-number="15">main <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb16-16" data-line-number="16">  path <span class="ot">&lt;-</span> fromMaybe <span class="st">&quot;&quot;</span> <span class="fu">.</span> listToMaybe <span class="fu">&lt;$&gt;</span> getArgs</a>
-<a class="sourceLine" id="cb16-17" data-line-number="17">  config <span class="ot">&lt;-</span> readConfigWith defaultConfig path</a>
-<a class="sourceLine" id="cb16-18" data-line-number="18">  hPutBuilder stdout <span class="fu">$</span> encodeUtf8Builder (tshow config)</a>
-<a class="sourceLine" id="cb16-19" data-line-number="19"></a>
-<a class="sourceLine" id="cb16-20" data-line-number="20"><span class="ot">readConfigWith ::</span> <span class="dt">Config</span> <span class="ot">-&gt;</span> FilePath <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Config</span></a>
-<a class="sourceLine" id="cb16-21" data-line-number="21">readConfigWith def path <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb16-22" data-line-number="22">  file <span class="ot">&lt;-</span> readFileBinaryWith <span class="st">&quot;&quot;</span> path</a>
-<a class="sourceLine" id="cb16-23" data-line-number="23">  <span class="kw">if</span> Y.decodeEither file <span class="fu">==</span> <span class="dt">Right</span> <span class="dt">Y.Null</span> <span class="kw">then</span></a>
-<a class="sourceLine" id="cb16-24" data-line-number="24">    pure def</a>
-<a class="sourceLine" id="cb16-25" data-line-number="25">  <span class="kw">else</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb16-26" data-line-number="26">    config <span class="ot">&lt;-</span> either (error <span class="fu">.</span> show) pure <span class="fu">$</span> Y.decodeEither&#39; file</a>
-<a class="sourceLine" id="cb16-27" data-line-number="27">    pure <span class="fu">$</span> fromNullable def config</a>
-<a class="sourceLine" id="cb16-28" data-line-number="28"></a>
-<a class="sourceLine" id="cb16-29" data-line-number="29"><span class="ot">readFileBinaryWith ::</span> <span class="dt">ByteString</span> <span class="ot">-&gt;</span> FilePath <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">ByteString</span></a>
-<a class="sourceLine" id="cb16-30" data-line-number="30">readFileBinaryWith def path <span class="fu">=</span></a>
-<a class="sourceLine" id="cb16-31" data-line-number="31">  doesFileExist path <span class="fu">&gt;&gt;=</span> bool (pure def) (readFileBinary path)</a></code></pre></div>
-<p>いろいろとインポートするのがめんどくさくて <code>rio</code> ライブラリを使っているが，あんまり気にしないで．</p>
-<h1 id="おしまい">おしまい</h1>
-<p>ちなみに，<a href="https://matsubara0507.github.io/posts/2018-05-10-make-cli-with-haskell-in-2018.html">前回の記事</a>に書いた <a href="https://github.com/matsubara0507/taskpad"><code>taskpad</code></a> にこの機能を追加してる．</p>
   </div>
 </div>
 </article>
