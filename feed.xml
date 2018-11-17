@@ -173,7 +173,7 @@ post success, browse to: https://medium.com/@nobutada/e31f70013b36</code></pre>
 <p>次のようなコマンドを実行することで Docker image を作成している:</p>
 <pre><code>$ stack docker pull
 $ stack --docker image container</code></pre>
-<p>作成した Image は <code>docker push</code> コマンドでアップロードしている． また，この一連の流れを TraviCI で自動化している．</p>
+<p>作成した Image は <code>docker push</code> コマンドでアップロードしている． また，この一連の流れを TravisCI で自動化している．</p>
 <h2 id="todo">ToDo</h2>
 <p>突貫で作ったのでいくつかやり残しがある．</p>
 <ul>
