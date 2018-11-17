@@ -88,28 +88,28 @@
     <p><a href="https://hackage.haskell.org/package/servant-kotlin">servant-kotlin</a> という Haskell パッケージを作った． そん時のメモ書き．</p>
 <h2 id="servant-kotlin">servant-kotlin</h2>
 <p>RESTful API を型として定義できる Haskell ライブラリ <a href="https://haskell-servant.github.io">Servant</a> という Web フレームワークがある． 例えば以下のような API の型を定義できる．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Todo</span> <span class="fu">=</span> <span class="dt">Todo</span></a>
-<a class="sourceLine" id="cb1-2" data-line-number="2">  {<span class="ot"> todoId ::</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb1-3" data-line-number="3">  ,<span class="ot"> title  ::</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb1-4" data-line-number="4">  ,<span class="ot"> done   ::</span> <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb1-5" data-line-number="5">  } <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</a>
-<a class="sourceLine" id="cb1-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb1-7" data-line-number="7"><span class="kw">instance</span> <span class="dt">ToJSON</span> <span class="dt">Todo</span></a>
-<a class="sourceLine" id="cb1-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb1-9" data-line-number="9"><span class="kw">type</span> <span class="dt">CRUD</span> <span class="fu">=</span> <span class="st">&quot;todos&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">'[JSON] [Todo]</span></a>
-<a class="sourceLine" id="cb1-10" data-line-number="10">       <span class="fu">:&lt;|&gt;</span> <span class="st">&quot;todos&quot;</span> <span class="fu">:&gt;</span> <span class="dt">ReqBody</span> <span class="ch">'[JSON, FormUrlEncoded] Todo :&gt; Post '</span>[<span class="dt">JSON</span>] <span class="dt">Todo</span></a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">data</span> <span class="dt">Todo</span> <span class="fu">=</span> <span class="dt">Todo</span></a>
+<a class="sourceLine" id="cb1-2" title="2">  {<span class="ot"> todoId ::</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb1-3" title="3">  ,<span class="ot"> title  ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb1-4" title="4">  ,<span class="ot"> done   ::</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb1-5" title="5">  } <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</a>
+<a class="sourceLine" id="cb1-6" title="6"></a>
+<a class="sourceLine" id="cb1-7" title="7"><span class="kw">instance</span> <span class="dt">ToJSON</span> <span class="dt">Todo</span></a>
+<a class="sourceLine" id="cb1-8" title="8"></a>
+<a class="sourceLine" id="cb1-9" title="9"><span class="kw">type</span> <span class="dt">CRUD</span> <span class="fu">=</span> <span class="st">&quot;todos&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> '[<span class="dt">JSON</span>] [<span class="dt">Todo</span>]</a>
+<a class="sourceLine" id="cb1-10" title="10">       <span class="fu">:&lt;|&gt;</span> <span class="st">&quot;todos&quot;</span> <span class="fu">:&gt;</span> <span class="dt">ReqBody</span> '[<span class="dt">JSON</span>, <span class="dt">FormUrlEncoded</span>] <span class="dt">Todo</span> <span class="fu">:&gt;</span> <span class="dt">Post</span> '[<span class="dt">JSON</span>] <span class="dt">Todo</span></a></code></pre></div>
 <p><code>servant-kotlin</code> を用いると，上記の <code>Todo</code> 型と <code>CRUD</code> 型から以下のような Kotlin のエンドポイント関数を生成できる．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode kotlin"><code class="sourceCode kotlin"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw">class</span> TodoAPI(<span class="kw">private</span> <span class="kw">val</span> <span class="va">baseURL</span>: <span class="dt">String</span>) {</a>
-<a class="sourceLine" id="cb2-2" data-line-number="2">  <span class="kw">data</span> <span class="kw">class</span> Todo(<span class="kw">val</span> <span class="va">todoId</span>: <span class="dt">Int</span>, <span class="kw">val</span> <span class="va">title</span>: <span class="dt">String</span>, <span class="kw">val</span> <span class="va">done</span>: <span class="dt">Boolean</span>)</a>
-<a class="sourceLine" id="cb2-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb2-4" data-line-number="4">  <span class="kw">fun</span> getTodos(<span class="va">handler</span>: (<span class="dt">Request</span>, <span class="dt">Response</span>, <span class="dt">Result</span>&lt;<span class="dt">List</span>&lt;<span class="dt">Todo</span>&gt;, <span class="dt">FuelError</span>&gt;) -&gt; <span class="dt">Unit</span>) {</a>
-<a class="sourceLine" id="cb2-5" data-line-number="5">    Fuel.<span class="kw">get</span>(<span class="st">&quot;/&quot;</span> + <span class="st">&quot;todos&quot;</span>).responseObject(handler)</a>
-<a class="sourceLine" id="cb2-6" data-line-number="6">  }</a>
-<a class="sourceLine" id="cb2-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb2-8" data-line-number="8">  <span class="kw">fun</span> <span class="fu">postTodos</span>(<span class="va">body</span>: <span class="dt">Todo</span>, <span class="va">handler</span>: (<span class="dt">Request</span>, <span class="dt">Response</span>, <span class="dt">Result</span>&lt;<span class="dt">Todo</span>, <span class="dt">FuelError</span>&gt;) -&gt; <span class="dt">Unit</span>) {</a>
-<a class="sourceLine" id="cb2-9" data-line-number="9">    Fuel.post(<span class="st">&quot;/&quot;</span> + <span class="st">&quot;todos&quot;</span>).body(Gson().toJson(body, Todo::<span class="kw">class</span>.java)).responseObject(<span class="va">handler</span>)</a>
-<a class="sourceLine" id="cb2-10" data-line-number="10">    }</a>
-<a class="sourceLine" id="cb2-11" data-line-number="11">}</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode kotlin"><code class="sourceCode kotlin"><a class="sourceLine" id="cb2-1" title="1"><span class="kw">class</span> TodoAPI(<span class="kw">private</span> <span class="kw">val</span> <span class="va">baseURL</span>: <span class="dt">String</span>) {</a>
+<a class="sourceLine" id="cb2-2" title="2">  <span class="kw">data</span> <span class="kw">class</span> Todo(<span class="kw">val</span> <span class="va">todoId</span>: <span class="dt">Int</span>, <span class="kw">val</span> <span class="va">title</span>: <span class="dt">String</span>, <span class="kw">val</span> <span class="va">done</span>: <span class="dt">Boolean</span>)</a>
+<a class="sourceLine" id="cb2-3" title="3"></a>
+<a class="sourceLine" id="cb2-4" title="4">  <span class="kw">fun</span> getTodos(<span class="va">handler</span>: (<span class="dt">Request</span>, <span class="dt">Response</span>, <span class="dt">Result</span>&lt;<span class="dt">List</span>&lt;<span class="dt">Todo</span>&gt;, <span class="dt">FuelError</span>&gt;) -&gt; <span class="dt">Unit</span>) {</a>
+<a class="sourceLine" id="cb2-5" title="5">    Fuel.<span class="kw">get</span>(<span class="st">&quot;/&quot;</span> + <span class="st">&quot;todos&quot;</span>).responseObject(handler)</a>
+<a class="sourceLine" id="cb2-6" title="6">  }</a>
+<a class="sourceLine" id="cb2-7" title="7"></a>
+<a class="sourceLine" id="cb2-8" title="8">  <span class="kw">fun</span> <span class="fu">postTodos</span>(<span class="va">body</span>: <span class="dt">Todo</span>, <span class="va">handler</span>: (<span class="dt">Request</span>, <span class="dt">Response</span>, <span class="dt">Result</span>&lt;<span class="dt">Todo</span>, <span class="dt">FuelError</span>&gt;) -&gt; <span class="dt">Unit</span>) {</a>
+<a class="sourceLine" id="cb2-9" title="9">    Fuel.post(<span class="st">&quot;/&quot;</span> + <span class="st">&quot;todos&quot;</span>).body(Gson().toJson(body, Todo::<span class="kw">class</span>.java)).responseObject(<span class="va">handler</span>)</a>
+<a class="sourceLine" id="cb2-10" title="10">    }</a>
+<a class="sourceLine" id="cb2-11" title="11">}</a></code></pre></div>
 <p>同種のものに <a href="https://hackage.haskell.org/package/servant-elm"><code>servant-elm</code></a> や <a href="https://hackage.haskell.org/package/servant-ruby"><code>servant-ruby</code></a> というのがある． 今回は主に <code>servant-elm</code> と，Haskell の型定義から Elm の型定義を生成する <a href="https://hackage.haskell.org/package/elm-export"><code>elm-export</code></a> を参考して作った． 参考と言うか，ほぼ丸パクリ(笑)</p>
 <h2 id="いきさつ">いきさつ</h2>
 <p><a href="../post/2017-10-23-create.anaqram.html">前回の記事</a> で紹介した通り，Elm × Haskell × Kotlin の Android + Web アプリを作った． Haskell ではもちろん Servant で API をサーバーを立てて，Elm (Web UI) 側は <code>servant-elm</code> を使って API の定義から生成してたんだが，Kotlin (Android Client) 側にはそういうパッケージがまだ無い． なので作った．</p>
@@ -121,33 +121,33 @@
 <p>まずは Haskell で定義した型から Kotlin の型(クラス)を生成する必要がある． 取りあえず，あらゆる Haskell の型を生成可能にする必要は無い(JSON として使えるやつだけ)ので，そういうつもりで実装する．</p>
 <h2 id="section-1"></h2>
 <p>Kotlin には <a href="https://kotlinlang.org/docs/reference/data-classes.html">data class</a> と呼ばれるクラスがある． 例えば，さっきの <code>Todo</code> 型に対応する data calss は以下の通り．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode kotlin"><code class="sourceCode kotlin"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw">data</span> <span class="kw">class</span> Todo(<span class="kw">val</span> <span class="va">todoId</span>: <span class="dt">Int</span>, <span class="kw">val</span> <span class="va">title</span>: <span class="dt">String</span>, <span class="kw">val</span> <span class="va">done</span>: <span class="dt">Boolean</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode kotlin"><code class="sourceCode kotlin"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">data</span> <span class="kw">class</span> Todo(<span class="kw">val</span> <span class="va">todoId</span>: <span class="dt">Int</span>, <span class="kw">val</span> <span class="va">title</span>: <span class="dt">String</span>, <span class="kw">val</span> <span class="va">done</span>: <span class="dt">Boolean</span>)</a></code></pre></div>
 <p>乱暴に言えば固有のメソッドの定義が無いクラスで，ほぼほぼ C言語の構造体と同じ． Haskell のレコード型をこの data class に対応させることにした．</p>
 <h2 id="section-2"></h2>
 <p><code>elm-export</code> では <code>ElmType</code> 型クラスというのを定義している．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">class</span> <span class="dt">ElmType</span> a <span class="kw">where</span></a>
-<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="ot">  toElmType ::</span> a <span class="ot">-&gt;</span> <span class="dt">ElmDatatype</span></a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="kw">class</span> <span class="dt">ElmType</span> a <span class="kw">where</span></a>
+<a class="sourceLine" id="cb4-2" title="2"><span class="ot">  toElmType ::</span> a <span class="ot">-&gt;</span> <span class="dt">ElmDatatype</span></a></code></pre></div>
 <p><code>ElmDatatype</code> 型は Elm の型構造を Haskell で表現したものだ(詳しくは <a href="https://github.com/krisajenkins/elm-export/blob/94b939bb95ec4a86ae634e785ee93b66c3c1c7e6/src/Elm/Type.hs"><code>Elm/Type.hs</code></a> を見て)． これらを参考にして，Kotlin の場合も同様に <code>KotlinType</code> 型クラスと <a href="https://github.com/matsubara0507/servant-kotlin/blob/f08e3e2ae237a1c8a4931204c26bc83f03ea0e67/src/Servant/Kotlin/Type.hs#L31"><code>KotlinClass</code> 型</a>を定義した．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="kw">class</span> <span class="dt">KotlinType</span> a <span class="kw">where</span></a>
-<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="ot">  toKotlinType ::</span> a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">KotlinClass</span></a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">class</span> <span class="dt">KotlinType</span> a <span class="kw">where</span></a>
+<a class="sourceLine" id="cb5-2" title="2"><span class="ot">  toKotlinType ::</span> a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">KotlinClass</span></a></code></pre></div>
 <p>Haskell の全ての型を，必ず Kotlin のクラスに変換できるとは思わなかった(例えば，フィールド名の無いフィールドを持つクラスは定義できない)ので，念のため <code>Maybe</code> を返している．</p>
 <h2 id="section-3"></h2>
 <p>で，まずは Primitive な Haskell 型のいくつかを <code>KotlinType</code> 型クラスのインスタンスにしてみた．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">KotlinType</span> <span class="dt">Int</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb6-2" data-line-number="2">  toKotlinType _ <span class="fu">=</span> <span class="dt">Just</span> <span class="fu">$</span> <span class="dt">PrimitiveClass</span> <span class="dt">KInt</span></a>
-<a class="sourceLine" id="cb6-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb6-4" data-line-number="4"><span class="kw">instance</span> <span class="dt">KotlinType</span> () <span class="kw">where</span></a>
-<a class="sourceLine" id="cb6-5" data-line-number="5">  toKotlinType _ <span class="fu">=</span> <span class="dt">Just</span> <span class="fu">$</span> <span class="dt">PrimitiveClass</span> <span class="dt">KUnit</span></a>
-<a class="sourceLine" id="cb6-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb6-7" data-line-number="7"><span class="kw">instance</span> <span class="dt">KotlinType</span> <span class="dt">Text</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb6-8" data-line-number="8">  toKotlinType _ <span class="fu">=</span> <span class="dt">Just</span> <span class="fu">$</span> <span class="dt">PrimitiveClass</span> <span class="dt">KString</span></a>
-<a class="sourceLine" id="cb6-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb6-10" data-line-number="10"><span class="kw">instance</span> <span class="dt">KotlinType</span> a <span class="ot">=&gt;</span> <span class="dt">KotlinType</span> [a] <span class="kw">where</span></a>
-<a class="sourceLine" id="cb6-11" data-line-number="11">  toKotlinType _ <span class="fu">=</span> <span class="dt">ExClass</span> <span class="fu">.</span> <span class="dt">KList</span> <span class="fu">&lt;$&gt;</span> toKotlinType (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> a)</a>
-<a class="sourceLine" id="cb6-12" data-line-number="12"></a>
-<a class="sourceLine" id="cb6-13" data-line-number="13"><span class="kw">instance</span> <span class="dt">KotlinType</span> a <span class="ot">=&gt;</span> <span class="dt">KotlinType</span> (<span class="dt">Maybe</span> a) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb6-14" data-line-number="14">  toKotlinType _ <span class="fu">=</span></a>
-<a class="sourceLine" id="cb6-15" data-line-number="15">    <span class="dt">PrimitiveClass</span> <span class="fu">.</span> <span class="dt">KNullable</span> <span class="fu">&lt;$&gt;</span> toKotlinType (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> a)</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">instance</span> <span class="dt">KotlinType</span> <span class="dt">Int</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb6-2" title="2">  toKotlinType _ <span class="fu">=</span> <span class="dt">Just</span> <span class="fu">$</span> <span class="dt">PrimitiveClass</span> <span class="dt">KInt</span></a>
+<a class="sourceLine" id="cb6-3" title="3"></a>
+<a class="sourceLine" id="cb6-4" title="4"><span class="kw">instance</span> <span class="dt">KotlinType</span> () <span class="kw">where</span></a>
+<a class="sourceLine" id="cb6-5" title="5">  toKotlinType _ <span class="fu">=</span> <span class="dt">Just</span> <span class="fu">$</span> <span class="dt">PrimitiveClass</span> <span class="dt">KUnit</span></a>
+<a class="sourceLine" id="cb6-6" title="6"></a>
+<a class="sourceLine" id="cb6-7" title="7"><span class="kw">instance</span> <span class="dt">KotlinType</span> <span class="dt">Text</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb6-8" title="8">  toKotlinType _ <span class="fu">=</span> <span class="dt">Just</span> <span class="fu">$</span> <span class="dt">PrimitiveClass</span> <span class="dt">KString</span></a>
+<a class="sourceLine" id="cb6-9" title="9"></a>
+<a class="sourceLine" id="cb6-10" title="10"><span class="kw">instance</span> <span class="dt">KotlinType</span> a <span class="ot">=&gt;</span> <span class="dt">KotlinType</span> [a] <span class="kw">where</span></a>
+<a class="sourceLine" id="cb6-11" title="11">  toKotlinType _ <span class="fu">=</span> <span class="dt">ExClass</span> <span class="fu">.</span> <span class="dt">KList</span> <span class="fu">&lt;$&gt;</span> toKotlinType (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> a)</a>
+<a class="sourceLine" id="cb6-12" title="12"></a>
+<a class="sourceLine" id="cb6-13" title="13"><span class="kw">instance</span> <span class="dt">KotlinType</span> a <span class="ot">=&gt;</span> <span class="dt">KotlinType</span> (<span class="dt">Maybe</span> a) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb6-14" title="14">  toKotlinType _ <span class="fu">=</span></a>
+<a class="sourceLine" id="cb6-15" title="15">    <span class="dt">PrimitiveClass</span> <span class="fu">.</span> <span class="dt">KNullable</span> <span class="fu">&lt;$&gt;</span> toKotlinType (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> a)</a></code></pre></div>
 <p>文字列とか配列・リストの辺りは，本当にこんな定義でいいかは怪しいが，あんまり悩んでてもしょうがないので，暫定的にこのような定義にしてる．</p>
 <p>ちなみに，Kotlin には <code>Maybe</code> や <code>Optional</code> のようなコンテナ型は無く，Nullable というモノを用いている． <code>A</code> 型の Nullable は <code>A?</code> と書くのだ．</p>
 <h3 id="generics">Generics</h3>
@@ -157,142 +157,142 @@
 <p><code>deriving</code> で任意の型を <code>Generic</code> 型クラスのインスタンスにできる(個人的にはココがすごい)ので，<code>Generic</code> 型クラスのインスタンスに対する default 実装を与えておけば良いのだ．</p>
 <h2 id="section-5"></h2>
 <p><code>Generic</code> 型クラスは次のような定義になっている．</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw">class</span> <span class="dt">Generic</span> a <span class="kw">where</span></a>
-<a class="sourceLine" id="cb7-2" data-line-number="2">  <span class="kw">type</span> <span class="dt">Rep</span><span class="ot"> a ::</span> <span class="fu">*</span> <span class="ot">-&gt;</span> <span class="fu">*</span></a>
-<a class="sourceLine" id="cb7-3" data-line-number="3"><span class="ot">  from  ::</span> a <span class="ot">-&gt;</span> (<span class="dt">Rep</span> a) x</a>
-<a class="sourceLine" id="cb7-4" data-line-number="4"><span class="ot">  to    ::</span> (<span class="dt">Rep</span> a) x <span class="ot">-&gt;</span> a</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">class</span> <span class="dt">Generic</span> a <span class="kw">where</span></a>
+<a class="sourceLine" id="cb7-2" title="2">  <span class="kw">type</span> <span class="dt">Rep</span><span class="ot"> a ::</span> <span class="fu">*</span> <span class="ot">-&gt;</span> <span class="fu">*</span></a>
+<a class="sourceLine" id="cb7-3" title="3"><span class="ot">  from  ::</span> a <span class="ot">-&gt;</span> (<span class="dt">Rep</span> a) x</a>
+<a class="sourceLine" id="cb7-4" title="4"><span class="ot">  to    ::</span> (<span class="dt">Rep</span> a) x <span class="ot">-&gt;</span> a</a></code></pre></div>
 <p><code>Rep a x</code> という型が Haskell の型構造を表現した型だ(<code>x</code> があるのは再帰的に構造をラップするためだと思う)． 例えば <code>Bool</code> の <code>Rep a x</code> 型を見てみる．</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1">ghci<span class="fu">&gt;&gt;</span> from (<span class="dt">True</span><span class="ot"> ::</span> <span class="dt">Bool</span>)</a>
-<a class="sourceLine" id="cb8-2" data-line-number="2"><span class="dt">M1</span> {unM1 <span class="fu">=</span> <span class="dt">R1</span> (<span class="dt">M1</span> {unM1 <span class="fu">=</span> <span class="dt">U1</span>})}</a>
-<a class="sourceLine" id="cb8-3" data-line-number="3">ghci<span class="fu">&gt;&gt;</span> <span class="fu">:</span>t from (<span class="dt">True</span><span class="ot"> ::</span> <span class="dt">Bool</span>)</a>
-<a class="sourceLine" id="cb8-4" data-line-number="4">from (<span class="dt">True</span><span class="ot"> ::</span> <span class="dt">Bool</span>)</a>
-<a class="sourceLine" id="cb8-5" data-line-number="5"><span class="ot">  ::</span> <span class="dt">D1</span></a>
-<a class="sourceLine" id="cb8-6" data-line-number="6">       (<span class="ch">'MetaData &quot;Bool&quot; &quot;GHC.Types&quot; &quot;ghc-prim&quot; '</span><span class="dt">False</span>)</a>
-<a class="sourceLine" id="cb8-7" data-line-number="7">       (<span class="dt">C1</span> (<span class="ch">'MetaCons &quot;False&quot; '</span><span class="dt">PrefixI</span> <span class="ch">'False) U1</span></a>
-<a class="sourceLine" id="cb8-8" data-line-number="8">        <span class="fu">:+:</span> <span class="dt">C1</span> (<span class="ch">'MetaCons &quot;True&quot; '</span><span class="dt">PrefixI</span> <span class="ch">'False) U1)</span></a>
-<a class="sourceLine" id="cb8-9" data-line-number="9">       x</a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1">ghci<span class="fu">&gt;&gt;</span> from (<span class="dt">True</span><span class="ot"> ::</span> <span class="dt">Bool</span>)</a>
+<a class="sourceLine" id="cb8-2" title="2"><span class="dt">M1</span> {unM1 <span class="fu">=</span> <span class="dt">R1</span> (<span class="dt">M1</span> {unM1 <span class="fu">=</span> <span class="dt">U1</span>})}</a>
+<a class="sourceLine" id="cb8-3" title="3">ghci<span class="fu">&gt;&gt;</span> <span class="fu">:</span>t from (<span class="dt">True</span><span class="ot"> ::</span> <span class="dt">Bool</span>)</a>
+<a class="sourceLine" id="cb8-4" title="4">from (<span class="dt">True</span><span class="ot"> ::</span> <span class="dt">Bool</span>)</a>
+<a class="sourceLine" id="cb8-5" title="5"><span class="ot">  ::</span> <span class="dt">D1</span></a>
+<a class="sourceLine" id="cb8-6" title="6">       (<span class="dt">'MetaData</span> <span class="st">&quot;Bool&quot;</span> <span class="st">&quot;GHC.Types&quot;</span> <span class="st">&quot;ghc-prim&quot;</span> <span class="dt">'False</span>)</a>
+<a class="sourceLine" id="cb8-7" title="7">       (<span class="dt">C1</span> (<span class="dt">'MetaCons</span> <span class="st">&quot;False&quot;</span> <span class="dt">'PrefixI</span> <span class="dt">'False</span>) <span class="dt">U1</span></a>
+<a class="sourceLine" id="cb8-8" title="8">        <span class="fu">:+:</span> <span class="dt">C1</span> (<span class="dt">'MetaCons</span> <span class="st">&quot;True&quot;</span> <span class="dt">'PrefixI</span> <span class="dt">'False</span>) <span class="dt">U1</span>)</a>
+<a class="sourceLine" id="cb8-9" title="9">       x</a></code></pre></div>
 <p>なので，<code>Rep a x</code> 型に対しての <code>KotlinType</code> 型クラスのための型クラス <code>GenericKotlinType</code> を定義する．</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="kw">class</span> <span class="dt">KotlinType</span> a <span class="kw">where</span></a>
-<a class="sourceLine" id="cb9-2" data-line-number="2"><span class="ot">  toKotlinType ::</span> a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">KotlinClass</span></a>
-<a class="sourceLine" id="cb9-3" data-line-number="3">  toKotlinType <span class="fu">=</span> genericToKotlinType <span class="fu">.</span> from</a>
-<a class="sourceLine" id="cb9-4" data-line-number="4">  default<span class="ot"> toKotlinType ::</span> (<span class="dt">Generic</span> a, <span class="dt">GenericKotlinType</span> (<span class="dt">Rep</span> a)) <span class="ot">=&gt;</span></a>
-<a class="sourceLine" id="cb9-5" data-line-number="5">    a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">KotlinClass</span></a>
-<a class="sourceLine" id="cb9-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb9-7" data-line-number="7"><span class="kw">class</span> <span class="dt">GenericKotlinType</span> f <span class="kw">where</span></a>
-<a class="sourceLine" id="cb9-8" data-line-number="8"><span class="ot">  genericToKotlinType ::</span> f a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">KotlinClass</span></a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">class</span> <span class="dt">KotlinType</span> a <span class="kw">where</span></a>
+<a class="sourceLine" id="cb9-2" title="2"><span class="ot">  toKotlinType ::</span> a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">KotlinClass</span></a>
+<a class="sourceLine" id="cb9-3" title="3">  toKotlinType <span class="fu">=</span> genericToKotlinType <span class="fu">.</span> from</a>
+<a class="sourceLine" id="cb9-4" title="4">  default<span class="ot"> toKotlinType ::</span> (<span class="dt">Generic</span> a, <span class="dt">GenericKotlinType</span> (<span class="dt">Rep</span> a)) <span class="ot">=&gt;</span></a>
+<a class="sourceLine" id="cb9-5" title="5">    a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">KotlinClass</span></a>
+<a class="sourceLine" id="cb9-6" title="6"></a>
+<a class="sourceLine" id="cb9-7" title="7"><span class="kw">class</span> <span class="dt">GenericKotlinType</span> f <span class="kw">where</span></a>
+<a class="sourceLine" id="cb9-8" title="8"><span class="ot">  genericToKotlinType ::</span> f a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">KotlinClass</span></a></code></pre></div>
 <h2 id="section-6"></h2>
 <p>あとは，各データ構造の型(e.g. <code>D1</code> や <code>(:+:)</code>)ごとにインスタンスを定義してあげれば良い．</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw">instance</span> (<span class="dt">Datatype</span> d, <span class="dt">GenericKotlinFields</span> f)</a>
-<a class="sourceLine" id="cb10-2" data-line-number="2">  <span class="ot">=&gt;</span> <span class="dt">GenericKotlinType</span> (<span class="dt">D1</span> d f) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb10-3" data-line-number="3">  genericToKotlinType datatype <span class="fu">=</span> fmap <span class="dt">DataClass</span> <span class="fu">$</span></a>
-<a class="sourceLine" id="cb10-4" data-line-number="4">    <span class="dt">KotlinDataClass</span> (pack <span class="fu">$</span> datatypeName datatype)</a>
-<a class="sourceLine" id="cb10-5" data-line-number="5">      <span class="fu">&lt;$&gt;</span> genericToKotlinFields (unM1 datatype)</a>
-<a class="sourceLine" id="cb10-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb10-7" data-line-number="7"><span class="co">-- Kotlin のインスタンスフィールを返す型クラス</span></a>
-<a class="sourceLine" id="cb10-8" data-line-number="8"><span class="kw">class</span> <span class="dt">GenericKotlinFields</span> f <span class="kw">where</span></a>
-<a class="sourceLine" id="cb10-9" data-line-number="9"><span class="ot">  genericToKotlinFields ::</span> f a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">KotlinFields</span></a>
-<a class="sourceLine" id="cb10-10" data-line-number="10"></a>
-<a class="sourceLine" id="cb10-11" data-line-number="11"><span class="kw">instance</span> (<span class="dt">Selector</span> s, <span class="dt">GenericKotlinType</span> a)</a>
-<a class="sourceLine" id="cb10-12" data-line-number="12">  <span class="ot">=&gt;</span> <span class="dt">GenericKotlinFields</span> (<span class="dt">S1</span> s a) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb10-13" data-line-number="13">  genericToKotlinFields selector <span class="fu">=</span></a>
-<a class="sourceLine" id="cb10-14" data-line-number="14">    <span class="kw">case</span> selName selector <span class="kw">of</span></a>
-<a class="sourceLine" id="cb10-15" data-line-number="15">      <span class="st">&quot;&quot;</span>   <span class="ot">-&gt;</span> <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb10-16" data-line-number="16">      name <span class="ot">-&gt;</span></a>
-<a class="sourceLine" id="cb10-17" data-line-number="17">        <span class="dt">Node</span> <span class="fu">.</span> <span class="dt">KotlinField</span> (pack name)</a>
-<a class="sourceLine" id="cb10-18" data-line-number="18">          <span class="fu">&lt;$&gt;</span> genericToKotlinType (undefined<span class="ot"> ::</span> a p)</a>
-<a class="sourceLine" id="cb10-19" data-line-number="19"></a>
-<a class="sourceLine" id="cb10-20" data-line-number="20"><span class="kw">instance</span> <span class="dt">GenericKotlinFields</span> (f <span class="fu">:+:</span> g) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb10-21" data-line-number="21">  genericToKotlinFields _ <span class="fu">=</span> <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb10-22" data-line-number="22"></a>
-<a class="sourceLine" id="cb10-23" data-line-number="23"><span class="kw">instance</span> (<span class="dt">GenericKotlinFields</span> f, <span class="dt">GenericKotlinFields</span> g)</a>
-<a class="sourceLine" id="cb10-24" data-line-number="24">  <span class="ot">=&gt;</span> <span class="dt">GenericKotlinFields</span> (f <span class="fu">:*:</span> g) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb10-25" data-line-number="25">  genericToKotlinFields _ <span class="fu">=</span></a>
-<a class="sourceLine" id="cb10-26" data-line-number="26">    <span class="dt">Brunch</span> <span class="fu">&lt;$&gt;</span> genericToKotlinFields (undefined<span class="ot"> ::</span> f p)</a>
-<a class="sourceLine" id="cb10-27" data-line-number="27">           <span class="fu">&lt;*&gt;</span> genericToKotlinFields (undefined<span class="ot"> ::</span> g p)</a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">instance</span> (<span class="dt">Datatype</span> d, <span class="dt">GenericKotlinFields</span> f)</a>
+<a class="sourceLine" id="cb10-2" title="2">  <span class="ot">=&gt;</span> <span class="dt">GenericKotlinType</span> (<span class="dt">D1</span> d f) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb10-3" title="3">  genericToKotlinType datatype <span class="fu">=</span> <span class="fu">fmap</span> <span class="dt">DataClass</span> <span class="fu">$</span></a>
+<a class="sourceLine" id="cb10-4" title="4">    <span class="dt">KotlinDataClass</span> (<span class="fu">pack</span> <span class="fu">$</span> datatypeName datatype)</a>
+<a class="sourceLine" id="cb10-5" title="5">      <span class="fu">&lt;$&gt;</span> genericToKotlinFields (unM1 datatype)</a>
+<a class="sourceLine" id="cb10-6" title="6"></a>
+<a class="sourceLine" id="cb10-7" title="7"><span class="co">-- Kotlin のインスタンスフィールを返す型クラス</span></a>
+<a class="sourceLine" id="cb10-8" title="8"><span class="kw">class</span> <span class="dt">GenericKotlinFields</span> f <span class="kw">where</span></a>
+<a class="sourceLine" id="cb10-9" title="9"><span class="ot">  genericToKotlinFields ::</span> f a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">KotlinFields</span></a>
+<a class="sourceLine" id="cb10-10" title="10"></a>
+<a class="sourceLine" id="cb10-11" title="11"><span class="kw">instance</span> (<span class="dt">Selector</span> s, <span class="dt">GenericKotlinType</span> a)</a>
+<a class="sourceLine" id="cb10-12" title="12">  <span class="ot">=&gt;</span> <span class="dt">GenericKotlinFields</span> (<span class="dt">S1</span> s a) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb10-13" title="13">  genericToKotlinFields selector <span class="fu">=</span></a>
+<a class="sourceLine" id="cb10-14" title="14">    <span class="kw">case</span> selName selector <span class="kw">of</span></a>
+<a class="sourceLine" id="cb10-15" title="15">      <span class="st">&quot;&quot;</span>   <span class="ot">-&gt;</span> <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb10-16" title="16">      name <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb10-17" title="17">        <span class="dt">Node</span> <span class="fu">.</span> <span class="dt">KotlinField</span> (<span class="fu">pack</span> name)</a>
+<a class="sourceLine" id="cb10-18" title="18">          <span class="fu">&lt;$&gt;</span> genericToKotlinType (<span class="fu">undefined</span><span class="ot"> ::</span> a p)</a>
+<a class="sourceLine" id="cb10-19" title="19"></a>
+<a class="sourceLine" id="cb10-20" title="20"><span class="kw">instance</span> <span class="dt">GenericKotlinFields</span> (f <span class="fu">:+:</span> g) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb10-21" title="21">  genericToKotlinFields _ <span class="fu">=</span> <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb10-22" title="22"></a>
+<a class="sourceLine" id="cb10-23" title="23"><span class="kw">instance</span> (<span class="dt">GenericKotlinFields</span> f, <span class="dt">GenericKotlinFields</span> g)</a>
+<a class="sourceLine" id="cb10-24" title="24">  <span class="ot">=&gt;</span> <span class="dt">GenericKotlinFields</span> (f <span class="fu">:*:</span> g) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb10-25" title="25">  genericToKotlinFields _ <span class="fu">=</span></a>
+<a class="sourceLine" id="cb10-26" title="26">    <span class="dt">Brunch</span> <span class="fu">&lt;$&gt;</span> genericToKotlinFields (<span class="fu">undefined</span><span class="ot"> ::</span> f p)</a>
+<a class="sourceLine" id="cb10-27" title="27">           <span class="fu">&lt;*&gt;</span> genericToKotlinFields (<span class="fu">undefined</span><span class="ot"> ::</span> g p)</a></code></pre></div>
 <p>ちなみに <code>D1 d f</code> 型は datatype を，<code>S1 s a</code> 型はレコード型のフィールドを，<code>f :+: g</code> 型は直和型を，<code>f :*: g</code> 型は直積型を表している．</p>
 <h3 id="servant-api-の型の変換">Servant API の型の変換</h3>
 <p>最初に定義した Servant API の型では(書きやすいけど)扱いにくいので，変換する部分が必要だ． もちろん，Servant 側が型クラスとして定義してある．</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="kw">class</span> <span class="dt">HasForeign</span> lang ftype (<span class="ot">api ::</span> <span class="fu">*</span>) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb11-2" data-line-number="2">  <span class="kw">type</span> <span class="dt">Foreign</span> ftype<span class="ot"> api ::</span> <span class="fu">*</span></a>
-<a class="sourceLine" id="cb11-3" data-line-number="3"><span class="ot">  foreignFor ::</span></a>
-<a class="sourceLine" id="cb11-4" data-line-number="4">    <span class="dt">Proxy</span> lang</a>
-<a class="sourceLine" id="cb11-5" data-line-number="5">    <span class="ot">-&gt;</span> <span class="dt">Proxy</span> ftype</a>
-<a class="sourceLine" id="cb11-6" data-line-number="6">    <span class="ot">-&gt;</span> <span class="dt">Proxy</span> api</a>
-<a class="sourceLine" id="cb11-7" data-line-number="7">    <span class="ot">-&gt;</span> <span class="dt">Req</span> ftype</a>
-<a class="sourceLine" id="cb11-8" data-line-number="8">    <span class="ot">-&gt;</span> <span class="dt">Foreign</span> ftype api</a>
-<a class="sourceLine" id="cb11-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb11-10" data-line-number="10"><span class="ot">listFromAPI ::</span></a>
-<a class="sourceLine" id="cb11-11" data-line-number="11">  ( <span class="dt">HasForeign</span> lang ftype api</a>
-<a class="sourceLine" id="cb11-12" data-line-number="12">  , <span class="dt">GenerateList</span> ftype (<span class="dt">Foreign</span> ftype api)</a>
-<a class="sourceLine" id="cb11-13" data-line-number="13">  ) <span class="ot">=&gt;</span> <span class="dt">Proxy</span> lang</a>
-<a class="sourceLine" id="cb11-14" data-line-number="14">    <span class="ot">-&gt;</span> <span class="dt">Proxy</span> ftype</a>
-<a class="sourceLine" id="cb11-15" data-line-number="15">    <span class="ot">-&gt;</span> <span class="dt">Proxy</span> api</a>
-<a class="sourceLine" id="cb11-16" data-line-number="16">    <span class="ot">-&gt;</span> [<span class="dt">Req</span> ftype]</a>
-<a class="sourceLine" id="cb11-17" data-line-number="17">listFromAPI <span class="fu">=</span> <span class="fu">...</span></a>
-<a class="sourceLine" id="cb11-18" data-line-number="18"></a>
-<a class="sourceLine" id="cb11-19" data-line-number="19"><span class="kw">class</span> <span class="dt">HasForeignType</span> lang ftype a <span class="kw">where</span></a>
-<a class="sourceLine" id="cb11-20" data-line-number="20"><span class="ot">  typeFor ::</span> <span class="dt">Proxy</span> lang <span class="ot">-&gt;</span> <span class="dt">Proxy</span> ftype <span class="ot">-&gt;</span> <span class="dt">Proxy</span> a <span class="ot">-&gt;</span> ftype</a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="kw">class</span> <span class="dt">HasForeign</span> lang ftype (<span class="ot">api ::</span> <span class="fu">*</span>) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb11-2" title="2">  <span class="kw">type</span> <span class="dt">Foreign</span> ftype<span class="ot"> api ::</span> <span class="fu">*</span></a>
+<a class="sourceLine" id="cb11-3" title="3"><span class="ot">  foreignFor ::</span></a>
+<a class="sourceLine" id="cb11-4" title="4">    <span class="dt">Proxy</span> lang</a>
+<a class="sourceLine" id="cb11-5" title="5">    <span class="ot">-&gt;</span> <span class="dt">Proxy</span> ftype</a>
+<a class="sourceLine" id="cb11-6" title="6">    <span class="ot">-&gt;</span> <span class="dt">Proxy</span> api</a>
+<a class="sourceLine" id="cb11-7" title="7">    <span class="ot">-&gt;</span> <span class="dt">Req</span> ftype</a>
+<a class="sourceLine" id="cb11-8" title="8">    <span class="ot">-&gt;</span> <span class="dt">Foreign</span> ftype api</a>
+<a class="sourceLine" id="cb11-9" title="9"></a>
+<a class="sourceLine" id="cb11-10" title="10"><span class="ot">listFromAPI ::</span></a>
+<a class="sourceLine" id="cb11-11" title="11">  ( <span class="dt">HasForeign</span> lang ftype api</a>
+<a class="sourceLine" id="cb11-12" title="12">  , <span class="dt">GenerateList</span> ftype (<span class="dt">Foreign</span> ftype api)</a>
+<a class="sourceLine" id="cb11-13" title="13">  ) <span class="ot">=&gt;</span> <span class="dt">Proxy</span> lang</a>
+<a class="sourceLine" id="cb11-14" title="14">    <span class="ot">-&gt;</span> <span class="dt">Proxy</span> ftype</a>
+<a class="sourceLine" id="cb11-15" title="15">    <span class="ot">-&gt;</span> <span class="dt">Proxy</span> api</a>
+<a class="sourceLine" id="cb11-16" title="16">    <span class="ot">-&gt;</span> [<span class="dt">Req</span> ftype]</a>
+<a class="sourceLine" id="cb11-17" title="17">listFromAPI <span class="fu">=</span> <span class="fu">...</span></a>
+<a class="sourceLine" id="cb11-18" title="18"></a>
+<a class="sourceLine" id="cb11-19" title="19"><span class="kw">class</span> <span class="dt">HasForeignType</span> lang ftype a <span class="kw">where</span></a>
+<a class="sourceLine" id="cb11-20" title="20"><span class="ot">  typeFor ::</span> <span class="dt">Proxy</span> lang <span class="ot">-&gt;</span> <span class="dt">Proxy</span> ftype <span class="ot">-&gt;</span> <span class="dt">Proxy</span> a <span class="ot">-&gt;</span> ftype</a></code></pre></div>
 <p><code>listFromAPI</code> 関数を使うことでメタ情報の載った API の型 <code>Req ftype</code> の値が手に入る． 重要なのは <code>HasForeign</code> 型クラスだが，インスタンスが既にかなり定義されていて，実質的には <code>HasForeignType</code> 型クラスの<a href="https://github.com/matsubara0507/servant-kotlin/blob/f08e3e2ae237a1c8a4931204c26bc83f03ea0e67/src/Servant/Kotlin/Internal/Foreign.hs">インスタンスを定義</a>すれば良い．</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" data-line-number="1"><span class="kw">data</span> <span class="dt">LangKotlin</span></a>
-<a class="sourceLine" id="cb12-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb12-3" data-line-number="3"><span class="kw">instance</span> (<span class="dt">KotlinType</span> a) <span class="ot">=&gt;</span></a>
-<a class="sourceLine" id="cb12-4" data-line-number="4">  <span class="dt">HasForeignType</span> <span class="dt">LangKotlin</span> <span class="dt">KotlinClass</span> a <span class="kw">where</span></a>
-<a class="sourceLine" id="cb12-5" data-line-number="5">  typeFor _ _ _ <span class="fu">=</span> toKotlinType' (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> a)</a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="kw">data</span> <span class="dt">LangKotlin</span></a>
+<a class="sourceLine" id="cb12-2" title="2"></a>
+<a class="sourceLine" id="cb12-3" title="3"><span class="kw">instance</span> (<span class="dt">KotlinType</span> a) <span class="ot">=&gt;</span></a>
+<a class="sourceLine" id="cb12-4" title="4">  <span class="dt">HasForeignType</span> <span class="dt">LangKotlin</span> <span class="dt">KotlinClass</span> a <span class="kw">where</span></a>
+<a class="sourceLine" id="cb12-5" title="5">  typeFor _ _ _ <span class="fu">=</span> toKotlinType' (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> a)</a></code></pre></div>
 <h3 id="生成する">生成する</h3>
 <p>さて，後は実際に Kotlin のコードを文字列として生成する部分を作る． しかし，この部分は泥臭い部分なので細かくは説明しないでおく． <code>servant-elm</code> と見比べながら書き直していった．</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" data-line-number="1"><span class="co">-- generate types</span></a>
-<a class="sourceLine" id="cb13-2" data-line-number="2"><span class="kw">class</span> <span class="dt">GenerateKotlin</span> a <span class="kw">where</span></a>
-<a class="sourceLine" id="cb13-3" data-line-number="3"><span class="ot">  generateKotlin ::</span> a <span class="ot">-&gt;</span> [<span class="dt">Text</span>]</a>
-<a class="sourceLine" id="cb13-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb13-5" data-line-number="5"><span class="kw">instance</span> <span class="dt">GenerateKotlin</span> <span class="dt">KotlinPrimitiveClass</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb13-6" data-line-number="6">  generateKotlin <span class="dt">KDouble</span> <span class="fu">=</span> [<span class="st">&quot;Double&quot;</span>]</a>
-<a class="sourceLine" id="cb13-7" data-line-number="7">  generateKotlin <span class="dt">KFloat</span>  <span class="fu">=</span> [<span class="st">&quot;Float&quot;</span>]</a>
-<a class="sourceLine" id="cb13-8" data-line-number="8">  <span class="fu">...</span></a>
-<a class="sourceLine" id="cb13-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb13-10" data-line-number="10"><span class="co">-- generate apis</span></a>
-<a class="sourceLine" id="cb13-11" data-line-number="11"><span class="ot">generateKotlinForAPIWith ::</span></a>
-<a class="sourceLine" id="cb13-12" data-line-number="12">  ( <span class="dt">F.HasForeign</span> <span class="dt">LangKotlin</span> <span class="dt">KotlinClass</span> api</a>
-<a class="sourceLine" id="cb13-13" data-line-number="13">  , <span class="dt">F.GenerateList</span> <span class="dt">KotlinClass</span> (<span class="dt">F.Foreign</span> <span class="dt">KotlinClass</span> api))</a>
-<a class="sourceLine" id="cb13-14" data-line-number="14">  <span class="ot">=&gt;</span> <span class="dt">KotlinOptions</span></a>
-<a class="sourceLine" id="cb13-15" data-line-number="15">  <span class="ot">-&gt;</span> <span class="dt">Proxy</span> api</a>
-<a class="sourceLine" id="cb13-16" data-line-number="16">  <span class="ot">-&gt;</span> [<span class="dt">Text</span>]</a>
-<a class="sourceLine" id="cb13-17" data-line-number="17">generateKotlinForAPIWith opts <span class="fu">=</span></a>
-<a class="sourceLine" id="cb13-18" data-line-number="18">  nub <span class="fu">.</span> fmap (docToText <span class="fu">.</span> generateKotlinForRequest opts) <span class="fu">.</span> getEndpoints</a>
-<a class="sourceLine" id="cb13-19" data-line-number="19"></a>
-<a class="sourceLine" id="cb13-20" data-line-number="20"><span class="ot">generateKotlinForRequest ::</span> <span class="dt">KotlinOptions</span> <span class="ot">-&gt;</span> <span class="dt">F.Req</span> <span class="dt">KotlinClass</span> <span class="ot">-&gt;</span> <span class="dt">Doc</span></a>
-<a class="sourceLine" id="cb13-21" data-line-number="21">generateKotlinForRequest <span class="fu">=</span> <span class="fu">...</span></a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="co">-- generate types</span></a>
+<a class="sourceLine" id="cb13-2" title="2"><span class="kw">class</span> <span class="dt">GenerateKotlin</span> a <span class="kw">where</span></a>
+<a class="sourceLine" id="cb13-3" title="3"><span class="ot">  generateKotlin ::</span> a <span class="ot">-&gt;</span> [<span class="dt">Text</span>]</a>
+<a class="sourceLine" id="cb13-4" title="4"></a>
+<a class="sourceLine" id="cb13-5" title="5"><span class="kw">instance</span> <span class="dt">GenerateKotlin</span> <span class="dt">KotlinPrimitiveClass</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb13-6" title="6">  generateKotlin <span class="dt">KDouble</span> <span class="fu">=</span> [<span class="st">&quot;Double&quot;</span>]</a>
+<a class="sourceLine" id="cb13-7" title="7">  generateKotlin <span class="dt">KFloat</span>  <span class="fu">=</span> [<span class="st">&quot;Float&quot;</span>]</a>
+<a class="sourceLine" id="cb13-8" title="8">  <span class="fu">...</span></a>
+<a class="sourceLine" id="cb13-9" title="9"></a>
+<a class="sourceLine" id="cb13-10" title="10"><span class="co">-- generate apis</span></a>
+<a class="sourceLine" id="cb13-11" title="11"><span class="ot">generateKotlinForAPIWith ::</span></a>
+<a class="sourceLine" id="cb13-12" title="12">  ( <span class="dt">F.HasForeign</span> <span class="dt">LangKotlin</span> <span class="dt">KotlinClass</span> api</a>
+<a class="sourceLine" id="cb13-13" title="13">  , <span class="dt">F.GenerateList</span> <span class="dt">KotlinClass</span> (<span class="dt">F.Foreign</span> <span class="dt">KotlinClass</span> api))</a>
+<a class="sourceLine" id="cb13-14" title="14">  <span class="ot">=&gt;</span> <span class="dt">KotlinOptions</span></a>
+<a class="sourceLine" id="cb13-15" title="15">  <span class="ot">-&gt;</span> <span class="dt">Proxy</span> api</a>
+<a class="sourceLine" id="cb13-16" title="16">  <span class="ot">-&gt;</span> [<span class="dt">Text</span>]</a>
+<a class="sourceLine" id="cb13-17" title="17">generateKotlinForAPIWith opts <span class="fu">=</span></a>
+<a class="sourceLine" id="cb13-18" title="18">  nub <span class="fu">.</span> <span class="fu">fmap</span> (docToText <span class="fu">.</span> generateKotlinForRequest opts) <span class="fu">.</span> getEndpoints</a>
+<a class="sourceLine" id="cb13-19" title="19"></a>
+<a class="sourceLine" id="cb13-20" title="20"><span class="ot">generateKotlinForRequest ::</span> <span class="dt">KotlinOptions</span> <span class="ot">-&gt;</span> <span class="dt">F.Req</span> <span class="dt">KotlinClass</span> <span class="ot">-&gt;</span> <span class="dt">Doc</span></a>
+<a class="sourceLine" id="cb13-21" title="21">generateKotlinForRequest <span class="fu">=</span> <span class="fu">...</span></a></code></pre></div>
 <p><code>Doc</code> 型というのを使ってる． これは <a href="https://hackage.haskell.org/package/wl-pprint-text"><code>wl-pprint-text</code></a> というパッケージのモノで，直接文字列方を使うのではなく，この <code>Doc</code> 型を使うことでインデントなどをいい感じにしてくれる．</p>
 <h2 id="section-7"></h2>
 <p>Elm との違いは，最終的な出力をいじる所． Elm (や Haskell) はトップレベルのインデント(関数や型定義)は揃ってるので，そのままでいいのだが，OOP 言語はクラスにラップする必要があるのでめんどくさい．</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="ot">generateKotlinForAPIClass ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> [<span class="dt">Text</span>] <span class="ot">-&gt;</span> [<span class="dt">Text</span>]</a>
-<a class="sourceLine" id="cb14-2" data-line-number="2">generateKotlinForAPIClass className body <span class="fu">=</span> mconcat</a>
-<a class="sourceLine" id="cb14-3" data-line-number="3">  [ [ docToText <span class="fu">$</span> <span class="st">&quot;class&quot;</span> <span class="fu">&lt;+&gt;</span> textStrict className <span class="fu">&lt;&gt;</span> <span class="st">&quot;(private val baseURL: String) {&quot;</span> ]</a>
-<a class="sourceLine" id="cb14-4" data-line-number="4">  , fmap (docToText <span class="fu">.</span> vsep <span class="fu">.</span> fmap (indent indentNum <span class="fu">.</span> textStrict) <span class="fu">.</span> T.lines) body</a>
-<a class="sourceLine" id="cb14-5" data-line-number="5">  , [ <span class="st">&quot;}&quot;</span> ]</a>
-<a class="sourceLine" id="cb14-6" data-line-number="6">  ]</a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="ot">generateKotlinForAPIClass ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> [<span class="dt">Text</span>] <span class="ot">-&gt;</span> [<span class="dt">Text</span>]</a>
+<a class="sourceLine" id="cb14-2" title="2">generateKotlinForAPIClass className body <span class="fu">=</span> <span class="fu">mconcat</span></a>
+<a class="sourceLine" id="cb14-3" title="3">  [ [ docToText <span class="fu">$</span> <span class="st">&quot;class&quot;</span> <span class="fu">&lt;+&gt;</span> textStrict className <span class="fu">&lt;&gt;</span> <span class="st">&quot;(private val baseURL: String) {&quot;</span> ]</a>
+<a class="sourceLine" id="cb14-4" title="4">  , <span class="fu">fmap</span> (docToText <span class="fu">.</span> vsep <span class="fu">.</span> <span class="fu">fmap</span> (indent indentNum <span class="fu">.</span> textStrict) <span class="fu">.</span> T.lines) body</a>
+<a class="sourceLine" id="cb14-5" title="5">  , [ <span class="st">&quot;}&quot;</span> ]</a>
+<a class="sourceLine" id="cb14-6" title="6">  ]</a></code></pre></div>
 <p>めんどくさかったので，一度 <code>Doc</code> 型に戻してからインデントをそろえて，<code>Text</code> 型に直して返している(効率悪そう…)．</p>
 <h3 id="ファイルへ出力">ファイルへ出力</h3>
 <p>最後にファイルへ出力する部分を書く． <code>Spec</code> という名前はどうかと思うんだけど…(<code>elm-export</code> がそうしてる)．</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Spec</span> <span class="fu">=</span> <span class="dt">Spec</span></a>
-<a class="sourceLine" id="cb15-2" data-line-number="2">  {<span class="ot"> namespace    ::</span> [<span class="dt">Text</span>]</a>
-<a class="sourceLine" id="cb15-3" data-line-number="3">  ,<span class="ot"> filename     ::</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb15-4" data-line-number="4">  ,<span class="ot"> declarations ::</span> [<span class="dt">Text</span>]</a>
-<a class="sourceLine" id="cb15-5" data-line-number="5">  } <span class="kw">deriving</span> (<span class="dt">Show</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" title="1"><span class="kw">data</span> <span class="dt">Spec</span> <span class="fu">=</span> <span class="dt">Spec</span></a>
+<a class="sourceLine" id="cb15-2" title="2">  {<span class="ot"> namespace    ::</span> [<span class="dt">Text</span>]</a>
+<a class="sourceLine" id="cb15-3" title="3">  ,<span class="ot"> filename     ::</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb15-4" title="4">  ,<span class="ot"> declarations ::</span> [<span class="dt">Text</span>]</a>
+<a class="sourceLine" id="cb15-5" title="5">  } <span class="kw">deriving</span> (<span class="dt">Show</span>)</a></code></pre></div>
 <p>というの定義して，この内容から出力している． <code>declarations</code> というのが，<code>generateKotlinForAPIClass</code> 関数などで出力した値を渡す．</p>
 <h2 id="完成">完成</h2>
 <p>こんな風な <code>Main</code> を書くと生成できる．</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" data-line-number="1"><span class="ot">spec ::</span> <span class="dt">Spec</span></a>
-<a class="sourceLine" id="cb16-2" data-line-number="2">spec <span class="fu">=</span> <span class="dt">Spec</span> [<span class="st">&quot;com&quot;</span>, <span class="st">&quot;github&quot;</span>, <span class="st">&quot;matsubara0507&quot;</span>] <span class="st">&quot;TodoAPI&quot;</span> <span class="fu">$</span> mconcat</a>
-<a class="sourceLine" id="cb16-3" data-line-number="3">  [ [ defKotlinImports ]</a>
-<a class="sourceLine" id="cb16-4" data-line-number="4">  , generateKotlinForAPIClass <span class="st">&quot;TodoAPI&quot;</span> <span class="fu">$</span> mconcat</a>
-<a class="sourceLine" id="cb16-5" data-line-number="5">      [ generateKotlinForDefDataClass (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">Todo</span>)</a>
-<a class="sourceLine" id="cb16-6" data-line-number="6">      , generateKotlinForAPI (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">CRUD</span>)</a>
-<a class="sourceLine" id="cb16-7" data-line-number="7">      ]</a>
-<a class="sourceLine" id="cb16-8" data-line-number="8">  ]</a>
-<a class="sourceLine" id="cb16-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb16-10" data-line-number="10"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb16-11" data-line-number="11">main <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb16-12" data-line-number="12">  specsToDir [spec] <span class="st">&quot;example/src/main/java&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" title="1"><span class="ot">spec ::</span> <span class="dt">Spec</span></a>
+<a class="sourceLine" id="cb16-2" title="2">spec <span class="fu">=</span> <span class="dt">Spec</span> [<span class="st">&quot;com&quot;</span>, <span class="st">&quot;github&quot;</span>, <span class="st">&quot;matsubara0507&quot;</span>] <span class="st">&quot;TodoAPI&quot;</span> <span class="fu">$</span> <span class="fu">mconcat</span></a>
+<a class="sourceLine" id="cb16-3" title="3">  [ [ defKotlinImports ]</a>
+<a class="sourceLine" id="cb16-4" title="4">  , generateKotlinForAPIClass <span class="st">&quot;TodoAPI&quot;</span> <span class="fu">$</span> <span class="fu">mconcat</span></a>
+<a class="sourceLine" id="cb16-5" title="5">      [ generateKotlinForDefDataClass (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">Todo</span>)</a>
+<a class="sourceLine" id="cb16-6" title="6">      , generateKotlinForAPI (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">CRUD</span>)</a>
+<a class="sourceLine" id="cb16-7" title="7">      ]</a>
+<a class="sourceLine" id="cb16-8" title="8">  ]</a>
+<a class="sourceLine" id="cb16-9" title="9"></a>
+<a class="sourceLine" id="cb16-10" title="10"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb16-11" title="11">main <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb16-12" title="12">  specsToDir [spec] <span class="st">&quot;example/src/main/java&quot;</span></a></code></pre></div>
 <h3 id="stackage">Stackage</h3>
 <p>出来上がったので</p>
 <ol type="1">

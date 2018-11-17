@@ -169,14 +169,14 @@
 <li><a href="http://atomiyama.com/linux/page/debian-9-2-node-npm/">debian9.2にNode.jsとnpmをインストールする｜atominux</a></li>
 </ul>
 <p>こんな感じ</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw">RUN</span> curl -sL https://deb.nodesource.com/setup_${NODE_VERSION} | bash - \</a>
-<a class="sourceLine" id="cb2-2" data-line-number="2">  &amp;&amp; apt-get update &amp;&amp; apt-get install -y nodejs \</a>
-<a class="sourceLine" id="cb2-3" data-line-number="3">  &amp;&amp; apt-get clean \</a>
-<a class="sourceLine" id="cb2-4" data-line-number="4">  &amp;&amp; rm -rf /var/lib/apt/lists/*</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb2-1" title="1"><span class="kw">RUN</span> curl -sL https://deb.nodesource.com/setup_${NODE_VERSION} | bash - \</a>
+<a class="sourceLine" id="cb2-2" title="2">  &amp;&amp; apt-get update &amp;&amp; apt-get install -y nodejs \</a>
+<a class="sourceLine" id="cb2-3" title="3">  &amp;&amp; apt-get clean \</a>
+<a class="sourceLine" id="cb2-4" title="4">  &amp;&amp; rm -rf /var/lib/apt/lists/*</a></code></pre></div>
 <p>後は簡単で Elm，elm-github-install，Elchemy は npm からインストールできる． ただし，Elm と elm-github-install には <code>--unsafe-perm=true --allow-root</code> という<a href="https://github.com/gdotdesign/elm-github-install/issues/21#issuecomment-332827661">オプションを付けないといけない</a>．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw">RUN</span> npm i -g elm@${ELM_VERSION} --unsafe-perm=true --allow-root</a>
-<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="kw">RUN</span> npm i -g elm-github-install@${ELM_GITHUB_INSTALL_VERSION} --unsafe-perm=true --allow-root</a>
-<a class="sourceLine" id="cb3-3" data-line-number="3"><span class="kw">RUN</span> npm i -g elchemy@${ELCHEMY_VERSION}</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">RUN</span> npm i -g elm@${ELM_VERSION} --unsafe-perm=true --allow-root</a>
+<a class="sourceLine" id="cb3-2" title="2"><span class="kw">RUN</span> npm i -g elm-github-install@${ELM_GITHUB_INSTALL_VERSION} --unsafe-perm=true --allow-root</a>
+<a class="sourceLine" id="cb3-3" title="3"><span class="kw">RUN</span> npm i -g elchemy@${ELCHEMY_VERSION}</a></code></pre></div>
 <h3 id="auto-build">Auto Build</h3>
 <p>Elchemy のリリースを眺めてると想像より開発スピードが速かったので，Elchemy の更新を観測して自動ビルドしてくれる仕組みを作ることにした． シェル芸を駆使すればなんとかなりそうだったが，サクッと Haskell 芸をかまして CLI を作った．</p>
 <ul>
@@ -184,11 +184,11 @@
 </ul>
 <p>(船大工が <code>shipwright</code> なので Dockerfile 大工ってことで <code>dockwright</code>)</p>
 <p>以下のような設定を書いておくと <code>dockwright</code> ってコマンドで GitHub の <code>release</code> API を叩いてリリースタグを取ってきてくれる． それを Docker 内の環境変数としてテンプレートに書き込む．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="fu">env:</span></a>
-<a class="sourceLine" id="cb4-2" data-line-number="2">  <span class="fu">elchemy_version:</span></a>
-<a class="sourceLine" id="cb4-3" data-line-number="3">    <span class="fu">github:</span></a>
-<a class="sourceLine" id="cb4-4" data-line-number="4">      <span class="fu">repo:</span><span class="at"> wende/elchemy</span></a>
-<a class="sourceLine" id="cb4-5" data-line-number="5">      <span class="fu">hook:</span><span class="at"> release</span></a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb4-1" title="1"><span class="fu">env:</span></a>
+<a class="sourceLine" id="cb4-2" title="2">  <span class="fu">elchemy_version:</span></a>
+<a class="sourceLine" id="cb4-3" title="3">    <span class="fu">github:</span></a>
+<a class="sourceLine" id="cb4-4" title="4">      <span class="fu">repo:</span><span class="at"> wende/elchemy</span></a>
+<a class="sourceLine" id="cb4-5" title="5">      <span class="fu">hook:</span><span class="at"> release</span></a></code></pre></div>
 <p>あとは git diff で更新をみて更新があればコミットする(コミットさえすれば Docker Hub が自動ビルドしてくれる)． 定期実行は例の如く TravisCI で回す．</p>
 <h2 id="tutorial-そのをやってみた">Tutorial その１をやってみた</h2>
 <p>以下の記事をやってみる．</p>
@@ -198,19 +198,19 @@
 <p>まずは <code>article_example_elchemy</code> というプロジェクトを作る． 記事内では <code>mix new</code> をして <code>elchemy init</code> をしろと書いてあるが，最新の Elchemy では <code>elchemy new</code> をすることで一気にやってくれる．</p>
 <pre><code>$ elchemy new article_example_elchemy</code></pre>
 <p>Elchemy をコンパイルするためには，<code>mix.exs</code> を次のように<a href="https://wende.gitbooks.io/elchemy/content/INSTALLATION.html">書き換える必要がある</a>．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">defmodule</span> <span class="cn">MyProject</span><span class="op">.</span><span class="cn">Mixfile</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb6-2" data-line-number="2">  <span class="im">use</span> <span class="cn">Mix</span><span class="op">.</span><span class="cn">Project</span></a>
-<a class="sourceLine" id="cb6-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb6-4" data-line-number="4">  <span class="kw">def</span> project <span class="kw">do</span></a>
-<a class="sourceLine" id="cb6-5" data-line-number="5">    [</a>
-<a class="sourceLine" id="cb6-6" data-line-number="6">      <span class="va">app:</span> <span class="va">:my_project</span>,</a>
-<a class="sourceLine" id="cb6-7" data-line-number="7">      <span class="va">version:</span> <span class="st">&quot;0.1.0&quot;</span>,</a>
-<a class="sourceLine" id="cb6-8" data-line-number="8">      <span class="va">elixir:</span> <span class="st">&quot;~&gt; 1.5&quot;</span>,</a>
-<a class="sourceLine" id="cb6-9" data-line-number="9">      <span class="va">start_permanent:</span> <span class="cn">Mix</span><span class="op">.</span>env <span class="op">==</span> <span class="va">:prod</span>,</a>
-<a class="sourceLine" id="cb6-10" data-line-number="10">      <span class="va">deps:</span> deps()</a>
-<a class="sourceLine" id="cb6-11" data-line-number="11">    ] <span class="op">|&gt;</span> <span class="cn">Code</span><span class="op">.</span>eval_file(<span class="st">&quot;elchemy.exs&quot;</span>)<span class="op">.</span>init <span class="co"># ココ!</span></a>
-<a class="sourceLine" id="cb6-12" data-line-number="12">  <span class="kw">end</span></a>
-<a class="sourceLine" id="cb6-13" data-line-number="13">  <span class="op">...</span></a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">defmodule</span> <span class="cn">MyProject</span><span class="op">.</span><span class="cn">Mixfile</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb6-2" title="2">  <span class="im">use</span> <span class="cn">Mix</span><span class="op">.</span><span class="cn">Project</span></a>
+<a class="sourceLine" id="cb6-3" title="3"></a>
+<a class="sourceLine" id="cb6-4" title="4">  <span class="kw">def</span> project <span class="kw">do</span></a>
+<a class="sourceLine" id="cb6-5" title="5">    [</a>
+<a class="sourceLine" id="cb6-6" title="6">      <span class="va">app:</span> <span class="va">:my_project</span>,</a>
+<a class="sourceLine" id="cb6-7" title="7">      <span class="va">version:</span> <span class="st">&quot;0.1.0&quot;</span>,</a>
+<a class="sourceLine" id="cb6-8" title="8">      <span class="va">elixir:</span> <span class="st">&quot;~&gt; 1.5&quot;</span>,</a>
+<a class="sourceLine" id="cb6-9" title="9">      <span class="va">start_permanent:</span> <span class="cn">Mix</span><span class="op">.</span>env <span class="op">==</span> <span class="va">:prod</span>,</a>
+<a class="sourceLine" id="cb6-10" title="10">      <span class="va">deps:</span> deps()</a>
+<a class="sourceLine" id="cb6-11" title="11">    ] <span class="op">|&gt;</span> <span class="cn">Code</span><span class="op">.</span>eval_file(<span class="st">&quot;elchemy.exs&quot;</span>)<span class="op">.</span>init <span class="co"># ココ!</span></a>
+<a class="sourceLine" id="cb6-12" title="12">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb6-13" title="13">  <span class="op">...</span></a></code></pre></div>
 <p><code>|&gt; Code.eval_file(&quot;elchemy.exs&quot;).ini</code> の部分を書き加えている．</p>
 <h3 id="ディレクトリ構成">ディレクトリ構成</h3>
 <p><code>elchemy new</code> した結果はこんな感じ(バージョンによっては違うかもしれない)．</p>
@@ -234,21 +234,21 @@
 <p><code>.elchemy.exs</code> は <code>mix</code> コマンドを Elchemy で上書きするための <code>mix</code> 設定ファイルで，残りは Elixir と Elm のプロジェクトファイルが混ざっている． ちなみに <code>.formatter.exs</code> は Elixir 1.6 で追加された Elixir のフォーマッターの設定ファイルだ．</p>
 <h3 id="関数を定義してみる">関数を定義してみる</h3>
 <p>試しに，総和を求める <code>sum</code> 関数を書いてみる． <code>elm/Hello.elm</code> に書き加えるとして，まずはユニットテストを <code>test\elchemy_test.exs</code> に Elixir の文脈で書き加えてみる．</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="kw">defmodule</span> <span class="cn">ElchemyTest</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb8-2" data-line-number="2">  <span class="im">use</span> <span class="cn">ExUnit</span><span class="op">.</span><span class="cn">Case</span></a>
-<a class="sourceLine" id="cb8-3" data-line-number="3">  <span class="im">use</span> <span class="cn">Elchemy</span></a>
-<a class="sourceLine" id="cb8-4" data-line-number="4">  doctest <span class="cn">Hello</span></a>
-<a class="sourceLine" id="cb8-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb8-6" data-line-number="6">  test <span class="st">&quot;Hello&quot;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb8-7" data-line-number="7">    assert <span class="cn">Hello</span><span class="op">.</span>hello() <span class="op">==</span> <span class="st">&quot;world!&quot;</span></a>
-<a class="sourceLine" id="cb8-8" data-line-number="8">  <span class="kw">end</span></a>
-<a class="sourceLine" id="cb8-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb8-10" data-line-number="10">  test <span class="st">&quot;Sum of lists&quot;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb8-11" data-line-number="11">     assert <span class="cn">Hello</span><span class="op">.</span>sum([]) <span class="op">==</span> <span class="dv">0</span></a>
-<a class="sourceLine" id="cb8-12" data-line-number="12">     assert <span class="cn">Hello</span><span class="op">.</span>sum([<span class="dv">2</span>]) <span class="op">==</span> <span class="dv">2</span></a>
-<a class="sourceLine" id="cb8-13" data-line-number="13">     assert <span class="cn">Hello</span><span class="op">.</span>sum([<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">-1</span>, <span class="dv">-2</span>, <span class="dv">-3</span>]) <span class="op">==</span> <span class="dv">0</span></a>
-<a class="sourceLine" id="cb8-14" data-line-number="14">  <span class="kw">end</span></a>
-<a class="sourceLine" id="cb8-15" data-line-number="15"><span class="kw">end</span></a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">defmodule</span> <span class="cn">ElchemyTest</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-2" title="2">  <span class="im">use</span> <span class="cn">ExUnit</span><span class="op">.</span><span class="cn">Case</span></a>
+<a class="sourceLine" id="cb8-3" title="3">  <span class="im">use</span> <span class="cn">Elchemy</span></a>
+<a class="sourceLine" id="cb8-4" title="4">  doctest <span class="cn">Hello</span></a>
+<a class="sourceLine" id="cb8-5" title="5"></a>
+<a class="sourceLine" id="cb8-6" title="6">  test <span class="st">&quot;Hello&quot;</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-7" title="7">    assert <span class="cn">Hello</span><span class="op">.</span>hello() <span class="op">==</span> <span class="st">&quot;world!&quot;</span></a>
+<a class="sourceLine" id="cb8-8" title="8">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb8-9" title="9"></a>
+<a class="sourceLine" id="cb8-10" title="10">  test <span class="st">&quot;Sum of lists&quot;</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-11" title="11">     assert <span class="cn">Hello</span><span class="op">.</span>sum([]) <span class="op">==</span> <span class="dv">0</span></a>
+<a class="sourceLine" id="cb8-12" title="12">     assert <span class="cn">Hello</span><span class="op">.</span>sum([<span class="dv">2</span>]) <span class="op">==</span> <span class="dv">2</span></a>
+<a class="sourceLine" id="cb8-13" title="13">     assert <span class="cn">Hello</span><span class="op">.</span>sum([<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">-1</span>, <span class="dv">-2</span>, <span class="dv">-3</span>]) <span class="op">==</span> <span class="dv">0</span></a>
+<a class="sourceLine" id="cb8-14" title="14">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb8-15" title="15"><span class="kw">end</span></a></code></pre></div>
 <p>次に <code>elm/Hello.elm</code> に以下の関数を書き加える．</p>
 <pre class="elm"><code>sum : List a -&gt; Int
 sum list =
@@ -347,20 +347,20 @@ Type Check failed
 <p><code>(+) is expecting the right side to be a</code> というエラーメッセージに変わった． これは <code>sum</code> 関数の返り値の型が <code>Int</code> なので <code>sum rest</code> の型は <code>Int</code> と推論されたが，<code>first</code> の型が <code>number</code> なので <code>(+)</code> 演算子の左右の型が合わない，ということだ． なので， <code>sum : List Int -&gt; Int</code> とすると無事ビルドが通る．</p>
 <h3 id="変換された-elixir-コード">変換された Elixir コード</h3>
 <p>ちなみに，次のような Elixir コードに変換されている．</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb13-1" data-line-number="1"><span class="kw">defmodule</span> <span class="cn">Hello</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb13-2" data-line-number="2">  <span class="im">use</span> <span class="cn">Elchemy</span></a>
-<a class="sourceLine" id="cb13-3" data-line-number="3">  <span class="op">...</span></a>
-<a class="sourceLine" id="cb13-4" data-line-number="4">  <span class="ot">@spec</span> sum(list(integer)) :: integer</a>
-<a class="sourceLine" id="cb13-5" data-line-number="5">  curry sum<span class="op">/</span><span class="dv">1</span></a>
-<a class="sourceLine" id="cb13-6" data-line-number="6">  <span class="kw">def</span> sum(list) <span class="kw">do</span></a>
-<a class="sourceLine" id="cb13-7" data-line-number="7">    <span class="kw">case</span> list <span class="kw">do</span></a>
-<a class="sourceLine" id="cb13-8" data-line-number="8">      [first <span class="op">|</span> rest] <span class="op">-&gt;</span></a>
-<a class="sourceLine" id="cb13-9" data-line-number="9">        (first <span class="op">+</span> sum(rest))</a>
-<a class="sourceLine" id="cb13-10" data-line-number="10">      [] <span class="op">-&gt;</span></a>
-<a class="sourceLine" id="cb13-11" data-line-number="11">        <span class="dv">0</span></a>
-<a class="sourceLine" id="cb13-12" data-line-number="12">    <span class="kw">end</span></a>
-<a class="sourceLine" id="cb13-13" data-line-number="13">  <span class="kw">end</span></a>
-<a class="sourceLine" id="cb13-14" data-line-number="14"><span class="kw">end</span></a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb13-1" title="1"><span class="kw">defmodule</span> <span class="cn">Hello</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb13-2" title="2">  <span class="im">use</span> <span class="cn">Elchemy</span></a>
+<a class="sourceLine" id="cb13-3" title="3">  <span class="op">...</span></a>
+<a class="sourceLine" id="cb13-4" title="4">  <span class="ot">@spec</span> sum(list(integer)) :: integer</a>
+<a class="sourceLine" id="cb13-5" title="5">  curry sum<span class="op">/</span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb13-6" title="6">  <span class="kw">def</span> sum(list) <span class="kw">do</span></a>
+<a class="sourceLine" id="cb13-7" title="7">    <span class="kw">case</span> list <span class="kw">do</span></a>
+<a class="sourceLine" id="cb13-8" title="8">      [first <span class="op">|</span> rest] <span class="op">-&gt;</span></a>
+<a class="sourceLine" id="cb13-9" title="9">        (first <span class="op">+</span> sum(rest))</a>
+<a class="sourceLine" id="cb13-10" title="10">      [] <span class="op">-&gt;</span></a>
+<a class="sourceLine" id="cb13-11" title="11">        <span class="dv">0</span></a>
+<a class="sourceLine" id="cb13-12" title="12">    <span class="kw">end</span></a>
+<a class="sourceLine" id="cb13-13" title="13">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb13-14" title="14"><span class="kw">end</span></a></code></pre></div>
 <h3 id="doctest">doctest</h3>
 <p>また，次のように書くことで doctest も変換してくれる．</p>
 <pre class="elm"><code>{-| Returns a sum of every integer int the function
@@ -373,27 +373,27 @@ Type Check failed
 sum : List Int -&gt; Int
 sum list = ...</code></pre>
 <p>変換先はこうだ．</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb15-1" data-line-number="1">  <span class="ot">@doc &quot;&quot;&quot;</span></a>
-<a class="sourceLine" id="cb15-2" data-line-number="2"><span class="co">  Returns a sum of every integer int the function</span></a>
-<a class="sourceLine" id="cb15-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb15-4" data-line-number="4"><span class="co">      iex&gt; import Hello</span></a>
-<a class="sourceLine" id="cb15-5" data-line-number="5"><span class="co">      iex&gt; sum([1, 2, 3])</span></a>
-<a class="sourceLine" id="cb15-6" data-line-number="6"><span class="co">      6</span></a>
-<a class="sourceLine" id="cb15-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb15-8" data-line-number="8"><span class="co">      iex&gt; import Hello</span></a>
-<a class="sourceLine" id="cb15-9" data-line-number="9"><span class="co">      iex&gt; sum([10])</span></a>
-<a class="sourceLine" id="cb15-10" data-line-number="10"><span class="co">      10</span></a>
-<a class="sourceLine" id="cb15-11" data-line-number="11"></a>
-<a class="sourceLine" id="cb15-12" data-line-number="12"><span class="co">      iex&gt; import Hello</span></a>
-<a class="sourceLine" id="cb15-13" data-line-number="13"><span class="co">      iex&gt; sum([])</span></a>
-<a class="sourceLine" id="cb15-14" data-line-number="14"><span class="co">      0</span></a>
-<a class="sourceLine" id="cb15-15" data-line-number="15"></a>
-<a class="sourceLine" id="cb15-16" data-line-number="16"></a>
-<a class="sourceLine" id="cb15-17" data-line-number="17"><span class="co">  </span><span class="ot">&quot;&quot;&quot;</span></a>
-<a class="sourceLine" id="cb15-18" data-line-number="18">  <span class="ot">@spec</span> sum(list(integer)) :: integer</a>
-<a class="sourceLine" id="cb15-19" data-line-number="19">  curry sum<span class="op">/</span><span class="dv">1</span></a>
-<a class="sourceLine" id="cb15-20" data-line-number="20">  <span class="kw">def</span> sum(list) <span class="kw">do</span></a>
-<a class="sourceLine" id="cb15-21" data-line-number="21">    <span class="op">...</span></a></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb15-1" title="1">  <span class="ot">@doc &quot;&quot;&quot;</span></a>
+<a class="sourceLine" id="cb15-2" title="2"><span class="co">  Returns a sum of every integer int the function</span></a>
+<a class="sourceLine" id="cb15-3" title="3"></a>
+<a class="sourceLine" id="cb15-4" title="4"><span class="co">      iex&gt; import Hello</span></a>
+<a class="sourceLine" id="cb15-5" title="5"><span class="co">      iex&gt; sum([1, 2, 3])</span></a>
+<a class="sourceLine" id="cb15-6" title="6"><span class="co">      6</span></a>
+<a class="sourceLine" id="cb15-7" title="7"></a>
+<a class="sourceLine" id="cb15-8" title="8"><span class="co">      iex&gt; import Hello</span></a>
+<a class="sourceLine" id="cb15-9" title="9"><span class="co">      iex&gt; sum([10])</span></a>
+<a class="sourceLine" id="cb15-10" title="10"><span class="co">      10</span></a>
+<a class="sourceLine" id="cb15-11" title="11"></a>
+<a class="sourceLine" id="cb15-12" title="12"><span class="co">      iex&gt; import Hello</span></a>
+<a class="sourceLine" id="cb15-13" title="13"><span class="co">      iex&gt; sum([])</span></a>
+<a class="sourceLine" id="cb15-14" title="14"><span class="co">      0</span></a>
+<a class="sourceLine" id="cb15-15" title="15"></a>
+<a class="sourceLine" id="cb15-16" title="16"></a>
+<a class="sourceLine" id="cb15-17" title="17"><span class="co">  </span><span class="ot">&quot;&quot;&quot;</span></a>
+<a class="sourceLine" id="cb15-18" title="18">  <span class="ot">@spec</span> sum(list(integer)) :: integer</a>
+<a class="sourceLine" id="cb15-19" title="19">  curry sum<span class="op">/</span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb15-20" title="20">  <span class="kw">def</span> sum(list) <span class="kw">do</span></a>
+<a class="sourceLine" id="cb15-21" title="21">    <span class="op">...</span></a></code></pre></div>
 <h2 id="おしまい">おしまい</h2>
 <p>次はアプリケーションを作りたい．</p>
   </div>

@@ -132,71 +132,71 @@
 <p>作った docker-marge をしたかったので，可能な限りベースをそろえたかった．</p>
 <p>そのためにまずは 7つの言語の Docker イメージ(JVM でJavaもあるため正確には8つ)に Python も入れた，<a href="https://hub.docker.com/r/matsubara0507/nine-lang-docker">9つの言語の Docker イメージ</a>を作った． 7つの言語のやつをベースにして，<a href>Python の Docker イメージ</a>と同じように，最新の Python 処理系を入れただけ．</p>
 <p>各言語の Dockerfile では，このイメージからはじめて，Jupyter をインストールして利用する．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">FROM</span> matsubara0507/nine-lang-docker:latest</a>
-<a class="sourceLine" id="cb1-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb1-3" data-line-number="3"><span class="kw">RUN</span> pip install ipython jupyter</a>
-<a class="sourceLine" id="cb1-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb1-5" data-line-number="5"><span class="co">## install each Kernel</span></a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">FROM</span> matsubara0507/nine-lang-docker:latest</a>
+<a class="sourceLine" id="cb1-2" title="2"></a>
+<a class="sourceLine" id="cb1-3" title="3"><span class="kw">RUN</span> pip install ipython jupyter</a>
+<a class="sourceLine" id="cb1-4" title="4"></a>
+<a class="sourceLine" id="cb1-5" title="5"><span class="co">## install each Kernel</span></a></code></pre></div>
 <p>ココはまぁ，すんなり行った．</p>
 <h3 id="ruby">Ruby</h3>
 <p>すんなりはいかなかった… と言っても，原因はワタシが <code>rbenv</code> なんか使ったせいである．</p>
 <p><code>CMD [&quot;rbenv&quot;,...]</code> しても，<code>rbenv</code> はないと怒られた… 調べてみた結果，<code>.bashrc</code> が呼ばれてないからだそうだ(<code>.bashrc</code> でPATHをエクスポートし，<code>rbenv init</code> してる)．</p>
 <p>PATH は最悪なんとでもなるが，<code>rbenv init</code> はする必要がある．</p>
 <p>しょうがないので，次のような書き方をして，bash から無理やり呼んでやった．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw">RUN</span> /bin/bash -c <span class="st">&quot;</span><span class="op">\</span></a>
-<a class="sourceLine" id="cb2-2" data-line-number="2"><span class="st">    source .bashrc </span><span class="op">\</span></a>
-<a class="sourceLine" id="cb2-3" data-line-number="3"><span class="st"> &amp;&amp; gem install cztop iruby </span><span class="op">\</span></a>
-<a class="sourceLine" id="cb2-4" data-line-number="4"><span class="st"> &amp;&amp; iruby register --force </span><span class="op">\</span></a>
-<a class="sourceLine" id="cb2-5" data-line-number="5"><span class="st"> &quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb2-1" title="1"><span class="kw">RUN</span> /bin/bash -c <span class="st">&quot;</span><span class="op">\</span></a>
+<a class="sourceLine" id="cb2-2" title="2"><span class="st">    source .bashrc </span><span class="op">\</span></a>
+<a class="sourceLine" id="cb2-3" title="3"><span class="st"> &amp;&amp; gem install cztop iruby </span><span class="op">\</span></a>
+<a class="sourceLine" id="cb2-4" title="4"><span class="st"> &amp;&amp; iruby register --force </span><span class="op">\</span></a>
+<a class="sourceLine" id="cb2-5" title="5"><span class="st"> &quot;</span></a></code></pre></div>
 <p>ださいけど，しょうがない…</p>
 <h3 id="io">Io</h3>
 <p>これは簡単． 前作ったときと同じようにするだけ．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw">RUN</span> git clone --depth 1 https://github.com/matsubara0507/iio.git /root/iio</a>
-<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="kw">WORKDIR</span> /root/iio</a>
-<a class="sourceLine" id="cb3-3" data-line-number="3"><span class="kw">RUN</span> cd kernels &amp;&amp; jupyter kernelspec install io</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">RUN</span> git clone --depth 1 https://github.com/matsubara0507/iio.git /root/iio</a>
+<a class="sourceLine" id="cb3-2" title="2"><span class="kw">WORKDIR</span> /root/iio</a>
+<a class="sourceLine" id="cb3-3" title="3"><span class="kw">RUN</span> cd kernels &amp;&amp; jupyter kernelspec install io</a></code></pre></div>
 <p>前作った iio は GitHub にあげておいたので，取ってきてビルドするだけ．</p>
 <h3 id="scala">Scala</h3>
 <p><a href="https://github.com/alexarchambault/jupyter-scala">README</a> が長い．</p>
 <p>書いてあるとおりにやって(るつもりで)も，うまくいかない． <code>./jupyter-scala</code> しても， <code>coursier</code> とかいうので落ちてるみたいだった．</p>
 <p><a href="https://github.com/alexarchambault/jupyter-scala/issues/143">Issue</a> とかを漁ってなんとか出来た．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">RUN</span> git clone --depth 1 https://github.com/alexarchambault/jupyter-scala.git /root/iscala</a>
-<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="kw">WORKDIR</span> /root/iscala</a>
-<a class="sourceLine" id="cb4-3" data-line-number="3"><span class="kw">RUN</span> curl -L -o coursier https://git.io/vgvpD \</a>
-<a class="sourceLine" id="cb4-4" data-line-number="4"> &amp;&amp; chmod +x coursier \</a>
-<a class="sourceLine" id="cb4-5" data-line-number="5"> &amp;&amp; mv coursier /usr/local/bin/</a>
-<a class="sourceLine" id="cb4-6" data-line-number="6"><span class="kw">ADD</span> jupyter-scala /root/iscala</a>
-<a class="sourceLine" id="cb4-7" data-line-number="7"><span class="kw">RUN</span> ./jupyter-scala</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb4-1" title="1"><span class="kw">RUN</span> git clone --depth 1 https://github.com/alexarchambault/jupyter-scala.git /root/iscala</a>
+<a class="sourceLine" id="cb4-2" title="2"><span class="kw">WORKDIR</span> /root/iscala</a>
+<a class="sourceLine" id="cb4-3" title="3"><span class="kw">RUN</span> curl -L -o coursier https://git.io/vgvpD \</a>
+<a class="sourceLine" id="cb4-4" title="4"> &amp;&amp; chmod +x coursier \</a>
+<a class="sourceLine" id="cb4-5" title="5"> &amp;&amp; mv coursier /usr/local/bin/</a>
+<a class="sourceLine" id="cb4-6" title="6"><span class="kw">ADD</span> jupyter-scala /root/iscala</a>
+<a class="sourceLine" id="cb4-7" title="7"><span class="kw">RUN</span> ./jupyter-scala</a></code></pre></div>
 <p><code>jupyter-scala</code> (下のシェルスクリプト)をローカルから移してるのは，Scala のバージョンだけ書き換えたからだ． なので本質的には変わってない．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="co">#!/bin/bash</span></a>
-<a class="sourceLine" id="cb5-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb5-3" data-line-number="3"><span class="va">VERSION=</span>0.4.0</a>
-<a class="sourceLine" id="cb5-4" data-line-number="4"><span class="va">AMMONIUM_VERSION=</span>0.8.2-2</a>
-<a class="sourceLine" id="cb5-5" data-line-number="5"><span class="va">SCALA_VERSION=</span>2.11.8 <span class="co"># changed here</span></a>
-<a class="sourceLine" id="cb5-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb5-7" data-line-number="7"><span class="bu">exec</span> coursier launch \</a>
-<a class="sourceLine" id="cb5-8" data-line-number="8">  -r sonatype:releases -r sonatype:snapshots \</a>
-<a class="sourceLine" id="cb5-9" data-line-number="9">  -i ammonite \</a>
-<a class="sourceLine" id="cb5-10" data-line-number="10">  -I ammonite:org.jupyter-scala:ammonite-runtime_<span class="va">$SCALA_VERSION</span>:<span class="va">$AMMONIUM_VERSION</span> \</a>
-<a class="sourceLine" id="cb5-11" data-line-number="11">  -I ammonite:org.jupyter-scala:scala-api_<span class="va">$SCALA_VERSION</span>:<span class="va">$VERSION</span> \</a>
-<a class="sourceLine" id="cb5-12" data-line-number="12">  org.jupyter-scala:scala-cli_<span class="va">$SCALA_VERSION</span>:<span class="va">$VERSION</span> \</a>
-<a class="sourceLine" id="cb5-13" data-line-number="13">  -- \</a>
-<a class="sourceLine" id="cb5-14" data-line-number="14">    --id scala \</a>
-<a class="sourceLine" id="cb5-15" data-line-number="15">    --name <span class="st">&quot;Scala&quot;</span> \</a>
-<a class="sourceLine" id="cb5-16" data-line-number="16">    <span class="st">&quot;</span><span class="va">$@</span><span class="st">&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><a class="sourceLine" id="cb5-1" title="1"><span class="co">#!/bin/bash</span></a>
+<a class="sourceLine" id="cb5-2" title="2"></a>
+<a class="sourceLine" id="cb5-3" title="3"><span class="va">VERSION=</span>0.4.0</a>
+<a class="sourceLine" id="cb5-4" title="4"><span class="va">AMMONIUM_VERSION=</span>0.8.2-2</a>
+<a class="sourceLine" id="cb5-5" title="5"><span class="va">SCALA_VERSION=</span>2.11.8 <span class="co"># changed here</span></a>
+<a class="sourceLine" id="cb5-6" title="6"></a>
+<a class="sourceLine" id="cb5-7" title="7"><span class="bu">exec</span> coursier launch \</a>
+<a class="sourceLine" id="cb5-8" title="8">  -r sonatype:releases -r sonatype:snapshots \</a>
+<a class="sourceLine" id="cb5-9" title="9">  -i ammonite \</a>
+<a class="sourceLine" id="cb5-10" title="10">  -I ammonite:org.jupyter-scala:ammonite-runtime_<span class="va">$SCALA_VERSION</span>:<span class="va">$AMMONIUM_VERSION</span> \</a>
+<a class="sourceLine" id="cb5-11" title="11">  -I ammonite:org.jupyter-scala:scala-api_<span class="va">$SCALA_VERSION</span>:<span class="va">$VERSION</span> \</a>
+<a class="sourceLine" id="cb5-12" title="12">  org.jupyter-scala:scala-cli_<span class="va">$SCALA_VERSION</span>:<span class="va">$VERSION</span> \</a>
+<a class="sourceLine" id="cb5-13" title="13">  -- \</a>
+<a class="sourceLine" id="cb5-14" title="14">    --id scala \</a>
+<a class="sourceLine" id="cb5-15" title="15">    --name <span class="st">&quot;Scala&quot;</span> \</a>
+<a class="sourceLine" id="cb5-16" title="16">    <span class="st">&quot;</span><span class="va">$@</span><span class="st">&quot;</span></a></code></pre></div>
 <h3 id="clojure">Clojure</h3>
 <p>すんなりいった． すばらしい．</p>
 <p>唯一，<a href="https://github.com/roryk/clojupyter">README</a> に書いてある通りにやったらうまくいった….まじですばらしい．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">RUN</span> git clone --depth 1 https://github.com/roryk/clojupyter /root/clojupyter</a>
-<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="kw">WORKDIR</span> /root/clojupyter</a>
-<a class="sourceLine" id="cb6-3" data-line-number="3"><span class="kw">RUN</span> make &amp;&amp; make install</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">RUN</span> git clone --depth 1 https://github.com/roryk/clojupyter /root/clojupyter</a>
+<a class="sourceLine" id="cb6-2" title="2"><span class="kw">WORKDIR</span> /root/clojupyter</a>
+<a class="sourceLine" id="cb6-3" title="3"><span class="kw">RUN</span> make &amp;&amp; make install</a></code></pre></div>
 <h3 id="haskell">Haskell</h3>
 <p>まず，Jupyter のバージョンが違う． まだ <code>ipyhton</code> だったもの(他のもそういうのが多い)． Fork されてるのを探したら，<a href="https://github.com/abarbu/IHaskell">最新のに合わせてくれてるの</a>があった(stack の比較的新しいのにも対応してる)． マジで神．</p>
 <p>あとは，README に書いてあるようにやってみたところ(以下のような Dockerfile を書いて build)．</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb7-1" data-line-number="1">UN git clone --depth 1 https://github.com/abarbu/IHaskell.git /root/IHaskell</a>
-<a class="sourceLine" id="cb7-2" data-line-number="2"><span class="kw">WORKDIR</span> /root/IHaskell</a>
-<a class="sourceLine" id="cb7-3" data-line-number="3"><span class="kw">RUN</span> stack install gtk2hs-buildtools</a>
-<a class="sourceLine" id="cb7-4" data-line-number="4"><span class="kw">RUN</span> stack install --fast</a>
-<a class="sourceLine" id="cb7-5" data-line-number="5"><span class="kw">RUN</span> stack exec ihaskell -- install</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb7-1" title="1">UN git clone --depth 1 https://github.com/abarbu/IHaskell.git /root/IHaskell</a>
+<a class="sourceLine" id="cb7-2" title="2"><span class="kw">WORKDIR</span> /root/IHaskell</a>
+<a class="sourceLine" id="cb7-3" title="3"><span class="kw">RUN</span> stack install gtk2hs-buildtools</a>
+<a class="sourceLine" id="cb7-4" title="4"><span class="kw">RUN</span> stack install --fast</a>
+<a class="sourceLine" id="cb7-5" title="5"><span class="kw">RUN</span> stack exec ihaskell -- install</a></code></pre></div>
 <p>すごーーーい時間がかかったのち，<code>Process exited with code: ExitFailure (-11)</code> というエラーメッセージで落ちる． 調べてみたところ，どうやらメモリ不足らしい．</p>
 <p>Windows なので，VirtualBox のメモリを 3GB まで上げたらうまくいった．</p>
 <p>ちなみに，<code>stack install --fast</code> の <code>--fast</code> オプションは最適化を強制的に外しており，その分メモリを消費しないようになってるはずなんだけど….それでもだめってマジか． Docker Hub で build できるかな…</p>

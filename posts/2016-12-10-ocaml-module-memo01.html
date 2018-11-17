@@ -124,151 +124,151 @@
 <p>現に，OCaml ではファイル一枚を一つのモジュールにするらしい． つまり， <code>hoge.ml</code> というファイルは自動的に <code>Hoge</code> というモジュールになるらしい．</p>
 <p>その，モジュールの中にはモジュールも定義でき，それをサブモジュールと言うらしい．</p>
 <p>サブモジュールの定義の仕方と使い方は</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb1-1" data-line-number="1"># <span class="kw">module</span> Hello = <span class="kw">struct</span></a>
-<a class="sourceLine" id="cb1-2" data-line-number="2">    <span class="kw">let</span> message = <span class="st">&quot;Hello&quot;</span></a>
-<a class="sourceLine" id="cb1-3" data-line-number="3">    <span class="kw">let</span> hello () = <span class="dt">print_endline</span> message</a>
-<a class="sourceLine" id="cb1-4" data-line-number="4">  <span class="kw">end</span> ;;</a>
-<a class="sourceLine" id="cb1-5" data-line-number="5"><span class="kw">module</span> Hello : <span class="kw">sig</span> <span class="kw">val</span> message : <span class="dt">string</span> <span class="kw">val</span> hello : <span class="dt">unit</span> -&gt; <span class="dt">unit</span> <span class="kw">end</span></a>
-<a class="sourceLine" id="cb1-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb1-7" data-line-number="7"># Hello.message ;;</a>
-<a class="sourceLine" id="cb1-8" data-line-number="8">- : <span class="dt">string</span> = <span class="st">&quot;Hello&quot;</span></a>
-<a class="sourceLine" id="cb1-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb1-10" data-line-number="10"># Hello.hello () ;;</a>
-<a class="sourceLine" id="cb1-11" data-line-number="11">Hello</a>
-<a class="sourceLine" id="cb1-12" data-line-number="12">- : <span class="dt">unit</span> = ()</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb1-1" title="1"># <span class="kw">module</span> Hello = <span class="kw">struct</span></a>
+<a class="sourceLine" id="cb1-2" title="2">    <span class="kw">let</span> message = <span class="st">&quot;Hello&quot;</span></a>
+<a class="sourceLine" id="cb1-3" title="3">    <span class="kw">let</span> hello () = <span class="dt">print_endline</span> message</a>
+<a class="sourceLine" id="cb1-4" title="4">  <span class="kw">end</span> ;;</a>
+<a class="sourceLine" id="cb1-5" title="5"><span class="kw">module</span> Hello : <span class="kw">sig</span> <span class="kw">val</span> message : <span class="dt">string</span> <span class="kw">val</span> hello : <span class="dt">unit</span> -&gt; <span class="dt">unit</span> <span class="kw">end</span></a>
+<a class="sourceLine" id="cb1-6" title="6"></a>
+<a class="sourceLine" id="cb1-7" title="7"># Hello.message ;;</a>
+<a class="sourceLine" id="cb1-8" title="8">- : <span class="dt">string</span> = <span class="st">&quot;Hello&quot;</span></a>
+<a class="sourceLine" id="cb1-9" title="9"></a>
+<a class="sourceLine" id="cb1-10" title="10"># Hello.hello () ;;</a>
+<a class="sourceLine" id="cb1-11" title="11">Hello</a>
+<a class="sourceLine" id="cb1-12" title="12">- : <span class="dt">unit</span> = ()</a></code></pre></div>
 <h3 id="インターフェースによる使用記述部品化">インターフェースによる使用記述・部品化</h3>
 <p>2番のインターフェースはこんな感じに書ける．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb2-1" data-line-number="1"># <span class="kw">module</span> Hello : <span class="kw">sig</span></a>
-<a class="sourceLine" id="cb2-2" data-line-number="2">    <span class="kw">val</span> hello : <span class="dt">unit</span> -&gt; <span class="dt">unit</span></a>
-<a class="sourceLine" id="cb2-3" data-line-number="3">  <span class="kw">end</span> =</a>
-<a class="sourceLine" id="cb2-4" data-line-number="4">  <span class="kw">struct</span></a>
-<a class="sourceLine" id="cb2-5" data-line-number="5">    <span class="kw">let</span> message = <span class="st">&quot;Hello&quot;</span></a>
-<a class="sourceLine" id="cb2-6" data-line-number="6">    <span class="kw">let</span> hello () = <span class="dt">print_endline</span> message</a>
-<a class="sourceLine" id="cb2-7" data-line-number="7">  <span class="kw">end</span></a>
-<a class="sourceLine" id="cb2-8" data-line-number="8"><span class="kw">module</span> Hello : <span class="kw">sig</span> <span class="kw">val</span> hello : <span class="dt">unit</span> -&gt; <span class="dt">unit</span> <span class="kw">end</span></a>
-<a class="sourceLine" id="cb2-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb2-10" data-line-number="10"># Hello.hello () ;;</a>
-<a class="sourceLine" id="cb2-11" data-line-number="11">Hello</a>
-<a class="sourceLine" id="cb2-12" data-line-number="12">- : <span class="dt">unit</span> = ()</a>
-<a class="sourceLine" id="cb2-13" data-line-number="13"></a>
-<a class="sourceLine" id="cb2-14" data-line-number="14"># Hello.message ;;</a>
-<a class="sourceLine" id="cb2-15" data-line-number="15">Characters <span class="dv">0-13</span>:</a>
-<a class="sourceLine" id="cb2-16" data-line-number="16">  Hello.message ;;</a>
-<a class="sourceLine" id="cb2-17" data-line-number="17">  ^^^^^^^^^^^^^</a>
-<a class="sourceLine" id="cb2-18" data-line-number="18">Error: Unbound value Hello.message</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb2-1" title="1"># <span class="kw">module</span> Hello : <span class="kw">sig</span></a>
+<a class="sourceLine" id="cb2-2" title="2">    <span class="kw">val</span> hello : <span class="dt">unit</span> -&gt; <span class="dt">unit</span></a>
+<a class="sourceLine" id="cb2-3" title="3">  <span class="kw">end</span> =</a>
+<a class="sourceLine" id="cb2-4" title="4">  <span class="kw">struct</span></a>
+<a class="sourceLine" id="cb2-5" title="5">    <span class="kw">let</span> message = <span class="st">&quot;Hello&quot;</span></a>
+<a class="sourceLine" id="cb2-6" title="6">    <span class="kw">let</span> hello () = <span class="dt">print_endline</span> message</a>
+<a class="sourceLine" id="cb2-7" title="7">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb2-8" title="8"><span class="kw">module</span> Hello : <span class="kw">sig</span> <span class="kw">val</span> hello : <span class="dt">unit</span> -&gt; <span class="dt">unit</span> <span class="kw">end</span></a>
+<a class="sourceLine" id="cb2-9" title="9"></a>
+<a class="sourceLine" id="cb2-10" title="10"># Hello.hello () ;;</a>
+<a class="sourceLine" id="cb2-11" title="11">Hello</a>
+<a class="sourceLine" id="cb2-12" title="12">- : <span class="dt">unit</span> = ()</a>
+<a class="sourceLine" id="cb2-13" title="13"></a>
+<a class="sourceLine" id="cb2-14" title="14"># Hello.message ;;</a>
+<a class="sourceLine" id="cb2-15" title="15">Characters <span class="dv">0-13</span>:</a>
+<a class="sourceLine" id="cb2-16" title="16">  Hello.message ;;</a>
+<a class="sourceLine" id="cb2-17" title="17">  ^^^^^^^^^^^^^</a>
+<a class="sourceLine" id="cb2-18" title="18">Error: Unbound value Hello.message</a></code></pre></div>
 <p>上のようにインターフェースと実装を分けて書いたときインターフェースに書いた実装しか呼ぶことができない．</p>
 <h3 id="抽象型プライベート型-による隠蔽">抽象型・プライベート型(?) による隠蔽</h3>
 <p>モジュールのインターフェースには型も定義できる．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb3-1" data-line-number="1"># <span class="kw">module</span> Nat : <span class="kw">sig</span></a>
-<a class="sourceLine" id="cb3-2" data-line-number="2">    <span class="kw">type</span> t</a>
-<a class="sourceLine" id="cb3-3" data-line-number="3">    <span class="kw">val</span> zero : t</a>
-<a class="sourceLine" id="cb3-4" data-line-number="4">    <span class="kw">val</span> <span class="dt">succ</span> : t -&gt; t</a>
-<a class="sourceLine" id="cb3-5" data-line-number="5">  <span class="kw">end</span> =</a>
-<a class="sourceLine" id="cb3-6" data-line-number="6">  <span class="kw">struct</span></a>
-<a class="sourceLine" id="cb3-7" data-line-number="7">    <span class="kw">type</span> t = <span class="dt">int</span></a>
-<a class="sourceLine" id="cb3-8" data-line-number="8">    <span class="kw">let</span> zero = <span class="dv">0</span></a>
-<a class="sourceLine" id="cb3-9" data-line-number="9">    <span class="kw">let</span> <span class="dt">succ</span> n = n + <span class="dv">1</span></a>
-<a class="sourceLine" id="cb3-10" data-line-number="10">  <span class="kw">end</span></a>
-<a class="sourceLine" id="cb3-11" data-line-number="11"><span class="kw">module</span> Nat : <span class="kw">sig</span> <span class="kw">type</span> t <span class="kw">val</span> zero : t <span class="kw">val</span> <span class="dt">succ</span> : t -&gt; t <span class="kw">end</span></a>
-<a class="sourceLine" id="cb3-12" data-line-number="12"></a>
-<a class="sourceLine" id="cb3-13" data-line-number="13"># Nat.zero ;;</a>
-<a class="sourceLine" id="cb3-14" data-line-number="14">- : Nat.t = &lt;abstr&gt;</a>
-<a class="sourceLine" id="cb3-15" data-line-number="15"></a>
-<a class="sourceLine" id="cb3-16" data-line-number="16"># Nat.<span class="dt">succ</span> Nat.zero ;;</a>
-<a class="sourceLine" id="cb3-17" data-line-number="17">- : Nat.t = &lt;abstr&gt;</a>
-<a class="sourceLine" id="cb3-18" data-line-number="18"></a>
-<a class="sourceLine" id="cb3-19" data-line-number="19"># Nat.<span class="dt">succ</span> <span class="dv">0</span> ;;</a>
-<a class="sourceLine" id="cb3-20" data-line-number="20">Characters <span class="dv">9-10</span>:</a>
-<a class="sourceLine" id="cb3-21" data-line-number="21">  Nat.<span class="dt">succ</span> <span class="dv">0</span> ;;</a>
-<a class="sourceLine" id="cb3-22" data-line-number="22">           ^</a>
-<a class="sourceLine" id="cb3-23" data-line-number="23">Error: This expression has <span class="kw">type</span> <span class="dt">int</span> but an expression was expected <span class="kw">of</span> <span class="kw">type</span></a>
-<a class="sourceLine" id="cb3-24" data-line-number="24">         Nat.t</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb3-1" title="1"># <span class="kw">module</span> Nat : <span class="kw">sig</span></a>
+<a class="sourceLine" id="cb3-2" title="2">    <span class="kw">type</span> t</a>
+<a class="sourceLine" id="cb3-3" title="3">    <span class="kw">val</span> zero : t</a>
+<a class="sourceLine" id="cb3-4" title="4">    <span class="kw">val</span> <span class="dt">succ</span> : t -&gt; t</a>
+<a class="sourceLine" id="cb3-5" title="5">  <span class="kw">end</span> =</a>
+<a class="sourceLine" id="cb3-6" title="6">  <span class="kw">struct</span></a>
+<a class="sourceLine" id="cb3-7" title="7">    <span class="kw">type</span> t = <span class="dt">int</span></a>
+<a class="sourceLine" id="cb3-8" title="8">    <span class="kw">let</span> zero = <span class="dv">0</span></a>
+<a class="sourceLine" id="cb3-9" title="9">    <span class="kw">let</span> <span class="dt">succ</span> n = n + <span class="dv">1</span></a>
+<a class="sourceLine" id="cb3-10" title="10">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb3-11" title="11"><span class="kw">module</span> Nat : <span class="kw">sig</span> <span class="kw">type</span> t <span class="kw">val</span> zero : t <span class="kw">val</span> <span class="dt">succ</span> : t -&gt; t <span class="kw">end</span></a>
+<a class="sourceLine" id="cb3-12" title="12"></a>
+<a class="sourceLine" id="cb3-13" title="13"># Nat.zero ;;</a>
+<a class="sourceLine" id="cb3-14" title="14">- : Nat.t = &lt;abstr&gt;</a>
+<a class="sourceLine" id="cb3-15" title="15"></a>
+<a class="sourceLine" id="cb3-16" title="16"># Nat.<span class="dt">succ</span> Nat.zero ;;</a>
+<a class="sourceLine" id="cb3-17" title="17">- : Nat.t = &lt;abstr&gt;</a>
+<a class="sourceLine" id="cb3-18" title="18"></a>
+<a class="sourceLine" id="cb3-19" title="19"># Nat.<span class="dt">succ</span> <span class="dv">0</span> ;;</a>
+<a class="sourceLine" id="cb3-20" title="20">Characters <span class="dv">9-10</span>:</a>
+<a class="sourceLine" id="cb3-21" title="21">  Nat.<span class="dt">succ</span> <span class="dv">0</span> ;;</a>
+<a class="sourceLine" id="cb3-22" title="22">           ^</a>
+<a class="sourceLine" id="cb3-23" title="23">Error: This expression has <span class="kw">type</span> <span class="dt">int</span> but an expression was expected <span class="kw">of</span> <span class="kw">type</span></a>
+<a class="sourceLine" id="cb3-24" title="24">         Nat.t</a></code></pre></div>
 <p>型 <code>t</code> の実装は完全に隠蔽されるため，実装的にはタダの <code>int</code> に過ぎないが，その互換性はなくなる． このときの型 <code>t</code> を抽象型とか存在型とか(プライベート型とか？)と言う．</p>
 <p>また，<code>module type</code> を使えば，続けて書く必要はない</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb4-1" data-line-number="1"># <span class="kw">module</span> <span class="kw">type</span> Nat = <span class="kw">sig</span></a>
-<a class="sourceLine" id="cb4-2" data-line-number="2">    <span class="kw">type</span> t</a>
-<a class="sourceLine" id="cb4-3" data-line-number="3">    <span class="kw">val</span> zero : t</a>
-<a class="sourceLine" id="cb4-4" data-line-number="4">    <span class="kw">val</span> <span class="dt">succ</span> : t -&gt; t</a>
-<a class="sourceLine" id="cb4-5" data-line-number="5">  <span class="kw">end</span></a>
-<a class="sourceLine" id="cb4-6" data-line-number="6"><span class="kw">module</span> <span class="kw">type</span> Nat = <span class="kw">sig</span> <span class="kw">type</span> t <span class="kw">val</span> zero : t <span class="kw">val</span> <span class="dt">succ</span> : t -&gt; t <span class="kw">end</span></a>
-<a class="sourceLine" id="cb4-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb4-8" data-line-number="8"># <span class="kw">module</span> Nat : Nat = <span class="kw">struct</span></a>
-<a class="sourceLine" id="cb4-9" data-line-number="9">    <span class="kw">type</span> t = <span class="dt">int</span></a>
-<a class="sourceLine" id="cb4-10" data-line-number="10">    <span class="kw">let</span> zero = <span class="dv">0</span></a>
-<a class="sourceLine" id="cb4-11" data-line-number="11">    <span class="kw">let</span> <span class="dt">succ</span> n = n + <span class="dv">1</span></a>
-<a class="sourceLine" id="cb4-12" data-line-number="12">  <span class="kw">end</span></a>
-<a class="sourceLine" id="cb4-13" data-line-number="13"><span class="kw">module</span> Nat : Nat</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb4-1" title="1"># <span class="kw">module</span> <span class="kw">type</span> Nat = <span class="kw">sig</span></a>
+<a class="sourceLine" id="cb4-2" title="2">    <span class="kw">type</span> t</a>
+<a class="sourceLine" id="cb4-3" title="3">    <span class="kw">val</span> zero : t</a>
+<a class="sourceLine" id="cb4-4" title="4">    <span class="kw">val</span> <span class="dt">succ</span> : t -&gt; t</a>
+<a class="sourceLine" id="cb4-5" title="5">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb4-6" title="6"><span class="kw">module</span> <span class="kw">type</span> Nat = <span class="kw">sig</span> <span class="kw">type</span> t <span class="kw">val</span> zero : t <span class="kw">val</span> <span class="dt">succ</span> : t -&gt; t <span class="kw">end</span></a>
+<a class="sourceLine" id="cb4-7" title="7"></a>
+<a class="sourceLine" id="cb4-8" title="8"># <span class="kw">module</span> Nat : Nat = <span class="kw">struct</span></a>
+<a class="sourceLine" id="cb4-9" title="9">    <span class="kw">type</span> t = <span class="dt">int</span></a>
+<a class="sourceLine" id="cb4-10" title="10">    <span class="kw">let</span> zero = <span class="dv">0</span></a>
+<a class="sourceLine" id="cb4-11" title="11">    <span class="kw">let</span> <span class="dt">succ</span> n = n + <span class="dv">1</span></a>
+<a class="sourceLine" id="cb4-12" title="12">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb4-13" title="13"><span class="kw">module</span> Nat : Nat</a></code></pre></div>
 <h4 id="section"></h4>
 <p>また，これを利用すると幽霊型(ファントム型)を使うことができる．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb5-1" data-line-number="1"># <span class="kw">module</span> Money : <span class="kw">sig</span></a>
-<a class="sourceLine" id="cb5-2" data-line-number="2">    <span class="kw">type</span> 'a t <span class="kw">constraint</span> 'a = [&lt; `Naked | `Taxed]</a>
-<a class="sourceLine" id="cb5-3" data-line-number="3">    <span class="kw">val</span> make : <span class="dt">float</span> -&gt; [`Naked] t</a>
-<a class="sourceLine" id="cb5-4" data-line-number="4">    <span class="kw">val</span> get : 'a t -&gt; <span class="dt">float</span></a>
-<a class="sourceLine" id="cb5-5" data-line-number="5">    <span class="kw">val</span> add : 'a t -&gt; 'a t -&gt; 'a t</a>
-<a class="sourceLine" id="cb5-6" data-line-number="6">    <span class="kw">val</span> tax : [`Naked] t -&gt; [`Taxed] t</a>
-<a class="sourceLine" id="cb5-7" data-line-number="7">  <span class="kw">end</span> =</a>
-<a class="sourceLine" id="cb5-8" data-line-number="8">  <span class="kw">struct</span></a>
-<a class="sourceLine" id="cb5-9" data-line-number="9">    <span class="kw">type</span> 'a t = <span class="dt">float</span> <span class="kw">constraint</span> 'a = [&lt; `Naked | `Taxed]</a>
-<a class="sourceLine" id="cb5-10" data-line-number="10">    <span class="kw">let</span> make x = x</a>
-<a class="sourceLine" id="cb5-11" data-line-number="11">    <span class="kw">let</span> get x = x</a>
-<a class="sourceLine" id="cb5-12" data-line-number="12">    <span class="kw">let</span> add x y = x +. y</a>
-<a class="sourceLine" id="cb5-13" data-line-number="13">    <span class="kw">let</span> tax x = x *. <span class="fl">1.08</span></a>
-<a class="sourceLine" id="cb5-14" data-line-number="14">  <span class="kw">end</span>  </a>
-<a class="sourceLine" id="cb5-15" data-line-number="15"><span class="kw">module</span> Money :</a>
-<a class="sourceLine" id="cb5-16" data-line-number="16">  <span class="kw">sig</span></a>
-<a class="sourceLine" id="cb5-17" data-line-number="17">    <span class="kw">type</span> 'a t <span class="kw">constraint</span> 'a = [&lt; `Naked | `Taxed ]</a>
-<a class="sourceLine" id="cb5-18" data-line-number="18">    <span class="kw">val</span> make : <span class="dt">float</span> -&gt; [ `Naked ] t</a>
-<a class="sourceLine" id="cb5-19" data-line-number="19">    <span class="kw">val</span> get : [&lt; `Naked | `Taxed ] t -&gt; <span class="dt">float</span></a>
-<a class="sourceLine" id="cb5-20" data-line-number="20">    <span class="kw">val</span> add : ([&lt; `Naked | `Taxed ] <span class="kw">as</span> 'a) t -&gt; 'a t -&gt; 'a t</a>
-<a class="sourceLine" id="cb5-21" data-line-number="21">    <span class="kw">val</span> tax : [ `Naked ] t -&gt; [ `Taxed ] t</a>
-<a class="sourceLine" id="cb5-22" data-line-number="22">  <span class="kw">end</span></a>
-<a class="sourceLine" id="cb5-23" data-line-number="23"></a>
-<a class="sourceLine" id="cb5-24" data-line-number="24"># Money.add (Money.make <span class="fl">3.0</span>) (Money.make <span class="fl">4.0</span>) |&gt; Money.get ;;</a>
-<a class="sourceLine" id="cb5-25" data-line-number="25">- : <span class="dt">float</span> = <span class="dv">7</span>.</a>
-<a class="sourceLine" id="cb5-26" data-line-number="26"></a>
-<a class="sourceLine" id="cb5-27" data-line-number="27"># Money.add (Money.tax @@ Money.make <span class="fl">3.0</span>) (Money.tax @@ Money.make <span class="fl">4.0</span>) |&gt; Money.get ;;</a>
-<a class="sourceLine" id="cb5-28" data-line-number="28">- : <span class="dt">float</span> = <span class="fl">7.5600000000000005</span></a>
-<a class="sourceLine" id="cb5-29" data-line-number="29"></a>
-<a class="sourceLine" id="cb5-30" data-line-number="30"># Money.add (Money.tax @@ Money.make <span class="fl">3.0</span>) (Money.make <span class="fl">4.0</span>) |&gt; Money.get ;;</a>
-<a class="sourceLine" id="cb5-31" data-line-number="31">Characters <span class="dv">40-56</span>:</a>
-<a class="sourceLine" id="cb5-32" data-line-number="32">  Money.add (Money.tax @@ Money.make <span class="fl">3.0</span>) (Money.make <span class="fl">4.0</span>) |&gt; Money.get ;;</a>
-<a class="sourceLine" id="cb5-33" data-line-number="33">                                          ^^^^^^^^^^^^^^^^</a>
-<a class="sourceLine" id="cb5-34" data-line-number="34">Error: This expression has <span class="kw">type</span> [ `Naked ] Money.t</a>
-<a class="sourceLine" id="cb5-35" data-line-number="35">       but an expression was expected <span class="kw">of</span> <span class="kw">type</span> [ `Taxed ] Money.t</a>
-<a class="sourceLine" id="cb5-36" data-line-number="36">       These two variant types have no intersection</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb5-1" title="1"># <span class="kw">module</span> Money : <span class="kw">sig</span></a>
+<a class="sourceLine" id="cb5-2" title="2">    <span class="kw">type</span> 'a t <span class="kw">constraint</span> 'a = [&lt; `Naked | `Taxed]</a>
+<a class="sourceLine" id="cb5-3" title="3">    <span class="kw">val</span> make : <span class="dt">float</span> -&gt; [`Naked] t</a>
+<a class="sourceLine" id="cb5-4" title="4">    <span class="kw">val</span> get : 'a t -&gt; <span class="dt">float</span></a>
+<a class="sourceLine" id="cb5-5" title="5">    <span class="kw">val</span> add : 'a t -&gt; 'a t -&gt; 'a t</a>
+<a class="sourceLine" id="cb5-6" title="6">    <span class="kw">val</span> tax : [`Naked] t -&gt; [`Taxed] t</a>
+<a class="sourceLine" id="cb5-7" title="7">  <span class="kw">end</span> =</a>
+<a class="sourceLine" id="cb5-8" title="8">  <span class="kw">struct</span></a>
+<a class="sourceLine" id="cb5-9" title="9">    <span class="kw">type</span> 'a t = <span class="dt">float</span> <span class="kw">constraint</span> 'a = [&lt; `Naked | `Taxed]</a>
+<a class="sourceLine" id="cb5-10" title="10">    <span class="kw">let</span> make x = x</a>
+<a class="sourceLine" id="cb5-11" title="11">    <span class="kw">let</span> get x = x</a>
+<a class="sourceLine" id="cb5-12" title="12">    <span class="kw">let</span> add x y = x +. y</a>
+<a class="sourceLine" id="cb5-13" title="13">    <span class="kw">let</span> tax x = x *. <span class="fl">1.08</span></a>
+<a class="sourceLine" id="cb5-14" title="14">  <span class="kw">end</span>  </a>
+<a class="sourceLine" id="cb5-15" title="15"><span class="kw">module</span> Money :</a>
+<a class="sourceLine" id="cb5-16" title="16">  <span class="kw">sig</span></a>
+<a class="sourceLine" id="cb5-17" title="17">    <span class="kw">type</span> 'a t <span class="kw">constraint</span> 'a = [&lt; `Naked | `Taxed ]</a>
+<a class="sourceLine" id="cb5-18" title="18">    <span class="kw">val</span> make : <span class="dt">float</span> -&gt; [ `Naked ] t</a>
+<a class="sourceLine" id="cb5-19" title="19">    <span class="kw">val</span> get : [&lt; `Naked | `Taxed ] t -&gt; <span class="dt">float</span></a>
+<a class="sourceLine" id="cb5-20" title="20">    <span class="kw">val</span> add : ([&lt; `Naked | `Taxed ] <span class="kw">as</span> 'a) t -&gt; 'a t -&gt; 'a t</a>
+<a class="sourceLine" id="cb5-21" title="21">    <span class="kw">val</span> tax : [ `Naked ] t -&gt; [ `Taxed ] t</a>
+<a class="sourceLine" id="cb5-22" title="22">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb5-23" title="23"></a>
+<a class="sourceLine" id="cb5-24" title="24"># Money.add (Money.make <span class="fl">3.0</span>) (Money.make <span class="fl">4.0</span>) |&gt; Money.get ;;</a>
+<a class="sourceLine" id="cb5-25" title="25">- : <span class="dt">float</span> = <span class="dv">7</span>.</a>
+<a class="sourceLine" id="cb5-26" title="26"></a>
+<a class="sourceLine" id="cb5-27" title="27"># Money.add (Money.tax @@ Money.make <span class="fl">3.0</span>) (Money.tax @@ Money.make <span class="fl">4.0</span>) |&gt; Money.get ;;</a>
+<a class="sourceLine" id="cb5-28" title="28">- : <span class="dt">float</span> = <span class="fl">7.5600000000000005</span></a>
+<a class="sourceLine" id="cb5-29" title="29"></a>
+<a class="sourceLine" id="cb5-30" title="30"># Money.add (Money.tax @@ Money.make <span class="fl">3.0</span>) (Money.make <span class="fl">4.0</span>) |&gt; Money.get ;;</a>
+<a class="sourceLine" id="cb5-31" title="31">Characters <span class="dv">40-56</span>:</a>
+<a class="sourceLine" id="cb5-32" title="32">  Money.add (Money.tax @@ Money.make <span class="fl">3.0</span>) (Money.make <span class="fl">4.0</span>) |&gt; Money.get ;;</a>
+<a class="sourceLine" id="cb5-33" title="33">                                          ^^^^^^^^^^^^^^^^</a>
+<a class="sourceLine" id="cb5-34" title="34">Error: This expression has <span class="kw">type</span> [ `Naked ] Money.t</a>
+<a class="sourceLine" id="cb5-35" title="35">       but an expression was expected <span class="kw">of</span> <span class="kw">type</span> [ `Taxed ] Money.t</a>
+<a class="sourceLine" id="cb5-36" title="36">       These two variant types have no intersection</a></code></pre></div>
 <p>これは，税込み (<code>Taxed</code>) かそうでないかを分けて型付けされたモジュールである 結果を見てわかるように，中身はどちらも同じ <code>float</code> だが，<code>Taxed</code> と <code>Naked</code> が違う場合は加算できない． ちなみに <code>constraint</code> とは全称型 <code>'a</code> に対して制約を与えている．</p>
 <p><code>struct</code> 内部での型の実装を与えているところ <code>type 'a t = float</code> で全称型 <code>'a</code> が右辺に出てこないような型のことを幽霊型と言う．</p>
 <h3 id="ファンクターによる抽象化">ファンクターによる抽象化</h3>
 <p>ファンクターを用いると，特定のモジュールをベースにして，モジュールを生成できる． (元ネタは圏論のファンクターなはずで，それは圏から圏への写像だと思ってる)</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">module</span> <span class="kw">type</span> Nat_base = <span class="kw">sig</span></a>
-<a class="sourceLine" id="cb6-2" data-line-number="2">  <span class="kw">type</span> t</a>
-<a class="sourceLine" id="cb6-3" data-line-number="3">  <span class="kw">val</span> zero : t</a>
-<a class="sourceLine" id="cb6-4" data-line-number="4">  <span class="kw">val</span> <span class="dt">succ</span> : t -&gt; t</a>
-<a class="sourceLine" id="cb6-5" data-line-number="5"><span class="kw">end</span></a>
-<a class="sourceLine" id="cb6-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb6-7" data-line-number="7"><span class="kw">module</span> <span class="kw">type</span> Nat = <span class="kw">sig</span></a>
-<a class="sourceLine" id="cb6-8" data-line-number="8">  <span class="kw">type</span> t</a>
-<a class="sourceLine" id="cb6-9" data-line-number="9">  <span class="kw">include</span> Nat_base <span class="kw">with</span> <span class="kw">type</span> t := t</a>
-<a class="sourceLine" id="cb6-10" data-line-number="10">  <span class="kw">val</span> is_zero : t -&gt; <span class="dt">bool</span></a>
-<a class="sourceLine" id="cb6-11" data-line-number="11">  <span class="kw">val</span> add : t -&gt; t -&gt; t</a>
-<a class="sourceLine" id="cb6-12" data-line-number="12"><span class="kw">end</span></a>
-<a class="sourceLine" id="cb6-13" data-line-number="13"></a>
-<a class="sourceLine" id="cb6-14" data-line-number="14"><span class="kw">module</span> Make_Nat (N : Nat_base) : Nat = <span class="kw">struct</span></a>
-<a class="sourceLine" id="cb6-15" data-line-number="15">  <span class="kw">include</span> N</a>
-<a class="sourceLine" id="cb6-16" data-line-number="16">  <span class="kw">let</span> is_zero n = n = N.zero</a>
-<a class="sourceLine" id="cb6-17" data-line-number="17">  <span class="kw">let</span> add n m =</a>
-<a class="sourceLine" id="cb6-18" data-line-number="18">    <span class="kw">let</span> <span class="kw">rec</span> add' i x = <span class="kw">if</span> i = n <span class="kw">then</span> x <span class="kw">else</span> add' (N.<span class="dt">succ</span> i) (N.<span class="dt">succ</span> x)</a>
-<a class="sourceLine" id="cb6-19" data-line-number="19">    <span class="kw">in</span> add' N.zero m</a>
-<a class="sourceLine" id="cb6-20" data-line-number="20"><span class="kw">end</span>  </a>
-<a class="sourceLine" id="cb6-21" data-line-number="21"></a>
-<a class="sourceLine" id="cb6-22" data-line-number="22"><span class="kw">module</span> NatI =</a>
-<a class="sourceLine" id="cb6-23" data-line-number="23">  Make_Nat (<span class="kw">struct</span></a>
-<a class="sourceLine" id="cb6-24" data-line-number="24">    <span class="kw">type</span> t = <span class="dt">int</span></a>
-<a class="sourceLine" id="cb6-25" data-line-number="25">    <span class="kw">let</span> zero = <span class="dv">0</span></a>
-<a class="sourceLine" id="cb6-26" data-line-number="26">    <span class="kw">let</span> <span class="dt">succ</span> x = x + <span class="dv">1</span></a>
-<a class="sourceLine" id="cb6-27" data-line-number="27">  <span class="kw">end</span>)</a></code></pre></div>
-<div class="sourceCode" id="cb7"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb7-1" data-line-number="1"># NatI.add (NatI.<span class="dt">succ</span> NatI.zero) (NatI.<span class="dt">succ</span> NatI.zero) = NatI.<span class="dt">succ</span> (NatI.<span class="dt">succ</span> NatI.zero) ;;</a>
-<a class="sourceLine" id="cb7-2" data-line-number="2">- : <span class="dt">bool</span> = <span class="kw">true</span></a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">module</span> <span class="kw">type</span> Nat_base = <span class="kw">sig</span></a>
+<a class="sourceLine" id="cb6-2" title="2">  <span class="kw">type</span> t</a>
+<a class="sourceLine" id="cb6-3" title="3">  <span class="kw">val</span> zero : t</a>
+<a class="sourceLine" id="cb6-4" title="4">  <span class="kw">val</span> <span class="dt">succ</span> : t -&gt; t</a>
+<a class="sourceLine" id="cb6-5" title="5"><span class="kw">end</span></a>
+<a class="sourceLine" id="cb6-6" title="6"></a>
+<a class="sourceLine" id="cb6-7" title="7"><span class="kw">module</span> <span class="kw">type</span> Nat = <span class="kw">sig</span></a>
+<a class="sourceLine" id="cb6-8" title="8">  <span class="kw">type</span> t</a>
+<a class="sourceLine" id="cb6-9" title="9">  <span class="kw">include</span> Nat_base <span class="kw">with</span> <span class="kw">type</span> t := t</a>
+<a class="sourceLine" id="cb6-10" title="10">  <span class="kw">val</span> is_zero : t -&gt; <span class="dt">bool</span></a>
+<a class="sourceLine" id="cb6-11" title="11">  <span class="kw">val</span> add : t -&gt; t -&gt; t</a>
+<a class="sourceLine" id="cb6-12" title="12"><span class="kw">end</span></a>
+<a class="sourceLine" id="cb6-13" title="13"></a>
+<a class="sourceLine" id="cb6-14" title="14"><span class="kw">module</span> Make_Nat (N : Nat_base) : Nat = <span class="kw">struct</span></a>
+<a class="sourceLine" id="cb6-15" title="15">  <span class="kw">include</span> N</a>
+<a class="sourceLine" id="cb6-16" title="16">  <span class="kw">let</span> is_zero n = n = N.zero</a>
+<a class="sourceLine" id="cb6-17" title="17">  <span class="kw">let</span> add n m =</a>
+<a class="sourceLine" id="cb6-18" title="18">    <span class="kw">let</span> <span class="kw">rec</span> add' i x = <span class="kw">if</span> i = n <span class="kw">then</span> x <span class="kw">else</span> add' (N.<span class="dt">succ</span> i) (N.<span class="dt">succ</span> x)</a>
+<a class="sourceLine" id="cb6-19" title="19">    <span class="kw">in</span> add' N.zero m</a>
+<a class="sourceLine" id="cb6-20" title="20"><span class="kw">end</span>  </a>
+<a class="sourceLine" id="cb6-21" title="21"></a>
+<a class="sourceLine" id="cb6-22" title="22"><span class="kw">module</span> NatI =</a>
+<a class="sourceLine" id="cb6-23" title="23">  Make_Nat (<span class="kw">struct</span></a>
+<a class="sourceLine" id="cb6-24" title="24">    <span class="kw">type</span> t = <span class="dt">int</span></a>
+<a class="sourceLine" id="cb6-25" title="25">    <span class="kw">let</span> zero = <span class="dv">0</span></a>
+<a class="sourceLine" id="cb6-26" title="26">    <span class="kw">let</span> <span class="dt">succ</span> x = x + <span class="dv">1</span></a>
+<a class="sourceLine" id="cb6-27" title="27">  <span class="kw">end</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb7-1" title="1"># NatI.add (NatI.<span class="dt">succ</span> NatI.zero) (NatI.<span class="dt">succ</span> NatI.zero) = NatI.<span class="dt">succ</span> (NatI.<span class="dt">succ</span> NatI.zero) ;;</a>
+<a class="sourceLine" id="cb7-2" title="2">- : <span class="dt">bool</span> = <span class="kw">true</span></a></code></pre></div>
 <p>このときの <code>Make_Nat</code> がファンクターである． これは，<code>Set</code> や <code>Hash</code> などの標準モジュールでも使われている．</p>
 <h2 id="第一級モジュール">第一級モジュール</h2>
 <p><a href="../posts/2016-12-11-ocaml-module-memo02.html">続く…</a></p>

@@ -92,177 +92,177 @@
 <h2 id="作る">作る</h2>
 <h3 id="エラー用の-json-への処理の追加">エラー用の JSON への処理の追加</h3>
 <p>例えば<a href="../posts/2017-08-09-create-rest-api-package-with-req-part2.html">前回</a>に次のようなエンドポイント関数を定義した(今回は詳細を割愛)．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="ot">getMe ::</span> (<span class="dt">MonadHttp</span> m) <span class="ot">=&gt;</span> <span class="dt">Token</span> <span class="ot">-&gt;</span> m (<span class="dt">JsonResponse</span> <span class="dt">Me</span>)</a>
-<a class="sourceLine" id="cb1-2" data-line-number="2">getMe token <span class="fu">=</span> req <span class="dt">GET</span> (baseUrl <span class="fu">/:</span> <span class="st">&quot;me&quot;</span>) <span class="dt">NoReqBody</span> jsonResponse (mkHeader token)</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="ot">getMe ::</span> (<span class="dt">MonadHttp</span> m) <span class="ot">=&gt;</span> <span class="dt">Token</span> <span class="ot">-&gt;</span> m (<span class="dt">JsonResponse</span> <span class="dt">Me</span>)</a>
+<a class="sourceLine" id="cb1-2" title="2">getMe token <span class="fu">=</span> req <span class="dt">GET</span> (baseUrl <span class="fu">/:</span> <span class="st">&quot;me&quot;</span>) <span class="dt">NoReqBody</span> jsonResponse (mkHeader token)</a></code></pre></div>
 <p>次のように用いる．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="fu">&gt;&gt;</span> <span class="fu">:</span><span class="kw">module</span> <span class="dt">Network.HTTP.Req</span> <span class="dt">ChatWork</span></a>
-<a class="sourceLine" id="cb2-2" data-line-number="2"><span class="fu">&gt;&gt;</span> token <span class="fu">=</span> <span class="st">&quot;xxx&quot;</span></a>
-<a class="sourceLine" id="cb2-3" data-line-number="3"><span class="fu">&gt;&gt;</span> print <span class="fu">=&lt;&lt;</span> (responseBody <span class="fu">&lt;$&gt;</span> getMe token)</a>
-<a class="sourceLine" id="cb2-4" data-line-number="4"><span class="dt">Right</span> (<span class="dt">Me</span> {meToAccountId <span class="fu">=</span> <span class="dv">1234567</span>, meToRoomId <span class="fu">=</span> <span class="dv">9876543</span>, meToName <span class="fu">=</span> <span class="st">&quot;\26494\21407\20449\24544&quot;</span>, meToChatworkId <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToOrganizationId <span class="fu">=</span> <span class="dv">13579</span>, meToOrganizationName <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToDepartment <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTitle <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToUrl <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToIntroduction <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToMail <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTelOrganization <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTelExtension <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTelMobile <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToSkype <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToFacebook <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTwitter <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToAvatarImageUrl <span class="fu">=</span> <span class="st">&quot;https://appdata.chatwork.com/avatar/1234/12345678.rsz.png&quot;</span>})</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="fu">&gt;&gt;</span> <span class="fu">:</span><span class="kw">module</span> <span class="dt">Network.HTTP.Req</span> <span class="dt">ChatWork</span></a>
+<a class="sourceLine" id="cb2-2" title="2"><span class="fu">&gt;&gt;</span> token <span class="fu">=</span> <span class="st">&quot;xxx&quot;</span></a>
+<a class="sourceLine" id="cb2-3" title="3"><span class="fu">&gt;&gt;</span> <span class="fu">print</span> <span class="fu">=&lt;&lt;</span> (responseBody <span class="fu">&lt;$&gt;</span> getMe token)</a>
+<a class="sourceLine" id="cb2-4" title="4"><span class="dt">Right</span> (<span class="dt">Me</span> {meToAccountId <span class="fu">=</span> <span class="dv">1234567</span>, meToRoomId <span class="fu">=</span> <span class="dv">9876543</span>, meToName <span class="fu">=</span> <span class="st">&quot;\26494\21407\20449\24544&quot;</span>, meToChatworkId <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToOrganizationId <span class="fu">=</span> <span class="dv">13579</span>, meToOrganizationName <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToDepartment <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTitle <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToUrl <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToIntroduction <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToMail <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTelOrganization <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTelExtension <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTelMobile <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToSkype <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToFacebook <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToTwitter <span class="fu">=</span> <span class="st">&quot;&quot;</span>, meToAvatarImageUrl <span class="fu">=</span> <span class="st">&quot;https://appdata.chatwork.com/avatar/1234/12345678.rsz.png&quot;</span>})</a></code></pre></div>
 <p><code>token</code> という変数は，名前の通り発行した認証トークンを束縛している． API の定義では，ここで間違ったトークンを与えると，次のような JSON を返すということに<a href="http://developer.chatwork.com/ja/endpoints.html">なっている</a>．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="fu">{</span></a>
-<a class="sourceLine" id="cb3-2" data-line-number="2">  <span class="dt">&quot;errors&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;Invalid API token&quot;</span><span class="ot">]</span></a>
-<a class="sourceLine" id="cb3-3" data-line-number="3"><span class="fu">}</span></a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode json"><code class="sourceCode json"><a class="sourceLine" id="cb3-1" title="1"><span class="fu">{</span></a>
+<a class="sourceLine" id="cb3-2" title="2">  <span class="dt">&quot;errors&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;Invalid API token&quot;</span><span class="ot">]</span></a>
+<a class="sourceLine" id="cb3-3" title="3"><span class="fu">}</span></a></code></pre></div>
 <p>現状の <code>getMe</code> 関数は，<code>Me</code> 型に対応する JSON しかパースできず，この形の JSON はパースエラーとなる(そりゃそう)． なのでうまい事 <code>Either</code> 型なんかを使ってラップしてやる必要がある．</p>
 <p>まずは，このエラーの場合の JSON 用の型を定義する．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">import</span> <span class="dt">ChatWork.Utils</span> (strLength)</a>
-<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="kw">import</span> <span class="dt">Data.Aeson</span> (<span class="dt">FromJSON</span> (..), <span class="dt">ToJSON</span> (..),</a>
-<a class="sourceLine" id="cb4-3" data-line-number="3">                   genericParseJSON, genericToJSON)</a>
-<a class="sourceLine" id="cb4-4" data-line-number="4"><span class="kw">import</span> <span class="dt">Data.Aeson.Casing</span> (aesonDrop, snakeCase)</a>
-<a class="sourceLine" id="cb4-5" data-line-number="5"><span class="kw">import</span> <span class="dt">Data.Text</span> (<span class="dt">Text</span>)</a>
-<a class="sourceLine" id="cb4-6" data-line-number="6"><span class="kw">import</span> <span class="dt">GHC.Generics</span> (<span class="dt">Generic</span>)</a>
-<a class="sourceLine" id="cb4-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb4-8" data-line-number="8"><span class="kw">newtype</span> <span class="dt">ChatWorkErrors</span> <span class="fu">=</span></a>
-<a class="sourceLine" id="cb4-9" data-line-number="9">  <span class="dt">ChatWorkErrors</span> {<span class="ot"> getErrors ::</span> [<span class="dt">Text</span>] } <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>, <span class="dt">Generic</span>)</a>
-<a class="sourceLine" id="cb4-10" data-line-number="10"></a>
-<a class="sourceLine" id="cb4-11" data-line-number="11"><span class="kw">instance</span> <span class="dt">ToJSON</span> <span class="dt">ChatWorkErrors</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb4-12" data-line-number="12">  toJSON <span class="fu">=</span> genericToJSON <span class="fu">$</span> aesonDrop (strLength <span class="st">&quot;get&quot;</span>) snakeCase</a>
-<a class="sourceLine" id="cb4-13" data-line-number="13"><span class="kw">instance</span> <span class="dt">FromJSON</span> <span class="dt">ChatWorkErrors</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb4-14" data-line-number="14">  parseJSON <span class="fu">=</span> genericParseJSON <span class="fu">$</span> aesonDrop (strLength <span class="st">&quot;get&quot;</span>) snakeCase</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="kw">import</span> <span class="dt">ChatWork.Utils</span> (strLength)</a>
+<a class="sourceLine" id="cb4-2" title="2"><span class="kw">import</span> <span class="dt">Data.Aeson</span> (<span class="dt">FromJSON</span> (..), <span class="dt">ToJSON</span> (..),</a>
+<a class="sourceLine" id="cb4-3" title="3">                   genericParseJSON, genericToJSON)</a>
+<a class="sourceLine" id="cb4-4" title="4"><span class="kw">import</span> <span class="dt">Data.Aeson.Casing</span> (aesonDrop, snakeCase)</a>
+<a class="sourceLine" id="cb4-5" title="5"><span class="kw">import</span> <span class="dt">Data.Text</span> (<span class="dt">Text</span>)</a>
+<a class="sourceLine" id="cb4-6" title="6"><span class="kw">import</span> <span class="dt">GHC.Generics</span> (<span class="dt">Generic</span>)</a>
+<a class="sourceLine" id="cb4-7" title="7"></a>
+<a class="sourceLine" id="cb4-8" title="8"><span class="kw">newtype</span> <span class="dt">ChatWorkErrors</span> <span class="fu">=</span></a>
+<a class="sourceLine" id="cb4-9" title="9">  <span class="dt">ChatWorkErrors</span> {<span class="ot"> getErrors ::</span> [<span class="dt">Text</span>] } <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>, <span class="dt">Generic</span>)</a>
+<a class="sourceLine" id="cb4-10" title="10"></a>
+<a class="sourceLine" id="cb4-11" title="11"><span class="kw">instance</span> <span class="dt">ToJSON</span> <span class="dt">ChatWorkErrors</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb4-12" title="12">  toJSON <span class="fu">=</span> genericToJSON <span class="fu">$</span> aesonDrop (strLength <span class="st">&quot;get&quot;</span>) snakeCase</a>
+<a class="sourceLine" id="cb4-13" title="13"><span class="kw">instance</span> <span class="dt">FromJSON</span> <span class="dt">ChatWorkErrors</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb4-14" title="14">  parseJSON <span class="fu">=</span> genericParseJSON <span class="fu">$</span> aesonDrop (strLength <span class="st">&quot;get&quot;</span>) snakeCase</a></code></pre></div>
 <p>これと何らかの型を <code>Either</code> 型でラップしてあげる．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="ot">{-# LANGUAGE FlexibleInstances    #-}</span></a>
-<a class="sourceLine" id="cb5-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb5-3" data-line-number="3"><span class="kw">type</span> <span class="dt">ChatWorkResponse</span> a <span class="fu">=</span> <span class="dt">JsonResponse</span> (<span class="dt">Either</span> <span class="dt">ChatWorkErrors</span> a)</a>
-<a class="sourceLine" id="cb5-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb5-5" data-line-number="5"><span class="kw">instance</span> <span class="ot">{-# OVERLAPS #-}</span> (<span class="dt">FromJSON</span> a) <span class="ot">=&gt;</span> <span class="dt">FromJSON</span> (<span class="dt">Either</span> <span class="dt">ChatWorkErrors</span> a) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb5-6" data-line-number="6">  parseJSON v <span class="fu">=</span> ((<span class="dt">Left</span> <span class="fu">&lt;$&gt;</span> parseJSON v) <span class="fu">&lt;|&gt;</span> (<span class="dt">Right</span> <span class="fu">&lt;$&gt;</span> parseJSON v))</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="ot">{-# LANGUAGE FlexibleInstances    #-}</span></a>
+<a class="sourceLine" id="cb5-2" title="2"></a>
+<a class="sourceLine" id="cb5-3" title="3"><span class="kw">type</span> <span class="dt">ChatWorkResponse</span> a <span class="fu">=</span> <span class="dt">JsonResponse</span> (<span class="dt">Either</span> <span class="dt">ChatWorkErrors</span> a)</a>
+<a class="sourceLine" id="cb5-4" title="4"></a>
+<a class="sourceLine" id="cb5-5" title="5"><span class="kw">instance</span> <span class="ot">{-# OVERLAPS #-}</span> (<span class="dt">FromJSON</span> a) <span class="ot">=&gt;</span> <span class="dt">FromJSON</span> (<span class="dt">Either</span> <span class="dt">ChatWorkErrors</span> a) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb5-6" title="6">  parseJSON v <span class="fu">=</span> ((<span class="dt">Left</span> <span class="fu">&lt;$&gt;</span> parseJSON v) <span class="fu">&lt;|&gt;</span> (<span class="dt">Right</span> <span class="fu">&lt;$&gt;</span> parseJSON v))</a></code></pre></div>
 <p>ついでに，<code>JsonResponse</code> のラップした． こうしておくと，例えば <code>JsonResponse Me</code> と書いてた部分を <code>ChatWorkResponse Me</code> と置き換えるだけで良くなる．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="co">-- getMe :: (MonadHttp m) =&gt; Token -&gt; m (JsonResponse Me)</span></a>
-<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="ot">getMe ::</span> (<span class="dt">MonadHttp</span> m) <span class="ot">=&gt;</span> <span class="dt">Token</span> <span class="ot">-&gt;</span> m (<span class="dt">ChatWorkResponse</span> <span class="dt">Me</span>)</a>
-<a class="sourceLine" id="cb6-3" data-line-number="3">getMe token <span class="fu">=</span> req <span class="dt">GET</span> (baseUrl <span class="fu">/:</span> <span class="st">&quot;me&quot;</span>) <span class="dt">NoReqBody</span> jsonResponse (mkHeader token)</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="co">-- getMe :: (MonadHttp m) =&gt; Token -&gt; m (JsonResponse Me)</span></a>
+<a class="sourceLine" id="cb6-2" title="2"><span class="ot">getMe ::</span> (<span class="dt">MonadHttp</span> m) <span class="ot">=&gt;</span> <span class="dt">Token</span> <span class="ot">-&gt;</span> m (<span class="dt">ChatWorkResponse</span> <span class="dt">Me</span>)</a>
+<a class="sourceLine" id="cb6-3" title="3">getMe token <span class="fu">=</span> req <span class="dt">GET</span> (baseUrl <span class="fu">/:</span> <span class="st">&quot;me&quot;</span>) <span class="dt">NoReqBody</span> jsonResponse (mkHeader token)</a></code></pre></div>
 <p><code>Either ChatWorkErrors a</code> 型を <code>FromJSON</code> 型クラスのインスタンスにするには少しだけ工夫が要る． なぜなら，すでに <code>Either e a</code> 型が<a href="https://hackage.haskell.org/package/aeson-1.2.1.0/docs/Data-Aeson.html#t:FromJSON">インスタンスになっているから</a>． そのために <code>FlexibleInstances</code> 言語拡張をして，<code>{-# OVERLAPS #-}</code> を書き加える必要がある．</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="fu">&gt;&gt;</span> token <span class="fu">=</span> <span class="st">&quot;yyy&quot;</span></a>
-<a class="sourceLine" id="cb7-2" data-line-number="2"><span class="fu">&gt;&gt;</span> print <span class="fu">=&lt;&lt;</span> (responseBody <span class="fu">&lt;$&gt;</span> getMe token)</a>
-<a class="sourceLine" id="cb7-3" data-line-number="3"><span class="dt">ChatWorkErrors</span> {getErrors <span class="fu">=</span> [<span class="st">&quot;Invalid API token&quot;</span>]}</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="fu">&gt;&gt;</span> token <span class="fu">=</span> <span class="st">&quot;yyy&quot;</span></a>
+<a class="sourceLine" id="cb7-2" title="2"><span class="fu">&gt;&gt;</span> <span class="fu">print</span> <span class="fu">=&lt;&lt;</span> (responseBody <span class="fu">&lt;$&gt;</span> getMe token)</a>
+<a class="sourceLine" id="cb7-3" title="3"><span class="dt">ChatWorkErrors</span> {getErrors <span class="fu">=</span> [<span class="st">&quot;Invalid API token&quot;</span>]}</a></code></pre></div>
 <p>ちなみに，<code>Either e a</code> 型のインスタンスではダメで，これは <code>Left</code> とか <code>Right</code> とかを含んだ文字列じゃないとパースできない．</p>
 <h3 id="自分流のテストの追加">(自分流の)テストの追加</h3>
 <p>で最後にテストを追加しようと思う． TDD的には最悪なのは分かるが，全部手探りで進めたので許してほしい．</p>
 <p>理想としては，<a href="https://hackage.haskell.org/package/hspec"><code>hspec</code></a> パッケージを使って次のように書きたい．</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="kw">import</span> <span class="dt">ChatWork.Endpoints.Me</span> (getMe)</a>
-<a class="sourceLine" id="cb8-2" data-line-number="2"><span class="kw">import</span> <span class="dt">ChatWork.MonadHttpIO</span> ()</a>
-<a class="sourceLine" id="cb8-3" data-line-number="3"><span class="kw">import</span> <span class="dt">ChatWork.Types</span> (<span class="dt">Me</span> (..))</a>
-<a class="sourceLine" id="cb8-4" data-line-number="4"><span class="kw">import</span> <span class="dt">Network.HTTP.Req</span> (responseBody)</a>
-<a class="sourceLine" id="cb8-5" data-line-number="5"><span class="kw">import</span> <span class="dt">Test.Hspec</span> (<span class="dt">Spec</span>, context, describe, hspec, it, shouldReturn)</a>
-<a class="sourceLine" id="cb8-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb8-7" data-line-number="7"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb8-8" data-line-number="8">main <span class="fu">=</span> hspec spec</a>
-<a class="sourceLine" id="cb8-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb8-10" data-line-number="10"><span class="ot">token ::</span> <span class="dt">Token</span></a>
-<a class="sourceLine" id="cb8-11" data-line-number="11">token <span class="fu">=</span> <span class="st">&quot;...&quot;</span></a>
-<a class="sourceLine" id="cb8-12" data-line-number="12"></a>
-<a class="sourceLine" id="cb8-13" data-line-number="13"><span class="ot">spec ::</span> <span class="dt">Spec</span></a>
-<a class="sourceLine" id="cb8-14" data-line-number="14">spec <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb8-15" data-line-number="15">    describe <span class="st">&quot;getMe: endpoint GET /me&quot;</span> <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb8-16" data-line-number="16">      context <span class="st">&quot;correct responce&quot;</span> <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb8-17" data-line-number="17">        it <span class="st">&quot;should return Right me response body&quot;</span> <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb8-18" data-line-number="18">          (responseBody <span class="fu">&lt;$&gt;</span> getMe token) <span class="ot">`shouldReturn`</span> <span class="dt">Right</span> me</a>
-<a class="sourceLine" id="cb8-19" data-line-number="19"></a>
-<a class="sourceLine" id="cb8-20" data-line-number="20"><span class="ot">me ::</span> <span class="dt">Me</span></a>
-<a class="sourceLine" id="cb8-21" data-line-number="21">me <span class="fu">=</span> <span class="fu">...</span></a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">import</span> <span class="dt">ChatWork.Endpoints.Me</span> (getMe)</a>
+<a class="sourceLine" id="cb8-2" title="2"><span class="kw">import</span> <span class="dt">ChatWork.MonadHttpIO</span> ()</a>
+<a class="sourceLine" id="cb8-3" title="3"><span class="kw">import</span> <span class="dt">ChatWork.Types</span> (<span class="dt">Me</span> (..))</a>
+<a class="sourceLine" id="cb8-4" title="4"><span class="kw">import</span> <span class="dt">Network.HTTP.Req</span> (responseBody)</a>
+<a class="sourceLine" id="cb8-5" title="5"><span class="kw">import</span> <span class="dt">Test.Hspec</span> (<span class="dt">Spec</span>, context, describe, hspec, it, shouldReturn)</a>
+<a class="sourceLine" id="cb8-6" title="6"></a>
+<a class="sourceLine" id="cb8-7" title="7"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb8-8" title="8">main <span class="fu">=</span> hspec spec</a>
+<a class="sourceLine" id="cb8-9" title="9"></a>
+<a class="sourceLine" id="cb8-10" title="10"><span class="ot">token ::</span> <span class="dt">Token</span></a>
+<a class="sourceLine" id="cb8-11" title="11">token <span class="fu">=</span> <span class="st">&quot;...&quot;</span></a>
+<a class="sourceLine" id="cb8-12" title="12"></a>
+<a class="sourceLine" id="cb8-13" title="13"><span class="ot">spec ::</span> <span class="dt">Spec</span></a>
+<a class="sourceLine" id="cb8-14" title="14">spec <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-15" title="15">    describe <span class="st">&quot;getMe: endpoint GET /me&quot;</span> <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-16" title="16">      context <span class="st">&quot;correct responce&quot;</span> <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-17" title="17">        it <span class="st">&quot;should return Right me response body&quot;</span> <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-18" title="18">          (responseBody <span class="fu">&lt;$&gt;</span> getMe token) <span class="ot">`shouldReturn`</span> <span class="dt">Right</span> me</a>
+<a class="sourceLine" id="cb8-19" title="19"></a>
+<a class="sourceLine" id="cb8-20" title="20"><span class="ot">me ::</span> <span class="dt">Me</span></a>
+<a class="sourceLine" id="cb8-21" title="21">me <span class="fu">=</span> <span class="fu">...</span></a></code></pre></div>
 <p>しかし，認証トークンを直接書きたくないし，そもそもChatWork API のサーバーに直接通信したくない(サーバーに問題があってもテストエラーになってしまうから)． そのために認証の要らないモックサーバーを立てよう．</p>
 <p>イロイロ調べた結果 <code>hspec</code> の <a href="https://hackage.haskell.org/package/hspec-2.4.4/docs/Test-Hspec.html#v:around"><code>around</code></a> 関数や <a href="https://hackage.haskell.org/package/hspec-2.4.4/docs/Test-Hspec.html#v:around_"><code>around_</code></a> 関数を利用すると，テストを実行する際に任意の <code>IO</code> アクションを実行できるようだ．</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="ot">around ::</span> (<span class="dt">ActionWith</span> a <span class="ot">-&gt;</span> <span class="dt">IO</span> ()) <span class="ot">-&gt;</span> <span class="dt">SpecWith</span> a <span class="ot">-&gt;</span> <span class="dt">Spec</span></a>
-<a class="sourceLine" id="cb9-2" data-line-number="2">around <span class="fu">=</span> <span class="fu">...</span></a>
-<a class="sourceLine" id="cb9-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb9-4" data-line-number="4"><span class="ot">around_ ::</span> (<span class="dt">IO</span> () <span class="ot">-&gt;</span> <span class="dt">IO</span> ()) <span class="ot">-&gt;</span> <span class="dt">SpecWith</span> a <span class="ot">-&gt;</span> <span class="dt">SpecWith</span> a</a>
-<a class="sourceLine" id="cb9-5" data-line-number="5">around_ <span class="fu">=</span> <span class="fu">...</span></a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="ot">around ::</span> (<span class="dt">ActionWith</span> a <span class="ot">-&gt;</span> <span class="dt">IO</span> ()) <span class="ot">-&gt;</span> <span class="dt">SpecWith</span> a <span class="ot">-&gt;</span> <span class="dt">Spec</span></a>
+<a class="sourceLine" id="cb9-2" title="2">around <span class="fu">=</span> <span class="fu">...</span></a>
+<a class="sourceLine" id="cb9-3" title="3"></a>
+<a class="sourceLine" id="cb9-4" title="4"><span class="ot">around_ ::</span> (<span class="dt">IO</span> () <span class="ot">-&gt;</span> <span class="dt">IO</span> ()) <span class="ot">-&gt;</span> <span class="dt">SpecWith</span> a <span class="ot">-&gt;</span> <span class="dt">SpecWith</span> a</a>
+<a class="sourceLine" id="cb9-5" title="5">around_ <span class="fu">=</span> <span class="fu">...</span></a></code></pre></div>
 <p>モックサーバーは <a href="https://hackage.haskell.org/package/servant-server"><code>servant-server</code></a> パッケージを使って立てる． <code>servant-server</code> の使い方は細かくは解説しない(ググるなり，<a href="https://github.com/matsubara0507/chatwork/blob/master/test/ChatWork/Test/MockServer.hs">ぼくのコード</a>を見るなりしてください)．</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Network.Wai.Handler.Warp</span> (run)</a>
-<a class="sourceLine" id="cb10-2" data-line-number="2"><span class="kw">import</span> <span class="dt">Servant.Server</span> (serve)</a>
-<a class="sourceLine" id="cb10-3" data-line-number="3"><span class="kw">import</span> <span class="dt">Servant</span></a>
-<a class="sourceLine" id="cb10-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb10-5" data-line-number="5"><span class="kw">type</span> <span class="dt">ChatWorkHeader</span> a <span class="fu">=</span> <span class="dt">Headers</span> <span class="ch">'[Header &quot;Content-Length&quot; Int64] a</span></a>
-<a class="sourceLine" id="cb10-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb10-7" data-line-number="7"><span class="kw">type</span> <span class="dt">API</span> <span class="fu">=</span> <span class="st">&quot;me&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">'[JSON] (ChatWorkHeader Me)</span></a>
-<a class="sourceLine" id="cb10-8" data-line-number="8">      <span class="fu">:&lt;|&gt;</span> <span class="st">&quot;my&quot;</span> <span class="fu">:&gt;</span> <span class="st">&quot;status&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">'[JSON] (ChatWorkHeader MyStatus)</span></a>
-<a class="sourceLine" id="cb10-9" data-line-number="9">      <span class="fu">:&lt;|&gt;</span> <span class="fu">...</span></a>
-<a class="sourceLine" id="cb10-10" data-line-number="10"></a>
-<a class="sourceLine" id="cb10-11" data-line-number="11"><span class="ot">api ::</span> <span class="dt">Proxy</span> <span class="dt">API</span></a>
-<a class="sourceLine" id="cb10-12" data-line-number="12">api <span class="fu">=</span> <span class="dt">Proxy</span></a>
-<a class="sourceLine" id="cb10-13" data-line-number="13"></a>
-<a class="sourceLine" id="cb10-14" data-line-number="14"><span class="ot">server ::</span> <span class="dt">Server</span> <span class="dt">API</span></a>
-<a class="sourceLine" id="cb10-15" data-line-number="15">server <span class="fu">=</span> getMe <span class="fu">:&lt;|&gt;</span> getMyStatus <span class="fu">:&lt;|&gt;</span> getMyTasks <span class="fu">:&lt;|&gt;</span> getContacts</a>
-<a class="sourceLine" id="cb10-16" data-line-number="16">    <span class="fu">:&lt;|&gt;</span> getIncomingRequests <span class="fu">:&lt;|&gt;</span> acceptIncomingRequest <span class="fu">:&lt;|&gt;</span> rejectIncomingRequest</a>
-<a class="sourceLine" id="cb10-17" data-line-number="17">    <span class="fu">:&lt;|&gt;</span> <span class="fu">...</span></a>
-<a class="sourceLine" id="cb10-18" data-line-number="18">  <span class="kw">where</span></a>
-<a class="sourceLine" id="cb10-19" data-line-number="19">    getMe <span class="fu">=</span> return <span class="fu">$</span> addHeader (LBS.length <span class="fu">$</span> encode me) me</a>
-<a class="sourceLine" id="cb10-20" data-line-number="20">    getMyStatus <span class="fu">=</span> return <span class="fu">$</span> addHeader (LBS.length <span class="fu">$</span> encode myStatus) myStatus</a>
-<a class="sourceLine" id="cb10-21" data-line-number="21">    <span class="fu">...</span></a>
-<a class="sourceLine" id="cb10-22" data-line-number="22"></a>
-<a class="sourceLine" id="cb10-23" data-line-number="23"><span class="ot">mockServer ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb10-24" data-line-number="24">mockServer <span class="fu">=</span> run <span class="dv">8000</span> (serve api server)</a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">import</span> <span class="dt">Network.Wai.Handler.Warp</span> (run)</a>
+<a class="sourceLine" id="cb10-2" title="2"><span class="kw">import</span> <span class="dt">Servant.Server</span> (serve)</a>
+<a class="sourceLine" id="cb10-3" title="3"><span class="kw">import</span> <span class="dt">Servant</span></a>
+<a class="sourceLine" id="cb10-4" title="4"></a>
+<a class="sourceLine" id="cb10-5" title="5"><span class="kw">type</span> <span class="dt">ChatWorkHeader</span> a <span class="fu">=</span> <span class="dt">Headers</span> '[<span class="dt">Header</span> <span class="st">&quot;Content-Length&quot;</span> <span class="dt">Int64</span>] a</a>
+<a class="sourceLine" id="cb10-6" title="6"></a>
+<a class="sourceLine" id="cb10-7" title="7"><span class="kw">type</span> <span class="dt">API</span> <span class="fu">=</span> <span class="st">&quot;me&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> '[<span class="dt">JSON</span>] (<span class="dt">ChatWorkHeader</span> <span class="dt">Me</span>)</a>
+<a class="sourceLine" id="cb10-8" title="8">      <span class="fu">:&lt;|&gt;</span> <span class="st">&quot;my&quot;</span> <span class="fu">:&gt;</span> <span class="st">&quot;status&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> '[<span class="dt">JSON</span>] (<span class="dt">ChatWorkHeader</span> <span class="dt">MyStatus</span>)</a>
+<a class="sourceLine" id="cb10-9" title="9">      <span class="fu">:&lt;|&gt;</span> <span class="fu">...</span></a>
+<a class="sourceLine" id="cb10-10" title="10"></a>
+<a class="sourceLine" id="cb10-11" title="11"><span class="ot">api ::</span> <span class="dt">Proxy</span> <span class="dt">API</span></a>
+<a class="sourceLine" id="cb10-12" title="12">api <span class="fu">=</span> <span class="dt">Proxy</span></a>
+<a class="sourceLine" id="cb10-13" title="13"></a>
+<a class="sourceLine" id="cb10-14" title="14"><span class="ot">server ::</span> <span class="dt">Server</span> <span class="dt">API</span></a>
+<a class="sourceLine" id="cb10-15" title="15">server <span class="fu">=</span> getMe <span class="fu">:&lt;|&gt;</span> getMyStatus <span class="fu">:&lt;|&gt;</span> getMyTasks <span class="fu">:&lt;|&gt;</span> getContacts</a>
+<a class="sourceLine" id="cb10-16" title="16">    <span class="fu">:&lt;|&gt;</span> getIncomingRequests <span class="fu">:&lt;|&gt;</span> acceptIncomingRequest <span class="fu">:&lt;|&gt;</span> rejectIncomingRequest</a>
+<a class="sourceLine" id="cb10-17" title="17">    <span class="fu">:&lt;|&gt;</span> <span class="fu">...</span></a>
+<a class="sourceLine" id="cb10-18" title="18">  <span class="kw">where</span></a>
+<a class="sourceLine" id="cb10-19" title="19">    getMe <span class="fu">=</span> <span class="fu">return</span> <span class="fu">$</span> addHeader (LBS.length <span class="fu">$</span> encode me) me</a>
+<a class="sourceLine" id="cb10-20" title="20">    getMyStatus <span class="fu">=</span> <span class="fu">return</span> <span class="fu">$</span> addHeader (LBS.length <span class="fu">$</span> encode myStatus) myStatus</a>
+<a class="sourceLine" id="cb10-21" title="21">    <span class="fu">...</span></a>
+<a class="sourceLine" id="cb10-22" title="22"></a>
+<a class="sourceLine" id="cb10-23" title="23"><span class="ot">mockServer ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb10-24" title="24">mockServer <span class="fu">=</span> run <span class="dv">8000</span> (serve api server)</a></code></pre></div>
 <p>空文字が返ってきたら <code>[]</code> にする処理を，ヘッダーの <code>Content-Length</code> を見て処理しているので，<code>Headers</code> 型に <code>'[Header &quot;Content-Length&quot; Int64]</code> を与えて，<code>addHeader</code> 関数を使ってヘッダーに書き加えている．</p>
 <h2 id="section"></h2>
 <p>あとは <code>mockServer</code> 関数を <code>IO () -&gt; IO ()</code> 型になるようにラップするだけ． ここで，普通に <code>mockServer</code> 関数を実行するとプログラムがそこで止まってしまう． なので，<a href="http://hackage.haskell.org/package/base-4.10.0.0/docs/Control-Concurrent.html#v:forkIO"><code>forkIO</code></a> 関数を使って子プロセスで実行する．</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Control.Concurrent</span> (forkIO, killThread)</a>
-<a class="sourceLine" id="cb11-2" data-line-number="2"><span class="kw">import</span> <span class="dt">Control.Exception</span> (finally)</a>
-<a class="sourceLine" id="cb11-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb11-4" data-line-number="4"><span class="ot">runMockServer ::</span> <span class="dt">IO</span> () <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb11-5" data-line-number="5">runMockServer action <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb11-6" data-line-number="6">  tid <span class="ot">&lt;-</span> forkIO mockServer</a>
-<a class="sourceLine" id="cb11-7" data-line-number="7">  action <span class="ot">`finally`</span> killThread tid</a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="kw">import</span> <span class="dt">Control.Concurrent</span> (forkIO, killThread)</a>
+<a class="sourceLine" id="cb11-2" title="2"><span class="kw">import</span> <span class="dt">Control.Exception</span> (finally)</a>
+<a class="sourceLine" id="cb11-3" title="3"></a>
+<a class="sourceLine" id="cb11-4" title="4"><span class="ot">runMockServer ::</span> <span class="dt">IO</span> () <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb11-5" title="5">runMockServer action <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb11-6" title="6">  tid <span class="ot">&lt;-</span> forkIO mockServer</a>
+<a class="sourceLine" id="cb11-7" title="7">  action <span class="ot">`finally`</span> killThread tid</a></code></pre></div>
 <p>引数の <code>action</code> は(おそらく)実行する <code>Spec</code> 型のテストセットだと思う． プロセスは，テストが終わってから殺してほしいので，<a href="http://hackage.haskell.org/package/base-4.10.0.0/docs/Control-Exception.html#v:finally"><code>finally</code></a> 関数を使って，そのように指定する．</p>
 <h2 id="section-1"></h2>
 <p><code>runMockServer</code> 関数を使う前に，認証トークンと <code>baseUrl</code> を隠蔽して抽象化してくれる，<code>Client</code> 型クラスを定義しておく．</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" data-line-number="1"><span class="ot">{-# LANGUAGE DataKinds      #-}</span></a>
-<a class="sourceLine" id="cb12-2" data-line-number="2"><span class="ot">{-# LANGUAGE KindSignatures #-}</span></a>
-<a class="sourceLine" id="cb12-3" data-line-number="3"><span class="ot">{-# LANGUAGE TypeFamilies   #-}</span></a>
-<a class="sourceLine" id="cb12-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb12-5" data-line-number="5"><span class="kw">import</span> <span class="dt">Network.HTTP.Req</span> (<span class="dt">Option</span>, <span class="dt">Scheme</span>, <span class="dt">Url</span>)</a>
-<a class="sourceLine" id="cb12-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb12-7" data-line-number="7"><span class="kw">class</span> <span class="dt">Client</span> a <span class="kw">where</span></a>
-<a class="sourceLine" id="cb12-8" data-line-number="8">  <span class="kw">type</span> <span class="dt">ClientScheme</span><span class="ot"> a ::</span> <span class="dt">Scheme</span></a>
-<a class="sourceLine" id="cb12-9" data-line-number="9"><span class="ot">  baseUrl ::</span> a <span class="ot">-&gt;</span> <span class="dt">Url</span> (<span class="dt">ClientScheme</span> a)</a>
-<a class="sourceLine" id="cb12-10" data-line-number="10"><span class="ot">  mkHeader ::</span> a <span class="ot">-&gt;</span> <span class="dt">Option</span> scheme</a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="ot">{-# LANGUAGE DataKinds      #-}</span></a>
+<a class="sourceLine" id="cb12-2" title="2"><span class="ot">{-# LANGUAGE KindSignatures #-}</span></a>
+<a class="sourceLine" id="cb12-3" title="3"><span class="ot">{-# LANGUAGE TypeFamilies   #-}</span></a>
+<a class="sourceLine" id="cb12-4" title="4"></a>
+<a class="sourceLine" id="cb12-5" title="5"><span class="kw">import</span> <span class="dt">Network.HTTP.Req</span> (<span class="dt">Option</span>, <span class="dt">Scheme</span>, <span class="dt">Url</span>)</a>
+<a class="sourceLine" id="cb12-6" title="6"></a>
+<a class="sourceLine" id="cb12-7" title="7"><span class="kw">class</span> <span class="dt">Client</span> a <span class="kw">where</span></a>
+<a class="sourceLine" id="cb12-8" title="8">  <span class="kw">type</span> <span class="dt">ClientScheme</span><span class="ot"> a ::</span> <span class="dt">Scheme</span></a>
+<a class="sourceLine" id="cb12-9" title="9"><span class="ot">  baseUrl ::</span> a <span class="ot">-&gt;</span> <span class="dt">Url</span> (<span class="dt">ClientScheme</span> a)</a>
+<a class="sourceLine" id="cb12-10" title="10"><span class="ot">  mkHeader ::</span> a <span class="ot">-&gt;</span> <span class="dt">Option</span> scheme</a></code></pre></div>
 <p><code>Client</code> 型クラスを用いると，今までのエンドポイント関数は次のような型に書き換わる．</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" data-line-number="1"><span class="co">-- getMe :: (MonadHttp m) =&gt; Token -&gt; m (ChatWorkResponse Me)</span></a>
-<a class="sourceLine" id="cb13-2" data-line-number="2"><span class="ot">getMe ::</span> (<span class="dt">MonadHttp</span> m, <span class="dt">Client</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> m (<span class="dt">ChatWorkResponse</span> <span class="dt">Me</span>)</a>
-<a class="sourceLine" id="cb13-3" data-line-number="3">getMe client <span class="fu">=</span> req <span class="dt">GET</span> (baseUrl client <span class="fu">/:</span> <span class="st">&quot;me&quot;</span>) <span class="dt">NoReqBody</span> jsonResponse (mkHeader client)</a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="co">-- getMe :: (MonadHttp m) =&gt; Token -&gt; m (ChatWorkResponse Me)</span></a>
+<a class="sourceLine" id="cb13-2" title="2"><span class="ot">getMe ::</span> (<span class="dt">MonadHttp</span> m, <span class="dt">Client</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> m (<span class="dt">ChatWorkResponse</span> <span class="dt">Me</span>)</a>
+<a class="sourceLine" id="cb13-3" title="3">getMe client <span class="fu">=</span> req <span class="dt">GET</span> (baseUrl client <span class="fu">/:</span> <span class="st">&quot;me&quot;</span>) <span class="dt">NoReqBody</span> jsonResponse (mkHeader client)</a></code></pre></div>
 <p>ちなみに，普通に ChatWork API サーバーとやり取りする場合には次のような型を定義して用いる．</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Network.HTTP.Req</span> (<span class="dt">Scheme</span> (<span class="dt">Https</span>))</a>
-<a class="sourceLine" id="cb14-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb14-3" data-line-number="3"><span class="kw">type</span> <span class="dt">Token</span> <span class="fu">=</span> <span class="dt">ByteString</span></a>
-<a class="sourceLine" id="cb14-4" data-line-number="4"><span class="kw">newtype</span> <span class="dt">ChatWorkClient</span> <span class="fu">=</span> <span class="dt">ChatWorkClient</span> <span class="dt">Token</span></a>
-<a class="sourceLine" id="cb14-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb14-6" data-line-number="6"><span class="kw">instance</span> <span class="dt">Client</span> <span class="dt">ChatWorkClient</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb14-7" data-line-number="7">  <span class="kw">type</span> <span class="dt">ClientScheme</span> <span class="dt">ChatWorkClient</span> <span class="fu">=</span> <span class="ch">'Https</span></a>
-<a class="sourceLine" id="cb14-8" data-line-number="8">  baseUrl <span class="fu">=</span> const (https <span class="st">&quot;api.chatwork.com&quot;</span> <span class="fu">/:</span> <span class="st">&quot;v2&quot;</span>)</a>
-<a class="sourceLine" id="cb14-9" data-line-number="9">  mkHeader (<span class="dt">ChatWorkClient</span> token) <span class="fu">=</span> header <span class="st">&quot;X-ChatWorkToken&quot;</span> token</a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="kw">import</span> <span class="dt">Network.HTTP.Req</span> (<span class="dt">Scheme</span> (<span class="dt">Https</span>))</a>
+<a class="sourceLine" id="cb14-2" title="2"></a>
+<a class="sourceLine" id="cb14-3" title="3"><span class="kw">type</span> <span class="dt">Token</span> <span class="fu">=</span> <span class="dt">ByteString</span></a>
+<a class="sourceLine" id="cb14-4" title="4"><span class="kw">newtype</span> <span class="dt">ChatWorkClient</span> <span class="fu">=</span> <span class="dt">ChatWorkClient</span> <span class="dt">Token</span></a>
+<a class="sourceLine" id="cb14-5" title="5"></a>
+<a class="sourceLine" id="cb14-6" title="6"><span class="kw">instance</span> <span class="dt">Client</span> <span class="dt">ChatWorkClient</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb14-7" title="7">  <span class="kw">type</span> <span class="dt">ClientScheme</span> <span class="dt">ChatWorkClient</span> <span class="fu">=</span> <span class="dt">'Https</span></a>
+<a class="sourceLine" id="cb14-8" title="8">  baseUrl <span class="fu">=</span> <span class="fu">const</span> (https <span class="st">&quot;api.chatwork.com&quot;</span> <span class="fu">/:</span> <span class="st">&quot;v2&quot;</span>)</a>
+<a class="sourceLine" id="cb14-9" title="9">  mkHeader (<span class="dt">ChatWorkClient</span> token) <span class="fu">=</span> header <span class="st">&quot;X-ChatWorkToken&quot;</span> token</a></code></pre></div>
 <p>そして，テストの場合は次のようになる．</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Network.HTTP.Req</span> (http, <span class="dt">Scheme</span> (<span class="dt">Http</span>), port)</a>
-<a class="sourceLine" id="cb15-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb15-3" data-line-number="3"><span class="kw">data</span> <span class="dt">TestClient</span> <span class="fu">=</span> <span class="dt">TestClient</span></a>
-<a class="sourceLine" id="cb15-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb15-5" data-line-number="5"><span class="kw">instance</span> <span class="dt">Client</span> <span class="dt">TestClient</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb15-6" data-line-number="6">  <span class="kw">type</span> <span class="dt">ClientScheme</span> <span class="dt">TestClient</span> <span class="fu">=</span> <span class="ch">'Http</span></a>
-<a class="sourceLine" id="cb15-7" data-line-number="7">  baseUrl <span class="fu">=</span> const (http <span class="st">&quot;localhost&quot;</span>)</a>
-<a class="sourceLine" id="cb15-8" data-line-number="8">  mkHeader <span class="fu">=</span> const (port <span class="dv">8000</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" title="1"><span class="kw">import</span> <span class="dt">Network.HTTP.Req</span> (http, <span class="dt">Scheme</span> (<span class="dt">Http</span>), port)</a>
+<a class="sourceLine" id="cb15-2" title="2"></a>
+<a class="sourceLine" id="cb15-3" title="3"><span class="kw">data</span> <span class="dt">TestClient</span> <span class="fu">=</span> <span class="dt">TestClient</span></a>
+<a class="sourceLine" id="cb15-4" title="4"></a>
+<a class="sourceLine" id="cb15-5" title="5"><span class="kw">instance</span> <span class="dt">Client</span> <span class="dt">TestClient</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb15-6" title="6">  <span class="kw">type</span> <span class="dt">ClientScheme</span> <span class="dt">TestClient</span> <span class="fu">=</span> <span class="dt">'Http</span></a>
+<a class="sourceLine" id="cb15-7" title="7">  baseUrl <span class="fu">=</span> <span class="fu">const</span> (http <span class="st">&quot;localhost&quot;</span>)</a>
+<a class="sourceLine" id="cb15-8" title="8">  mkHeader <span class="fu">=</span> <span class="fu">const</span> (port <span class="dv">8000</span>)</a></code></pre></div>
 <h2 id="section-2"></h2>
 <p>そしていよいよ，<code>runMockServer</code> 関数を使って <code>Spec</code> 型を構成する．</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" data-line-number="1"><span class="ot">spec ::</span> <span class="dt">Spec</span></a>
-<a class="sourceLine" id="cb16-2" data-line-number="2">spec <span class="fu">=</span> around_ runMockServer <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb16-3" data-line-number="3">    describe <span class="st">&quot;getMe: endpoint GET /me&quot;</span> <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb16-4" data-line-number="4">      context <span class="st">&quot;correct responce&quot;</span> <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb16-5" data-line-number="5">        it <span class="st">&quot;should return Right me response body&quot;</span> <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb16-6" data-line-number="6">          (responseBody <span class="fu">&lt;$&gt;</span> getMe <span class="dt">TestClient</span>) <span class="ot">`shouldReturn`</span> <span class="dt">Right</span> me</a></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" title="1"><span class="ot">spec ::</span> <span class="dt">Spec</span></a>
+<a class="sourceLine" id="cb16-2" title="2">spec <span class="fu">=</span> around_ runMockServer <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb16-3" title="3">    describe <span class="st">&quot;getMe: endpoint GET /me&quot;</span> <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb16-4" title="4">      context <span class="st">&quot;correct responce&quot;</span> <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb16-5" title="5">        it <span class="st">&quot;should return Right me response body&quot;</span> <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb16-6" title="6">          (responseBody <span class="fu">&lt;$&gt;</span> getMe <span class="dt">TestClient</span>) <span class="ot">`shouldReturn`</span> <span class="dt">Right</span> me</a></code></pre></div>
 <p>これらを <strong>全てのエンドポイント分</strong> 作る…(苦行)．</p>
 <h3 id="chatwork.monadhttpio-とは"><code>ChatWork.MonadHttpIO</code> とは？</h3>
 <p>ちなみに，途中でインポートした <a href="https://hackage.haskell.org/package/chatwork-0.1.0.0/docs/ChatWork-MonadHttpIO.html"><code>ChatWork.MonadHttpIO</code></a> モジュールは何かというと，ただの <a href="https://hackage.haskell.org/package/req-0.3.0/docs/Network-HTTP-Req.html#t:MonadHttp"><code>MonadHttp</code></a> 型クラスの <code>IO</code> 型のインスタンスである．</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Control.Exception</span> (throwIO)</a>
-<a class="sourceLine" id="cb17-2" data-line-number="2"><span class="kw">import</span> <span class="dt">Network.HTTP.Req</span> (<span class="dt">MonadHttp</span>)</a>
-<a class="sourceLine" id="cb17-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb17-4" data-line-number="4"><span class="kw">instance</span> <span class="dt">MonadHttp</span> <span class="dt">IO</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb17-5" data-line-number="5">  handleHttpException <span class="fu">=</span> throwIO</a></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" title="1"><span class="kw">import</span> <span class="dt">Control.Exception</span> (throwIO)</a>
+<a class="sourceLine" id="cb17-2" title="2"><span class="kw">import</span> <span class="dt">Network.HTTP.Req</span> (<span class="dt">MonadHttp</span>)</a>
+<a class="sourceLine" id="cb17-3" title="3"></a>
+<a class="sourceLine" id="cb17-4" title="4"><span class="kw">instance</span> <span class="dt">MonadHttp</span> <span class="dt">IO</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb17-5" title="5">  handleHttpException <span class="fu">=</span> throwIO</a></code></pre></div>
 <p>なんでこんなことをしているかと言うと，<code>req</code> 関数(や <code>req'</code> 関数)を利用するには，<code>MonadHttp</code> 型クラスのインスタンスの中でないといけないからだ． つまり，これが無いと <code>IO</code> 型である <code>main</code> 関数の中や <code>ghci</code> で利用できないのだ．</p>
 <p>実は<a href="https://github.com/mrkkrp/req/issues/12">この問題</a>は <code>req-4.0</code> では既に解決済みで，<a href="https://hackage.haskell.org/package/req-0.4.0/docs/Network-HTTP-Req.html#t:Req"><code>Req</code></a> 型を使えばよくなっている． こんな感じに実行できる．</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb18-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Data.Default.Class</span> (def)</a>
-<a class="sourceLine" id="cb18-2" data-line-number="2"><span class="kw">import</span> <span class="dt">Network.HTTP.Req</span> (runReq, responseBody)</a>
-<a class="sourceLine" id="cb18-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb18-4" data-line-number="4"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb18-5" data-line-number="5">main <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb18-6" data-line-number="6">  <span class="kw">let</span> client <span class="fu">=</span> <span class="dt">ChatWorkClient</span> <span class="st">&quot;XXXXX&quot;</span></a>
-<a class="sourceLine" id="cb18-7" data-line-number="7">  response <span class="ot">&lt;-</span> runReq def (getMe client)</a>
-<a class="sourceLine" id="cb18-8" data-line-number="8">  print <span class="fu">$</span> responseBody response</a></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb18-1" title="1"><span class="kw">import</span> <span class="dt">Data.Default.Class</span> (def)</a>
+<a class="sourceLine" id="cb18-2" title="2"><span class="kw">import</span> <span class="dt">Network.HTTP.Req</span> (runReq, responseBody)</a>
+<a class="sourceLine" id="cb18-3" title="3"></a>
+<a class="sourceLine" id="cb18-4" title="4"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb18-5" title="5">main <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb18-6" title="6">  <span class="kw">let</span> client <span class="fu">=</span> <span class="dt">ChatWorkClient</span> <span class="st">&quot;XXXXX&quot;</span></a>
+<a class="sourceLine" id="cb18-7" title="7">  response <span class="ot">&lt;-</span> runReq def (getMe client)</a>
+<a class="sourceLine" id="cb18-8" title="8">  <span class="fu">print</span> <span class="fu">$</span> responseBody response</a></code></pre></div>
 <h2 id="おしまい">おしまい</h2>
 <p>このあと Haskage や Stackage に登録して，無事作ったライブラリが Nightly に登録された． 次回はその過程も書いてみようかなぁ(ググればわかるんだけど)．</p>
   </div>

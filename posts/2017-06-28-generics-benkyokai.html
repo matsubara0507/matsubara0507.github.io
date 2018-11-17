@@ -150,11 +150,11 @@
 <h2 id="section-2"></h2>
 <p>前半・後半通してあがったキーワードとして「<a href="https://ja.wikipedia.org/wiki/%E3%83%AA%E3%82%B9%E3%82%B3%E3%83%95%E3%81%AE%E7%BD%AE%E6%8F%9B%E5%8E%9F%E5%89%87">リスコフの置換原則</a>」があった． ざっくり言うと，(OOP の継承に置いて)子オブジェクトは親オブジェクトが満たす性質を全て満たさないとダメ，というモノである．</p>
 <p>問題として挙げたのが，Java の配列．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode java"><code class="sourceCode java"><a class="sourceLine" id="cb1-1" data-line-number="1">Parent[] a = <span class="kw">new</span> Parent[]{};</a>
-<a class="sourceLine" id="cb1-2" data-line-number="2">Child[]  b = <span class="kw">new</span> Child[]{};</a>
-<a class="sourceLine" id="cb1-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb1-4" data-line-number="4">a = b;</a>
-<a class="sourceLine" id="cb1-5" data-line-number="5">a[<span class="dv">0</span>] = <span class="kw">new</span> <span class="fu">Parent</span>();</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode java"><code class="sourceCode java"><a class="sourceLine" id="cb1-1" title="1">Parent[] a = <span class="kw">new</span> Parent[]{};</a>
+<a class="sourceLine" id="cb1-2" title="2">Child[]  b = <span class="kw">new</span> Child[]{};</a>
+<a class="sourceLine" id="cb1-3" title="3"></a>
+<a class="sourceLine" id="cb1-4" title="4">a = b;</a>
+<a class="sourceLine" id="cb1-5" title="5">a[<span class="dv">0</span>] = <span class="kw">new</span> <span class="fu">Parent</span>();</a></code></pre></div>
 <p>Java の配列は共変(covariant)なため，これはコンパイルエラーにはならない(共変性とは<a href="https://msdn.microsoft.com/ja-jp/library/dd799517">子型のオブジェクトを親型の変数に代入できるという性質</a>． しかし，<code>a[0] = new Parent();</code> で，<code>ArrayStoreException</code> という実行時エラーになる． この振る舞いはリスコフの置換原則を完全に破っている．</p>
 <p>ジェネリクスは不変なため，上記のようなコードはコンパイルエラーになる． そのため，ジェネリクスが導入された JDK5 より前は <code>NullPointErexception</code> と同じぐらいよくある実行時エラーだったらしい．</p>
 <h2 id="section-3"></h2>
@@ -222,16 +222,16 @@
 <li><a href="http://a-kawashiro.hatenablog.com/entry/2016/12/06/212431">型レベル自然数を使って型付き行列を作ってみた - a_kawashiroのブログ</a></li>
 </ul>
 <p>じゃぁ型自然数はどうやって表現しているかというと</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw">data</span> <span class="dt">Nat</span> <span class="fu">=</span> <span class="dt">Z</span> <span class="fu">|</span> <span class="dt">S</span> <span class="dt">Nat</span></a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="kw">data</span> <span class="dt">Nat</span> <span class="fu">=</span> <span class="dt">Z</span> <span class="fu">|</span> <span class="dt">S</span> <span class="dt">Nat</span></a></code></pre></div>
 <p>という感じの型を作ってあげて，これを型の型(型族)に昇格してあげる．</p>
 <p>OOPではほとんど聞かないけど，型にも型のようなものはあって，それを種(kind)と呼んでいる． 何も指定しない場合は，<code>*</code> というのが使われる． <code>Int</code> や <code>Char</code> の種は <code>*</code>，リスト <code>[]</code> や <code>Maybe</code> (Optional) は <code>* -&gt; *</code>，タプル <code>(,)</code> は <code>* - &gt; * -&gt; *</code> という風になっている．</p>
 <p>この <code>*</code> の部分を任意の種にできる． 例えば，長さ付きリストは</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="ot">{-# LANGUAGE GATDs DataKinds #-}</span></a>
-<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="kw">data</span> <span class="dt">Vec</span><span class="ot"> ::</span> <span class="fu">*</span> <span class="ot">-&gt;</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="fu">*</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb3-3" data-line-number="3">  <span class="dt">Nil</span><span class="ot">  ::</span> <span class="dt">Vec</span> a <span class="dt">Z</span></a>
-<a class="sourceLine" id="cb3-4" data-line-number="4">  <span class="dt">Cons</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">Vec</span> a n <span class="ot">-&gt;</span> <span class="dt">Vec</span> a (<span class="dt">S</span> n)</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="ot">{-# LANGUAGE GATDs DataKinds #-}</span></a>
+<a class="sourceLine" id="cb3-2" title="2"><span class="kw">data</span> <span class="dt">Vec</span><span class="ot"> ::</span> <span class="fu">*</span> <span class="ot">-&gt;</span> <span class="dt">Nat</span> <span class="ot">-&gt;</span> <span class="fu">*</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb3-3" title="3">  <span class="dt">Nil</span><span class="ot">  ::</span> <span class="dt">Vec</span> a <span class="dt">Z</span></a>
+<a class="sourceLine" id="cb3-4" title="4">  <span class="dt">Cons</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">Vec</span> a n <span class="ot">-&gt;</span> <span class="dt">Vec</span> a (<span class="dt">S</span> n)</a></code></pre></div>
 <p>と書ける． これを用いて型安全 <code>head</code> が書ける．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1">head<span class="ot"> ::</span> <span class="dt">Vec</span> a (<span class="dt">S</span> n) <span class="ot">-&gt;</span> a</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="fu">head</span><span class="ot"> ::</span> <span class="dt">Vec</span> a (<span class="dt">S</span> n) <span class="ot">-&gt;</span> a</a></code></pre></div>
 <p><code>head Nil</code> とするとコンパイルエラーになる．</p>
 <ul>
 <li>参照 : <a href="http://www.kotha.net/ghcguide_ja/7.6.2/promotion.html">7.9. データ型の昇格</a></li>
@@ -255,19 +255,19 @@
 <p>内容は，Javaジェネリクスを利用して <a href="https://en.wikipedia.org/wiki/Fluent_interface">Fluent Style の API</a> を実装数るためのパターンを考えました，という話．</p>
 <h2 id="section-11"></h2>
 <p>Fluent Style とは，以下のような，あるオブジェクトの状態変化をドット記法で数珠つなぎ(メソッドチェーン)にしていきながらプログラムを構成していくスタイルのコトだと思う．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode java"><code class="sourceCode java"><a class="sourceLine" id="cb5-1" data-line-number="1">CanvasObj obj = <span class="bu">Graphics</span>.<span class="fu">builder</span>()</a>
-<a class="sourceLine" id="cb5-2" data-line-number="2">    .<span class="fu">newGroup</span>()</a>
-<a class="sourceLine" id="cb5-3" data-line-number="3">        .<span class="fu">newCircle</span>().<span class="fu">x</span>(<span class="dv">10</span>).<span class="fu">y</span>(<span class="dv">10</span>).<span class="fu">radius</span>(<span class="dv">20</span>).<span class="fu">circle</span>()</a>
-<a class="sourceLine" id="cb5-4" data-line-number="4">        .<span class="fu">newText</span>().<span class="fu">text</span>(<span class="st">&quot;Hello&quot;</span>).<span class="fu">text</span>()</a>
-<a class="sourceLine" id="cb5-5" data-line-number="5">        .<span class="fu">end</span>()</a>
-<a class="sourceLine" id="cb5-6" data-line-number="6">    .<span class="fu">newGroup</span>().<span class="fu">rotation</span>(<span class="dv">90</span>)</a>
-<a class="sourceLine" id="cb5-7" data-line-number="7">        .<span class="fu">newCircle</span>().<span class="fu">x</span>(<span class="dv">10</span>).<span class="fu">y</span>(<span class="dv">20</span>).<span class="fu">radius</span>(<span class="dv">20</span>).<span class="fu">circle</span>()</a>
-<a class="sourceLine" id="cb5-8" data-line-number="8">        .<span class="fu">newText</span>()</a>
-<a class="sourceLine" id="cb5-9" data-line-number="9">            .<span class="fu">text</span>(<span class="st">&quot;world&quot;</span>)</a>
-<a class="sourceLine" id="cb5-10" data-line-number="10">            .<span class="fu">font</span>().<span class="fu">style</span>(<span class="bu">Font</span>.<span class="fu">FontStyle</span>.<span class="fu">BOLD</span>).<span class="fu">font</span>()</a>
-<a class="sourceLine" id="cb5-11" data-line-number="11">            .<span class="fu">text</span>()</a>
-<a class="sourceLine" id="cb5-12" data-line-number="12">        .<span class="fu">end</span>()</a>
-<a class="sourceLine" id="cb5-13" data-line-number="13">    .<span class="fu">build</span>();</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode java"><code class="sourceCode java"><a class="sourceLine" id="cb5-1" title="1">CanvasObj obj = <span class="bu">Graphics</span>.<span class="fu">builder</span>()</a>
+<a class="sourceLine" id="cb5-2" title="2">    .<span class="fu">newGroup</span>()</a>
+<a class="sourceLine" id="cb5-3" title="3">        .<span class="fu">newCircle</span>().<span class="fu">x</span>(<span class="dv">10</span>).<span class="fu">y</span>(<span class="dv">10</span>).<span class="fu">radius</span>(<span class="dv">20</span>).<span class="fu">circle</span>()</a>
+<a class="sourceLine" id="cb5-4" title="4">        .<span class="fu">newText</span>().<span class="fu">text</span>(<span class="st">&quot;Hello&quot;</span>).<span class="fu">text</span>()</a>
+<a class="sourceLine" id="cb5-5" title="5">        .<span class="fu">end</span>()</a>
+<a class="sourceLine" id="cb5-6" title="6">    .<span class="fu">newGroup</span>().<span class="fu">rotation</span>(<span class="dv">90</span>)</a>
+<a class="sourceLine" id="cb5-7" title="7">        .<span class="fu">newCircle</span>().<span class="fu">x</span>(<span class="dv">10</span>).<span class="fu">y</span>(<span class="dv">20</span>).<span class="fu">radius</span>(<span class="dv">20</span>).<span class="fu">circle</span>()</a>
+<a class="sourceLine" id="cb5-8" title="8">        .<span class="fu">newText</span>()</a>
+<a class="sourceLine" id="cb5-9" title="9">            .<span class="fu">text</span>(<span class="st">&quot;world&quot;</span>)</a>
+<a class="sourceLine" id="cb5-10" title="10">            .<span class="fu">font</span>().<span class="fu">style</span>(<span class="bu">Font</span>.<span class="fu">FontStyle</span>.<span class="fu">BOLD</span>).<span class="fu">font</span>()</a>
+<a class="sourceLine" id="cb5-11" title="11">            .<span class="fu">text</span>()</a>
+<a class="sourceLine" id="cb5-12" title="12">        .<span class="fu">end</span>()</a>
+<a class="sourceLine" id="cb5-13" title="13">    .<span class="fu">build</span>();</a></code></pre></div>
 <p>なぜ，コレがうれしいのかというと</p>
 <ul>
 <li>fluent style <code>f().g().h()</code> は，よくある sequential style <code>f(); g(); h()</code> より読みやすい</li>
@@ -282,23 +282,23 @@
 <p>スライドにちょこちょこ出てくる実装が完全ではない． Webを探しても完全な実装が見当たらなかったので，頑張って自分で書いてみた(<a href="https://gist.github.com/matsubara0507/e380825e953832282612b3bded798d91">Gist</a>)． 一応動作する． (4時間ぐらいかかった…orz)</p>
 <h2 id="section-13"></h2>
 <p>キモはいくつかあるようだが，面白いと感じたのは再帰ジェネリクスのところ</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode java"><code class="sourceCode java"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">abstract</span> <span class="kw">class</span> CanvasObjBuilder&lt;StateT <span class="kw">extends</span> CanvasObj, Self <span class="kw">extends</span> CanvasObjBuilder&lt;StateT, Self&gt;&gt; {</a>
-<a class="sourceLine" id="cb6-2" data-line-number="2">    Self <span class="fu">x</span>(<span class="dt">double</span> x) {</a>
-<a class="sourceLine" id="cb6-3" data-line-number="3">        <span class="kw">return</span> <span class="fu">self</span>(obj -&gt; obj.<span class="fu">setX</span>(x));</a>
-<a class="sourceLine" id="cb6-4" data-line-number="4">    }</a>
-<a class="sourceLine" id="cb6-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb6-6" data-line-number="6">    Self <span class="fu">y</span>(<span class="dt">double</span> y) {</a>
-<a class="sourceLine" id="cb6-7" data-line-number="7">        <span class="kw">return</span> <span class="fu">self</span>(obj -&gt; obj.<span class="fu">setY</span>(y));</a>
-<a class="sourceLine" id="cb6-8" data-line-number="8">    }</a>
-<a class="sourceLine" id="cb6-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb6-10" data-line-number="10">    <span class="kw">abstract</span> StateT <span class="fu">getState</span>();</a>
-<a class="sourceLine" id="cb6-11" data-line-number="11"></a>
-<a class="sourceLine" id="cb6-12" data-line-number="12">    <span class="at">@SuppressWarnings</span>(<span class="st">&quot;unchecked&quot;</span>) <span class="co">// black magic! XD</span></a>
-<a class="sourceLine" id="cb6-13" data-line-number="13">    Self <span class="fu">self</span>(Consumer&lt;StateT&gt; action) {</a>
-<a class="sourceLine" id="cb6-14" data-line-number="14">        action.<span class="fu">accept</span>(<span class="fu">getState</span>());</a>
-<a class="sourceLine" id="cb6-15" data-line-number="15">        <span class="kw">return</span> (Self)<span class="kw">this</span>;</a>
-<a class="sourceLine" id="cb6-16" data-line-number="16">    }</a>
-<a class="sourceLine" id="cb6-17" data-line-number="17">}</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode java"><code class="sourceCode java"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">abstract</span> <span class="kw">class</span> CanvasObjBuilder&lt;StateT <span class="kw">extends</span> CanvasObj, Self <span class="kw">extends</span> CanvasObjBuilder&lt;StateT, Self&gt;&gt; {</a>
+<a class="sourceLine" id="cb6-2" title="2">    Self <span class="fu">x</span>(<span class="dt">double</span> x) {</a>
+<a class="sourceLine" id="cb6-3" title="3">        <span class="kw">return</span> <span class="fu">self</span>(obj -&gt; obj.<span class="fu">setX</span>(x));</a>
+<a class="sourceLine" id="cb6-4" title="4">    }</a>
+<a class="sourceLine" id="cb6-5" title="5"></a>
+<a class="sourceLine" id="cb6-6" title="6">    Self <span class="fu">y</span>(<span class="dt">double</span> y) {</a>
+<a class="sourceLine" id="cb6-7" title="7">        <span class="kw">return</span> <span class="fu">self</span>(obj -&gt; obj.<span class="fu">setY</span>(y));</a>
+<a class="sourceLine" id="cb6-8" title="8">    }</a>
+<a class="sourceLine" id="cb6-9" title="9"></a>
+<a class="sourceLine" id="cb6-10" title="10">    <span class="kw">abstract</span> StateT <span class="fu">getState</span>();</a>
+<a class="sourceLine" id="cb6-11" title="11"></a>
+<a class="sourceLine" id="cb6-12" title="12">    <span class="at">@SuppressWarnings</span>(<span class="st">&quot;unchecked&quot;</span>) <span class="co">// black magic! XD</span></a>
+<a class="sourceLine" id="cb6-13" title="13">    Self <span class="fu">self</span>(Consumer&lt;StateT&gt; action) {</a>
+<a class="sourceLine" id="cb6-14" title="14">        action.<span class="fu">accept</span>(<span class="fu">getState</span>());</a>
+<a class="sourceLine" id="cb6-15" title="15">        <span class="kw">return</span> (Self)<span class="kw">this</span>;</a>
+<a class="sourceLine" id="cb6-16" title="16">    }</a>
+<a class="sourceLine" id="cb6-17" title="17">}</a></code></pre></div>
 <p><code>Self extends CanvasObjBuilder&lt;StateT,	Self&gt;</code> が再帰ジェネリクス． Java でもこういうことが出来るとは知らなかった．</p>
 <p>ちなみに，表題の <strong>黒魔術</strong> は <code>@SuppressWarnings(&quot;unchecked&quot;)</code> のことを指しているそうだ． 詳しくは全然わからないが，コレが無いとコンパイルエラーになるらしい．</p>
 <h2 id="section-14"></h2>
@@ -319,14 +319,14 @@
 <p>内容は Scala で抽象型メンバーを使ってジェネリックスを表現するという話．</p>
 <h2 id="section-15"></h2>
 <p>Scala の抽象型メンバー</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode scala"><code class="sourceCode scala"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw">trait</span> Parsers {</a>
-<a class="sourceLine" id="cb7-2" data-line-number="2">  <span class="kw">type</span> Element <span class="co">// &lt;--- コレ</span></a>
-<a class="sourceLine" id="cb7-3" data-line-number="3">  <span class="kw">type</span> Input = Reader[Element] <span class="co">// &lt;--- コレ</span></a>
-<a class="sourceLine" id="cb7-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb7-5" data-line-number="5">  <span class="kw">abstract</span> <span class="kw">class</span> Parser[T] <span class="kw">extends</span> (Input =&gt; ParseResult[T]) {</a>
-<a class="sourceLine" id="cb7-6" data-line-number="6">    <span class="kw">def</span> <span class="fu">apply</span>(in: Input): ParseResult[T]</a>
-<a class="sourceLine" id="cb7-7" data-line-number="7">  }</a>
-<a class="sourceLine" id="cb7-8" data-line-number="8">}</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode scala"><code class="sourceCode scala"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">trait</span> Parsers {</a>
+<a class="sourceLine" id="cb7-2" title="2">  <span class="kw">type</span> Element <span class="co">// &lt;--- コレ</span></a>
+<a class="sourceLine" id="cb7-3" title="3">  <span class="kw">type</span> Input = Reader[Element] <span class="co">// &lt;--- コレ</span></a>
+<a class="sourceLine" id="cb7-4" title="4"></a>
+<a class="sourceLine" id="cb7-5" title="5">  <span class="kw">abstract</span> <span class="kw">class</span> Parser[T] <span class="kw">extends</span> (Input =&gt; ParseResult[T]) {</a>
+<a class="sourceLine" id="cb7-6" title="6">    <span class="kw">def</span> <span class="fu">apply</span>(in: Input): ParseResult[T]</a>
+<a class="sourceLine" id="cb7-7" title="7">  }</a>
+<a class="sourceLine" id="cb7-8" title="8">}</a></code></pre></div>
 <p>だそうです． 抽象型(実装の無い型)をトレイトのメンバーとして取れるという機能ですかね．</p>
 <p>今回はジェネリクスを表現するために使うが</p>
 <ul>
@@ -341,9 +341,9 @@
 <h2 id="section-16"></h2>
 <p>前半は例として不変な Cell や共変な Cell，高階関数なんかを抽象型メンバーで表現していた．</p>
 <p>後半(本番)は高階多相をエミュレートしていた．</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode scala"><code class="sourceCode scala"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="kw">trait</span> Functor[T[_]] {</a>
-<a class="sourceLine" id="cb8-2" data-line-number="2">  <span class="kw">def</span> map[A, B](container: T[A])(f: A =&gt; B): T[B]</a>
-<a class="sourceLine" id="cb8-3" data-line-number="3">}</a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode scala"><code class="sourceCode scala"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">trait</span> Functor[T[_]] {</a>
+<a class="sourceLine" id="cb8-2" title="2">  <span class="kw">def</span> map[A, B](container: T[A])(f: A =&gt; B): T[B]</a>
+<a class="sourceLine" id="cb8-3" title="3">}</a></code></pre></div>
 <p>を，<a href="https://github.com/kmizu/generics_study/blob/master/src/main/scala/com/github/kmizu/abstract_type/Functor.scala">こういう</a>感じにしてた．</p>
 <p>ジェネリクスよりかなり膨大なコードになってしまうが，すごい．</p>
 <h2 id="section-17"></h2>

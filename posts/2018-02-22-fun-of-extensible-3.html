@@ -98,101 +98,101 @@
 </ul>
 <p>拡張可能タングルを用いれば，文脈付き(<code>IO</code> などの <code>Monad</code> 型クラスのインスタンス)で拡張可能レコードを生成し，更にフィールド間で依存関係を持つ際に，型クラスを用いて各フィールドごとに振る舞いを記述できるようになる． まぁこのヒトコトでは伝わらないですよね．</p>
 <p>百聞は一見に如かず．例えば</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">type</span> <span class="dt">Rec</span> <span class="fu">=</span> <span class="dt">Record</span> <span class="dt">Fields</span></a>
-<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="kw">type</span> <span class="dt">Fields</span> <span class="fu">=</span></a>
-<a class="sourceLine" id="cb1-3" data-line-number="3">    <span class="ch">'[ &quot;hoge1&quot; &gt;: String</span></a>
-<a class="sourceLine" id="cb1-4" data-line-number="4">     , <span class="st">&quot;hoge2&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb1-5" data-line-number="5">     , <span class="st">&quot;hoge3&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb1-6" data-line-number="6">     ]</a>
-<a class="sourceLine" id="cb1-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb1-8" data-line-number="8"><span class="ot">makeRec ::</span> <span class="dt">IO</span> <span class="dt">Rec</span></a>
-<a class="sourceLine" id="cb1-9" data-line-number="9">makeRec <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb1-10" data-line-number="10">  hoge1 <span class="ot">&lt;-</span> getLine</a>
-<a class="sourceLine" id="cb1-11" data-line-number="11">  hoge3 <span class="ot">&lt;-</span> randomRIO (<span class="dv">0</span>, <span class="dv">2</span> <span class="fu">*</span> length hoge1)</a>
-<a class="sourceLine" id="cb1-12" data-line-number="12">  pure</a>
-<a class="sourceLine" id="cb1-13" data-line-number="13">     <span class="fu">$</span> <span class="fu">#</span>hoge1 <span class="fu">@=</span> hoge1</a>
-<a class="sourceLine" id="cb1-14" data-line-number="14">    <span class="fu">&lt;:</span> <span class="fu">#</span>hoge2 <span class="fu">@=</span> (length hoge1 <span class="fu">&lt;=</span> hoge3)</a>
-<a class="sourceLine" id="cb1-15" data-line-number="15">    <span class="fu">&lt;:</span> <span class="fu">#</span>hoge3 <span class="fu">@=</span> hoge3</a>
-<a class="sourceLine" id="cb1-16" data-line-number="16">    <span class="fu">&lt;:</span> emptyRecord</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">type</span> <span class="dt">Rec</span> <span class="fu">=</span> <span class="dt">Record</span> <span class="dt">Fields</span></a>
+<a class="sourceLine" id="cb1-2" title="2"><span class="kw">type</span> <span class="dt">Fields</span> <span class="fu">=</span></a>
+<a class="sourceLine" id="cb1-3" title="3">    '[ <span class="st">&quot;hoge1&quot;</span> <span class="fu">&gt;:</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb1-4" title="4">     , <span class="st">&quot;hoge2&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb1-5" title="5">     , <span class="st">&quot;hoge3&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb1-6" title="6">     ]</a>
+<a class="sourceLine" id="cb1-7" title="7"></a>
+<a class="sourceLine" id="cb1-8" title="8"><span class="ot">makeRec ::</span> <span class="dt">IO</span> <span class="dt">Rec</span></a>
+<a class="sourceLine" id="cb1-9" title="9">makeRec <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-10" title="10">  hoge1 <span class="ot">&lt;-</span> <span class="fu">getLine</span></a>
+<a class="sourceLine" id="cb1-11" title="11">  hoge3 <span class="ot">&lt;-</span> randomRIO (<span class="dv">0</span>, <span class="dv">2</span> <span class="fu">*</span> <span class="fu">length</span> hoge1)</a>
+<a class="sourceLine" id="cb1-12" title="12">  <span class="fu">pure</span></a>
+<a class="sourceLine" id="cb1-13" title="13">     <span class="fu">$</span> <span class="fu">#</span>hoge1 <span class="fu">@=</span> hoge1</a>
+<a class="sourceLine" id="cb1-14" title="14">    <span class="fu">&lt;:</span> <span class="fu">#</span>hoge2 <span class="fu">@=</span> (<span class="fu">length</span> hoge1 <span class="fu">&lt;=</span> hoge3)</a>
+<a class="sourceLine" id="cb1-15" title="15">    <span class="fu">&lt;:</span> <span class="fu">#</span>hoge3 <span class="fu">@=</span> hoge3</a>
+<a class="sourceLine" id="cb1-16" title="16">    <span class="fu">&lt;:</span> emptyRecord</a></code></pre></div>
 <p>というような関数があったとする． これを拡張可能タングルを使って書き直すと次のようになります．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="ot">makeRec ::</span> <span class="dt">IO</span> <span class="dt">Rec</span></a>
-<a class="sourceLine" id="cb2-2" data-line-number="2">makeRec <span class="fu">=</span> runTangles tangles (wrench emptyRecord)</a>
-<a class="sourceLine" id="cb2-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb2-4" data-line-number="4"><span class="kw">type</span> <span class="dt">FieldI</span> <span class="fu">=</span> <span class="dt">Field</span> <span class="dt">Identity</span></a>
-<a class="sourceLine" id="cb2-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb2-6" data-line-number="6"><span class="ot">tangles ::</span> <span class="dt">Comp</span> (<span class="dt">TangleT</span> <span class="dt">FieldI</span> <span class="dt">Fields</span> <span class="dt">IO</span>) <span class="dt">FieldI</span> <span class="fu">:*</span> <span class="dt">Fields</span></a>
-<a class="sourceLine" id="cb2-7" data-line-number="7">tangles <span class="fu">=</span> htabulateFor (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">MakeRec</span>) <span class="fu">$</span></a>
-<a class="sourceLine" id="cb2-8" data-line-number="8">  \m <span class="ot">-&gt;</span> <span class="dt">Comp</span> <span class="fu">$</span> <span class="dt">Field</span> <span class="fu">.</span> pure <span class="fu">&lt;$&gt;</span> make m</a>
-<a class="sourceLine" id="cb2-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb2-10" data-line-number="10"><span class="kw">class</span> <span class="dt">MakeRec</span> kv <span class="kw">where</span></a>
-<a class="sourceLine" id="cb2-11" data-line-number="11"><span class="ot">  make ::</span> proxy kv <span class="ot">-&gt;</span> <span class="dt">TangleT</span> <span class="dt">FieldI</span> <span class="dt">Fields</span> <span class="dt">IO</span> (<span class="dt">AssocValue</span> kv)</a>
-<a class="sourceLine" id="cb2-12" data-line-number="12"></a>
-<a class="sourceLine" id="cb2-13" data-line-number="13"><span class="kw">instance</span> <span class="dt">MakeRec</span> (<span class="st">&quot;hoge1&quot;</span> <span class="fu">&gt;:</span> <span class="dt">String</span>) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb2-14" data-line-number="14">  make _ <span class="fu">=</span> lift getLine</a>
-<a class="sourceLine" id="cb2-15" data-line-number="15"></a>
-<a class="sourceLine" id="cb2-16" data-line-number="16"><span class="kw">instance</span> <span class="dt">MakeRec</span> (<span class="st">&quot;hoge2&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Bool</span>) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb2-17" data-line-number="17">  make _ <span class="fu">=</span> (<span class="fu">&lt;=</span>) <span class="fu">&lt;$&gt;</span> (length <span class="fu">&lt;$&gt;</span> lasso <span class="fu">#</span>hoge1) <span class="fu">&lt;*&gt;</span> lasso <span class="fu">#</span>hoge3</a>
-<a class="sourceLine" id="cb2-18" data-line-number="18"></a>
-<a class="sourceLine" id="cb2-19" data-line-number="19"><span class="kw">instance</span> <span class="dt">MakeRec</span> (<span class="st">&quot;hoge3&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Int</span>) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb2-20" data-line-number="20">  make _ <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb2-21" data-line-number="21">    ml <span class="ot">&lt;-</span> length <span class="fu">&lt;$&gt;</span> lasso <span class="fu">#</span>hoge1</a>
-<a class="sourceLine" id="cb2-22" data-line-number="22">    lift <span class="fu">$</span> randomRIO (<span class="dv">0</span>, <span class="dv">2</span> <span class="fu">*</span> ml)</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">makeRec ::</span> <span class="dt">IO</span> <span class="dt">Rec</span></a>
+<a class="sourceLine" id="cb2-2" title="2">makeRec <span class="fu">=</span> runTangles tangles (wrench emptyRecord)</a>
+<a class="sourceLine" id="cb2-3" title="3"></a>
+<a class="sourceLine" id="cb2-4" title="4"><span class="kw">type</span> <span class="dt">FieldI</span> <span class="fu">=</span> <span class="dt">Field</span> <span class="dt">Identity</span></a>
+<a class="sourceLine" id="cb2-5" title="5"></a>
+<a class="sourceLine" id="cb2-6" title="6"><span class="ot">tangles ::</span> <span class="dt">Comp</span> (<span class="dt">TangleT</span> <span class="dt">FieldI</span> <span class="dt">Fields</span> <span class="dt">IO</span>) <span class="dt">FieldI</span> <span class="fu">:*</span> <span class="dt">Fields</span></a>
+<a class="sourceLine" id="cb2-7" title="7">tangles <span class="fu">=</span> htabulateFor (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">MakeRec</span>) <span class="fu">$</span></a>
+<a class="sourceLine" id="cb2-8" title="8">  \m <span class="ot">-&gt;</span> <span class="dt">Comp</span> <span class="fu">$</span> <span class="dt">Field</span> <span class="fu">.</span> <span class="fu">pure</span> <span class="fu">&lt;$&gt;</span> make m</a>
+<a class="sourceLine" id="cb2-9" title="9"></a>
+<a class="sourceLine" id="cb2-10" title="10"><span class="kw">class</span> <span class="dt">MakeRec</span> kv <span class="kw">where</span></a>
+<a class="sourceLine" id="cb2-11" title="11"><span class="ot">  make ::</span> proxy kv <span class="ot">-&gt;</span> <span class="dt">TangleT</span> <span class="dt">FieldI</span> <span class="dt">Fields</span> <span class="dt">IO</span> (<span class="dt">AssocValue</span> kv)</a>
+<a class="sourceLine" id="cb2-12" title="12"></a>
+<a class="sourceLine" id="cb2-13" title="13"><span class="kw">instance</span> <span class="dt">MakeRec</span> (<span class="st">&quot;hoge1&quot;</span> <span class="fu">&gt;:</span> <span class="dt">String</span>) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb2-14" title="14">  make _ <span class="fu">=</span> lift <span class="fu">getLine</span></a>
+<a class="sourceLine" id="cb2-15" title="15"></a>
+<a class="sourceLine" id="cb2-16" title="16"><span class="kw">instance</span> <span class="dt">MakeRec</span> (<span class="st">&quot;hoge2&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Bool</span>) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb2-17" title="17">  make _ <span class="fu">=</span> (<span class="fu">&lt;=</span>) <span class="fu">&lt;$&gt;</span> (<span class="fu">length</span> <span class="fu">&lt;$&gt;</span> lasso <span class="fu">#</span>hoge1) <span class="fu">&lt;*&gt;</span> lasso <span class="fu">#</span>hoge3</a>
+<a class="sourceLine" id="cb2-18" title="18"></a>
+<a class="sourceLine" id="cb2-19" title="19"><span class="kw">instance</span> <span class="dt">MakeRec</span> (<span class="st">&quot;hoge3&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Int</span>) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb2-20" title="20">  make _ <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb2-21" title="21">    ml <span class="ot">&lt;-</span> <span class="fu">length</span> <span class="fu">&lt;$&gt;</span> lasso <span class="fu">#</span>hoge1</a>
+<a class="sourceLine" id="cb2-22" title="22">    lift <span class="fu">$</span> randomRIO (<span class="dv">0</span>, <span class="dv">2</span> <span class="fu">*</span> ml)</a></code></pre></div>
 <p>コード量そのものは倍近くなっている． しかし，フィールドの構築方法ごとにインスタンスメソッドとして切り分けることが出来ている． しかも，<strong>摩訶不思議な <a href="https://hackage.haskell.org/package/extensible-0.4.7.1/docs/Data-Extensible-Tangle.html#v:lasso"><code>lasso</code></a> 関数により依存関係も勝手に解決してくれる</strong> ． もちろん，フィールドのインスタンスが足りないときは，足りないというコンパイルエラーになるよ．</p>
 <h2 id="do記法レスプログラミング">Do記法レスプログラミング</h2>
 <p>Haskell はなんらかの作用付きの振る舞いは次のように <code>Monad</code> と <code>do</code> 記法を用いて書くのが一般的だ． しかし，便利な Do 記法に甘えて無駄に長い，数十行もある Do 式を書いたことは無いだろうか？ たしかに(関数合成だけで記述するより)読みやすいが，なんかこう…ちがうじゃないですか！？</p>
 <h2 id="section-1"></h2>
 <p>そこで，先述した拡張可能タングルを用いて長いDo式をフィールドごとに切り分けてみよう． 例題として次のようなログ(っぽいなにか)を読み込む関数を考える．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw">type</span> <span class="dt">Log</span> <span class="fu">=</span> <span class="dt">Record</span> <span class="dt">LogFields</span></a>
-<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="kw">type</span> <span class="dt">LogFields</span> <span class="fu">=</span></a>
-<a class="sourceLine" id="cb3-3" data-line-number="3">    <span class="ch">'[ &quot;path&quot;    &gt;: FilePath</span></a>
-<a class="sourceLine" id="cb3-4" data-line-number="4">     , <span class="st">&quot;time&quot;</span>    <span class="fu">&gt;:</span> <span class="dt">Time</span></a>
-<a class="sourceLine" id="cb3-5" data-line-number="5">     , <span class="st">&quot;code&quot;</span>    <span class="fu">&gt;:</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb3-6" data-line-number="6">     , <span class="st">&quot;message&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb3-7" data-line-number="7">     ]</a>
-<a class="sourceLine" id="cb3-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb3-9" data-line-number="9"><span class="kw">type</span> <span class="dt">Time</span> <span class="fu">=</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb3-10" data-line-number="10"></a>
-<a class="sourceLine" id="cb3-11" data-line-number="11"><span class="kw">type</span> <span class="dt">LogCsv</span> <span class="fu">=</span> <span class="dt">Record</span> <span class="dt">CsvFields</span></a>
-<a class="sourceLine" id="cb3-12" data-line-number="12"></a>
-<a class="sourceLine" id="cb3-13" data-line-number="13"><span class="kw">type</span> <span class="dt">CsvFields</span> <span class="fu">=</span></a>
-<a class="sourceLine" id="cb3-14" data-line-number="14">    <span class="ch">'[ &quot;time&quot;    &gt;: Time</span></a>
-<a class="sourceLine" id="cb3-15" data-line-number="15">     , <span class="st">&quot;info&quot;</span>    <span class="fu">&gt;:</span> <span class="dt">LB.ByteString</span></a>
-<a class="sourceLine" id="cb3-16" data-line-number="16">     ]</a>
-<a class="sourceLine" id="cb3-17" data-line-number="17"></a>
-<a class="sourceLine" id="cb3-18" data-line-number="18"><span class="kw">type</span> <span class="dt">Info</span> <span class="fu">=</span> <span class="dt">Record</span></a>
-<a class="sourceLine" id="cb3-19" data-line-number="19">    <span class="ch">'[ &quot;code&quot;    &gt;: Int</span></a>
-<a class="sourceLine" id="cb3-20" data-line-number="20">     , <span class="st">&quot;message&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb3-21" data-line-number="21">     ]</a>
-<a class="sourceLine" id="cb3-22" data-line-number="22"></a>
-<a class="sourceLine" id="cb3-23" data-line-number="23"><span class="kw">type</span> <span class="dt">EIO</span> <span class="fu">=</span> <span class="dt">Eff</span></a>
-<a class="sourceLine" id="cb3-24" data-line-number="24">    <span class="ch">'[ EitherDef String</span></a>
-<a class="sourceLine" id="cb3-25" data-line-number="25">     , <span class="st">&quot;IO&quot;</span> <span class="fu">&gt;:</span> <span class="dt">IO</span></a>
-<a class="sourceLine" id="cb3-26" data-line-number="26">     ]</a>
-<a class="sourceLine" id="cb3-27" data-line-number="27"></a>
-<a class="sourceLine" id="cb3-28" data-line-number="28"><span class="ot">runEIO ::</span> <span class="dt">EIO</span> a <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Either</span> <span class="dt">String</span> a)</a>
-<a class="sourceLine" id="cb3-29" data-line-number="29">runEIO <span class="fu">=</span> retractEff <span class="fu">.</span> runEitherDef</a>
-<a class="sourceLine" id="cb3-30" data-line-number="30"></a>
-<a class="sourceLine" id="cb3-31" data-line-number="31"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb3-32" data-line-number="32">main <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-33" data-line-number="33">  result <span class="ot">&lt;-</span> runEIO <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-34" data-line-number="34">    (path<span class="fu">:</span>_) <span class="ot">&lt;-</span> liftIO getArgs</a>
-<a class="sourceLine" id="cb3-35" data-line-number="35">    file <span class="ot">&lt;-</span>  liftIO (LB.readFile path)</a>
-<a class="sourceLine" id="cb3-36" data-line-number="36">    <span class="kw">let</span></a>
-<a class="sourceLine" id="cb3-37" data-line-number="37">      csv <span class="fu">=</span> mconcat [header, <span class="st">&quot;\n&quot;</span>, file]</a>
-<a class="sourceLine" id="cb3-38" data-line-number="38">    (_, logs) <span class="ot">&lt;-</span> either throwError pure (decodeByName csv)<span class="ot"> ::</span> <span class="dt">EIO</span> (<span class="dt">Header</span>, <span class="dt">LogCsv</span>)</a>
-<a class="sourceLine" id="cb3-39" data-line-number="39">    <span class="kw">let</span></a>
-<a class="sourceLine" id="cb3-40" data-line-number="40">      log' <span class="fu">=</span> V.head logs</a>
-<a class="sourceLine" id="cb3-41" data-line-number="41">    info <span class="ot">&lt;-</span> either throwError pure (eitherDecode <span class="fu">$</span> log' <span class="fu">^.</span> <span class="fu">#</span>info)<span class="ot"> ::</span> <span class="dt">EIO</span> <span class="dt">Info</span></a>
-<a class="sourceLine" id="cb3-42" data-line-number="42">    pure <span class="fu">$</span></a>
-<a class="sourceLine" id="cb3-43" data-line-number="43">      <span class="fu">#</span>path <span class="fu">@=</span> path <span class="fu">&lt;:</span> <span class="fu">#</span>time <span class="fu">@=</span> (log' <span class="fu">^.</span> <span class="fu">#</span>time) <span class="fu">&lt;:</span> info</a>
-<a class="sourceLine" id="cb3-44" data-line-number="44">  either error print result</a>
-<a class="sourceLine" id="cb3-45" data-line-number="45"></a>
-<a class="sourceLine" id="cb3-46" data-line-number="46"><span class="ot">header ::</span> <span class="dt">LB.ByteString</span></a>
-<a class="sourceLine" id="cb3-47" data-line-number="47">header <span class="fu">=</span> LB.intercalate <span class="st">&quot;,&quot;</span> <span class="fu">.</span> fmap fromString <span class="fu">$</span> henumerateFor</a>
-<a class="sourceLine" id="cb3-48" data-line-number="48">  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">Show</span>))</a>
-<a class="sourceLine" id="cb3-49" data-line-number="49">  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">CsvFields</span>)</a>
-<a class="sourceLine" id="cb3-50" data-line-number="50">  ((<span class="fu">:</span>) <span class="fu">.</span> symbolVal <span class="fu">.</span> proxyAssocKey)</a>
-<a class="sourceLine" id="cb3-51" data-line-number="51">  []</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">type</span> <span class="dt">Log</span> <span class="fu">=</span> <span class="dt">Record</span> <span class="dt">LogFields</span></a>
+<a class="sourceLine" id="cb3-2" title="2"><span class="kw">type</span> <span class="dt">LogFields</span> <span class="fu">=</span></a>
+<a class="sourceLine" id="cb3-3" title="3">    '[ <span class="st">&quot;path&quot;</span>    <span class="fu">&gt;:</span> <span class="dt">FilePath</span></a>
+<a class="sourceLine" id="cb3-4" title="4">     , <span class="st">&quot;time&quot;</span>    <span class="fu">&gt;:</span> <span class="dt">Time</span></a>
+<a class="sourceLine" id="cb3-5" title="5">     , <span class="st">&quot;code&quot;</span>    <span class="fu">&gt;:</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb3-6" title="6">     , <span class="st">&quot;message&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb3-7" title="7">     ]</a>
+<a class="sourceLine" id="cb3-8" title="8"></a>
+<a class="sourceLine" id="cb3-9" title="9"><span class="kw">type</span> <span class="dt">Time</span> <span class="fu">=</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb3-10" title="10"></a>
+<a class="sourceLine" id="cb3-11" title="11"><span class="kw">type</span> <span class="dt">LogCsv</span> <span class="fu">=</span> <span class="dt">Record</span> <span class="dt">CsvFields</span></a>
+<a class="sourceLine" id="cb3-12" title="12"></a>
+<a class="sourceLine" id="cb3-13" title="13"><span class="kw">type</span> <span class="dt">CsvFields</span> <span class="fu">=</span></a>
+<a class="sourceLine" id="cb3-14" title="14">    '[ <span class="st">&quot;time&quot;</span>    <span class="fu">&gt;:</span> <span class="dt">Time</span></a>
+<a class="sourceLine" id="cb3-15" title="15">     , <span class="st">&quot;info&quot;</span>    <span class="fu">&gt;:</span> <span class="dt">LB.ByteString</span></a>
+<a class="sourceLine" id="cb3-16" title="16">     ]</a>
+<a class="sourceLine" id="cb3-17" title="17"></a>
+<a class="sourceLine" id="cb3-18" title="18"><span class="kw">type</span> <span class="dt">Info</span> <span class="fu">=</span> <span class="dt">Record</span></a>
+<a class="sourceLine" id="cb3-19" title="19">    '[ <span class="st">&quot;code&quot;</span>    <span class="fu">&gt;:</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb3-20" title="20">     , <span class="st">&quot;message&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb3-21" title="21">     ]</a>
+<a class="sourceLine" id="cb3-22" title="22"></a>
+<a class="sourceLine" id="cb3-23" title="23"><span class="kw">type</span> <span class="dt">EIO</span> <span class="fu">=</span> <span class="dt">Eff</span></a>
+<a class="sourceLine" id="cb3-24" title="24">    '[ <span class="dt">EitherDef</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb3-25" title="25">     , <span class="st">&quot;IO&quot;</span> <span class="fu">&gt;:</span> <span class="dt">IO</span></a>
+<a class="sourceLine" id="cb3-26" title="26">     ]</a>
+<a class="sourceLine" id="cb3-27" title="27"></a>
+<a class="sourceLine" id="cb3-28" title="28"><span class="ot">runEIO ::</span> <span class="dt">EIO</span> a <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Either</span> <span class="dt">String</span> a)</a>
+<a class="sourceLine" id="cb3-29" title="29">runEIO <span class="fu">=</span> retractEff <span class="fu">.</span> runEitherDef</a>
+<a class="sourceLine" id="cb3-30" title="30"></a>
+<a class="sourceLine" id="cb3-31" title="31"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb3-32" title="32">main <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb3-33" title="33">  result <span class="ot">&lt;-</span> runEIO <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb3-34" title="34">    (path<span class="fu">:</span>_) <span class="ot">&lt;-</span> liftIO getArgs</a>
+<a class="sourceLine" id="cb3-35" title="35">    file <span class="ot">&lt;-</span>  liftIO (LB.readFile path)</a>
+<a class="sourceLine" id="cb3-36" title="36">    <span class="kw">let</span></a>
+<a class="sourceLine" id="cb3-37" title="37">      csv <span class="fu">=</span> <span class="fu">mconcat</span> [header, <span class="st">&quot;\n&quot;</span>, file]</a>
+<a class="sourceLine" id="cb3-38" title="38">    (_, logs) <span class="ot">&lt;-</span> <span class="fu">either</span> throwError <span class="fu">pure</span> (decodeByName csv)<span class="ot"> ::</span> <span class="dt">EIO</span> (<span class="dt">Header</span>, <span class="dt">LogCsv</span>)</a>
+<a class="sourceLine" id="cb3-39" title="39">    <span class="kw">let</span></a>
+<a class="sourceLine" id="cb3-40" title="40">      log' <span class="fu">=</span> V.head logs</a>
+<a class="sourceLine" id="cb3-41" title="41">    info <span class="ot">&lt;-</span> <span class="fu">either</span> throwError <span class="fu">pure</span> (eitherDecode <span class="fu">$</span> log' <span class="fu">^.</span> <span class="fu">#</span>info)<span class="ot"> ::</span> <span class="dt">EIO</span> <span class="dt">Info</span></a>
+<a class="sourceLine" id="cb3-42" title="42">    <span class="fu">pure</span> <span class="fu">$</span></a>
+<a class="sourceLine" id="cb3-43" title="43">      <span class="fu">#</span>path <span class="fu">@=</span> path <span class="fu">&lt;:</span> <span class="fu">#</span>time <span class="fu">@=</span> (log' <span class="fu">^.</span> <span class="fu">#</span>time) <span class="fu">&lt;:</span> info</a>
+<a class="sourceLine" id="cb3-44" title="44">  <span class="fu">either</span> <span class="fu">error</span> <span class="fu">print</span> result</a>
+<a class="sourceLine" id="cb3-45" title="45"></a>
+<a class="sourceLine" id="cb3-46" title="46"><span class="ot">header ::</span> <span class="dt">LB.ByteString</span></a>
+<a class="sourceLine" id="cb3-47" title="47">header <span class="fu">=</span> LB.intercalate <span class="st">&quot;,&quot;</span> <span class="fu">.</span> <span class="fu">fmap</span> fromString <span class="fu">$</span> henumerateFor</a>
+<a class="sourceLine" id="cb3-48" title="48">  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">Show</span>))</a>
+<a class="sourceLine" id="cb3-49" title="49">  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">CsvFields</span>)</a>
+<a class="sourceLine" id="cb3-50" title="50">  ((<span class="fu">:</span>) <span class="fu">.</span> symbolVal <span class="fu">.</span> proxyAssocKey)</a>
+<a class="sourceLine" id="cb3-51" title="51">  []</a></code></pre></div>
 <p>このメイン関数は次のような CSV をログデータとして読み込んで，2行目の JSON もパースしたうえで，ひとつの拡張可能レコードとして吐き出す．</p>
 <pre class="csv"><code>2018-02-23T03:10:00,&quot;{&quot;&quot;code&quot;&quot;:123,&quot;&quot;message&quot;&quot;:&quot;&quot;hello&quot;&quot;}&quot;</code></pre>
 <p>正直，この例だと大した長さではないので切り分けるメリットはなーーんにもないんですけど．</p>
@@ -210,79 +210,79 @@
 <li><a href="https://haskell.e-bigmoon.com/posts/2017-12-23-stack161.html">カスタムスナップショットの紹介</a></li>
 </ul>
 <p>ここには書いてないが，カスタムスナップショットは <code>stack script</code> にも使える． 例えば今回は次のようなカスタムスナップショットを作った．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="fu">resolver:</span><span class="at"> lts-10.6</span></a>
-<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="fu">name:</span><span class="at"> matsubara0507</span></a>
-<a class="sourceLine" id="cb5-3" data-line-number="3"><span class="fu">packages:</span></a>
-<a class="sourceLine" id="cb5-4" data-line-number="4"><span class="kw">-</span> <span class="fu">git:</span><span class="at"> https://github.com/matsubara0507/extensible-instances.git</span></a>
-<a class="sourceLine" id="cb5-5" data-line-number="5">  <span class="fu">commit:</span><span class="at"> 8dabe7a3dd9cf162e2d81e4ca16dbe73b98a3809</span></a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb5-1" title="1"><span class="fu">resolver:</span><span class="at"> lts-10.6</span></a>
+<a class="sourceLine" id="cb5-2" title="2"><span class="fu">name:</span><span class="at"> matsubara0507</span></a>
+<a class="sourceLine" id="cb5-3" title="3"><span class="fu">packages:</span></a>
+<a class="sourceLine" id="cb5-4" title="4"><span class="kw">-</span> <span class="fu">git:</span><span class="at"> https://github.com/matsubara0507/extensible-instances.git</span></a>
+<a class="sourceLine" id="cb5-5" title="5">  <span class="fu">commit:</span><span class="at"> 8dabe7a3dd9cf162e2d81e4ca16dbe73b98a3809</span></a></code></pre></div>
 <p>これを <code>snapshot.yaml</code> とし，例題のコードを <code>fun-of-tangle.hs</code> とすると次のように実行できる</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb6-1" data-line-number="1">$ <span class="fu">cat</span> sampleLog.csv</a>
-<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="ex">2018-02-23T03</span>:10:00,<span class="st">&quot;{&quot;&quot;code&quot;&quot;:123,&quot;&quot;message&quot;&quot;:&quot;&quot;hello&quot;&quot;}&quot;</span></a>
-<a class="sourceLine" id="cb6-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb6-4" data-line-number="4">$ <span class="ex">stack</span> script --resolver ./snapshot.yaml -- fun-of-tangle.hs sampleLog.csv</a>
-<a class="sourceLine" id="cb6-5" data-line-number="5"><span class="ex">Using</span> resolver: custom: ./snapshot.yaml specified on command line</a>
-<a class="sourceLine" id="cb6-6" data-line-number="6"><span class="ex">path</span> @= <span class="st">&quot;sampleLog.csv&quot;</span> <span class="op">&lt;</span>: time @= <span class="st">&quot;2018-02-23T03:10:00&quot;</span> <span class="op">&lt;</span>: code @= 123 <span class="op">&lt;</span>: message @= <span class="st">&quot;hello&quot;</span> <span class="op">&lt;</span>: nil</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb6-1" title="1">$ <span class="fu">cat</span> sampleLog.csv</a>
+<a class="sourceLine" id="cb6-2" title="2"><span class="ex">2018-02-23T03</span>:10:00,<span class="st">&quot;{&quot;&quot;code&quot;&quot;:123,&quot;&quot;message&quot;&quot;:&quot;&quot;hello&quot;&quot;}&quot;</span></a>
+<a class="sourceLine" id="cb6-3" title="3"></a>
+<a class="sourceLine" id="cb6-4" title="4">$ <span class="ex">stack</span> script --resolver ./snapshot.yaml -- fun-of-tangle.hs sampleLog.csv</a>
+<a class="sourceLine" id="cb6-5" title="5"><span class="ex">Using</span> resolver: custom: ./snapshot.yaml specified on command line</a>
+<a class="sourceLine" id="cb6-6" title="6"><span class="ex">path</span> @= <span class="st">&quot;sampleLog.csv&quot;</span> <span class="op">&lt;</span>: time @= <span class="st">&quot;2018-02-23T03:10:00&quot;</span> <span class="op">&lt;</span>: code @= 123 <span class="op">&lt;</span>: message @= <span class="st">&quot;hello&quot;</span> <span class="op">&lt;</span>: nil</a></code></pre></div>
 <h3 id="ヘッダの生成">ヘッダの生成</h3>
 <p>CSV の読み込みには <code>cassava</code> というパッケージを使っている． このパッケージには <code>FromRecord</code> と <code>FromNamedRecord</code> 型クラスがある． 前者は前から順に勝手に取っていくのに対し，後者はフィールド名と CSV の列名を対応させて取ってきてくれる．</p>
 <p><code>cassava</code> 系の拡張可能レコードのインスタンスを書いてるときは <code>extensible</code> 力がまだ低く，フィールドからインデックスをとっていくる方法が分からなかった． そのため <code>FromRecord</code> 型クラスのインスタンスが <code>extensible-instances</code> にはない(何故かついこの前，<a href="https://github.com/fumieval/extensible/commit/074210e76ed5bd35f62d452f66c940a40d821534">本家へコミット</a>されたけど)．</p>
 <p>なので，型から列名のヘッダーを生成してしまおう，というのが <code>header</code> 関数．</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="ot">header ::</span> <span class="dt">LB.ByteString</span></a>
-<a class="sourceLine" id="cb7-2" data-line-number="2">header <span class="fu">=</span> LB.intercalate <span class="st">&quot;,&quot;</span> <span class="fu">.</span> fmap fromString <span class="fu">$</span> henumerateFor</a>
-<a class="sourceLine" id="cb7-3" data-line-number="3">  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">Show</span>))</a>
-<a class="sourceLine" id="cb7-4" data-line-number="4">  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">CsvFields</span>)</a>
-<a class="sourceLine" id="cb7-5" data-line-number="5">  ((<span class="fu">:</span>) <span class="fu">.</span> symbolVal <span class="fu">.</span> proxyAssocKey)</a>
-<a class="sourceLine" id="cb7-6" data-line-number="6">  []</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="ot">header ::</span> <span class="dt">LB.ByteString</span></a>
+<a class="sourceLine" id="cb7-2" title="2">header <span class="fu">=</span> LB.intercalate <span class="st">&quot;,&quot;</span> <span class="fu">.</span> <span class="fu">fmap</span> fromString <span class="fu">$</span> henumerateFor</a>
+<a class="sourceLine" id="cb7-3" title="3">  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">Show</span>))</a>
+<a class="sourceLine" id="cb7-4" title="4">  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">CsvFields</span>)</a>
+<a class="sourceLine" id="cb7-5" title="5">  ((<span class="fu">:</span>) <span class="fu">.</span> symbolVal <span class="fu">.</span> proxyAssocKey)</a>
+<a class="sourceLine" id="cb7-6" title="6">  []</a></code></pre></div>
 <p><code>Proxy (KeyValue KnownSymbol Show)</code> ってのが悲しいですよね…(<code>Show</code> は全く無意味)． キー側だけ型クラスを指定する方法は無いような気がしたんだよなぁ．</p>
 <h2 id="分割しましょう">分割しましょう</h2>
 <p>では本題．</p>
 <p>まずは型クラスを考えよう．</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="kw">class</span> <span class="dt">MakeLog</span> kv <span class="kw">where</span></a>
-<a class="sourceLine" id="cb8-2" data-line-number="2"><span class="ot">  make ::</span> proxy kv <span class="ot">-&gt;</span> <span class="dt">TangleT</span> <span class="dt">FieldI</span> <span class="dt">LogFields</span> <span class="dt">EIO</span> (<span class="dt">AssocValue</span> kv)</a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">class</span> <span class="dt">MakeLog</span> kv <span class="kw">where</span></a>
+<a class="sourceLine" id="cb8-2" title="2"><span class="ot">  make ::</span> proxy kv <span class="ot">-&gt;</span> <span class="dt">TangleT</span> <span class="dt">FieldI</span> <span class="dt">LogFields</span> <span class="dt">EIO</span> (<span class="dt">AssocValue</span> kv)</a></code></pre></div>
 <p>試しに，<code>&quot;path&quot; &gt;: FilePath</code> のインスタンスを書いてみる．</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;path&quot;</span> <span class="fu">&gt;:</span> FilePath) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb9-2" data-line-number="2">  make _ <span class="fu">=</span> lift <span class="fu">$</span> liftIO getArgs <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span></a>
-<a class="sourceLine" id="cb9-3" data-line-number="3">    (path <span class="fu">:</span> _) <span class="ot">-&gt;</span> pure path</a>
-<a class="sourceLine" id="cb9-4" data-line-number="4">    _          <span class="ot">-&gt;</span> throwError <span class="st">&quot;please path.&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;path&quot;</span> <span class="fu">&gt;:</span> <span class="dt">FilePath</span>) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb9-2" title="2">  make _ <span class="fu">=</span> lift <span class="fu">$</span> liftIO getArgs <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span></a>
+<a class="sourceLine" id="cb9-3" title="3">    (path <span class="fu">:</span> _) <span class="ot">-&gt;</span> <span class="fu">pure</span> path</a>
+<a class="sourceLine" id="cb9-4" title="4">    _          <span class="ot">-&gt;</span> throwError <span class="st">&quot;please path.&quot;</span></a></code></pre></div>
 <p>他のはできるだろうか？ 元のメイン関数を見ればわかると思うが，たぶん無理だと思う． 他のフィールドは <code>log'</code> 変数に保存した中間状態を共有するからだ．</p>
 <h3 id="中間状態をどうするか">中間状態をどうするか</h3>
 <p>他にもっといい手はあるかもしれないが，今回は <strong>レコードを中間状態も加えて拡張する</strong> ことにする．</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw">type</span> <span class="dt">MidFields</span> <span class="fu">=</span> <span class="ch">'[&quot;log&quot; &gt;: LogCsv '</span><span class="fu">:</span> <span class="st">&quot;info&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Info</span>] <span class="fu">++</span> <span class="dt">LogFields</span></a>
-<a class="sourceLine" id="cb10-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb10-3" data-line-number="3"><span class="kw">class</span> <span class="dt">MakeLog</span> kv <span class="kw">where</span></a>
-<a class="sourceLine" id="cb10-4" data-line-number="4"><span class="ot">  make ::</span> proxy kv <span class="ot">-&gt;</span> <span class="dt">TangleT</span> <span class="dt">FieldI</span> <span class="dt">MidFields</span> <span class="dt">EIO</span> (<span class="dt">AssocValue</span> kv)</a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">type</span> <span class="dt">MidFields</span> <span class="fu">=</span> '[<span class="st">&quot;log&quot;</span> <span class="fu">&gt;:</span> <span class="dt">LogCsv</span> '<span class="fu">:</span> <span class="st">&quot;info&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Info</span>] <span class="fu">++</span> <span class="dt">LogFields</span></a>
+<a class="sourceLine" id="cb10-2" title="2"></a>
+<a class="sourceLine" id="cb10-3" title="3"><span class="kw">class</span> <span class="dt">MakeLog</span> kv <span class="kw">where</span></a>
+<a class="sourceLine" id="cb10-4" title="4"><span class="ot">  make ::</span> proxy kv <span class="ot">-&gt;</span> <span class="dt">TangleT</span> <span class="dt">FieldI</span> <span class="dt">MidFields</span> <span class="dt">EIO</span> (<span class="dt">AssocValue</span> kv)</a></code></pre></div>
 <p><a href="https://hackage.haskell.org/package/extensible-0.4.7.1/docs/Data-Extensible-Product.html#t:-43--43-"><code>(++)</code></a> は型レベルリストの連結演算子だ． <code>'[&quot;log&quot; &gt;: LogCsv ': &quot;info&quot; &gt;: Info]</code> が追加する中間状態にあたる． これを最後にどうやって外すかと言うと，実は簡単で <a href="https://hackage.haskell.org/package/extensible-0.4.7.1/docs/Data-Extensible-Inclusion.html#v:shrink"><code>shrink</code></a> 関数で縮小してやればよい．</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="ot">makeLog ::</span> <span class="dt">EIO</span> <span class="dt">Log</span></a>
-<a class="sourceLine" id="cb11-2" data-line-number="2">makeLog <span class="fu">=</span> shrink <span class="fu">&lt;$&gt;</span> runTangles tangles (wrench emptyRecord)</a>
-<a class="sourceLine" id="cb11-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb11-4" data-line-number="4"><span class="ot">tangles ::</span> <span class="dt">Comp</span> (<span class="dt">TangleT</span> <span class="dt">FieldI</span> <span class="dt">MidFields</span> <span class="dt">EIO</span>) <span class="dt">FieldI</span> <span class="fu">:*</span> <span class="dt">MidFields</span></a>
-<a class="sourceLine" id="cb11-5" data-line-number="5">tangles <span class="fu">=</span> htabulateFor (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">MakeLog</span>) <span class="fu">$</span></a>
-<a class="sourceLine" id="cb11-6" data-line-number="6">  \m <span class="ot">-&gt;</span> <span class="dt">Comp</span> <span class="fu">$</span> <span class="dt">Field</span> <span class="fu">.</span> pure <span class="fu">&lt;$&gt;</span> make m</a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="ot">makeLog ::</span> <span class="dt">EIO</span> <span class="dt">Log</span></a>
+<a class="sourceLine" id="cb11-2" title="2">makeLog <span class="fu">=</span> shrink <span class="fu">&lt;$&gt;</span> runTangles tangles (wrench emptyRecord)</a>
+<a class="sourceLine" id="cb11-3" title="3"></a>
+<a class="sourceLine" id="cb11-4" title="4"><span class="ot">tangles ::</span> <span class="dt">Comp</span> (<span class="dt">TangleT</span> <span class="dt">FieldI</span> <span class="dt">MidFields</span> <span class="dt">EIO</span>) <span class="dt">FieldI</span> <span class="fu">:*</span> <span class="dt">MidFields</span></a>
+<a class="sourceLine" id="cb11-5" title="5">tangles <span class="fu">=</span> htabulateFor (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">MakeLog</span>) <span class="fu">$</span></a>
+<a class="sourceLine" id="cb11-6" title="6">  \m <span class="ot">-&gt;</span> <span class="dt">Comp</span> <span class="fu">$</span> <span class="dt">Field</span> <span class="fu">.</span> <span class="fu">pure</span> <span class="fu">&lt;$&gt;</span> make m</a></code></pre></div>
 <p>中間状態のインスタンス定義してしまう．</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;log&quot;</span> <span class="fu">&gt;:</span> <span class="dt">LogCsv</span>) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb12-2" data-line-number="2">  make _ <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb12-3" data-line-number="3">    file <span class="ot">&lt;-</span> lift <span class="fu">.</span> liftIO <span class="fu">.</span> LB.readFile <span class="fu">=&lt;&lt;</span> lasso <span class="fu">#</span>path</a>
-<a class="sourceLine" id="cb12-4" data-line-number="4">    (_, log') <span class="ot">&lt;-</span> lift <span class="fu">$</span></a>
-<a class="sourceLine" id="cb12-5" data-line-number="5">      either throwError pure (decodeByName <span class="fu">$</span> mconcat [header, <span class="st">&quot;\n&quot;</span>, file])</a>
-<a class="sourceLine" id="cb12-6" data-line-number="6">    pure <span class="fu">$</span> V.head log'</a>
-<a class="sourceLine" id="cb12-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb12-8" data-line-number="8"><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;info&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Info</span>) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb12-9" data-line-number="9">  make _ <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb12-10" data-line-number="10">    log' <span class="ot">&lt;-</span> lasso <span class="fu">#</span>log</a>
-<a class="sourceLine" id="cb12-11" data-line-number="11">    lift <span class="fu">$</span> either throwError pure (eitherDecode <span class="fu">$</span> log' <span class="fu">^.</span> <span class="fu">#</span>info)</a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;log&quot;</span> <span class="fu">&gt;:</span> <span class="dt">LogCsv</span>) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb12-2" title="2">  make _ <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb12-3" title="3">    file <span class="ot">&lt;-</span> lift <span class="fu">.</span> liftIO <span class="fu">.</span> LB.readFile <span class="fu">=&lt;&lt;</span> lasso <span class="fu">#</span>path</a>
+<a class="sourceLine" id="cb12-4" title="4">    (_, log') <span class="ot">&lt;-</span> lift <span class="fu">$</span></a>
+<a class="sourceLine" id="cb12-5" title="5">      <span class="fu">either</span> throwError <span class="fu">pure</span> (decodeByName <span class="fu">$</span> <span class="fu">mconcat</span> [header, <span class="st">&quot;\n&quot;</span>, file])</a>
+<a class="sourceLine" id="cb12-6" title="6">    <span class="fu">pure</span> <span class="fu">$</span> V.head log'</a>
+<a class="sourceLine" id="cb12-7" title="7"></a>
+<a class="sourceLine" id="cb12-8" title="8"><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;info&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Info</span>) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb12-9" title="9">  make _ <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb12-10" title="10">    log' <span class="ot">&lt;-</span> lasso <span class="fu">#</span>log</a>
+<a class="sourceLine" id="cb12-11" title="11">    lift <span class="fu">$</span> <span class="fu">either</span> throwError <span class="fu">pure</span> (eitherDecode <span class="fu">$</span> log' <span class="fu">^.</span> <span class="fu">#</span>info)</a></code></pre></div>
 <p>うん…まぁ…読みやすさのためにね，多少は <code>do</code> を残しましたよ(タイトル詐欺)．</p>
 <h3 id="残りは簡単">残りは簡単</h3>
 <p>あとは，フィールドを取り出すだけなので簡単．</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" data-line-number="1"><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;time&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Time</span>) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb13-2" data-line-number="2">  make _ <span class="fu">=</span> view <span class="fu">#</span>time <span class="fu">&lt;$&gt;</span> lasso <span class="fu">#</span>log</a>
-<a class="sourceLine" id="cb13-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb13-4" data-line-number="4"><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;code&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Int</span>) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb13-5" data-line-number="5">  make _ <span class="fu">=</span> view <span class="fu">#</span>code <span class="fu">&lt;$&gt;</span> lasso <span class="fu">#</span>info</a>
-<a class="sourceLine" id="cb13-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb13-7" data-line-number="7"><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;message&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span>) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb13-8" data-line-number="8">  make _ <span class="fu">=</span> view <span class="fu">#</span>message <span class="fu">&lt;$&gt;</span> lasso <span class="fu">#</span>info</a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;time&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Time</span>) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb13-2" title="2">  make _ <span class="fu">=</span> view <span class="fu">#</span>time <span class="fu">&lt;$&gt;</span> lasso <span class="fu">#</span>log</a>
+<a class="sourceLine" id="cb13-3" title="3"></a>
+<a class="sourceLine" id="cb13-4" title="4"><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;code&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Int</span>) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb13-5" title="5">  make _ <span class="fu">=</span> view <span class="fu">#</span>code <span class="fu">&lt;$&gt;</span> lasso <span class="fu">#</span>info</a>
+<a class="sourceLine" id="cb13-6" title="6"></a>
+<a class="sourceLine" id="cb13-7" title="7"><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;message&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span>) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb13-8" title="8">  make _ <span class="fu">=</span> view <span class="fu">#</span>message <span class="fu">&lt;$&gt;</span> lasso <span class="fu">#</span>info</a></code></pre></div>
 <p>メイン関数はこんな感じ．</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb14-2" data-line-number="2">main <span class="fu">=</span> either error print <span class="fu">=&lt;&lt;</span> runEIO makeLog</a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb14-2" title="2">main <span class="fu">=</span> <span class="fu">either</span> <span class="fu">error</span> <span class="fu">print</span> <span class="fu">=&lt;&lt;</span> runEIO makeLog</a></code></pre></div>
 <p>わぁすっきり(メイン関数は)．</p>
 <h2 id="おしまい">おしまい</h2>
 <p>これぐらいの規模だとメリットが皆無なんですが，もっと CSV の列数が多くなったらどうでしょう？ うーーーん，あんまり変わらないかも(笑) まぁ，少なくとも面白い(不思議な)プログラミングが出来るのは確かです．</p>

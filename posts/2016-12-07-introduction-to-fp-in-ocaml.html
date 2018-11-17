@@ -150,15 +150,15 @@
 <p>これが一番難しくて，二日分ぐらいかかった．</p>
 <p>原因は <strong><em>Stack Overflow</em></strong> で，一瞬諦めようかと考えたぐらいだ．</p>
 <p>Stack Overflow とは，ようするにメモリリークで，プログラム用に用意されたメモリ(スタック)を使い切ってしまったのである． 原因の一つは関数型プログラミングでよくある再帰の呼びすぎである． 関数呼び出しをすると，その前の状態(変数の割り当てや呼び出された場所など)をスタックに積む． 関数型プログラミングには <code>for</code> 文などの繰り返し構文は無く，関数が自分自身を再度呼び出すこと(これを再帰呼び出しいう)で手続きを繰り返す． 数学の漸化式みたいなものだ．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="ot">factorial ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb1-2" data-line-number="2">factorial <span class="dv">0</span> <span class="fu">=</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb1-3" data-line-number="3">factorial n <span class="fu">=</span> n <span class="fu">*</span> factorial (n <span class="fu">-</span> <span class="dv">1</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="ot">factorial ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb1-2" title="2">factorial <span class="dv">0</span> <span class="fu">=</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb1-3" title="3">factorial n <span class="fu">=</span> n <span class="fu">*</span> factorial (n <span class="fu">-</span> <span class="dv">1</span>)</a></code></pre></div>
 <p>解決方法は，これを末尾再帰の形に変更する事である． 末尾再帰とは，再帰呼び出しする場合は必ずそれだけで返すような再帰のことである． 要するにこんな感じ．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="ot">factorial ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb2-2" data-line-number="2">factorial n <span class="fu">=</span> loop <span class="dv">1</span> n</a>
-<a class="sourceLine" id="cb2-3" data-line-number="3">  <span class="kw">where</span></a>
-<a class="sourceLine" id="cb2-4" data-line-number="4">    loop acc <span class="dv">0</span> <span class="fu">=</span> acc</a>
-<a class="sourceLine" id="cb2-5" data-line-number="5">    loop acc n <span class="fu">=</span> loop (acc <span class="fu">*</span> n) (n <span class="fu">-</span> <span class="dv">1</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">factorial ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb2-2" title="2">factorial n <span class="fu">=</span> loop <span class="dv">1</span> n</a>
+<a class="sourceLine" id="cb2-3" title="3">  <span class="kw">where</span></a>
+<a class="sourceLine" id="cb2-4" title="4">    loop acc <span class="dv">0</span> <span class="fu">=</span> acc</a>
+<a class="sourceLine" id="cb2-5" title="5">    loop acc n <span class="fu">=</span> loop (acc <span class="fu">*</span> n) (n <span class="fu">-</span> <span class="dv">1</span>)</a></code></pre></div>
 <p>こうしておくと，前の状態を保持しておく必要が無いので自動で最適化されて Stack Overflow が起きなくなる．</p>
 <p>Haskell の影響で，基本的に自分は，ミュータブルな配列ではなくイミュータブルなリストを使ってしまう．</p>
 <p><a href="http://ocaml.jp/archive/ocaml-manual-3.06-ja/libref/List.html">リストの API</a> を見る <strong>この関数は末尾再帰になっていません</strong> と書かれている関数がある． これを何個か使っていた(<code>map</code> とかね…)ので，全部末尾再帰のものに置き換えた．</p>
@@ -166,63 +166,63 @@
 <p>イロイロと出力させてみたとこと，要するに原因は組み合わせ爆発だった．</p>
 <p>結局のところ，この(手順通りに作ったはずの)アルゴリズムは単純な幅優先全探索しかしていない． ただ，少しだけ工夫されていて，同じ配置にならないように，一度通った配置を記憶し，同じになった場合は残りを省略している．</p>
 <p>(課題に沿って)配置(ピース)の等価性を次のように定義していた．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw">let</span> compare_piece p1 p2 =</a>
-<a class="sourceLine" id="cb3-2" data-line-number="2">  <span class="kw">match</span> (p1,p2) <span class="kw">with</span></a>
-<a class="sourceLine" id="cb3-3" data-line-number="3">  | ((k1,n1),(k2,n2)) <span class="kw">when</span> k1 = k2 -&gt; <span class="dt">compare</span> n1 n2</a>
-<a class="sourceLine" id="cb3-4" data-line-number="4">  | ((S,_), _) -&gt; <span class="dv">1</span></a>
-<a class="sourceLine" id="cb3-5" data-line-number="5">  | ((H,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S -&gt; <span class="dv">1</span></a>
-<a class="sourceLine" id="cb3-6" data-line-number="6">  | ((C,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H -&gt; <span class="dv">1</span></a>
-<a class="sourceLine" id="cb3-7" data-line-number="7">  | ((V,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H &amp;&amp; k &lt;&gt; C -&gt; <span class="dv">1</span></a>
-<a class="sourceLine" id="cb3-8" data-line-number="8">  | _ -&gt; <span class="dv">-1</span></a>
-<a class="sourceLine" id="cb3-9" data-line-number="9">;;</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">let</span> compare_piece p1 p2 =</a>
+<a class="sourceLine" id="cb3-2" title="2">  <span class="kw">match</span> (p1,p2) <span class="kw">with</span></a>
+<a class="sourceLine" id="cb3-3" title="3">  | ((k1,n1),(k2,n2)) <span class="kw">when</span> k1 = k2 -&gt; <span class="dt">compare</span> n1 n2</a>
+<a class="sourceLine" id="cb3-4" title="4">  | ((S,_), _) -&gt; <span class="dv">1</span></a>
+<a class="sourceLine" id="cb3-5" title="5">  | ((H,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S -&gt; <span class="dv">1</span></a>
+<a class="sourceLine" id="cb3-6" title="6">  | ((C,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H -&gt; <span class="dv">1</span></a>
+<a class="sourceLine" id="cb3-7" title="7">  | ((V,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H &amp;&amp; k &lt;&gt; C -&gt; <span class="dv">1</span></a>
+<a class="sourceLine" id="cb3-8" title="8">  | _ -&gt; <span class="dv">-1</span></a>
+<a class="sourceLine" id="cb3-9" title="9">;;</a></code></pre></div>
 <p>ピース自体はこんな型定義．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">type</span> piece_kind = S | H | V | C | X</a>
-<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="kw">type</span> piece = piece_kind * <span class="dt">int</span></a>
-<a class="sourceLine" id="cb4-3" data-line-number="3"><span class="kw">let</span> x = (X, <span class="dv">0</span>) <span class="kw">and</span> s = (S, <span class="dv">0</span>) <span class="kw">and</span> h = (H, <span class="dv">0</span>)</a>
-<a class="sourceLine" id="cb4-4" data-line-number="4"><span class="kw">let</span> (c0, c1, c2, c3) = ((C, <span class="dv">0</span>), (C, <span class="dv">1</span>), (C, <span class="dv">2</span>), (C, <span class="dv">3</span>))</a>
-<a class="sourceLine" id="cb4-5" data-line-number="5"><span class="kw">let</span> (v0, v1, v2, v3) = ((V, <span class="dv">0</span>), (V, <span class="dv">1</span>), (V, <span class="dv">2</span>), (V, <span class="dv">3</span>))</a>
-<a class="sourceLine" id="cb4-6" data-line-number="6"><span class="kw">let</span> all_pieces : piece <span class="dt">list</span> = [ s; h; c0; c1; c2; c3; v0; v1; v2; v3 ]</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb4-1" title="1"><span class="kw">type</span> piece_kind = S | H | V | C | X</a>
+<a class="sourceLine" id="cb4-2" title="2"><span class="kw">type</span> piece = piece_kind * <span class="dt">int</span></a>
+<a class="sourceLine" id="cb4-3" title="3"><span class="kw">let</span> x = (X, <span class="dv">0</span>) <span class="kw">and</span> s = (S, <span class="dv">0</span>) <span class="kw">and</span> h = (H, <span class="dv">0</span>)</a>
+<a class="sourceLine" id="cb4-4" title="4"><span class="kw">let</span> (c0, c1, c2, c3) = ((C, <span class="dv">0</span>), (C, <span class="dv">1</span>), (C, <span class="dv">2</span>), (C, <span class="dv">3</span>))</a>
+<a class="sourceLine" id="cb4-5" title="5"><span class="kw">let</span> (v0, v1, v2, v3) = ((V, <span class="dv">0</span>), (V, <span class="dv">1</span>), (V, <span class="dv">2</span>), (V, <span class="dv">3</span>))</a>
+<a class="sourceLine" id="cb4-6" title="6"><span class="kw">let</span> all_pieces : piece <span class="dt">list</span> = [ s; h; c0; c1; c2; c3; v0; v1; v2; v3 ]</a></code></pre></div>
 <p>要するに，<strong>同じ形のピースも全て区別している</strong> のである． こんな必要はない…</p>
 <p>なので，区別しない形に書き換えた．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="kw">let</span> compare_piece p1 p2 =</a>
-<a class="sourceLine" id="cb5-2" data-line-number="2">  <span class="kw">match</span> (p1,p2) <span class="kw">with</span></a>
-<a class="sourceLine" id="cb5-3" data-line-number="3">  | ((k1,n1),(k2,n2)) <span class="kw">when</span> k1 = k2 -&gt; <span class="dv">0</span></a>
-<a class="sourceLine" id="cb5-4" data-line-number="4">  | ((S,_), _) -&gt; <span class="dv">1</span></a>
-<a class="sourceLine" id="cb5-5" data-line-number="5">  | ((H,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S -&gt; <span class="dv">1</span></a>
-<a class="sourceLine" id="cb5-6" data-line-number="6">  | ((C,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H -&gt; <span class="dv">1</span></a>
-<a class="sourceLine" id="cb5-7" data-line-number="7">  | ((V,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H &amp;&amp; k &lt;&gt; C -&gt; <span class="dv">1</span></a>
-<a class="sourceLine" id="cb5-8" data-line-number="8">  | _ -&gt; <span class="dv">-1</span></a>
-<a class="sourceLine" id="cb5-9" data-line-number="9">;;</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">let</span> compare_piece p1 p2 =</a>
+<a class="sourceLine" id="cb5-2" title="2">  <span class="kw">match</span> (p1,p2) <span class="kw">with</span></a>
+<a class="sourceLine" id="cb5-3" title="3">  | ((k1,n1),(k2,n2)) <span class="kw">when</span> k1 = k2 -&gt; <span class="dv">0</span></a>
+<a class="sourceLine" id="cb5-4" title="4">  | ((S,_), _) -&gt; <span class="dv">1</span></a>
+<a class="sourceLine" id="cb5-5" title="5">  | ((H,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S -&gt; <span class="dv">1</span></a>
+<a class="sourceLine" id="cb5-6" title="6">  | ((C,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H -&gt; <span class="dv">1</span></a>
+<a class="sourceLine" id="cb5-7" title="7">  | ((V,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H &amp;&amp; k &lt;&gt; C -&gt; <span class="dv">1</span></a>
+<a class="sourceLine" id="cb5-8" title="8">  | _ -&gt; <span class="dv">-1</span></a>
+<a class="sourceLine" id="cb5-9" title="9">;;</a></code></pre></div>
 <p>区別した場合で正解の問題があるのため，素直に書き換えてしまうとダメでして… しょうがないから，ローカル関数として上書きした．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">let</span> solve_klotski initial_board =</a>
-<a class="sourceLine" id="cb6-2" data-line-number="2">  <span class="kw">let</span> compare_piece p1 p2 =</a>
-<a class="sourceLine" id="cb6-3" data-line-number="3">    <span class="kw">match</span> (p1,p2) <span class="kw">with</span></a>
-<a class="sourceLine" id="cb6-4" data-line-number="4">    | ((k1,n1),(k2,n2)) <span class="kw">when</span> k1 = k2 -&gt; <span class="dv">0</span></a>
-<a class="sourceLine" id="cb6-5" data-line-number="5">    | ((S,_), _) -&gt; <span class="dv">1</span></a>
-<a class="sourceLine" id="cb6-6" data-line-number="6">    | ((H,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S -&gt; <span class="dv">1</span></a>
-<a class="sourceLine" id="cb6-7" data-line-number="7">    | ((C,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H -&gt; <span class="dv">1</span></a>
-<a class="sourceLine" id="cb6-8" data-line-number="8">    | ((V,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H &amp;&amp; k &lt;&gt; C -&gt; <span class="dv">1</span></a>
-<a class="sourceLine" id="cb6-9" data-line-number="9">    | _ -&gt; <span class="dv">-1</span> <span class="kw">in</span></a>
-<a class="sourceLine" id="cb6-10" data-line-number="10">  <span class="kw">let</span> <span class="kw">module</span> BoardSet = <span class="dt">Set</span>.Make (<span class="kw">struct</span></a>
-<a class="sourceLine" id="cb6-11" data-line-number="11">      <span class="kw">type</span> t = board</a>
-<a class="sourceLine" id="cb6-12" data-line-number="12">      <span class="kw">let</span> <span class="dt">compare</span> b1 b2 =</a>
-<a class="sourceLine" id="cb6-13" data-line-number="13">        loop (<span class="kw">fun</span> (_,_,_,_,_,fin) -&gt; fin)</a>
-<a class="sourceLine" id="cb6-14" data-line-number="14">          (<span class="kw">fun</span> (i,j,r1,r2,ans,fin) -&gt; <span class="kw">match</span> (i,j) <span class="kw">with</span></a>
-<a class="sourceLine" id="cb6-15" data-line-number="15">            | (x,y) <span class="kw">when</span> (x+<span class="dv">1</span>) &gt; <span class="dv">4</span> &amp;&amp; y &gt; <span class="dv">3</span> -&gt; (i,j,r1,r2,ans,<span class="kw">true</span>)</a>
-<a class="sourceLine" id="cb6-16" data-line-number="16">            | (_,y) <span class="kw">when</span> y &gt; <span class="dv">3</span>              -&gt; (i+<span class="dv">1</span>,<span class="dv">0</span>,b1.(i+<span class="dv">1</span>),b2.(i+<span class="dv">1</span>),ans,fin)</a>
-<a class="sourceLine" id="cb6-17" data-line-number="17">            | _ -&gt; <span class="kw">let</span> n = compare_piece r1.(j) r2.(j) <span class="kw">in</span></a>
-<a class="sourceLine" id="cb6-18" data-line-number="18">                     <span class="kw">if</span> n &lt;&gt; <span class="dv">0</span> <span class="kw">then</span> (i,j,r1,r2,n,<span class="kw">true</span>) <span class="kw">else</span> (i,j+<span class="dv">1</span>,r1,r2,ans,fin)</a>
-<a class="sourceLine" id="cb6-19" data-line-number="19">          ) (<span class="dv">0</span>,<span class="dv">0</span>,b1.(<span class="dv">0</span>),b2.(<span class="dv">0</span>),<span class="dv">0</span>,<span class="kw">false</span>) |&gt; (<span class="kw">fun</span> (_,_,_,_,ans,_) -&gt; ans)</a>
-<a class="sourceLine" id="cb6-20" data-line-number="20">      ;;</a>
-<a class="sourceLine" id="cb6-21" data-line-number="21">    <span class="kw">end</span>) <span class="kw">in</span></a>
-<a class="sourceLine" id="cb6-22" data-line-number="22">  <span class="kw">let</span> p = { move = (<span class="kw">fun</span> _ (Move (_,_,b)) -&gt; b) ;</a>
-<a class="sourceLine" id="cb6-23" data-line-number="23">            possible_moves = possible_moves ;</a>
-<a class="sourceLine" id="cb6-24" data-line-number="24">            final = final } <span class="kw">in</span></a>
-<a class="sourceLine" id="cb6-25" data-line-number="25">  <span class="kw">let</span> opset = { empty = BoardSet.add initial_board BoardSet.empty ;</a>
-<a class="sourceLine" id="cb6-26" data-line-number="26">                mem = (<span class="kw">fun</span> al s -&gt; BoardSet.mem (<span class="dt">List</span>.hd al) s) ;</a>
-<a class="sourceLine" id="cb6-27" data-line-number="27">                add = (<span class="kw">fun</span> al s -&gt; BoardSet.add (<span class="dt">List</span>.hd al) s) } <span class="kw">in</span></a>
-<a class="sourceLine" id="cb6-28" data-line-number="28">  solve_puzzle p opset initial_board</a>
-<a class="sourceLine" id="cb6-29" data-line-number="29">;;</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">let</span> solve_klotski initial_board =</a>
+<a class="sourceLine" id="cb6-2" title="2">  <span class="kw">let</span> compare_piece p1 p2 =</a>
+<a class="sourceLine" id="cb6-3" title="3">    <span class="kw">match</span> (p1,p2) <span class="kw">with</span></a>
+<a class="sourceLine" id="cb6-4" title="4">    | ((k1,n1),(k2,n2)) <span class="kw">when</span> k1 = k2 -&gt; <span class="dv">0</span></a>
+<a class="sourceLine" id="cb6-5" title="5">    | ((S,_), _) -&gt; <span class="dv">1</span></a>
+<a class="sourceLine" id="cb6-6" title="6">    | ((H,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S -&gt; <span class="dv">1</span></a>
+<a class="sourceLine" id="cb6-7" title="7">    | ((C,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H -&gt; <span class="dv">1</span></a>
+<a class="sourceLine" id="cb6-8" title="8">    | ((V,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H &amp;&amp; k &lt;&gt; C -&gt; <span class="dv">1</span></a>
+<a class="sourceLine" id="cb6-9" title="9">    | _ -&gt; <span class="dv">-1</span> <span class="kw">in</span></a>
+<a class="sourceLine" id="cb6-10" title="10">  <span class="kw">let</span> <span class="kw">module</span> BoardSet = <span class="dt">Set</span>.Make (<span class="kw">struct</span></a>
+<a class="sourceLine" id="cb6-11" title="11">      <span class="kw">type</span> t = board</a>
+<a class="sourceLine" id="cb6-12" title="12">      <span class="kw">let</span> <span class="dt">compare</span> b1 b2 =</a>
+<a class="sourceLine" id="cb6-13" title="13">        loop (<span class="kw">fun</span> (_,_,_,_,_,fin) -&gt; fin)</a>
+<a class="sourceLine" id="cb6-14" title="14">          (<span class="kw">fun</span> (i,j,r1,r2,ans,fin) -&gt; <span class="kw">match</span> (i,j) <span class="kw">with</span></a>
+<a class="sourceLine" id="cb6-15" title="15">            | (x,y) <span class="kw">when</span> (x+<span class="dv">1</span>) &gt; <span class="dv">4</span> &amp;&amp; y &gt; <span class="dv">3</span> -&gt; (i,j,r1,r2,ans,<span class="kw">true</span>)</a>
+<a class="sourceLine" id="cb6-16" title="16">            | (_,y) <span class="kw">when</span> y &gt; <span class="dv">3</span>              -&gt; (i+<span class="dv">1</span>,<span class="dv">0</span>,b1.(i+<span class="dv">1</span>),b2.(i+<span class="dv">1</span>),ans,fin)</a>
+<a class="sourceLine" id="cb6-17" title="17">            | _ -&gt; <span class="kw">let</span> n = compare_piece r1.(j) r2.(j) <span class="kw">in</span></a>
+<a class="sourceLine" id="cb6-18" title="18">                     <span class="kw">if</span> n &lt;&gt; <span class="dv">0</span> <span class="kw">then</span> (i,j,r1,r2,n,<span class="kw">true</span>) <span class="kw">else</span> (i,j+<span class="dv">1</span>,r1,r2,ans,fin)</a>
+<a class="sourceLine" id="cb6-19" title="19">          ) (<span class="dv">0</span>,<span class="dv">0</span>,b1.(<span class="dv">0</span>),b2.(<span class="dv">0</span>),<span class="dv">0</span>,<span class="kw">false</span>) |&gt; (<span class="kw">fun</span> (_,_,_,_,ans,_) -&gt; ans)</a>
+<a class="sourceLine" id="cb6-20" title="20">      ;;</a>
+<a class="sourceLine" id="cb6-21" title="21">    <span class="kw">end</span>) <span class="kw">in</span></a>
+<a class="sourceLine" id="cb6-22" title="22">  <span class="kw">let</span> p = { move = (<span class="kw">fun</span> _ (Move (_,_,b)) -&gt; b) ;</a>
+<a class="sourceLine" id="cb6-23" title="23">            possible_moves = possible_moves ;</a>
+<a class="sourceLine" id="cb6-24" title="24">            final = final } <span class="kw">in</span></a>
+<a class="sourceLine" id="cb6-25" title="25">  <span class="kw">let</span> opset = { empty = BoardSet.add initial_board BoardSet.empty ;</a>
+<a class="sourceLine" id="cb6-26" title="26">                mem = (<span class="kw">fun</span> al s -&gt; BoardSet.mem (<span class="dt">List</span>.hd al) s) ;</a>
+<a class="sourceLine" id="cb6-27" title="27">                add = (<span class="kw">fun</span> al s -&gt; BoardSet.add (<span class="dt">List</span>.hd al) s) } <span class="kw">in</span></a>
+<a class="sourceLine" id="cb6-28" title="28">  solve_puzzle p opset initial_board</a>
+<a class="sourceLine" id="cb6-29" title="29">;;</a></code></pre></div>
 <p>で、できた…</p>
 <figure>
 <img src="../assets/introduction-to-fp-in-ocaml/solve.gif" alt="無駄にリッチ" /><figcaption>無駄にリッチ</figcaption>

@@ -104,44 +104,44 @@
 <p>最初のリンクチェッカーは <code>stack test</code> で行うのだが，追加したのは実は結構前． 記事にしてなかったので書き足しておく．</p>
 <h2 id="リンクチェッカー">リンクチェッカー</h2>
 <p>記事内にあるリンクを実際に ping して，リンクが有効かを検査するテストを作った． もちろん Haskell で書いて <code>stack test</code> で実行できるようにした． コードはこんな感じ</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span></a>
-<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb1-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb1-4" data-line-number="4"><span class="kw">import</span>           <span class="dt">Prelude</span>                   <span class="kw">hiding</span> (<span class="dt">FilePath</span>, null)</a>
-<a class="sourceLine" id="cb1-5" data-line-number="5"><span class="kw">import</span>           <span class="dt">Data.List</span>                 (nub, sort)</a>
-<a class="sourceLine" id="cb1-6" data-line-number="6"><span class="kw">import</span>           <span class="dt">Data.Maybe</span>                (fromMaybe)</a>
-<a class="sourceLine" id="cb1-7" data-line-number="7"><span class="kw">import</span>           <span class="dt">Data.Text</span>                 (<span class="dt">Text</span>, isPrefixOf, null, unpack)</a>
-<a class="sourceLine" id="cb1-8" data-line-number="8"><span class="kw">import</span>           <span class="dt">Data.Traversable</span>          (traverse)</a>
-<a class="sourceLine" id="cb1-9" data-line-number="9"><span class="kw">import</span>           <span class="dt">Network.HTTP.Client</span></a>
-<a class="sourceLine" id="cb1-10" data-line-number="10"><span class="kw">import</span>           <span class="dt">Network.HTTP.Client.TLS</span></a>
-<a class="sourceLine" id="cb1-11" data-line-number="11"><span class="kw">import</span>           <span class="dt">Network.HTTP.Types.Status</span> (<span class="dt">Status</span>, ok200)</a>
-<a class="sourceLine" id="cb1-12" data-line-number="12"><span class="kw">import</span>           <span class="dt">Shelly</span></a>
-<a class="sourceLine" id="cb1-13" data-line-number="13"><span class="kw">import</span>           <span class="dt">Test.Hspec</span></a>
-<a class="sourceLine" id="cb1-14" data-line-number="14"><span class="kw">import</span>           <span class="dt">Text.HTML.Scalpel.Core</span></a>
-<a class="sourceLine" id="cb1-15" data-line-number="15"></a>
-<a class="sourceLine" id="cb1-16" data-line-number="16"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb1-17" data-line-number="17">main <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb1-18" data-line-number="18">  urls <span class="ot">&lt;-</span> fmap mconcat <span class="fu">.</span> shelly <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb1-19" data-line-number="19">    run_ <span class="st">&quot;stack&quot;</span> [<span class="st">&quot;exec&quot;</span>, <span class="st">&quot;--&quot;</span>, <span class="st">&quot;site&quot;</span>, <span class="st">&quot;build&quot;</span>]</a>
-<a class="sourceLine" id="cb1-20" data-line-number="20">    files <span class="ot">&lt;-</span> ls <span class="st">&quot;_site/posts&quot;</span></a>
-<a class="sourceLine" id="cb1-21" data-line-number="21">    traverse (fmap scrapeLinks <span class="fu">.</span> readfile) files</a>
-<a class="sourceLine" id="cb1-22" data-line-number="22">  hspec <span class="fu">.</span> mapM_ spec <span class="fu">.</span> nub <span class="fu">.</span> sort <span class="fu">$</span> filter check urls</a>
-<a class="sourceLine" id="cb1-23" data-line-number="23"> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb1-24" data-line-number="24">  check url <span class="fu">=</span> not <span class="fu">.</span> or <span class="fu">.</span> (<span class="fu">:</span>) (null url) <span class="fu">$</span> fmap</a>
-<a class="sourceLine" id="cb1-25" data-line-number="25">    (<span class="ot">`isPrefixOf`</span> url)</a>
-<a class="sourceLine" id="cb1-26" data-line-number="26">    [<span class="st">&quot;https://matsubara0507.github.io&quot;</span>, <span class="st">&quot;../&quot;</span>, <span class="st">&quot;#&quot;</span>]</a>
-<a class="sourceLine" id="cb1-27" data-line-number="27">  spec url <span class="fu">=</span> it (unpack url) <span class="fu">$</span> linkStatus url <span class="ot">`shouldReturn`</span> ok200</a>
-<a class="sourceLine" id="cb1-28" data-line-number="28"></a>
-<a class="sourceLine" id="cb1-29" data-line-number="29"><span class="ot">scrapeLinks ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> [<span class="dt">Text</span>]</a>
-<a class="sourceLine" id="cb1-30" data-line-number="30">scrapeLinks txt <span class="fu">=</span> fromMaybe [] <span class="fu">$</span> scrapeStringLike txt scraper</a>
-<a class="sourceLine" id="cb1-31" data-line-number="31">  <span class="kw">where</span> scraper <span class="fu">=</span> attrs <span class="st">&quot;href&quot;</span> <span class="st">&quot;a&quot;</span></a>
-<a class="sourceLine" id="cb1-32" data-line-number="32"></a>
-<a class="sourceLine" id="cb1-33" data-line-number="33"><span class="ot">linkStatus ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Status</span></a>
-<a class="sourceLine" id="cb1-34" data-line-number="34">linkStatus url <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb1-35" data-line-number="35">  manager <span class="ot">&lt;-</span> newManager tlsManagerSettings</a>
-<a class="sourceLine" id="cb1-36" data-line-number="36">  request <span class="ot">&lt;-</span> parseRequest <span class="fu">$</span> unpack url</a>
-<a class="sourceLine" id="cb1-37" data-line-number="37">  responseStatus</a>
-<a class="sourceLine" id="cb1-38" data-line-number="38">    <span class="fu">&lt;$&gt;</span> httpNoBody (request { requestHeaders <span class="fu">=</span> [(<span class="st">&quot;User-Agent&quot;</span>, <span class="st">&quot;&quot;</span>)] }) manager</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span></a>
+<a class="sourceLine" id="cb1-2" title="2"><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb1-3" title="3"></a>
+<a class="sourceLine" id="cb1-4" title="4"><span class="kw">import</span>           <span class="dt">Prelude</span>                   <span class="kw">hiding</span> (<span class="dt">FilePath</span>, null)</a>
+<a class="sourceLine" id="cb1-5" title="5"><span class="kw">import</span>           <span class="dt">Data.List</span>                 (nub, sort)</a>
+<a class="sourceLine" id="cb1-6" title="6"><span class="kw">import</span>           <span class="dt">Data.Maybe</span>                (fromMaybe)</a>
+<a class="sourceLine" id="cb1-7" title="7"><span class="kw">import</span>           <span class="dt">Data.Text</span>                 (<span class="dt">Text</span>, isPrefixOf, null, unpack)</a>
+<a class="sourceLine" id="cb1-8" title="8"><span class="kw">import</span>           <span class="dt">Data.Traversable</span>          (traverse)</a>
+<a class="sourceLine" id="cb1-9" title="9"><span class="kw">import</span>           <span class="dt">Network.HTTP.Client</span></a>
+<a class="sourceLine" id="cb1-10" title="10"><span class="kw">import</span>           <span class="dt">Network.HTTP.Client.TLS</span></a>
+<a class="sourceLine" id="cb1-11" title="11"><span class="kw">import</span>           <span class="dt">Network.HTTP.Types.Status</span> (<span class="dt">Status</span>, ok200)</a>
+<a class="sourceLine" id="cb1-12" title="12"><span class="kw">import</span>           <span class="dt">Shelly</span></a>
+<a class="sourceLine" id="cb1-13" title="13"><span class="kw">import</span>           <span class="dt">Test.Hspec</span></a>
+<a class="sourceLine" id="cb1-14" title="14"><span class="kw">import</span>           <span class="dt">Text.HTML.Scalpel.Core</span></a>
+<a class="sourceLine" id="cb1-15" title="15"></a>
+<a class="sourceLine" id="cb1-16" title="16"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb1-17" title="17">main <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-18" title="18">  urls <span class="ot">&lt;-</span> <span class="fu">fmap</span> <span class="fu">mconcat</span> <span class="fu">.</span> shelly <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-19" title="19">    run_ <span class="st">&quot;stack&quot;</span> [<span class="st">&quot;exec&quot;</span>, <span class="st">&quot;--&quot;</span>, <span class="st">&quot;site&quot;</span>, <span class="st">&quot;build&quot;</span>]</a>
+<a class="sourceLine" id="cb1-20" title="20">    files <span class="ot">&lt;-</span> ls <span class="st">&quot;_site/posts&quot;</span></a>
+<a class="sourceLine" id="cb1-21" title="21">    <span class="fu">traverse</span> (<span class="fu">fmap</span> scrapeLinks <span class="fu">.</span> readfile) files</a>
+<a class="sourceLine" id="cb1-22" title="22">  hspec <span class="fu">.</span> <span class="fu">mapM_</span> spec <span class="fu">.</span> nub <span class="fu">.</span> <span class="fu">sort</span> <span class="fu">$</span> <span class="fu">filter</span> check urls</a>
+<a class="sourceLine" id="cb1-23" title="23"> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb1-24" title="24">  check url <span class="fu">=</span> <span class="fu">not</span> <span class="fu">.</span> <span class="fu">or</span> <span class="fu">.</span> (<span class="fu">:</span>) (<span class="fu">null</span> url) <span class="fu">$</span> <span class="fu">fmap</span></a>
+<a class="sourceLine" id="cb1-25" title="25">    (<span class="ot">`isPrefixOf`</span> url)</a>
+<a class="sourceLine" id="cb1-26" title="26">    [<span class="st">&quot;https://matsubara0507.github.io&quot;</span>, <span class="st">&quot;../&quot;</span>, <span class="st">&quot;#&quot;</span>]</a>
+<a class="sourceLine" id="cb1-27" title="27">  spec url <span class="fu">=</span> it (unpack url) <span class="fu">$</span> linkStatus url <span class="ot">`shouldReturn`</span> ok200</a>
+<a class="sourceLine" id="cb1-28" title="28"></a>
+<a class="sourceLine" id="cb1-29" title="29"><span class="ot">scrapeLinks ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> [<span class="dt">Text</span>]</a>
+<a class="sourceLine" id="cb1-30" title="30">scrapeLinks txt <span class="fu">=</span> fromMaybe [] <span class="fu">$</span> scrapeStringLike txt scraper</a>
+<a class="sourceLine" id="cb1-31" title="31">  <span class="kw">where</span> scraper <span class="fu">=</span> attrs <span class="st">&quot;href&quot;</span> <span class="st">&quot;a&quot;</span></a>
+<a class="sourceLine" id="cb1-32" title="32"></a>
+<a class="sourceLine" id="cb1-33" title="33"><span class="ot">linkStatus ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Status</span></a>
+<a class="sourceLine" id="cb1-34" title="34">linkStatus url <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-35" title="35">  manager <span class="ot">&lt;-</span> newManager tlsManagerSettings</a>
+<a class="sourceLine" id="cb1-36" title="36">  request <span class="ot">&lt;-</span> parseRequest <span class="fu">$</span> unpack url</a>
+<a class="sourceLine" id="cb1-37" title="37">  responseStatus</a>
+<a class="sourceLine" id="cb1-38" title="38">    <span class="fu">&lt;$&gt;</span> httpNoBody (request { requestHeaders <span class="fu">=</span> [(<span class="st">&quot;User-Agent&quot;</span>, <span class="st">&quot;&quot;</span>)] }) manager</a></code></pre></div>
 <p>HTTPクライアントには <a href="https://hackage.haskell.org/package/http-client"><code>http-client</code></a> を，スクレイピングには <a href="https://hackage.haskell.org/package/scalpel"><code>scalpel</code></a> を使っている． <a href="https://hackage.haskell.org/package/shelly"><code>shelly</code></a> の <code>ls</code> 関数を使って記事の一覧を取得してきている(これが Windows でも動くからうれしい)． 表示をそれっぽくするために <a href="https://hackage.haskell.org/package/hspec"><code>hspec</code></a> を使っている． <code>check</code> 補助関数で自分のページや空文字を排除している．</p>
 <h2 id="section-1"></h2>
 <p>これでリンク切れや単純にタイポなんかを検出できるようになったんだが，直すのがめんどくさくて結局放置していること(オイ)．</p>
@@ -159,28 +159,28 @@
 <li><a href="https://haskell.e-bigmoon.com/posts/2017-12-31-travis-out-of-memory.html">travis-ci の初回ビルドで OUT OF MEMORY が出た時の対処法</a></li>
 </ul>
 <p>戦犯は <code>Cabal</code> パッケージなので，こいつだけ先に <code>-j 1</code> オプション(メモリを節約するが速度が遅い)でビルドしてしまうという戦略． この記事のサイトの <a href="https://github.com/e-bigmoon/haskell-blog/blob/a229f118f121e0ad843faae1412e938e3e4f3a6b/.travis.yml"><code>.travis.yml</code></a> を <del>コピペ</del> 参考にして次のようにした</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="fu">install:</span></a>
-<a class="sourceLine" id="cb3-2" data-line-number="2">  <span class="kw">-</span> mkdir -p ~/.local/bin</a>
-<a class="sourceLine" id="cb3-3" data-line-number="3">  <span class="kw">-</span> <span class="fu">export PATH=$HOME/.local/bin:</span><span class="at">$PATH</span></a>
-<a class="sourceLine" id="cb3-4" data-line-number="4">  <span class="kw">-</span> <span class="fu">travis_retry curl -L https:</span><span class="at">//www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'</span></a>
-<a class="sourceLine" id="cb3-5" data-line-number="5"><span class="fu">jobs:</span></a>
-<a class="sourceLine" id="cb3-6" data-line-number="6">  <span class="fu">include:</span></a>
-<a class="sourceLine" id="cb3-7" data-line-number="7">    <span class="kw">-</span> <span class="fu">stage:</span><span class="at"> install cabal</span></a>
-<a class="sourceLine" id="cb3-8" data-line-number="8">      <span class="fu">script:</span><span class="at"> stack --no-terminal build -j 1 Cabal</span></a>
-<a class="sourceLine" id="cb3-9" data-line-number="9">    <span class="kw">-</span> <span class="fu">stage:</span><span class="at"> install pandoc</span></a>
-<a class="sourceLine" id="cb3-10" data-line-number="10">      <span class="fu">script:</span><span class="at"> travis_wait 30 stack --no-terminal build pandoc</span></a>
-<a class="sourceLine" id="cb3-11" data-line-number="11">    <span class="kw">-</span> <span class="fu">stage:</span><span class="at"> install deprndences</span></a>
-<a class="sourceLine" id="cb3-12" data-line-number="12">      <span class="fu">script:</span><span class="at"> stack --no-terminal test --only-dependencies</span></a>
-<a class="sourceLine" id="cb3-13" data-line-number="13">    <span class="kw">-</span> <span class="fu">stage:</span><span class="at"> stack test</span></a>
-<a class="sourceLine" id="cb3-14" data-line-number="14">      <span class="fu">script:</span><span class="at"> stack --no-terminal test --no-run-benchmarks --no-haddock-deps</span></a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb3-1" title="1"><span class="fu">install:</span></a>
+<a class="sourceLine" id="cb3-2" title="2">  <span class="kw">-</span> mkdir -p ~/.local/bin</a>
+<a class="sourceLine" id="cb3-3" title="3">  <span class="kw">-</span> export PATH=$HOME/.local/bin:$PATH</a>
+<a class="sourceLine" id="cb3-4" title="4">  <span class="kw">-</span> travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin <span class="st">'*/stack'</span></a>
+<a class="sourceLine" id="cb3-5" title="5"><span class="fu">jobs:</span></a>
+<a class="sourceLine" id="cb3-6" title="6">  <span class="fu">include:</span></a>
+<a class="sourceLine" id="cb3-7" title="7">    <span class="kw">-</span> <span class="fu">stage:</span><span class="at"> install cabal</span></a>
+<a class="sourceLine" id="cb3-8" title="8">      <span class="fu">script:</span><span class="at"> stack --no-terminal build -j 1 Cabal</span></a>
+<a class="sourceLine" id="cb3-9" title="9">    <span class="kw">-</span> <span class="fu">stage:</span><span class="at"> install pandoc</span></a>
+<a class="sourceLine" id="cb3-10" title="10">      <span class="fu">script:</span><span class="at"> travis_wait 30 stack --no-terminal build pandoc</span></a>
+<a class="sourceLine" id="cb3-11" title="11">    <span class="kw">-</span> <span class="fu">stage:</span><span class="at"> install deprndences</span></a>
+<a class="sourceLine" id="cb3-12" title="12">      <span class="fu">script:</span><span class="at"> stack --no-terminal test --only-dependencies</span></a>
+<a class="sourceLine" id="cb3-13" title="13">    <span class="kw">-</span> <span class="fu">stage:</span><span class="at"> stack test</span></a>
+<a class="sourceLine" id="cb3-14" title="14">      <span class="fu">script:</span><span class="at"> stack --no-terminal test --no-run-benchmarks --no-haddock-deps</span></a></code></pre></div>
 <h3 id="hakyll-4.10-が落ちる">hakyll-4.10 が落ちる</h3>
 <p>OUT OF MEMORY は突破したが…</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1">    <span class="fu">/</span>tmp<span class="fu">/</span>stack3402<span class="fu">/</span>hakyll<span class="fu">-</span><span class="fl">4.10</span><span class="fu">.</span><span class="fl">0.0</span><span class="fu">/</span>rts<span class="fu">/</span>posix<span class="fu">/</span>OSThreads.c<span class="fu">:</span><span class="dv">137</span><span class="fu">:</span><span class="dv">0</span><span class="fu">:</span> error<span class="fu">:</span></a>
-<a class="sourceLine" id="cb4-2" data-line-number="2">         error<span class="fu">:</span> undefined reference to <span class="ch">'pthread_create'</span></a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1">    <span class="fu">/</span>tmp<span class="fu">/</span>stack3402<span class="fu">/</span>hakyll<span class="fu">-</span><span class="fl">4.10</span><span class="fu">.</span><span class="fl">0.0</span><span class="fu">/</span>rts<span class="fu">/</span>posix<span class="fu">/</span>OSThreads.c<span class="fu">:</span><span class="dv">137</span><span class="fu">:</span><span class="dv">0</span><span class="fu">:</span> <span class="fu">error:</span></a>
+<a class="sourceLine" id="cb4-2" title="2">         <span class="fu">error:</span> <span class="fu">undefined</span> reference to 'pthread_create'</a></code></pre></div>
 <p>なぜだ… 最新の <a href="https://github.com/jaspervdj/hakyll/commit/480da307d22aff8ab3817d1586710c5f4ff6d779"><code>hakyll-4.11</code> では直ってるみたい</a>なので，<code>stack.yaml</code> に追加したら上手くいった．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="fu">extra-deps:</span></a>
-<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="kw">-</span> hakyll-4.11.0.0</a>
-<a class="sourceLine" id="cb5-3" data-line-number="3"><span class="kw">-</span> pandoc-citeproc-0.13.0.1</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb5-1" title="1"><span class="fu">extra-deps:</span></a>
+<a class="sourceLine" id="cb5-2" title="2"><span class="kw">-</span> hakyll-4.11.0.0</a>
+<a class="sourceLine" id="cb5-3" title="3"><span class="kw">-</span> pandoc-citeproc-0.13.0.1</a></code></pre></div>
 <h3 id="シンタックスハイライトが">シンタックスハイライトが…</h3>
 <p>おかしくなった． 理由は簡単で，Hakyll というか Pandoc がシンタックスハイライトにもともと使っていた <a href="https://hackage.haskell.org/package/highlighting-kate"><code>highlighting-kate</code></a> をやめて <a href="https://hackage.haskell.org/package/skylighting"><code>skylighting</code></a> に対応したからみたいだ．</p>
 <ul>
@@ -189,80 +189,80 @@
 <p>なので，パッケージを変えたら元に戻った．</p>
 <h2 id="可変なキーバリューストアを-aeson-で">可変なキーバリューストアを aeson で</h2>
 <p>テンプレートの方だけで出てくる変数(e.g. <code>$github$</code> とか)は <code>site.hs</code> の実装に依存したくなくて，Hakyll をビルドせずとも <code>config.yaml</code> に好きに追加できるようにしたかった． <a href="https://hackage.haskell.org/package/yaml">yaml</a> パッケージ(というか <a href="https://hackage.haskell.org/package/aeson"><code>aeson</code></a>)ではそういうのを出来ないと <strong>思い込んでいたが <code>Map k v</code> 型を使えばできる</strong> と最近分かった(インスタンスのリストを眺めてたら気づいた)． なので，今まで使ってた <a href="https://hackage.haskell.org/package/yaml-light"><code>yaml-light</code></a> パッケージを捨てて <code>yaml</code> パッケージで次のように実装した．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">import</span>           <span class="dt">Data.Yaml</span>   (decodeFileEither)</a>
-<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="kw">import</span>           <span class="dt">Data.Map</span>    (<span class="dt">Map</span>, foldMapWithKey)</a>
-<a class="sourceLine" id="cb6-3" data-line-number="3"><span class="kw">import</span>           <span class="dt">Hakyll</span></a>
-<a class="sourceLine" id="cb6-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb6-5" data-line-number="5"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb6-6" data-line-number="6">main <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb6-7" data-line-number="7">  configYaml <span class="ot">&lt;-</span> either (error <span class="fu">.</span> show) id <span class="fu">&lt;$&gt;</span> decodeFileEither <span class="st">&quot;config.yaml&quot;</span></a>
-<a class="sourceLine" id="cb6-8" data-line-number="8">  <span class="kw">let</span></a>
-<a class="sourceLine" id="cb6-9" data-line-number="9">    siteCtx <span class="fu">=</span> mkSiteCtx configYaml</a>
-<a class="sourceLine" id="cb6-10" data-line-number="10">  hakyllWith config <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb6-11" data-line-number="11">    <span class="fu">...</span></a>
-<a class="sourceLine" id="cb6-12" data-line-number="12"></a>
-<a class="sourceLine" id="cb6-13" data-line-number="13"><span class="kw">type</span> <span class="dt">Config</span> <span class="fu">=</span> <span class="dt">Map</span> <span class="dt">String</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb6-14" data-line-number="14"></a>
-<a class="sourceLine" id="cb6-15" data-line-number="15"><span class="ot">mkSiteCtx ::</span> <span class="dt">Config</span> <span class="ot">-&gt;</span> <span class="dt">Context</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb6-16" data-line-number="16">mkSiteCtx <span class="fu">=</span> foldMapWithKey constField</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">import</span>           <span class="dt">Data.Yaml</span>   (decodeFileEither)</a>
+<a class="sourceLine" id="cb6-2" title="2"><span class="kw">import</span>           <span class="dt">Data.Map</span>    (<span class="dt">Map</span>, foldMapWithKey)</a>
+<a class="sourceLine" id="cb6-3" title="3"><span class="kw">import</span>           <span class="dt">Hakyll</span></a>
+<a class="sourceLine" id="cb6-4" title="4"></a>
+<a class="sourceLine" id="cb6-5" title="5"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb6-6" title="6">main <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb6-7" title="7">  configYaml <span class="ot">&lt;-</span> <span class="fu">either</span> (<span class="fu">error</span> <span class="fu">.</span> <span class="fu">show</span>) <span class="fu">id</span> <span class="fu">&lt;$&gt;</span> decodeFileEither <span class="st">&quot;config.yaml&quot;</span></a>
+<a class="sourceLine" id="cb6-8" title="8">  <span class="kw">let</span></a>
+<a class="sourceLine" id="cb6-9" title="9">    siteCtx <span class="fu">=</span> mkSiteCtx configYaml</a>
+<a class="sourceLine" id="cb6-10" title="10">  hakyllWith config <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb6-11" title="11">    <span class="fu">...</span></a>
+<a class="sourceLine" id="cb6-12" title="12"></a>
+<a class="sourceLine" id="cb6-13" title="13"><span class="kw">type</span> <span class="dt">Config</span> <span class="fu">=</span> <span class="dt">Map</span> <span class="dt">String</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb6-14" title="14"></a>
+<a class="sourceLine" id="cb6-15" title="15"><span class="ot">mkSiteCtx ::</span> <span class="dt">Config</span> <span class="ot">-&gt;</span> <span class="dt">Context</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb6-16" title="16">mkSiteCtx <span class="fu">=</span> foldMapWithKey constField</a></code></pre></div>
 <p>こういう <code>config.yaml</code> を書いておくと，全てテンプレートの中で参照できる．</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="fu">site_title:</span><span class="at"> ひげメモ</span></a>
-<a class="sourceLine" id="cb7-2" data-line-number="2"><span class="fu">description:</span><span class="at"> </span><span class="st">&quot;自分用のメモ書きだったり，イロイロといじって遊ぶようだったり&quot;</span></a>
-<a class="sourceLine" id="cb7-3" data-line-number="3"><span class="fu">baseurl:</span><span class="at"> </span><span class="st">&quot;https://matsubara0507.github.io&quot;</span></a>
-<a class="sourceLine" id="cb7-4" data-line-number="4"><span class="fu">github:</span><span class="at">  matsubara0507</span></a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb7-1" title="1"><span class="fu">site_title:</span><span class="at"> ひげメモ</span></a>
+<a class="sourceLine" id="cb7-2" title="2"><span class="fu">description:</span><span class="at"> </span><span class="st">&quot;自分用のメモ書きだったり，イロイロといじって遊ぶようだったり&quot;</span></a>
+<a class="sourceLine" id="cb7-3" title="3"><span class="fu">baseurl:</span><span class="at"> </span><span class="st">&quot;https://matsubara0507.github.io&quot;</span></a>
+<a class="sourceLine" id="cb7-4" title="4"><span class="fu">github:</span><span class="at">  matsubara0507</span></a></code></pre></div>
 <h2 id="post-以下のマークダウン置き場を変更"><code>post/</code> 以下のマークダウン置き場を変更</h2>
 <p>記事のマークダウンは全て <code>posts/</code> 以下に置いていたのだが，各年ごとにディレクトリを切りたいなぁと思った． 例えば <code>posts/2018/02-21-add-feats-mysite-2018.md</code> といった具合に． しかし，出力は今まで通り <code>posts/2018-02-21-add-feats-mysite-2018.html</code> としたい(リンクが変わっちゃうからね)． まんま<a href="http://daimatz.net/text/2014/0126-hakyll.html">同じことをしてくれている記事</a>があったので，参考にして次のように書き換えた．</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb8-2" data-line-number="2">main <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb8-3" data-line-number="3">  <span class="fu">...</span></a>
-<a class="sourceLine" id="cb8-4" data-line-number="4">  match <span class="st">&quot;posts/*/*&quot;</span> <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb8-5" data-line-number="5">    route <span class="fu">$</span> composeRoutes (gsubRoute <span class="st">&quot;/[0-9]{4}/&quot;</span> <span class="fu">$</span> (<span class="fu">++</span> <span class="st">&quot;-&quot;</span>) <span class="fu">.</span> init)</a>
-<a class="sourceLine" id="cb8-6" data-line-number="6">                          (setExtension <span class="st">&quot;html&quot;</span>)</a>
-<a class="sourceLine" id="cb8-7" data-line-number="7">    compile</a>
-<a class="sourceLine" id="cb8-8" data-line-number="8">      <span class="fu">$</span>   pandocCompiler</a>
-<a class="sourceLine" id="cb8-9" data-line-number="9">      <span class="fu">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/post.html&quot;</span> postCtx</a>
-<a class="sourceLine" id="cb8-10" data-line-number="10">      <span class="fu">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/default.html&quot;</span> (postCtx <span class="fu">&lt;&gt;</span> siteCtx)</a>
-<a class="sourceLine" id="cb8-11" data-line-number="11">      <span class="fu">&gt;&gt;=</span> relativizeUrls</a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb8-2" title="2">main <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-3" title="3">  <span class="fu">...</span></a>
+<a class="sourceLine" id="cb8-4" title="4">  match <span class="st">&quot;posts/*/*&quot;</span> <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-5" title="5">    route <span class="fu">$</span> composeRoutes (gsubRoute <span class="st">&quot;/[0-9]{4}/&quot;</span> <span class="fu">$</span> (<span class="fu">++</span> <span class="st">&quot;-&quot;</span>) <span class="fu">.</span> <span class="fu">init</span>)</a>
+<a class="sourceLine" id="cb8-6" title="6">                          (setExtension <span class="st">&quot;html&quot;</span>)</a>
+<a class="sourceLine" id="cb8-7" title="7">    compile</a>
+<a class="sourceLine" id="cb8-8" title="8">      <span class="fu">$</span>   pandocCompiler</a>
+<a class="sourceLine" id="cb8-9" title="9">      <span class="fu">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/post.html&quot;</span> postCtx</a>
+<a class="sourceLine" id="cb8-10" title="10">      <span class="fu">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/default.html&quot;</span> (postCtx <span class="fu">&lt;&gt;</span> siteCtx)</a>
+<a class="sourceLine" id="cb8-11" title="11">      <span class="fu">&gt;&gt;=</span> relativizeUrls</a></code></pre></div>
 <p><code>gsubRoute</code> 関数を使うことで，ファイル名を特有のパターン記法(？)でマッチさせ置換できる． <code>gsubRoute &quot;/[0-9]{4}/&quot; $ (++ &quot;-&quot;) . init</code> の場合，<code>/2018/</code> をマッチさせ <code>init</code> して <code>/2018</code> となり，末尾に <code>&quot;-&quot;</code> を追加している．</p>
 <h2 id="section-2"></h2>
 <p>さて実はもう一つ問題があって，Hakyll は日時を表すテンプレート変数(<code>$date$</code> とか)を次のように取得する．</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="ot">postCtx ::</span> <span class="dt">Context</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb9-2" data-line-number="2">postCtx <span class="fu">=</span> mconcat</a>
-<a class="sourceLine" id="cb9-3" data-line-number="3">  [ dateField <span class="st">&quot;time&quot;</span> <span class="st">&quot;%Y-%m-%d&quot;</span></a>
-<a class="sourceLine" id="cb9-4" data-line-number="4">  , dateField <span class="st">&quot;date&quot;</span> <span class="st">&quot;%b %-d, %Y&quot;</span></a>
-<a class="sourceLine" id="cb9-5" data-line-number="5">  , defaultContext</a>
-<a class="sourceLine" id="cb9-6" data-line-number="6">  ]</a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="ot">postCtx ::</span> <span class="dt">Context</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb9-2" title="2">postCtx <span class="fu">=</span> <span class="fu">mconcat</span></a>
+<a class="sourceLine" id="cb9-3" title="3">  [ dateField <span class="st">&quot;time&quot;</span> <span class="st">&quot;%Y-%m-%d&quot;</span></a>
+<a class="sourceLine" id="cb9-4" title="4">  , dateField <span class="st">&quot;date&quot;</span> <span class="st">&quot;%b %-d, %Y&quot;</span></a>
+<a class="sourceLine" id="cb9-5" title="5">  , defaultContext</a>
+<a class="sourceLine" id="cb9-6" title="6">  ]</a></code></pre></div>
 <p><code>dateField</code> 関数が記事のファイル名(<code>yyyy-mm-dd-*.md</code> の部分)かマークダウンのメタ変数から取得している． つまり，<code>posts/2018/02-21-add-feats-mysite-2018.md</code> というファイル名じゃ日時の変数を取得できない． しょうがないので Hakyll のソースコードを読んで無理やり書き換えた．</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw">import</span>           <span class="dt">Data.Time</span></a>
-<a class="sourceLine" id="cb10-2" data-line-number="2"><span class="kw">import</span>           <span class="dt">System.FilePath</span></a>
-<a class="sourceLine" id="cb10-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb10-4" data-line-number="4"><span class="ot">dateField' ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Context</span> a</a>
-<a class="sourceLine" id="cb10-5" data-line-number="5">dateField' key format <span class="fu">=</span> field key <span class="fu">$</span> \item <span class="ot">-&gt;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb10-6" data-line-number="6">  time <span class="ot">&lt;-</span> getItemUTC' defaultTimeLocale <span class="fu">$</span> itemIdentifier item</a>
-<a class="sourceLine" id="cb10-7" data-line-number="7">  return <span class="fu">$</span> formatTime defaultTimeLocale format time</a>
-<a class="sourceLine" id="cb10-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb10-9" data-line-number="9"><span class="ot">getItemUTC' ::</span> <span class="dt">MonadMetadata</span> m <span class="ot">=&gt;</span> <span class="dt">TimeLocale</span> <span class="ot">-&gt;</span> <span class="dt">Identifier</span> <span class="ot">-&gt;</span> m <span class="dt">UTCTime</span></a>
-<a class="sourceLine" id="cb10-10" data-line-number="10">getItemUTC' locale ident <span class="fu">=</span></a>
-<a class="sourceLine" id="cb10-11" data-line-number="11">  pure <span class="fu">$</span> parseTimeOrError <span class="dt">True</span> locale <span class="st">&quot;%Y%m-%d&quot;</span> (yyyy <span class="fu">++</span> mmdd)</a>
-<a class="sourceLine" id="cb10-12" data-line-number="12">  <span class="kw">where</span></a>
-<a class="sourceLine" id="cb10-13" data-line-number="13">    path <span class="fu">=</span> toFilePath ident</a>
-<a class="sourceLine" id="cb10-14" data-line-number="14">    yyyy <span class="fu">=</span> takeFileName <span class="fu">$</span> takeDirectory path</a>
-<a class="sourceLine" id="cb10-15" data-line-number="15">    mmdd <span class="fu">=</span> take <span class="dv">5</span> <span class="fu">$</span> takeBaseName path</a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">import</span>           <span class="dt">Data.Time</span></a>
+<a class="sourceLine" id="cb10-2" title="2"><span class="kw">import</span>           <span class="dt">System.FilePath</span></a>
+<a class="sourceLine" id="cb10-3" title="3"></a>
+<a class="sourceLine" id="cb10-4" title="4"><span class="ot">dateField' ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Context</span> a</a>
+<a class="sourceLine" id="cb10-5" title="5">dateField' key format <span class="fu">=</span> field key <span class="fu">$</span> \item <span class="ot">-&gt;</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb10-6" title="6">  time <span class="ot">&lt;-</span> getItemUTC' defaultTimeLocale <span class="fu">$</span> itemIdentifier item</a>
+<a class="sourceLine" id="cb10-7" title="7">  <span class="fu">return</span> <span class="fu">$</span> formatTime defaultTimeLocale format time</a>
+<a class="sourceLine" id="cb10-8" title="8"></a>
+<a class="sourceLine" id="cb10-9" title="9"><span class="ot">getItemUTC' ::</span> <span class="dt">MonadMetadata</span> m <span class="ot">=&gt;</span> <span class="dt">TimeLocale</span> <span class="ot">-&gt;</span> <span class="dt">Identifier</span> <span class="ot">-&gt;</span> m <span class="dt">UTCTime</span></a>
+<a class="sourceLine" id="cb10-10" title="10">getItemUTC' locale ident <span class="fu">=</span></a>
+<a class="sourceLine" id="cb10-11" title="11">  <span class="fu">pure</span> <span class="fu">$</span> parseTimeOrError <span class="dt">True</span> locale <span class="st">&quot;%Y%m-%d&quot;</span> (yyyy <span class="fu">++</span> mmdd)</a>
+<a class="sourceLine" id="cb10-12" title="12">  <span class="kw">where</span></a>
+<a class="sourceLine" id="cb10-13" title="13">    path <span class="fu">=</span> toFilePath ident</a>
+<a class="sourceLine" id="cb10-14" title="14">    yyyy <span class="fu">=</span> takeFileName <span class="fu">$</span> takeDirectory path</a>
+<a class="sourceLine" id="cb10-15" title="15">    mmdd <span class="fu">=</span> <span class="fu">take</span> <span class="dv">5</span> <span class="fu">$</span> takeBaseName path</a></code></pre></div>
 <p>さっきの <code>dateField</code> の部分を <code>dateField'</code> にすれば記事のビルドが出来る！</p>
 <h3 id="vs-recentfirst-関数">vs <code>recentFirst</code> 関数</h3>
 <p>記事を日時順に並び変えてくれる <code>recentFirst</code> 関数もファイル名に依存してる． しょうがないので力技で書き換える．</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="kw">import</span>           <span class="dt">Data.List</span>       (sortBy)</a>
-<a class="sourceLine" id="cb11-2" data-line-number="2"><span class="kw">import</span>           <span class="dt">Data.Ord</span>        (comparing)</a>
-<a class="sourceLine" id="cb11-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb11-4" data-line-number="4"><span class="ot">recentFirst' ::</span> <span class="dt">MonadMetadata</span> m <span class="ot">=&gt;</span> [<span class="dt">Item</span> a] <span class="ot">-&gt;</span> m [<span class="dt">Item</span> a]</a>
-<a class="sourceLine" id="cb11-5" data-line-number="5">recentFirst' <span class="fu">=</span> fmap reverse <span class="fu">.</span> chronological'</a>
-<a class="sourceLine" id="cb11-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb11-7" data-line-number="7"><span class="ot">chronological' ::</span> <span class="dt">MonadMetadata</span> m <span class="ot">=&gt;</span> [<span class="dt">Item</span> a] <span class="ot">-&gt;</span> m [<span class="dt">Item</span> a]</a>
-<a class="sourceLine" id="cb11-8" data-line-number="8">chronological' <span class="fu">=</span></a>
-<a class="sourceLine" id="cb11-9" data-line-number="9">  sortByM <span class="fu">$</span> getItemUTC' defaultTimeLocale <span class="fu">.</span> itemIdentifier</a>
-<a class="sourceLine" id="cb11-10" data-line-number="10"></a>
-<a class="sourceLine" id="cb11-11" data-line-number="11"><span class="ot">sortByM ::</span> (<span class="dt">Monad</span> m, <span class="dt">Ord</span> k) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m k) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> m [a]</a>
-<a class="sourceLine" id="cb11-12" data-line-number="12">sortByM f <span class="fu">=</span> fmap (map fst <span class="fu">.</span> sortBy (comparing snd)) <span class="fu">.</span> mapM (fmap <span class="fu">&lt;$&gt;</span> (,) <span class="fu">&lt;*&gt;</span> f)</a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="kw">import</span>           <span class="dt">Data.List</span>       (sortBy)</a>
+<a class="sourceLine" id="cb11-2" title="2"><span class="kw">import</span>           <span class="dt">Data.Ord</span>        (comparing)</a>
+<a class="sourceLine" id="cb11-3" title="3"></a>
+<a class="sourceLine" id="cb11-4" title="4"><span class="ot">recentFirst' ::</span> <span class="dt">MonadMetadata</span> m <span class="ot">=&gt;</span> [<span class="dt">Item</span> a] <span class="ot">-&gt;</span> m [<span class="dt">Item</span> a]</a>
+<a class="sourceLine" id="cb11-5" title="5">recentFirst' <span class="fu">=</span> <span class="fu">fmap</span> <span class="fu">reverse</span> <span class="fu">.</span> chronological'</a>
+<a class="sourceLine" id="cb11-6" title="6"></a>
+<a class="sourceLine" id="cb11-7" title="7"><span class="ot">chronological' ::</span> <span class="dt">MonadMetadata</span> m <span class="ot">=&gt;</span> [<span class="dt">Item</span> a] <span class="ot">-&gt;</span> m [<span class="dt">Item</span> a]</a>
+<a class="sourceLine" id="cb11-8" title="8">chronological' <span class="fu">=</span></a>
+<a class="sourceLine" id="cb11-9" title="9">  sortByM <span class="fu">$</span> getItemUTC' defaultTimeLocale <span class="fu">.</span> itemIdentifier</a>
+<a class="sourceLine" id="cb11-10" title="10"></a>
+<a class="sourceLine" id="cb11-11" title="11"><span class="ot">sortByM ::</span> (<span class="dt">Monad</span> m, <span class="dt">Ord</span> k) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m k) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> m [a]</a>
+<a class="sourceLine" id="cb11-12" title="12">sortByM f <span class="fu">=</span> <span class="fu">fmap</span> (<span class="fu">map</span> <span class="fu">fst</span> <span class="fu">.</span> sortBy (comparing <span class="fu">snd</span>)) <span class="fu">.</span> <span class="fu">mapM</span> (<span class="fu">fmap</span> <span class="fu">&lt;$&gt;</span> (,) <span class="fu">&lt;*&gt;</span> f)</a></code></pre></div>
 <p><code>sortByM</code> 関数は <code>sortBy</code> の <code>Monad</code> 版． <code>[a]</code> を <code>[(a, m k)]</code> とし <code>[m (a, k)]</code> にして <code>m [(a, k)]</code> にしてから <code>k</code> でソートし最後に <code>a</code> だけ取り出している． ちなみに，<code>fmap &lt;$&gt; (,) &lt;*&gt; f</code> の部分は分かりますか？ <code>\x -&gt; (,) x &lt;$&gt; f x</code> をしてるだけですよ．</p>
 <h2 id="フィードページネーションタグ">フィード・ページネーション・タグ</h2>
 <p>実はフィード生成・ページネーション・タグは，もとから Hakyll で提供されている機能だ． どれもこの記事に日本語で書いてある．</p>
@@ -273,81 +273,81 @@
 <p>だが躓きポイントはいくつかあった(だいたい日時のやつだけど…)．</p>
 <h3 id="フィードを生成">フィードを生成</h3>
 <p>記事の通りに作っても <code>$published$</code> 変数が無いと怒られる． <code>renderAtom</code> 関数の中で <code>dateField</code> 関数を使っているからだ． さすがに書き換えるのはめんどいので，自分で取ってくることにした．</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" data-line-number="1"><span class="ot">postCtx ::</span> <span class="dt">Context</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb12-2" data-line-number="2">postCtx <span class="fu">=</span> mconcat</a>
-<a class="sourceLine" id="cb12-3" data-line-number="3">  [ dateField <span class="st">&quot;time&quot;</span> <span class="st">&quot;%Y-%m-%d&quot;</span></a>
-<a class="sourceLine" id="cb12-4" data-line-number="4">  , dateField <span class="st">&quot;date&quot;</span> <span class="st">&quot;%b %-d, %Y&quot;</span></a>
-<a class="sourceLine" id="cb12-5" data-line-number="5">  , dateField' <span class="st">&quot;published&quot;</span> <span class="st">&quot;%Y-%m-%dT%H:%M:%SZ&quot;</span></a>
-<a class="sourceLine" id="cb12-6" data-line-number="6">  , dateField' <span class="st">&quot;updated&quot;</span> <span class="st">&quot;%Y-%m-%dT%H:%M:%SZ&quot;</span></a>
-<a class="sourceLine" id="cb12-7" data-line-number="7">  , defaultContext</a>
-<a class="sourceLine" id="cb12-8" data-line-number="8">  ]</a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="ot">postCtx ::</span> <span class="dt">Context</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb12-2" title="2">postCtx <span class="fu">=</span> <span class="fu">mconcat</span></a>
+<a class="sourceLine" id="cb12-3" title="3">  [ dateField <span class="st">&quot;time&quot;</span> <span class="st">&quot;%Y-%m-%d&quot;</span></a>
+<a class="sourceLine" id="cb12-4" title="4">  , dateField <span class="st">&quot;date&quot;</span> <span class="st">&quot;%b %-d, %Y&quot;</span></a>
+<a class="sourceLine" id="cb12-5" title="5">  , dateField' <span class="st">&quot;published&quot;</span> <span class="st">&quot;%Y-%m-%dT%H:%M:%SZ&quot;</span></a>
+<a class="sourceLine" id="cb12-6" title="6">  , dateField' <span class="st">&quot;updated&quot;</span> <span class="st">&quot;%Y-%m-%dT%H:%M:%SZ&quot;</span></a>
+<a class="sourceLine" id="cb12-7" title="7">  , defaultContext</a>
+<a class="sourceLine" id="cb12-8" title="8">  ]</a></code></pre></div>
 <p>あと，<a href="https://hackage.haskell.org/package/hakyll-4.11.0.0/docs/Hakyll-Web-Feed.html#t:FeedConfiguration">フィードに渡す変数</a>は <code>config.yaml</code> に書くことにした．</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb13-1" data-line-number="1"><span class="fu">site_title:</span><span class="at"> ひげメモ</span></a>
-<a class="sourceLine" id="cb13-2" data-line-number="2"><span class="fu">author:</span><span class="at"> MATSUBARA Nobutada</span></a>
-<a class="sourceLine" id="cb13-3" data-line-number="3"><span class="fu">email:</span><span class="at"> </span><span class="st">&quot;&quot;</span></a>
-<a class="sourceLine" id="cb13-4" data-line-number="4"><span class="fu">description:</span><span class="at"> </span><span class="st">&quot;自分用のメモ書きだったり，イロイロといじって遊ぶようだったり&quot;</span></a>
-<a class="sourceLine" id="cb13-5" data-line-number="5"><span class="fu">baseurl:</span><span class="at"> </span><span class="st">&quot;https://matsubara0507.github.io&quot;</span></a>
-<a class="sourceLine" id="cb13-6" data-line-number="6"><span class="fu">val:</span></a>
-<a class="sourceLine" id="cb13-7" data-line-number="7">  <span class="fu">github:</span><span class="at"> matsubara0507</span></a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb13-1" title="1"><span class="fu">site_title:</span><span class="at"> ひげメモ</span></a>
+<a class="sourceLine" id="cb13-2" title="2"><span class="fu">author:</span><span class="at"> MATSUBARA Nobutada</span></a>
+<a class="sourceLine" id="cb13-3" title="3"><span class="fu">email:</span><span class="at"> </span><span class="st">&quot;&quot;</span></a>
+<a class="sourceLine" id="cb13-4" title="4"><span class="fu">description:</span><span class="at"> </span><span class="st">&quot;自分用のメモ書きだったり，イロイロといじって遊ぶようだったり&quot;</span></a>
+<a class="sourceLine" id="cb13-5" title="5"><span class="fu">baseurl:</span><span class="at"> </span><span class="st">&quot;https://matsubara0507.github.io&quot;</span></a>
+<a class="sourceLine" id="cb13-6" title="6"><span class="fu">val:</span></a>
+<a class="sourceLine" id="cb13-7" title="7">  <span class="fu">github:</span><span class="at"> matsubara0507</span></a></code></pre></div>
 <p>これを <code>Config</code> 型という拡張可能レコードにマッピングし，そのあとに <code>FeedConfiguration</code> 型に変換する．</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="kw">import</span> <span class="dt">Control.Lens</span> ((^.))</a>
-<a class="sourceLine" id="cb14-2" data-line-number="2"><span class="kw">import</span> <span class="dt">Data.Extensible</span></a>
-<a class="sourceLine" id="cb14-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb14-4" data-line-number="4"><span class="kw">type</span> <span class="dt">Config</span> <span class="fu">=</span> <span class="dt">Record</span></a>
-<a class="sourceLine" id="cb14-5" data-line-number="5">  <span class="ch">'[ &quot;site_title&quot; &gt;: String</span></a>
-<a class="sourceLine" id="cb14-6" data-line-number="6">   , <span class="st">&quot;author&quot;</span> <span class="fu">&gt;:</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb14-7" data-line-number="7">   , <span class="st">&quot;email&quot;</span> <span class="fu">&gt;:</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb14-8" data-line-number="8">   , <span class="st">&quot;description&quot;</span> <span class="fu">&gt;:</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb14-9" data-line-number="9">   , <span class="st">&quot;baseurl&quot;</span> <span class="fu">&gt;:</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb14-10" data-line-number="10">   , <span class="st">&quot;val&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Map</span> <span class="dt">String</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb14-11" data-line-number="11">   ]</a>
-<a class="sourceLine" id="cb14-12" data-line-number="12"></a>
-<a class="sourceLine" id="cb14-13" data-line-number="13"><span class="ot">mkFeedConfig ::</span> <span class="dt">Config</span> <span class="ot">-&gt;</span> <span class="dt">FeedConfiguration</span></a>
-<a class="sourceLine" id="cb14-14" data-line-number="14">mkFeedConfig conf <span class="fu">=</span> <span class="dt">FeedConfiguration</span></a>
-<a class="sourceLine" id="cb14-15" data-line-number="15">  { feedTitle       <span class="fu">=</span> conf <span class="fu">^.</span> <span class="fu">#</span>site_title</a>
-<a class="sourceLine" id="cb14-16" data-line-number="16">  , feedDescription <span class="fu">=</span> conf <span class="fu">^.</span> <span class="fu">#</span>description</a>
-<a class="sourceLine" id="cb14-17" data-line-number="17">  , feedAuthorName  <span class="fu">=</span> conf <span class="fu">^.</span> <span class="fu">#</span>author</a>
-<a class="sourceLine" id="cb14-18" data-line-number="18">  , feedAuthorEmail <span class="fu">=</span> conf <span class="fu">^.</span> <span class="fu">#</span>email</a>
-<a class="sourceLine" id="cb14-19" data-line-number="19">  , feedRoot        <span class="fu">=</span> conf <span class="fu">^.</span> <span class="fu">#</span>baseurl</a>
-<a class="sourceLine" id="cb14-20" data-line-number="20">  }</a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="kw">import</span> <span class="dt">Control.Lens</span> ((^.))</a>
+<a class="sourceLine" id="cb14-2" title="2"><span class="kw">import</span> <span class="dt">Data.Extensible</span></a>
+<a class="sourceLine" id="cb14-3" title="3"></a>
+<a class="sourceLine" id="cb14-4" title="4"><span class="kw">type</span> <span class="dt">Config</span> <span class="fu">=</span> <span class="dt">Record</span></a>
+<a class="sourceLine" id="cb14-5" title="5">  '[ <span class="st">&quot;site_title&quot;</span> <span class="fu">&gt;:</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb14-6" title="6">   , <span class="st">&quot;author&quot;</span> <span class="fu">&gt;:</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb14-7" title="7">   , <span class="st">&quot;email&quot;</span> <span class="fu">&gt;:</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb14-8" title="8">   , <span class="st">&quot;description&quot;</span> <span class="fu">&gt;:</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb14-9" title="9">   , <span class="st">&quot;baseurl&quot;</span> <span class="fu">&gt;:</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb14-10" title="10">   , <span class="st">&quot;val&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Map</span> <span class="dt">String</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb14-11" title="11">   ]</a>
+<a class="sourceLine" id="cb14-12" title="12"></a>
+<a class="sourceLine" id="cb14-13" title="13"><span class="ot">mkFeedConfig ::</span> <span class="dt">Config</span> <span class="ot">-&gt;</span> <span class="dt">FeedConfiguration</span></a>
+<a class="sourceLine" id="cb14-14" title="14">mkFeedConfig conf <span class="fu">=</span> <span class="dt">FeedConfiguration</span></a>
+<a class="sourceLine" id="cb14-15" title="15">  { feedTitle       <span class="fu">=</span> conf <span class="fu">^.</span> <span class="fu">#</span>site_title</a>
+<a class="sourceLine" id="cb14-16" title="16">  , feedDescription <span class="fu">=</span> conf <span class="fu">^.</span> <span class="fu">#</span>description</a>
+<a class="sourceLine" id="cb14-17" title="17">  , feedAuthorName  <span class="fu">=</span> conf <span class="fu">^.</span> <span class="fu">#</span>author</a>
+<a class="sourceLine" id="cb14-18" title="18">  , feedAuthorEmail <span class="fu">=</span> conf <span class="fu">^.</span> <span class="fu">#</span>email</a>
+<a class="sourceLine" id="cb14-19" title="19">  , feedRoot        <span class="fu">=</span> conf <span class="fu">^.</span> <span class="fu">#</span>baseurl</a>
+<a class="sourceLine" id="cb14-20" title="20">  }</a></code></pre></div>
 <p>もちろん，<code>siteCtx</code> も書き換える必要がある．</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" data-line-number="1"><span class="ot">mkSiteCtx ::</span> <span class="dt">Config</span> <span class="ot">-&gt;</span> <span class="dt">Context</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb15-2" data-line-number="2">mkSiteCtx <span class="fu">=</span> hfoldMapFor</a>
-<a class="sourceLine" id="cb15-3" data-line-number="3">  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">ToContext</span>))</a>
-<a class="sourceLine" id="cb15-4" data-line-number="4">  (toContext <span class="fu">&lt;$&gt;</span> symbolVal <span class="fu">.</span> proxyAssocKey <span class="fu">&lt;*&gt;</span> getField)</a>
-<a class="sourceLine" id="cb15-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb15-6" data-line-number="6"><span class="kw">class</span> <span class="dt">ToContext</span> a <span class="kw">where</span></a>
-<a class="sourceLine" id="cb15-7" data-line-number="7"><span class="ot">  toContext ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Context</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb15-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb15-9" data-line-number="9"><span class="kw">instance</span> <span class="dt">ToContext</span> <span class="dt">String</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb15-10" data-line-number="10">  toContext _ <span class="st">&quot;&quot;</span> <span class="fu">=</span> mempty</a>
-<a class="sourceLine" id="cb15-11" data-line-number="11">  toContext k v  <span class="fu">=</span> constField k v</a>
-<a class="sourceLine" id="cb15-12" data-line-number="12"></a>
-<a class="sourceLine" id="cb15-13" data-line-number="13"><span class="kw">instance</span> <span class="dt">ToContext</span> a <span class="ot">=&gt;</span> <span class="dt">ToContext</span> (<span class="dt">Map</span> <span class="dt">String</span> a) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb15-14" data-line-number="14">  toContext _ <span class="fu">=</span> foldMapWithKey toContext</a>
-<a class="sourceLine" id="cb15-15" data-line-number="15"></a>
-<a class="sourceLine" id="cb15-16" data-line-number="16"><span class="kw">instance</span> <span class="dt">ToContext</span> a <span class="ot">=&gt;</span> <span class="dt">ToContext</span> (<span class="dt">Identity</span> a) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb15-17" data-line-number="17">  toContext k <span class="fu">=</span> toContext k <span class="fu">.</span> runIdentity</a></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" title="1"><span class="ot">mkSiteCtx ::</span> <span class="dt">Config</span> <span class="ot">-&gt;</span> <span class="dt">Context</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb15-2" title="2">mkSiteCtx <span class="fu">=</span> hfoldMapFor</a>
+<a class="sourceLine" id="cb15-3" title="3">  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">ToContext</span>))</a>
+<a class="sourceLine" id="cb15-4" title="4">  (toContext <span class="fu">&lt;$&gt;</span> symbolVal <span class="fu">.</span> proxyAssocKey <span class="fu">&lt;*&gt;</span> getField)</a>
+<a class="sourceLine" id="cb15-5" title="5"></a>
+<a class="sourceLine" id="cb15-6" title="6"><span class="kw">class</span> <span class="dt">ToContext</span> a <span class="kw">where</span></a>
+<a class="sourceLine" id="cb15-7" title="7"><span class="ot">  toContext ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Context</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb15-8" title="8"></a>
+<a class="sourceLine" id="cb15-9" title="9"><span class="kw">instance</span> <span class="dt">ToContext</span> <span class="dt">String</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb15-10" title="10">  toContext _ <span class="st">&quot;&quot;</span> <span class="fu">=</span> <span class="fu">mempty</span></a>
+<a class="sourceLine" id="cb15-11" title="11">  toContext k v  <span class="fu">=</span> constField k v</a>
+<a class="sourceLine" id="cb15-12" title="12"></a>
+<a class="sourceLine" id="cb15-13" title="13"><span class="kw">instance</span> <span class="dt">ToContext</span> a <span class="ot">=&gt;</span> <span class="dt">ToContext</span> (<span class="dt">Map</span> <span class="dt">String</span> a) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb15-14" title="14">  toContext _ <span class="fu">=</span> foldMapWithKey toContext</a>
+<a class="sourceLine" id="cb15-15" title="15"></a>
+<a class="sourceLine" id="cb15-16" title="16"><span class="kw">instance</span> <span class="dt">ToContext</span> a <span class="ot">=&gt;</span> <span class="dt">ToContext</span> (<span class="dt">Identity</span> a) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb15-17" title="17">  toContext k <span class="fu">=</span> toContext k <span class="fu">.</span> runIdentity</a></code></pre></div>
 <p>拡張可能レコード最高です．</p>
 <h3 id="ページネーションを追加">ページネーションを追加</h3>
 <p><a href="https://imokuri123.com/blog/2015/12/how-to-create-blog-with-hakyll-part2.html#%E3%83%9A%E3%83%BC%E3%82%B8%E3%83%8D%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3">参考記事</a>の中で使われている <code>sortRecentFirst</code> も日時を取得しているので書き換える．</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" data-line-number="1"><span class="ot">sortRecentFirst' ::</span> <span class="dt">MonadMetadata</span> m <span class="ot">=&gt;</span> [<span class="dt">Identifier</span>] <span class="ot">-&gt;</span> m [<span class="dt">Identifier</span>]</a>
-<a class="sourceLine" id="cb16-2" data-line-number="2">sortRecentFirst' <span class="fu">=</span></a>
-<a class="sourceLine" id="cb16-3" data-line-number="3">  fmap (fmap itemIdentifier) <span class="fu">.</span> recentFirst' <span class="fu">.</span> fmap (flip <span class="dt">Item</span> ())</a></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" title="1"><span class="ot">sortRecentFirst' ::</span> <span class="dt">MonadMetadata</span> m <span class="ot">=&gt;</span> [<span class="dt">Identifier</span>] <span class="ot">-&gt;</span> m [<span class="dt">Identifier</span>]</a>
+<a class="sourceLine" id="cb16-2" title="2">sortRecentFirst' <span class="fu">=</span></a>
+<a class="sourceLine" id="cb16-3" title="3">  <span class="fu">fmap</span> (<span class="fu">fmap</span> itemIdentifier) <span class="fu">.</span> recentFirst' <span class="fu">.</span> <span class="fu">fmap</span> (<span class="fu">flip</span> <span class="dt">Item</span> ())</a></code></pre></div>
 <h3 id="タグを追加">タグを追加</h3>
 <p>躓きと言うかデザインの問題なのだが，タグのテンプレート変数を生成する <a href="https://hackage.haskell.org/package/hakyll-4.11.0.0/docs/Hakyll-Web-Tags.html#v:tagsField"><code>tagsField</code></a> 関数が，タグをカンマ区切りの文字列にしちゃうのがあった． 個人的には空白区切りにして欲しいので書き換えた．</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" data-line-number="1"><span class="kw">import</span>           <span class="dt">Data.List</span>                   (intersperse)</a>
-<a class="sourceLine" id="cb17-2" data-line-number="2"><span class="kw">import</span>           <span class="dt">Text.Blaze.Html</span>             (toHtml, toValue, (!))</a>
-<a class="sourceLine" id="cb17-3" data-line-number="3"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Text.Blaze.Html5</span>            <span class="kw">as</span> <span class="dt">H</span></a>
-<a class="sourceLine" id="cb17-4" data-line-number="4"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Text.Blaze.Html5.Attributes</span> <span class="kw">as</span> <span class="dt">A</span></a>
-<a class="sourceLine" id="cb17-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb17-6" data-line-number="6"><span class="ot">tagsFieldWithSep ::</span> <span class="dt">H.Html</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Tags</span> <span class="ot">-&gt;</span> <span class="dt">Context</span> a</a>
-<a class="sourceLine" id="cb17-7" data-line-number="7">tagsFieldWithSep sep <span class="fu">=</span></a>
-<a class="sourceLine" id="cb17-8" data-line-number="8">  tagsFieldWith getTags simpleRenderLink (mconcat <span class="fu">.</span> intersperse sep)</a>
-<a class="sourceLine" id="cb17-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb17-10" data-line-number="10"><span class="ot">simpleRenderLink ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> FilePath <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">H.Html</span></a>
-<a class="sourceLine" id="cb17-11" data-line-number="11">simpleRenderLink tag <span class="fu">=</span></a>
-<a class="sourceLine" id="cb17-12" data-line-number="12">  fmap (\path <span class="ot">-&gt;</span> H.a <span class="fu">!</span> A.href (toValue <span class="fu">$</span> toUrl path) <span class="fu">$</span> toHtml tag)</a></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" title="1"><span class="kw">import</span>           <span class="dt">Data.List</span>                   (intersperse)</a>
+<a class="sourceLine" id="cb17-2" title="2"><span class="kw">import</span>           <span class="dt">Text.Blaze.Html</span>             (toHtml, toValue, (!))</a>
+<a class="sourceLine" id="cb17-3" title="3"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Text.Blaze.Html5</span>            <span class="kw">as</span> <span class="dt">H</span></a>
+<a class="sourceLine" id="cb17-4" title="4"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Text.Blaze.Html5.Attributes</span> <span class="kw">as</span> <span class="dt">A</span></a>
+<a class="sourceLine" id="cb17-5" title="5"></a>
+<a class="sourceLine" id="cb17-6" title="6"><span class="ot">tagsFieldWithSep ::</span> <span class="dt">H.Html</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Tags</span> <span class="ot">-&gt;</span> <span class="dt">Context</span> a</a>
+<a class="sourceLine" id="cb17-7" title="7">tagsFieldWithSep sep <span class="fu">=</span></a>
+<a class="sourceLine" id="cb17-8" title="8">  tagsFieldWith getTags simpleRenderLink (<span class="fu">mconcat</span> <span class="fu">.</span> intersperse sep)</a>
+<a class="sourceLine" id="cb17-9" title="9"></a>
+<a class="sourceLine" id="cb17-10" title="10"><span class="ot">simpleRenderLink ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">FilePath</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">H.Html</span></a>
+<a class="sourceLine" id="cb17-11" title="11">simpleRenderLink tag <span class="fu">=</span></a>
+<a class="sourceLine" id="cb17-12" title="12">  <span class="fu">fmap</span> (\path <span class="ot">-&gt;</span> H.a <span class="fu">!</span> A.href (toValue <span class="fu">$</span> toUrl path) <span class="fu">$</span> toHtml tag)</a></code></pre></div>
 <p><code>tagsFieldWithSep &quot; &quot;</code> とすれば空白区切りになる．</p>
 <h2 id="おしまい">おしまい</h2>
 <p>ずーーとやろうやろうと思ってたことをいっきに片したぜ．</p>

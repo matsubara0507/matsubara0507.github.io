@@ -106,52 +106,52 @@
 <p>あと，<a href="https://github.com/wende/elmchemy-article-example">このコードは全て作者さんが GitHub に挙げている</a>．</p>
 <h3 id="その前に">その前に</h3>
 <p>テストを書こう，ということでテストを Elixir で書いている． 今回の作成するライブラリはどうやら，ゲームか何かのキャラを制御する物らしい</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="co"># character_test.exs</span></a>
-<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="kw">defmodule</span> <span class="cn">CharacterTest</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb1-3" data-line-number="3">  <span class="im">use</span> <span class="cn">ExUnit</span><span class="op">.</span><span class="cn">Case</span></a>
-<a class="sourceLine" id="cb1-4" data-line-number="4">  <span class="im">use</span> <span class="cn">Elchemy</span></a>
-<a class="sourceLine" id="cb1-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb1-6" data-line-number="6">  test <span class="st">&quot;Character has name, last name and such&quot;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb1-7" data-line-number="7">      gordon <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>new(<span class="st">&quot;Gordon&quot;</span>, <span class="st">&quot;Freemonad&quot;</span>, <span class="va">:male</span>)</a>
-<a class="sourceLine" id="cb1-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb1-9" data-line-number="9">      assert gordon<span class="op">.</span>name <span class="op">==</span> <span class="st">&quot;Gordon&quot;</span></a>
-<a class="sourceLine" id="cb1-10" data-line-number="10">      assert gordon<span class="op">.</span>surname <span class="op">==</span> <span class="st">&quot;Freemonad&quot;</span></a>
-<a class="sourceLine" id="cb1-11" data-line-number="11">      assert gordon<span class="op">.</span>gender <span class="op">==</span> <span class="va">:male</span></a>
-<a class="sourceLine" id="cb1-12" data-line-number="12">  <span class="kw">end</span></a>
-<a class="sourceLine" id="cb1-13" data-line-number="13"></a>
-<a class="sourceLine" id="cb1-14" data-line-number="14">  test <span class="st">&quot;Has stats&quot;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb1-15" data-line-number="15">    gordon <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>new(<span class="st">&quot;Gordon&quot;</span>, <span class="st">&quot;Freemonad&quot;</span>, <span class="va">:male</span>)</a>
-<a class="sourceLine" id="cb1-16" data-line-number="16"></a>
-<a class="sourceLine" id="cb1-17" data-line-number="17">    stats <span class="op">=</span> [<span class="va">:strength</span>, <span class="va">:intelligence</span>, <span class="va">:vitality</span>]</a>
-<a class="sourceLine" id="cb1-18" data-line-number="18">    <span class="kw">for</span> s <span class="op">&lt;-</span> stats <span class="kw">do</span></a>
-<a class="sourceLine" id="cb1-19" data-line-number="19">      assert is_integer(gordon<span class="op">.</span>stats[s]), <span class="st">&quot;No </span><span class="ot">#{</span>s<span class="ot">}</span><span class="st"> stat in </span><span class="ot">#{</span>inspect gordon<span class="ot">}</span><span class="st">&quot;</span></a>
-<a class="sourceLine" id="cb1-20" data-line-number="20">    <span class="kw">end</span></a>
-<a class="sourceLine" id="cb1-21" data-line-number="21"></a>
-<a class="sourceLine" id="cb1-22" data-line-number="22">    assert <span class="cn">Character</span><span class="op">.</span>set_stat(<span class="va">:vitality</span>, <span class="dv">10</span>, gordon)<span class="op">.</span>stats<span class="op">.</span>vitality <span class="op">==</span> <span class="dv">10</span></a>
-<a class="sourceLine" id="cb1-23" data-line-number="23">  <span class="kw">end</span></a>
-<a class="sourceLine" id="cb1-24" data-line-number="24"></a>
-<a class="sourceLine" id="cb1-25" data-line-number="25">  test <span class="st">&quot;Boosting visality boosts health&quot;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb1-26" data-line-number="26">    gordon <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>new(<span class="st">&quot;Gordon&quot;</span>, <span class="st">&quot;Freemonad&quot;</span>, <span class="va">:male</span>)</a>
-<a class="sourceLine" id="cb1-27" data-line-number="27"></a>
-<a class="sourceLine" id="cb1-28" data-line-number="28">    { hp, packed_gordon_max } <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>set_stat(<span class="va">:vitality</span>, <span class="dv">10</span>, gordon)<span class="op">.</span>health</a>
-<a class="sourceLine" id="cb1-29" data-line-number="29">    { _, weak_gordon_max }    <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>set_stat(<span class="va">:vitality</span>, <span class="dv">0</span>, gordon)<span class="op">.</span>health</a>
-<a class="sourceLine" id="cb1-30" data-line-number="30"></a>
-<a class="sourceLine" id="cb1-31" data-line-number="31">    assert packed_gordon_max <span class="op">&gt;</span> weak_gordon_max</a>
-<a class="sourceLine" id="cb1-32" data-line-number="32">    assert hp <span class="op">==</span> packed_gordon_max</a>
-<a class="sourceLine" id="cb1-33" data-line-number="33">  <span class="kw">end</span></a>
-<a class="sourceLine" id="cb1-34" data-line-number="34"></a>
-<a class="sourceLine" id="cb1-35" data-line-number="35">  test <span class="st">&quot;Can equip weapon only if intelligence is enough&quot;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb1-36" data-line-number="36">    gordon <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>new(<span class="st">&quot;Gordon&quot;</span>, <span class="st">&quot;Freemonad&quot;</span>, <span class="va">:male</span>)</a>
-<a class="sourceLine" id="cb1-37" data-line-number="37">    weapon <span class="op">=</span> <span class="cn">Weapon</span><span class="op">.</span>new(<span class="st">&quot;Sci fi blaster thingy&quot;</span>, <span class="dv">9</span> ,<span class="dv">100</span>)</a>
-<a class="sourceLine" id="cb1-38" data-line-number="38"></a>
-<a class="sourceLine" id="cb1-39" data-line-number="39">    dumb_gordon <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>set_stat(<span class="va">:intelligence</span>, <span class="dv">0</span>, gordon)</a>
-<a class="sourceLine" id="cb1-40" data-line-number="40">    smart_gordon <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>set_stat(<span class="va">:intelligence</span>, <span class="dv">10</span>, gordon)</a>
-<a class="sourceLine" id="cb1-41" data-line-number="41"></a>
-<a class="sourceLine" id="cb1-42" data-line-number="42">    assert {<span class="va">:error</span>, <span class="st">&quot;Too dumb&quot;</span>} <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>equip(weapon, dumb_gordon)</a>
-<a class="sourceLine" id="cb1-43" data-line-number="43">    assert {<span class="va">:ok</span>, equipped_gordon} <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>equip(weapon, smart_gordon)</a>
-<a class="sourceLine" id="cb1-44" data-line-number="44">    assert equipped_gordon<span class="op">.</span>arm <span class="op">==</span> {weapon}</a>
-<a class="sourceLine" id="cb1-45" data-line-number="45">  <span class="kw">end</span></a>
-<a class="sourceLine" id="cb1-46" data-line-number="46"><span class="kw">end</span></a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb1-1" title="1"><span class="co"># character_test.exs</span></a>
+<a class="sourceLine" id="cb1-2" title="2"><span class="kw">defmodule</span> <span class="cn">CharacterTest</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-3" title="3">  <span class="im">use</span> <span class="cn">ExUnit</span><span class="op">.</span><span class="cn">Case</span></a>
+<a class="sourceLine" id="cb1-4" title="4">  <span class="im">use</span> <span class="cn">Elchemy</span></a>
+<a class="sourceLine" id="cb1-5" title="5"></a>
+<a class="sourceLine" id="cb1-6" title="6">  test <span class="st">&quot;Character has name, last name and such&quot;</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-7" title="7">      gordon <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>new(<span class="st">&quot;Gordon&quot;</span>, <span class="st">&quot;Freemonad&quot;</span>, <span class="va">:male</span>)</a>
+<a class="sourceLine" id="cb1-8" title="8"></a>
+<a class="sourceLine" id="cb1-9" title="9">      assert gordon<span class="op">.</span>name <span class="op">==</span> <span class="st">&quot;Gordon&quot;</span></a>
+<a class="sourceLine" id="cb1-10" title="10">      assert gordon<span class="op">.</span>surname <span class="op">==</span> <span class="st">&quot;Freemonad&quot;</span></a>
+<a class="sourceLine" id="cb1-11" title="11">      assert gordon<span class="op">.</span>gender <span class="op">==</span> <span class="va">:male</span></a>
+<a class="sourceLine" id="cb1-12" title="12">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb1-13" title="13"></a>
+<a class="sourceLine" id="cb1-14" title="14">  test <span class="st">&quot;Has stats&quot;</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-15" title="15">    gordon <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>new(<span class="st">&quot;Gordon&quot;</span>, <span class="st">&quot;Freemonad&quot;</span>, <span class="va">:male</span>)</a>
+<a class="sourceLine" id="cb1-16" title="16"></a>
+<a class="sourceLine" id="cb1-17" title="17">    stats <span class="op">=</span> [<span class="va">:strength</span>, <span class="va">:intelligence</span>, <span class="va">:vitality</span>]</a>
+<a class="sourceLine" id="cb1-18" title="18">    <span class="kw">for</span> s <span class="op">&lt;-</span> stats <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-19" title="19">      assert is_integer(gordon<span class="op">.</span>stats[s]), <span class="st">&quot;No </span><span class="ot">#{</span>s<span class="ot">}</span><span class="st"> stat in </span><span class="ot">#{</span>inspect gordon<span class="ot">}</span><span class="st">&quot;</span></a>
+<a class="sourceLine" id="cb1-20" title="20">    <span class="kw">end</span></a>
+<a class="sourceLine" id="cb1-21" title="21"></a>
+<a class="sourceLine" id="cb1-22" title="22">    assert <span class="cn">Character</span><span class="op">.</span>set_stat(<span class="va">:vitality</span>, <span class="dv">10</span>, gordon)<span class="op">.</span>stats<span class="op">.</span>vitality <span class="op">==</span> <span class="dv">10</span></a>
+<a class="sourceLine" id="cb1-23" title="23">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb1-24" title="24"></a>
+<a class="sourceLine" id="cb1-25" title="25">  test <span class="st">&quot;Boosting visality boosts health&quot;</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-26" title="26">    gordon <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>new(<span class="st">&quot;Gordon&quot;</span>, <span class="st">&quot;Freemonad&quot;</span>, <span class="va">:male</span>)</a>
+<a class="sourceLine" id="cb1-27" title="27"></a>
+<a class="sourceLine" id="cb1-28" title="28">    { hp, packed_gordon_max } <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>set_stat(<span class="va">:vitality</span>, <span class="dv">10</span>, gordon)<span class="op">.</span>health</a>
+<a class="sourceLine" id="cb1-29" title="29">    { _, weak_gordon_max }    <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>set_stat(<span class="va">:vitality</span>, <span class="dv">0</span>, gordon)<span class="op">.</span>health</a>
+<a class="sourceLine" id="cb1-30" title="30"></a>
+<a class="sourceLine" id="cb1-31" title="31">    assert packed_gordon_max <span class="op">&gt;</span> weak_gordon_max</a>
+<a class="sourceLine" id="cb1-32" title="32">    assert hp <span class="op">==</span> packed_gordon_max</a>
+<a class="sourceLine" id="cb1-33" title="33">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb1-34" title="34"></a>
+<a class="sourceLine" id="cb1-35" title="35">  test <span class="st">&quot;Can equip weapon only if intelligence is enough&quot;</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-36" title="36">    gordon <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>new(<span class="st">&quot;Gordon&quot;</span>, <span class="st">&quot;Freemonad&quot;</span>, <span class="va">:male</span>)</a>
+<a class="sourceLine" id="cb1-37" title="37">    weapon <span class="op">=</span> <span class="cn">Weapon</span><span class="op">.</span>new(<span class="st">&quot;Sci fi blaster thingy&quot;</span>, <span class="dv">9</span> ,<span class="dv">100</span>)</a>
+<a class="sourceLine" id="cb1-38" title="38"></a>
+<a class="sourceLine" id="cb1-39" title="39">    dumb_gordon <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>set_stat(<span class="va">:intelligence</span>, <span class="dv">0</span>, gordon)</a>
+<a class="sourceLine" id="cb1-40" title="40">    smart_gordon <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>set_stat(<span class="va">:intelligence</span>, <span class="dv">10</span>, gordon)</a>
+<a class="sourceLine" id="cb1-41" title="41"></a>
+<a class="sourceLine" id="cb1-42" title="42">    assert {<span class="va">:error</span>, <span class="st">&quot;Too dumb&quot;</span>} <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>equip(weapon, dumb_gordon)</a>
+<a class="sourceLine" id="cb1-43" title="43">    assert {<span class="va">:ok</span>, equipped_gordon} <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>equip(weapon, smart_gordon)</a>
+<a class="sourceLine" id="cb1-44" title="44">    assert equipped_gordon<span class="op">.</span>arm <span class="op">==</span> {weapon}</a>
+<a class="sourceLine" id="cb1-45" title="45">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb1-46" title="46"><span class="kw">end</span></a></code></pre></div>
 <h3 id="キャラクターを定義">キャラクターを定義</h3>
 <h4 id="型エイリアス">1. 型エイリアス</h4>
 <p>関数型なのでまずはドメインモデルの型を定義する． テストより，<code>name</code> <code>surname</code> <code>gender</code> をフィールドとして持っているのが分かるので次のような型を定義した．</p>
@@ -304,35 +304,35 @@ $ elchemy init</code></pre>
 <p><code>elchemy new</code> との違いは，<code>mix.exs</code> の Elixir のバージョンが古いのと <code>.formatter.exs</code> ぐらいかな？ 今回は DB をわざわざ使うのがめんどくさいので，ストレージっぽい GenServer を定義する(なので <code>--no-ecto</code>)．</p>
 <h3 id="crud-を作る">CRUD を作る</h3>
 <p>Phoenix に CRUD を追加するには，まず<code>router.ex</code> にルーティングを足す.</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="kw">defmodule</span> <span class="cn">ElchemyTodoAppWeb</span><span class="op">.</span><span class="cn">Router</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb14-2" data-line-number="2">  <span class="im">use</span> <span class="cn">ElchemyTodoAppWeb</span>, <span class="va">:router</span></a>
-<a class="sourceLine" id="cb14-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb14-4" data-line-number="4">  <span class="op">...</span></a>
-<a class="sourceLine" id="cb14-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb14-6" data-line-number="6">  pipeline <span class="va">:api</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb14-7" data-line-number="7">    plug(<span class="va">:accepts</span>, [<span class="st">&quot;json&quot;</span>])</a>
-<a class="sourceLine" id="cb14-8" data-line-number="8">  <span class="kw">end</span></a>
-<a class="sourceLine" id="cb14-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb14-10" data-line-number="10">  scope <span class="st">&quot;/api&quot;</span>, <span class="cn">ElchemyTodoAppWeb</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb14-11" data-line-number="11">    pipe_through(<span class="va">:api</span>)</a>
-<a class="sourceLine" id="cb14-12" data-line-number="12">    resources(<span class="st">&quot;/todos&quot;</span>, <span class="cn">TodoController</span>, <span class="va">only:</span> [<span class="va">:index</span>, <span class="va">:create</span>, <span class="va">:update</span>, <span class="va">:delete</span>])</a>
-<a class="sourceLine" id="cb14-13" data-line-number="13">  <span class="kw">end</span></a>
-<a class="sourceLine" id="cb14-14" data-line-number="14"><span class="kw">end</span></a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb14-1" title="1"><span class="kw">defmodule</span> <span class="cn">ElchemyTodoAppWeb</span><span class="op">.</span><span class="cn">Router</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb14-2" title="2">  <span class="im">use</span> <span class="cn">ElchemyTodoAppWeb</span>, <span class="va">:router</span></a>
+<a class="sourceLine" id="cb14-3" title="3"></a>
+<a class="sourceLine" id="cb14-4" title="4">  <span class="op">...</span></a>
+<a class="sourceLine" id="cb14-5" title="5"></a>
+<a class="sourceLine" id="cb14-6" title="6">  pipeline <span class="va">:api</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb14-7" title="7">    plug(<span class="va">:accepts</span>, [<span class="st">&quot;json&quot;</span>])</a>
+<a class="sourceLine" id="cb14-8" title="8">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb14-9" title="9"></a>
+<a class="sourceLine" id="cb14-10" title="10">  scope <span class="st">&quot;/api&quot;</span>, <span class="cn">ElchemyTodoAppWeb</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb14-11" title="11">    pipe_through(<span class="va">:api</span>)</a>
+<a class="sourceLine" id="cb14-12" title="12">    resources(<span class="st">&quot;/todos&quot;</span>, <span class="cn">TodoController</span>, <span class="va">only:</span> [<span class="va">:index</span>, <span class="va">:create</span>, <span class="va">:update</span>, <span class="va">:delete</span>])</a>
+<a class="sourceLine" id="cb14-13" title="13">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb14-14" title="14"><span class="kw">end</span></a></code></pre></div>
 <p>次にコントロラーを定義し，</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb15-1" data-line-number="1"><span class="kw">defmodule</span> <span class="cn">ElchemyTodoAppWeb</span><span class="op">.</span><span class="cn">TodoController</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb15-2" data-line-number="2">  <span class="im">alias</span> <span class="cn">Models</span><span class="op">.</span><span class="cn">Todo</span>, <span class="va">as:</span> <span class="cn">Todo</span></a>
-<a class="sourceLine" id="cb15-3" data-line-number="3">  <span class="im">use</span> <span class="cn">ElchemyTodoAppWeb</span>, <span class="va">:controller</span></a>
-<a class="sourceLine" id="cb15-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb15-5" data-line-number="5">  <span class="kw">def</span> index(conn, _params), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="op">...</span> })</a>
-<a class="sourceLine" id="cb15-6" data-line-number="6">  <span class="kw">def</span> create(conn, params), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="op">...</span> })</a>
-<a class="sourceLine" id="cb15-7" data-line-number="7">  <span class="kw">def</span> update(conn, params), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="op">...</span> })</a>
-<a class="sourceLine" id="cb15-8" data-line-number="8">  <span class="kw">def</span> delete(conn, %{<span class="st">&quot;id&quot;</span> <span class="op">=&gt;</span> id}), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="op">...</span> })</a>
-<a class="sourceLine" id="cb15-9" data-line-number="9"><span class="kw">end</span></a></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb15-1" title="1"><span class="kw">defmodule</span> <span class="cn">ElchemyTodoAppWeb</span><span class="op">.</span><span class="cn">TodoController</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb15-2" title="2">  <span class="im">alias</span> <span class="cn">Models</span><span class="op">.</span><span class="cn">Todo</span>, <span class="va">as:</span> <span class="cn">Todo</span></a>
+<a class="sourceLine" id="cb15-3" title="3">  <span class="im">use</span> <span class="cn">ElchemyTodoAppWeb</span>, <span class="va">:controller</span></a>
+<a class="sourceLine" id="cb15-4" title="4"></a>
+<a class="sourceLine" id="cb15-5" title="5">  <span class="kw">def</span> index(conn, _params), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="op">...</span> })</a>
+<a class="sourceLine" id="cb15-6" title="6">  <span class="kw">def</span> create(conn, params), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="op">...</span> })</a>
+<a class="sourceLine" id="cb15-7" title="7">  <span class="kw">def</span> update(conn, params), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="op">...</span> })</a>
+<a class="sourceLine" id="cb15-8" title="8">  <span class="kw">def</span> delete(conn, %{<span class="st">&quot;id&quot;</span> <span class="op">=&gt;</span> id}), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="op">...</span> })</a>
+<a class="sourceLine" id="cb15-9" title="9"><span class="kw">end</span></a></code></pre></div>
 <p>(<code>...</code> の部分は後で埋める) そして View を定義する。</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb16-1" data-line-number="1"><span class="kw">defmodule</span> <span class="cn">ElchemyTodoAppWeb</span><span class="op">.</span><span class="cn">TodoView</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb16-2" data-line-number="2">  <span class="im">use</span> <span class="cn">ElchemyTodoAppWeb</span>, <span class="va">:view</span></a>
-<a class="sourceLine" id="cb16-3" data-line-number="3">  <span class="kw">def</span> render(<span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> todos}), <span class="kw">do</span>: todos</a>
-<a class="sourceLine" id="cb16-4" data-line-number="4"><span class="kw">end</span></a></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb16-1" title="1"><span class="kw">defmodule</span> <span class="cn">ElchemyTodoAppWeb</span><span class="op">.</span><span class="cn">TodoView</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb16-2" title="2">  <span class="im">use</span> <span class="cn">ElchemyTodoAppWeb</span>, <span class="va">:view</span></a>
+<a class="sourceLine" id="cb16-3" title="3">  <span class="kw">def</span> render(<span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> todos}), <span class="kw">do</span>: todos</a>
+<a class="sourceLine" id="cb16-4" title="4"><span class="kw">end</span></a></code></pre></div>
 <p>さてここから　Elchemy だ。 モデルを Elchemy で定義する. というかモデル以外はマクロ色が強過ぎてうまくいかなかった.</p>
 <h3 id="elchemy-でモデルを">Elchemy でモデルを</h3>
 <p>まずは型を定義.</p>
@@ -443,33 +443,33 @@ remove todoId =
         |&gt; .todos
         |&gt; Dict.values</code></pre>
 <p>コントローラーの <code>...</code> を書き換えてやれば完成だ．</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb21-1" data-line-number="1">  <span class="kw">def</span> index(conn, _params), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="cn">Todo</span><span class="op">.</span>gets()})</a>
-<a class="sourceLine" id="cb21-2" data-line-number="2">  <span class="kw">def</span> create(conn, params), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="cn">Todo</span><span class="op">.</span>add(<span class="cn">Todo</span><span class="op">.</span>gen(params))})</a>
-<a class="sourceLine" id="cb21-3" data-line-number="3">  <span class="kw">def</span> update(conn, params), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="cn">Todo</span><span class="op">.</span>update(<span class="cn">Todo</span><span class="op">.</span>gen(params))})</a>
-<a class="sourceLine" id="cb21-4" data-line-number="4">  <span class="kw">def</span> delete(conn, %{<span class="st">&quot;id&quot;</span> <span class="op">=&gt;</span> id}), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="cn">Todo</span><span class="op">.</span>remove(id)})</a>
-<a class="sourceLine" id="cb21-5" data-line-number="5"><span class="kw">end</span></a></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode elixir"><code class="sourceCode elixir"><a class="sourceLine" id="cb21-1" title="1">  <span class="kw">def</span> index(conn, _params), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="cn">Todo</span><span class="op">.</span>gets()})</a>
+<a class="sourceLine" id="cb21-2" title="2">  <span class="kw">def</span> create(conn, params), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="cn">Todo</span><span class="op">.</span>add(<span class="cn">Todo</span><span class="op">.</span>gen(params))})</a>
+<a class="sourceLine" id="cb21-3" title="3">  <span class="kw">def</span> update(conn, params), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="cn">Todo</span><span class="op">.</span>update(<span class="cn">Todo</span><span class="op">.</span>gen(params))})</a>
+<a class="sourceLine" id="cb21-4" title="4">  <span class="kw">def</span> delete(conn, %{<span class="st">&quot;id&quot;</span> <span class="op">=&gt;</span> id}), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="cn">Todo</span><span class="op">.</span>remove(id)})</a>
+<a class="sourceLine" id="cb21-5" title="5"><span class="kw">end</span></a></code></pre></div>
 <p>ちなみに出力された Elixir コードは<a href="https://gitlab.com/matsubara0507/elchemy_todo_app/blob/443777cee3e8435ee15f04ada6437e41e3af064b/lib/data/todo.elchemy.ex">ココ</a>と<a href="https://gitlab.com/matsubara0507/elchemy_todo_app/blob/443777cee3e8435ee15f04ada6437e41e3af064b/lib/models/todo.elchemy.ex">ココ</a>です． 興味がある人は見てください．</p>
 <h3 id="elm-brunch">Elm Brunch</h3>
 <p>Brunch 設定が難しかったので，本質的には Elchemy と関係ないけど残しておく．</p>
 <p>Phoenix 1.3 系ではトップレベルに <code>assets</code> というディレクトリがあり，HTML/JS/CSS/画像 のような静的ファイルはここに置いておく． Brunch を使って複数の JS や CSS を合わせることが出来る． <a href="https://github.com/madsflensted/elm-brunch">elm-brunch</a> を使うことで Elm を JS にコンパイルしてくれる．</p>
 <p>branch-config に次のような設定を書き加えてあげる． Elm のフロントコードは <code>lib/web/elm</code> に置いてある．</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb22-1" data-line-number="1"><span class="va">exports</span>.<span class="at">config</span> <span class="op">=</span> <span class="op">{</span></a>
-<a class="sourceLine" id="cb22-2" data-line-number="2">  ...</a>
-<a class="sourceLine" id="cb22-3" data-line-number="3">  <span class="dt">paths</span><span class="op">:</span> <span class="op">{</span></a>
-<a class="sourceLine" id="cb22-4" data-line-number="4">    <span class="dt">watched</span><span class="op">:</span> [<span class="st">&quot;static&quot;</span><span class="op">,</span> <span class="st">&quot;css&quot;</span><span class="op">,</span> <span class="st">&quot;js&quot;</span><span class="op">,</span> <span class="st">&quot;vendor&quot;</span><span class="op">,</span> <span class="st">&quot;../lib/web/elm&quot;</span>]<span class="op">,</span></a>
-<a class="sourceLine" id="cb22-5" data-line-number="5">    <span class="dt">public</span><span class="op">:</span> <span class="st">&quot;../priv/static&quot;</span></a>
-<a class="sourceLine" id="cb22-6" data-line-number="6">  <span class="op">},</span></a>
-<a class="sourceLine" id="cb22-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb22-8" data-line-number="8">  <span class="dt">plugins</span><span class="op">:</span> <span class="op">{</span></a>
-<a class="sourceLine" id="cb22-9" data-line-number="9">    <span class="dt">elmBrunch</span><span class="op">:</span> <span class="op">{</span></a>
-<a class="sourceLine" id="cb22-10" data-line-number="10">      <span class="dt">elmFolder</span><span class="op">:</span> <span class="st">&quot;../lib/web/elm&quot;</span><span class="op">,</span></a>
-<a class="sourceLine" id="cb22-11" data-line-number="11">      <span class="dt">mainModules</span><span class="op">:</span> [<span class="st">&quot;Main.elm&quot;</span>]<span class="op">,</span></a>
-<a class="sourceLine" id="cb22-12" data-line-number="12">      <span class="dt">outputFolder</span><span class="op">:</span> <span class="st">&quot;vendor&quot;</span></a>
-<a class="sourceLine" id="cb22-13" data-line-number="13">    <span class="op">},</span></a>
-<a class="sourceLine" id="cb22-14" data-line-number="14">  ...</a>
-<a class="sourceLine" id="cb22-15" data-line-number="15">  <span class="op">}</span></a>
-<a class="sourceLine" id="cb22-16" data-line-number="16">  ...</a>
-<a class="sourceLine" id="cb22-17" data-line-number="17"><span class="op">}</span></a></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb22-1" title="1"><span class="va">exports</span>.<span class="at">config</span> <span class="op">=</span> <span class="op">{</span></a>
+<a class="sourceLine" id="cb22-2" title="2">  ...</a>
+<a class="sourceLine" id="cb22-3" title="3">  <span class="dt">paths</span><span class="op">:</span> <span class="op">{</span></a>
+<a class="sourceLine" id="cb22-4" title="4">    <span class="dt">watched</span><span class="op">:</span> [<span class="st">&quot;static&quot;</span><span class="op">,</span> <span class="st">&quot;css&quot;</span><span class="op">,</span> <span class="st">&quot;js&quot;</span><span class="op">,</span> <span class="st">&quot;vendor&quot;</span><span class="op">,</span> <span class="st">&quot;../lib/web/elm&quot;</span>]<span class="op">,</span></a>
+<a class="sourceLine" id="cb22-5" title="5">    <span class="dt">public</span><span class="op">:</span> <span class="st">&quot;../priv/static&quot;</span></a>
+<a class="sourceLine" id="cb22-6" title="6">  <span class="op">},</span></a>
+<a class="sourceLine" id="cb22-7" title="7"></a>
+<a class="sourceLine" id="cb22-8" title="8">  <span class="dt">plugins</span><span class="op">:</span> <span class="op">{</span></a>
+<a class="sourceLine" id="cb22-9" title="9">    <span class="dt">elmBrunch</span><span class="op">:</span> <span class="op">{</span></a>
+<a class="sourceLine" id="cb22-10" title="10">      <span class="dt">elmFolder</span><span class="op">:</span> <span class="st">&quot;../lib/web/elm&quot;</span><span class="op">,</span></a>
+<a class="sourceLine" id="cb22-11" title="11">      <span class="dt">mainModules</span><span class="op">:</span> [<span class="st">&quot;Main.elm&quot;</span>]<span class="op">,</span></a>
+<a class="sourceLine" id="cb22-12" title="12">      <span class="dt">outputFolder</span><span class="op">:</span> <span class="st">&quot;vendor&quot;</span></a>
+<a class="sourceLine" id="cb22-13" title="13">    <span class="op">},</span></a>
+<a class="sourceLine" id="cb22-14" title="14">  ...</a>
+<a class="sourceLine" id="cb22-15" title="15">  <span class="op">}</span></a>
+<a class="sourceLine" id="cb22-16" title="16">  ...</a>
+<a class="sourceLine" id="cb22-17" title="17"><span class="op">}</span></a></code></pre></div>
 <h3 id="フロント部分">フロント部分</h3>
 <p>ほんの少しだがコードを再利用できる． API クライアントは以下のようになる．</p>
 <pre class="elm"><code>module TodoAPI exposing (..)

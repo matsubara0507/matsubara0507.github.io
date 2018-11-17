@@ -96,61 +96,61 @@
 <p>これはまぁおまけですね． rio はロギングとかが便利なので，先に紹介して以降で利用する．</p>
 <h3 id="ロガーの準備">ロガーの準備</h3>
 <p>まずはロギング用のモナドを定義する．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="ot">{-# LANGUAGE DataKinds        #-}</span></a>
-<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="ot">{-# LANGUAGE OverloadedLabels #-}</span></a>
-<a class="sourceLine" id="cb1-3" data-line-number="3"><span class="ot">{-# LANGUAGE TypeOperators    #-}</span></a>
-<a class="sourceLine" id="cb1-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb1-5" data-line-number="5"><span class="kw">import</span>           <span class="dt">RIO</span></a>
-<a class="sourceLine" id="cb1-6" data-line-number="6"><span class="kw">import</span>           <span class="dt">Data.Extensible</span></a>
-<a class="sourceLine" id="cb1-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb1-8" data-line-number="8"><span class="kw">type</span> <span class="dt">Env</span> <span class="fu">=</span> <span class="dt">Record</span></a>
-<a class="sourceLine" id="cb1-9" data-line-number="9">  <span class="ch">'[ &quot;logger&quot; &gt;: LogFunc</span></a>
-<a class="sourceLine" id="cb1-10" data-line-number="10">   ]</a>
-<a class="sourceLine" id="cb1-11" data-line-number="11"></a>
-<a class="sourceLine" id="cb1-12" data-line-number="12"><span class="kw">instance</span> <span class="dt">HasLogFunc</span> <span class="dt">Env</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb1-13" data-line-number="13">  logFuncL <span class="fu">=</span> lens (view <span class="fu">#</span>logger) (\x y <span class="ot">-&gt;</span> x <span class="fu">&amp;</span> <span class="fu">#</span>logger <span class="ot">`set`</span> y)</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="ot">{-# LANGUAGE DataKinds        #-}</span></a>
+<a class="sourceLine" id="cb1-2" title="2"><span class="ot">{-# LANGUAGE OverloadedLabels #-}</span></a>
+<a class="sourceLine" id="cb1-3" title="3"><span class="ot">{-# LANGUAGE TypeOperators    #-}</span></a>
+<a class="sourceLine" id="cb1-4" title="4"></a>
+<a class="sourceLine" id="cb1-5" title="5"><span class="kw">import</span>           <span class="dt">RIO</span></a>
+<a class="sourceLine" id="cb1-6" title="6"><span class="kw">import</span>           <span class="dt">Data.Extensible</span></a>
+<a class="sourceLine" id="cb1-7" title="7"></a>
+<a class="sourceLine" id="cb1-8" title="8"><span class="kw">type</span> <span class="dt">Env</span> <span class="fu">=</span> <span class="dt">Record</span></a>
+<a class="sourceLine" id="cb1-9" title="9">  '[ <span class="st">&quot;logger&quot;</span> <span class="fu">&gt;:</span> <span class="dt">LogFunc</span></a>
+<a class="sourceLine" id="cb1-10" title="10">   ]</a>
+<a class="sourceLine" id="cb1-11" title="11"></a>
+<a class="sourceLine" id="cb1-12" title="12"><span class="kw">instance</span> <span class="dt">HasLogFunc</span> <span class="dt">Env</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb1-13" title="13">  logFuncL <span class="fu">=</span> lens (view <span class="fu">#</span>logger) (\x y <span class="ot">-&gt;</span> x <span class="fu">&amp;</span> <span class="fu">#</span>logger <span class="ot">`set`</span> y)</a></code></pre></div>
 <p>いわゆる Has パターンというやつ． これで <code>RIO Env</code> というのがロガーを扱えるモナドとなる．</p>
 <h3 id="servant-でカスタムモナド">Servant でカスタムモナド</h3>
 <p>Servent Server のメイン関数は下記のように定義できる．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw">import</span>           <span class="dt">RIO</span></a>
-<a class="sourceLine" id="cb2-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb2-3" data-line-number="3"><span class="kw">import</span>           <span class="dt">Data.Extensible</span></a>
-<a class="sourceLine" id="cb2-4" data-line-number="4"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Network.Wai.Handler.Warp</span> <span class="kw">as</span> <span class="dt">Warp</span></a>
-<a class="sourceLine" id="cb2-5" data-line-number="5"><span class="kw">import</span>           <span class="dt">Servant</span></a>
-<a class="sourceLine" id="cb2-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb2-7" data-line-number="7"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb2-8" data-line-number="8">main <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb2-9" data-line-number="9">  logOpts <span class="ot">&lt;-</span> logOptionsHandle stdout <span class="dt">False</span></a>
-<a class="sourceLine" id="cb2-10" data-line-number="10">  withLogFunc logOpts <span class="fu">$</span> \logger <span class="ot">-&gt;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb2-11" data-line-number="11">    <span class="kw">let</span> env <span class="fu">=</span> <span class="fu">#</span>logger <span class="fu">@=</span> logger</a>
-<a class="sourceLine" id="cb2-12" data-line-number="12">           <span class="fu">&lt;:</span><span class="ot"> nil ::</span> <span class="dt">Env</span></a>
-<a class="sourceLine" id="cb2-13" data-line-number="13">    hPutBuilder stdout <span class="st">&quot;Listening on port 8080&quot;</span></a>
-<a class="sourceLine" id="cb2-14" data-line-number="14">    Warp.run <span class="dv">8080</span> <span class="fu">$</span> app env</a>
-<a class="sourceLine" id="cb2-15" data-line-number="15"></a>
-<a class="sourceLine" id="cb2-16" data-line-number="16"><span class="ot">app ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Application</span></a>
-<a class="sourceLine" id="cb2-17" data-line-number="17">app <span class="fu">=</span> undefined</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="kw">import</span>           <span class="dt">RIO</span></a>
+<a class="sourceLine" id="cb2-2" title="2"></a>
+<a class="sourceLine" id="cb2-3" title="3"><span class="kw">import</span>           <span class="dt">Data.Extensible</span></a>
+<a class="sourceLine" id="cb2-4" title="4"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Network.Wai.Handler.Warp</span> <span class="kw">as</span> <span class="dt">Warp</span></a>
+<a class="sourceLine" id="cb2-5" title="5"><span class="kw">import</span>           <span class="dt">Servant</span></a>
+<a class="sourceLine" id="cb2-6" title="6"></a>
+<a class="sourceLine" id="cb2-7" title="7"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb2-8" title="8">main <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb2-9" title="9">  logOpts <span class="ot">&lt;-</span> logOptionsHandle stdout <span class="dt">False</span></a>
+<a class="sourceLine" id="cb2-10" title="10">  withLogFunc logOpts <span class="fu">$</span> \logger <span class="ot">-&gt;</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb2-11" title="11">    <span class="kw">let</span> env <span class="fu">=</span> <span class="fu">#</span>logger <span class="fu">@=</span> logger</a>
+<a class="sourceLine" id="cb2-12" title="12">           <span class="fu">&lt;:</span><span class="ot"> nil ::</span> <span class="dt">Env</span></a>
+<a class="sourceLine" id="cb2-13" title="13">    hPutBuilder stdout <span class="st">&quot;Listening on port 8080&quot;</span></a>
+<a class="sourceLine" id="cb2-14" title="14">    Warp.run <span class="dv">8080</span> <span class="fu">$</span> app env</a>
+<a class="sourceLine" id="cb2-15" title="15"></a>
+<a class="sourceLine" id="cb2-16" title="16"><span class="ot">app ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Application</span></a>
+<a class="sourceLine" id="cb2-17" title="17">app <span class="fu">=</span> <span class="fu">undefined</span></a></code></pre></div>
 <p>さて，問題はこの <code>app</code> 関数だ． 普通は <a href="http://hackage.haskell.org/package/servant-server-0.14.1/docs/Servant-Server.html#t:Server"><code>Server</code></a> 型と <a href="http://hackage.haskell.org/package/servant-server-0.14.1/docs/Servant-Server.html#v:serve"><code>serve</code></a> 関数を用いて次のように書く．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw">type</span> <span class="dt">API</span> <span class="fu">=</span> <span class="fu">...</span></a>
-<a class="sourceLine" id="cb3-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb3-3" data-line-number="3"><span class="ot">api ::</span> <span class="dt">Proxy</span> <span class="dt">API</span></a>
-<a class="sourceLine" id="cb3-4" data-line-number="4">api <span class="fu">=</span> <span class="dt">Proxy</span></a>
-<a class="sourceLine" id="cb3-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb3-6" data-line-number="6"><span class="ot">server ::</span> <span class="dt">Server</span> <span class="dt">API</span></a>
-<a class="sourceLine" id="cb3-7" data-line-number="7">server <span class="fu">=</span> <span class="fu">...</span></a>
-<a class="sourceLine" id="cb3-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb3-9" data-line-number="9"><span class="ot">app ::</span> <span class="dt">Application</span></a>
-<a class="sourceLine" id="cb3-10" data-line-number="10">app <span class="fu">=</span>  serve api server</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">type</span> <span class="dt">API</span> <span class="fu">=</span> <span class="fu">...</span></a>
+<a class="sourceLine" id="cb3-2" title="2"></a>
+<a class="sourceLine" id="cb3-3" title="3"><span class="ot">api ::</span> <span class="dt">Proxy</span> <span class="dt">API</span></a>
+<a class="sourceLine" id="cb3-4" title="4">api <span class="fu">=</span> <span class="dt">Proxy</span></a>
+<a class="sourceLine" id="cb3-5" title="5"></a>
+<a class="sourceLine" id="cb3-6" title="6"><span class="ot">server ::</span> <span class="dt">Server</span> <span class="dt">API</span></a>
+<a class="sourceLine" id="cb3-7" title="7">server <span class="fu">=</span> <span class="fu">...</span></a>
+<a class="sourceLine" id="cb3-8" title="8"></a>
+<a class="sourceLine" id="cb3-9" title="9"><span class="ot">app ::</span> <span class="dt">Application</span></a>
+<a class="sourceLine" id="cb3-10" title="10">app <span class="fu">=</span>  serve api server</a></code></pre></div>
 <p><code>Server</code> 型の代わりに，カスタムモナドを利用するには <a href="http://hackage.haskell.org/package/servant-server-0.14.1/docs/Servant-Server.html#t:ServerT"><code>ServerT</code></a> 型と <a href="http://hackage.haskell.org/package/servant-server-0.14.1/docs/Servant-Server.html#v:hoistServer"><code>hoistServer</code></a> 関数を用いる． それぞれの型定義は次のようになっている．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">type</span> <span class="dt">Server</span> api <span class="fu">=</span> <span class="dt">ServerT</span> api <span class="dt">Handler</span></a>
-<a class="sourceLine" id="cb4-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb4-3" data-line-number="3"><span class="ot">serve ::</span> <span class="dt">HasServer</span> api <span class="ch">'[] =&gt; Proxy api -&gt; Server api -&gt; Application</span></a>
-<a class="sourceLine" id="cb4-4" data-line-number="4"><span class="ot">hoistServer ::</span> <span class="dt">HasServer</span> api <span class="ch">'[] =&gt; Proxy api -&gt; (forall x. m x -&gt; n x) -&gt; ServerT api m -&gt; ServerT api n</span></a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="kw">type</span> <span class="dt">Server</span> api <span class="fu">=</span> <span class="dt">ServerT</span> api <span class="dt">Handler</span></a>
+<a class="sourceLine" id="cb4-2" title="2"></a>
+<a class="sourceLine" id="cb4-3" title="3"><span class="ot">serve ::</span> <span class="dt">HasServer</span> api '[] <span class="ot">=&gt;</span> <span class="dt">Proxy</span> api <span class="ot">-&gt;</span> <span class="dt">Server</span> api <span class="ot">-&gt;</span> <span class="dt">Application</span></a>
+<a class="sourceLine" id="cb4-4" title="4"><span class="ot">hoistServer ::</span> <span class="dt">HasServer</span> api '[] <span class="ot">=&gt;</span> <span class="dt">Proxy</span> api <span class="ot">-&gt;</span> (<span class="kw">forall</span> x<span class="fu">.</span> m x <span class="ot">-&gt;</span> n x) <span class="ot">-&gt;</span> <span class="dt">ServerT</span> api m <span class="ot">-&gt;</span> <span class="dt">ServerT</span> api n</a></code></pre></div>
 <p>さぁあとは型パズルだ！</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="ot">server ::</span> <span class="dt">ServerT</span> (<span class="dt">RIO</span> <span class="dt">Env</span>) <span class="dt">API</span></a>
-<a class="sourceLine" id="cb5-2" data-line-number="2">server <span class="fu">=</span> <span class="fu">...</span></a>
-<a class="sourceLine" id="cb5-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb5-4" data-line-number="4"><span class="ot">app ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Application</span></a>
-<a class="sourceLine" id="cb5-5" data-line-number="5">app env <span class="fu">=</span> serve api <span class="fu">$</span> hoistServer api (runRIO env) server</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="ot">server ::</span> <span class="dt">ServerT</span> (<span class="dt">RIO</span> <span class="dt">Env</span>) <span class="dt">API</span></a>
+<a class="sourceLine" id="cb5-2" title="2">server <span class="fu">=</span> <span class="fu">...</span></a>
+<a class="sourceLine" id="cb5-3" title="3"></a>
+<a class="sourceLine" id="cb5-4" title="4"><span class="ot">app ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Application</span></a>
+<a class="sourceLine" id="cb5-5" title="5">app env <span class="fu">=</span> serve api <span class="fu">$</span> hoistServer api (runRIO env) server</a></code></pre></div>
 <p>これで　<code>server</code> 関数で呼び出す， API ごとの関数で <code>logInfo</code> のような rio のロギング関数を呼ぶことができる．</p>
 <h2 id="servant-で-github-webhhok">Servant で GitHub Webhhok</h2>
 <p>さて色々準備ができたので，いよいよ GitHub Webhook の方に話を移す． Haskell Servant で GitHub Webhook を使うには <a href="http://hackage.haskell.org/package/servant-github-webhook">servant-github-webhook</a>というパッケージを使う． 意外と，このパッケージの使い方を書いた記事がなく手間取ったのでまとめる．</p>
@@ -158,57 +158,57 @@
 <p>ping API は GitHub Webhook の設定がうまくできてるかを確認する API だ．</p>
 <p><img src="../assets/haskell-github-webhook/ping-event.jpg" /></p>
 <p>ping API は次のように設定すれば良い．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">import</span>           <span class="dt">GitHub.Data.Webhooks.Events</span></a>
-<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="kw">import</span>           <span class="dt">Servant</span></a>
-<a class="sourceLine" id="cb6-3" data-line-number="3"><span class="kw">import</span>           <span class="dt">Servant.GitHub.Webhook</span></a>
-<a class="sourceLine" id="cb6-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb6-5" data-line-number="5"><span class="kw">type</span> <span class="dt">API</span> <span class="fu">=</span> <span class="st">&quot;hook&quot;</span> <span class="fu">:&gt;</span> <span class="dt">WebhookAPI</span></a>
-<a class="sourceLine" id="cb6-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb6-7" data-line-number="7"><span class="kw">type</span> <span class="dt">WebhookAPI</span></a>
-<a class="sourceLine" id="cb6-8" data-line-number="8">      <span class="fu">=</span> <span class="dt">GitHubEvent</span> <span class="ch">'[ '</span><span class="dt">WebhookPingEvent</span> ]</a>
-<a class="sourceLine" id="cb6-9" data-line-number="9">        <span class="fu">:&gt;</span> <span class="dt">GitHubSignedReqBody</span> <span class="ch">'[JSON] PublicEvent</span></a>
-<a class="sourceLine" id="cb6-10" data-line-number="10">        <span class="fu">:&gt;</span> <span class="dt">Post</span> <span class="ch">'[JSON] ()</span></a>
-<a class="sourceLine" id="cb6-11" data-line-number="11"></a>
-<a class="sourceLine" id="cb6-12" data-line-number="12"><span class="ot">server ::</span> <span class="dt">ServerT</span> (<span class="dt">RIO</span> <span class="dt">Env</span>) <span class="dt">API</span></a>
-<a class="sourceLine" id="cb6-13" data-line-number="13">server <span class="fu">=</span> pingWebhook</a>
-<a class="sourceLine" id="cb6-14" data-line-number="14"></a>
-<a class="sourceLine" id="cb6-15" data-line-number="15"><span class="ot">pingWebhook ::</span></a>
-<a class="sourceLine" id="cb6-16" data-line-number="16">  <span class="dt">RepoWebhookEvent</span> <span class="ot">-&gt;</span> ((), <span class="dt">PublicEvent</span>) <span class="ot">-&gt;</span> <span class="dt">Plant</span> ()</a>
-<a class="sourceLine" id="cb6-17" data-line-number="17">pingWebhook _ (_, ev) <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb6-18" data-line-number="18">  logInfo <span class="fu">$</span> <span class="st">&quot;Hook Ping Event: &quot;</span> <span class="fu">&lt;&gt;</span> displayShow ev</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">import</span>           <span class="dt">GitHub.Data.Webhooks.Events</span></a>
+<a class="sourceLine" id="cb6-2" title="2"><span class="kw">import</span>           <span class="dt">Servant</span></a>
+<a class="sourceLine" id="cb6-3" title="3"><span class="kw">import</span>           <span class="dt">Servant.GitHub.Webhook</span></a>
+<a class="sourceLine" id="cb6-4" title="4"></a>
+<a class="sourceLine" id="cb6-5" title="5"><span class="kw">type</span> <span class="dt">API</span> <span class="fu">=</span> <span class="st">&quot;hook&quot;</span> <span class="fu">:&gt;</span> <span class="dt">WebhookAPI</span></a>
+<a class="sourceLine" id="cb6-6" title="6"></a>
+<a class="sourceLine" id="cb6-7" title="7"><span class="kw">type</span> <span class="dt">WebhookAPI</span></a>
+<a class="sourceLine" id="cb6-8" title="8">      <span class="fu">=</span> <span class="dt">GitHubEvent</span> '[ <span class="dt">'WebhookPingEvent</span> ]</a>
+<a class="sourceLine" id="cb6-9" title="9">        <span class="fu">:&gt;</span> <span class="dt">GitHubSignedReqBody</span> '[<span class="dt">JSON</span>] <span class="dt">PublicEvent</span></a>
+<a class="sourceLine" id="cb6-10" title="10">        <span class="fu">:&gt;</span> <span class="dt">Post</span> '[<span class="dt">JSON</span>] ()</a>
+<a class="sourceLine" id="cb6-11" title="11"></a>
+<a class="sourceLine" id="cb6-12" title="12"><span class="ot">server ::</span> <span class="dt">ServerT</span> (<span class="dt">RIO</span> <span class="dt">Env</span>) <span class="dt">API</span></a>
+<a class="sourceLine" id="cb6-13" title="13">server <span class="fu">=</span> pingWebhook</a>
+<a class="sourceLine" id="cb6-14" title="14"></a>
+<a class="sourceLine" id="cb6-15" title="15"><span class="ot">pingWebhook ::</span></a>
+<a class="sourceLine" id="cb6-16" title="16">  <span class="dt">RepoWebhookEvent</span> <span class="ot">-&gt;</span> ((), <span class="dt">PublicEvent</span>) <span class="ot">-&gt;</span> <span class="dt">Plant</span> ()</a>
+<a class="sourceLine" id="cb6-17" title="17">pingWebhook _ (_, ev) <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb6-18" title="18">  logInfo <span class="fu">$</span> <span class="st">&quot;Hook Ping Event: &quot;</span> <span class="fu">&lt;&gt;</span> displayShow ev</a></code></pre></div>
 <p>GitHub Webhook を使うには Servant の Context 機能でシークレットキーを渡す必要がある．</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw">import</span>           <span class="dt">System.Environment</span>       (getEnv)</a>
-<a class="sourceLine" id="cb7-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb7-3" data-line-number="3"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb7-4" data-line-number="4">main <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb7-5" data-line-number="5">    <span class="fu">...</span></a>
-<a class="sourceLine" id="cb7-6" data-line-number="6">    <span class="kw">let</span> key <span class="fu">=</span> gitHubKey <span class="fu">$</span> fromString <span class="fu">&lt;$&gt;</span> getEnv <span class="st">&quot;GH_SECRET&quot;</span></a>
-<a class="sourceLine" id="cb7-7" data-line-number="7">    Warp.run <span class="dv">8080</span> <span class="fu">$</span> app env key</a>
-<a class="sourceLine" id="cb7-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb7-9" data-line-number="9"><span class="ot">app ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">GitHubKey</span> <span class="dt">PublicEvent</span> <span class="ot">-&gt;</span> <span class="dt">Application</span></a>
-<a class="sourceLine" id="cb7-10" data-line-number="10">app env key <span class="fu">=</span></a>
-<a class="sourceLine" id="cb7-11" data-line-number="11">  serveWithContext api (key <span class="fu">:.</span> <span class="dt">EmptyContext</span>) <span class="fu">$</span></a>
-<a class="sourceLine" id="cb7-12" data-line-number="12">    hoistServerWithContext api context (runRIO env) server</a>
-<a class="sourceLine" id="cb7-13" data-line-number="13"></a>
-<a class="sourceLine" id="cb7-14" data-line-number="14"><span class="ot">context ::</span> <span class="dt">Proxy</span> <span class="ch">'[ GitHubKey PublicEvent ]</span></a>
-<a class="sourceLine" id="cb7-15" data-line-number="15">context <span class="fu">=</span> <span class="dt">Proxy</span></a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">import</span>           <span class="dt">System.Environment</span>       (getEnv)</a>
+<a class="sourceLine" id="cb7-2" title="2"></a>
+<a class="sourceLine" id="cb7-3" title="3"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb7-4" title="4">main <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb7-5" title="5">    <span class="fu">...</span></a>
+<a class="sourceLine" id="cb7-6" title="6">    <span class="kw">let</span> key <span class="fu">=</span> gitHubKey <span class="fu">$</span> fromString <span class="fu">&lt;$&gt;</span> getEnv <span class="st">&quot;GH_SECRET&quot;</span></a>
+<a class="sourceLine" id="cb7-7" title="7">    Warp.run <span class="dv">8080</span> <span class="fu">$</span> app env key</a>
+<a class="sourceLine" id="cb7-8" title="8"></a>
+<a class="sourceLine" id="cb7-9" title="9"><span class="ot">app ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">GitHubKey</span> <span class="dt">PublicEvent</span> <span class="ot">-&gt;</span> <span class="dt">Application</span></a>
+<a class="sourceLine" id="cb7-10" title="10">app env key <span class="fu">=</span></a>
+<a class="sourceLine" id="cb7-11" title="11">  serveWithContext api (key <span class="fu">:.</span> <span class="dt">EmptyContext</span>) <span class="fu">$</span></a>
+<a class="sourceLine" id="cb7-12" title="12">    hoistServerWithContext api context (runRIO env) server</a>
+<a class="sourceLine" id="cb7-13" title="13"></a>
+<a class="sourceLine" id="cb7-14" title="14"><span class="ot">context ::</span> <span class="dt">Proxy</span> '[ <span class="dt">GitHubKey</span> <span class="dt">PublicEvent</span> ]</a>
+<a class="sourceLine" id="cb7-15" title="15">context <span class="fu">=</span> <span class="dt">Proxy</span></a></code></pre></div>
 <p>実行するときは <code>GH_SECRET</code> 環境変数に設定した文字列を GitHub Webhook の設定の Secret に書き込む．</p>
 <h3 id="push-api-を加える">push API を加える</h3>
 <p>もう一個 API を生やしてみよう．</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="kw">type</span> <span class="dt">WebhookAPI</span></a>
-<a class="sourceLine" id="cb8-2" data-line-number="2">      <span class="fu">=</span> <span class="dt">GitHubEvent</span> <span class="ch">'[ '</span><span class="dt">WebhookPingEvent</span> ]</a>
-<a class="sourceLine" id="cb8-3" data-line-number="3">        <span class="fu">:&gt;</span> <span class="dt">GitHubSignedReqBody</span> <span class="ch">'[JSON] PublicEvent</span></a>
-<a class="sourceLine" id="cb8-4" data-line-number="4">        <span class="fu">:&gt;</span> <span class="dt">Post</span> <span class="ch">'[JSON] ()</span></a>
-<a class="sourceLine" id="cb8-5" data-line-number="5">   <span class="fu">:&lt;|&gt;</span> <span class="dt">GitHubEvent</span> <span class="ch">'[ '</span><span class="dt">WebhookPushEvent</span> ]</a>
-<a class="sourceLine" id="cb8-6" data-line-number="6">        <span class="fu">:&gt;</span> <span class="dt">GitHubSignedReqBody</span> <span class="ch">'[JSON] PushEvent</span></a>
-<a class="sourceLine" id="cb8-7" data-line-number="7">        <span class="fu">:&gt;</span> <span class="dt">Post</span> <span class="ch">'[JSON] ()</span></a>
-<a class="sourceLine" id="cb8-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb8-9" data-line-number="9"><span class="ot">server ::</span> <span class="dt">ServerT</span> (<span class="dt">RIO</span> <span class="dt">Env</span>) <span class="dt">API</span></a>
-<a class="sourceLine" id="cb8-10" data-line-number="10">server <span class="fu">=</span> pingWebhook <span class="fu">:&lt;|&gt;</span> pushWebhook</a>
-<a class="sourceLine" id="cb8-11" data-line-number="11"></a>
-<a class="sourceLine" id="cb8-12" data-line-number="12"><span class="ot">pushWebhook ::</span> <span class="dt">RepoWebhookEvent</span> <span class="ot">-&gt;</span> ((), <span class="dt">PushEvent</span>) <span class="ot">-&gt;</span> <span class="dt">Plant</span> ()</a>
-<a class="sourceLine" id="cb8-13" data-line-number="13">pushWebhook _ (_, ev) <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb8-14" data-line-number="14">  logInfo <span class="fu">$</span> <span class="st">&quot;Hook Push Event: &quot;</span> <span class="fu">&lt;&gt;</span> displayShow ev</a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">type</span> <span class="dt">WebhookAPI</span></a>
+<a class="sourceLine" id="cb8-2" title="2">      <span class="fu">=</span> <span class="dt">GitHubEvent</span> '[ <span class="dt">'WebhookPingEvent</span> ]</a>
+<a class="sourceLine" id="cb8-3" title="3">        <span class="fu">:&gt;</span> <span class="dt">GitHubSignedReqBody</span> '[<span class="dt">JSON</span>] <span class="dt">PublicEvent</span></a>
+<a class="sourceLine" id="cb8-4" title="4">        <span class="fu">:&gt;</span> <span class="dt">Post</span> '[<span class="dt">JSON</span>] ()</a>
+<a class="sourceLine" id="cb8-5" title="5">   <span class="fu">:&lt;|&gt;</span> <span class="dt">GitHubEvent</span> '[ <span class="dt">'WebhookPushEvent</span> ]</a>
+<a class="sourceLine" id="cb8-6" title="6">        <span class="fu">:&gt;</span> <span class="dt">GitHubSignedReqBody</span> '[<span class="dt">JSON</span>] <span class="dt">PushEvent</span></a>
+<a class="sourceLine" id="cb8-7" title="7">        <span class="fu">:&gt;</span> <span class="dt">Post</span> '[<span class="dt">JSON</span>] ()</a>
+<a class="sourceLine" id="cb8-8" title="8"></a>
+<a class="sourceLine" id="cb8-9" title="9"><span class="ot">server ::</span> <span class="dt">ServerT</span> (<span class="dt">RIO</span> <span class="dt">Env</span>) <span class="dt">API</span></a>
+<a class="sourceLine" id="cb8-10" title="10">server <span class="fu">=</span> pingWebhook <span class="fu">:&lt;|&gt;</span> pushWebhook</a>
+<a class="sourceLine" id="cb8-11" title="11"></a>
+<a class="sourceLine" id="cb8-12" title="12"><span class="ot">pushWebhook ::</span> <span class="dt">RepoWebhookEvent</span> <span class="ot">-&gt;</span> ((), <span class="dt">PushEvent</span>) <span class="ot">-&gt;</span> <span class="dt">Plant</span> ()</a>
+<a class="sourceLine" id="cb8-13" title="13">pushWebhook _ (_, ev) <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-14" title="14">  logInfo <span class="fu">$</span> <span class="st">&quot;Hook Push Event: &quot;</span> <span class="fu">&lt;&gt;</span> displayShow ev</a></code></pre></div>
 <p>これでビルドすると次のようなエラーが出てくる．</p>
 <pre><code>Main.hs:38:3: error:
     • No instance for (HasContextEntry '[] (GitHubKey' () PushEvent))
@@ -225,26 +225,26 @@
 38 |   serveWithContext api (key :. EmptyContext) $ hoistServerWithContext api context (runRIO env) server
    |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</code></pre>
 <p><a href="https://github.com/tsani/servant-github-webhook/issues/13#issuecomment-408463124">ググった結果</a>，こうするといいらしい．</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="ot">{-# LANGUAGE MultiParamTypeClasses #-}</span></a>
-<a class="sourceLine" id="cb10-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb10-3" data-line-number="3"><span class="kw">import</span>           <span class="dt">Servant.GitHub.Webhook</span>    <span class="kw">hiding</span> (<span class="dt">GitHubKey</span>, gitHubKey)</a>
-<a class="sourceLine" id="cb10-4" data-line-number="4"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Servant.GitHub.Webhook</span>   (<span class="dt">GitHubKey</span>, gitHubKey)</a>
-<a class="sourceLine" id="cb10-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb10-6" data-line-number="6"><span class="ot">app ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">GitHubKey</span> <span class="ot">-&gt;</span> <span class="dt">Application</span></a>
-<a class="sourceLine" id="cb10-7" data-line-number="7">app env key <span class="fu">=</span> <span class="fu">...</span></a>
-<a class="sourceLine" id="cb10-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb10-9" data-line-number="9"><span class="ot">context ::</span> <span class="dt">Proxy</span> <span class="ch">'[ GitHubKey ]</span></a>
-<a class="sourceLine" id="cb10-10" data-line-number="10">context <span class="fu">=</span> <span class="dt">Proxy</span></a>
-<a class="sourceLine" id="cb10-11" data-line-number="11"></a>
-<a class="sourceLine" id="cb10-12" data-line-number="12"><span class="co">-- HACK</span></a>
-<a class="sourceLine" id="cb10-13" data-line-number="13"><span class="kw">newtype</span> <span class="dt">GitHubKey</span> <span class="fu">=</span></a>
-<a class="sourceLine" id="cb10-14" data-line-number="14">  <span class="dt">GitHubKey</span> (forall result<span class="fu">.</span> <span class="dt">Servant.GitHub.Webhook.GitHubKey</span> result)</a>
-<a class="sourceLine" id="cb10-15" data-line-number="15"></a>
-<a class="sourceLine" id="cb10-16" data-line-number="16"><span class="ot">gitHubKey ::</span> <span class="dt">IO</span> <span class="dt">ByteString</span> <span class="ot">-&gt;</span> <span class="dt">GitHubKey</span></a>
-<a class="sourceLine" id="cb10-17" data-line-number="17">gitHubKey k <span class="fu">=</span> <span class="dt">GitHubKey</span> (Servant.GitHub.Webhook.gitHubKey k)</a>
-<a class="sourceLine" id="cb10-18" data-line-number="18"></a>
-<a class="sourceLine" id="cb10-19" data-line-number="19"><span class="kw">instance</span> <span class="dt">HasContextEntry</span> <span class="ch">'[GitHubKey] (Servant.GitHub.Webhook.GitHubKey result) where</span></a>
-<a class="sourceLine" id="cb10-20" data-line-number="20">  getContextEntry (<span class="dt">GitHubKey</span> x <span class="fu">:.</span> _) <span class="fu">=</span> x</a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="ot">{-# LANGUAGE MultiParamTypeClasses #-}</span></a>
+<a class="sourceLine" id="cb10-2" title="2"></a>
+<a class="sourceLine" id="cb10-3" title="3"><span class="kw">import</span>           <span class="dt">Servant.GitHub.Webhook</span>    <span class="kw">hiding</span> (<span class="dt">GitHubKey</span>, gitHubKey)</a>
+<a class="sourceLine" id="cb10-4" title="4"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Servant.GitHub.Webhook</span>   (<span class="dt">GitHubKey</span>, gitHubKey)</a>
+<a class="sourceLine" id="cb10-5" title="5"></a>
+<a class="sourceLine" id="cb10-6" title="6"><span class="ot">app ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">GitHubKey</span> <span class="ot">-&gt;</span> <span class="dt">Application</span></a>
+<a class="sourceLine" id="cb10-7" title="7">app env key <span class="fu">=</span> <span class="fu">...</span></a>
+<a class="sourceLine" id="cb10-8" title="8"></a>
+<a class="sourceLine" id="cb10-9" title="9"><span class="ot">context ::</span> <span class="dt">Proxy</span> '[ <span class="dt">GitHubKey</span> ]</a>
+<a class="sourceLine" id="cb10-10" title="10">context <span class="fu">=</span> <span class="dt">Proxy</span></a>
+<a class="sourceLine" id="cb10-11" title="11"></a>
+<a class="sourceLine" id="cb10-12" title="12"><span class="co">-- HACK</span></a>
+<a class="sourceLine" id="cb10-13" title="13"><span class="kw">newtype</span> <span class="dt">GitHubKey</span> <span class="fu">=</span></a>
+<a class="sourceLine" id="cb10-14" title="14">  <span class="dt">GitHubKey</span> (<span class="kw">forall</span> result<span class="fu">.</span> <span class="dt">Servant.GitHub.Webhook.GitHubKey</span> result)</a>
+<a class="sourceLine" id="cb10-15" title="15"></a>
+<a class="sourceLine" id="cb10-16" title="16"><span class="ot">gitHubKey ::</span> <span class="dt">IO</span> <span class="dt">ByteString</span> <span class="ot">-&gt;</span> <span class="dt">GitHubKey</span></a>
+<a class="sourceLine" id="cb10-17" title="17">gitHubKey k <span class="fu">=</span> <span class="dt">GitHubKey</span> (Servant.GitHub.Webhook.gitHubKey k)</a>
+<a class="sourceLine" id="cb10-18" title="18"></a>
+<a class="sourceLine" id="cb10-19" title="19"><span class="kw">instance</span> <span class="dt">HasContextEntry</span> '[<span class="dt">GitHubKey</span>] (<span class="dt">Servant.GitHub.Webhook.GitHubKey</span> result) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb10-20" title="20">  getContextEntry (<span class="dt">GitHubKey</span> x <span class="fu">:.</span> _) <span class="fu">=</span> x</a></code></pre></div>
 <h1 id="おしまい">おしまい</h1>
 <p>ちなみに，手元で試すときには ngrok を使った． 便利．</p>
   </div>
