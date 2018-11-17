@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="Haskell Day 2018 に参加してきた" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        Haskell Day 2018 に参加してきた
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Haskell Day 2018 に参加してきた</h1>
+    <p class="post-meta">
+      <time datetime="2018-11-17" itemprop="datePublished">
+        Nov 17, 2018
+      </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="../tags/Haskell.html">Haskell</a> <a href="../tags/event.html">event</a>
+      </div>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>11月10日にあった「<a href="https://haskell-jp.connpass.com/event/92617/">Haskell Day 2018</a>」に参加してきたのでメモ書きです．</p>
+<h2 id="午前中-ハンズオン">午前中 : ハンズオン</h2>
+<p><a href="https://github.com/igrep">igrep</a> 氏が中心になって作成した <a href="https://github.com/haskell-jp/makeMistakesToLearnHaskell"><code>makeMistakesToLearnHaskell</code></a> を使ったハンズオン． ぼくも少しだけコミットした．</p>
+<p>当日の様子は，みなさんかなり黙々と作業してて静かだったが，Twitter 上で質問している人がチラチラいた． それらの Twitter の様子などをみてリアルタイムに修正を行なっていたのはすごい．</p>
+<h2 id="午後">午後</h2>
+<p>そのうちログミーが公開されるそうなので，概要と感想だけ．</p>
+<h3 id="haskellを導入した話hrrの話">Haskellを導入した話/HRRの話</h3>
+<p><a href="https://htmlpreview.github.io/?https://github.com/khibino/haskell-day-2018/blob/master/presentation.html">発表資料はこちら</a>．</p>
+<p>10年近く職業 Haskeller をやっていた <a href="https://github.com/khibino">hibino</a> 氏が，当時 Haskell を導入するに至った話と，彼が作った <a href="https://hackage.haskell.org/package/relational-record">HRR</a> というライブラリの紹介 Perl に変わるグルー言語を求めて Haskell に行き着いたそうだ． 「GHC6.8 ですよ，GHC8.6 じゃなく，すごく無いですか？」すごい． HRRは面白そうだけど，使うタイミングがないや．</p>
+<h3 id="servantで実現する高速かつ安全なapi">Servantで実現する高速かつ安全なAPI</h3>
+<p><a href="https://speakerdeck.com/daishi/servantdexing-uan-quan-katugao-su-naapikai-fa">発表資料はこちら</a>．</p>
+<p>同様に職業 Haskeller の <a href="https://github.com/nakaji-dayo">nakaji</a> 氏の発表． <a href="https://haskell-servant.github.io/">Servant</a> という型レベルに RSETful API を定義できるパッケージを実際にどのように使っているかという話． Servant は僕もよく使う． 「実際に依存してるパッケージの紹介」や「実運用する上で困ったこと」などもあって興味深い．</p>
+<h3 id="並列並行言語haskell">並列並行言語Haskell</h3>
+<p><a href="https://speakerdeck.com/syocy/bing-lie-bing-xing-yan-yu-haskell">発表資料はこちら</a>．</p>
+<p>次のも含めて2本連続で <a href="https://github.com/syocy">syocy</a> 氏の発表． Haskell における並行・並列プログラミングについての紹介． 並行・並列プログラミングとして最近は Go・Elixir/Erlang・Rust などが注目されているが，Haskell は20年近く前から並行・並列に対して意識してる． おまけとして，ツールの話や並行並列系パッケージの話があって勉強になる． 余談として「<a href="https://a-tour-of-go-in-haskell.syocy.net/ja_JP/index.html">A Tour of Go in Haskell</a>」というのを作ったが，英語版も作ったところめっさ PR が来たという話をしてくれた． やっぱ分母の大きい自然言語は強い．</p>
+<h3 id="dhall-haskellの新たなキラーアプリ">Dhall: Haskellの新たなキラーアプリ</h3>
+<p><a href="https://speakerdeck.com/syocy/dhall-haskellfalsexin-tanakiraapuri">発表資料はこちら</a>．</p>
+<p>個人的に今回一番面白かった． <a href="https://github.com/dhall-lang/dhall-lang">Dhall</a> というアプリケーションの紹介． Dhall は設定ファイルを記述するための DSL である． 設定ファイルの多くは YAML や JSON などで書かれるが，複数の YAML が複雑な依存関係を持っている場合(k8sとか)は静的解析したいよね？ しかし逆に「設定ファイルとしての領分」を守って欲しいという要求もある(汎用プログラミング言語としての役割はいらない)． そこで Dhall です！って感じの発表だった． 最後の導入事例として，自社の設定ファイル群を書き換えた話も面白かった．</p>
+<h3 id="semigroupとはmonoidとは環とは">Semigroupとは？Monoidとは？環とは？</h3>
+<p><a href="https://aiya000.github.io/Maid/haskell-day-2018-algebra/">発表資料はこちら</a>．</p>
+<p><a href="https://github.com/aiya000">aiya</a> 氏の発表． 群や環などの代数的構造についての話． ステップバイステップに要件が増えていくのでわかりやすい説明だった．</p>
+<p>ちなみに個人的な肌感として，このような数学的な素養がないと Haskell プログラミングができないと，そうでもないと思う． 僕自身は教養としてそのあたりを知ってはいるので微妙なところだが，普段 Haskell プログラミングしてる時に意識してはいないはず． ただ，いくつかの言語機能やライブラリは数学や論理学など学術的なバックグランドを持ってることがある． そのような場合は「なぜこのような仕様なのか」「どうしてこのような仕組みでうまくいくかのか」などは，学術論文にしか書いてないことが多い． そのため，そういう機能やライブラリの仕組みを <strong>ちゃんと</strong> 追おうとする場合は数学的素養がないと厳しいかもしれない．</p>
+<h3 id="haskellで作るcli">Haskellで作るCLI</h3>
+<p>僕の発表．後述します．</p>
+<h3 id="gloss-動かして遊んで学ぶhaskell">gloss: 動かして遊んで学ぶHaskell</h3>
+<p><a href="https://qiita.com/lotz/items/bdb04c771efc8919b79c">発表資料はこちら</a>．</p>
+<p><a href="https://github.com/lotz84">lotz</a> 氏の発表． Haskell を勉強したあと何するかシリーズ，GUI 編． 作りたいものがはっきりないときは <a href="http://hackage.haskell.org/package/gloss">gloss</a> で振り子やライフゲームを作って遊んでみよう，という感じ． 僕自身はあんまり GUI に関心がないけど，実際に作りたいものがない場合はこういうので色々出力して手をうごしてみるのは正しい． 時間あるときになんか変なことできないか調べてみようかな．</p>
+<h3 id="liszt-あるいは永続データ構造を真に永続させる方法">Liszt あるいは永続データ構造を真に永続させる方法</h3>
+<p><a href="https://shared-assets.adobe.com/link/353213c2-281a-4a53-6cff-a52bff1314c1">発表資料はこちら</a>．</p>
+<p>僕が愛用している extensible というライブラリの作者，<a href="https://github.com/fumieval">fumieval</a> 氏の発表． <a href="https://github.com/fumieval/liszt">liszt</a> を作り始めていたことは知っていたので気になっていた． Liszt は Kafka のような大量のデータを収集・配信するためのプログラムだそうだ(名前も <a href="https://ja.wikipedia.org/wiki/フランツ・カフカ">Franz Kafka</a> に対抗して <a href="https://ja.wikipedia.org/wiki/フランツ・リスト">Franz Liszt</a> らしい)． 内部のデータ構造として Skew binary random access list を要素としてもつ 2-3 木 を用いている． このあたりの詳しい話は「<a href="https://asciidwango.jp/post/160831986220/純粋関数型データ構造">純粋関数型データ構造</a>」を読むと良いとのこと(本の名前が上がった瞬間「ですよね〜」となってたw)．</p>
+<h2 id="自分の話">自分の話</h2>
+<p>Haskell で CLI を作るうえでの小話をした。 スライドはこれ． <iframe src="//www.slideshare.net/slideshow/embed_code/key/FQE1QxbCST8kYi" width="595" height="485" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen> </iframe></p>
+<p>実はどれも，既に記事におこしたことのあるネタだった．</p>
+<ol type="1">
+<li>コマンドライン引数
+<ul>
+<li><code>getArgs</code>・<code>GetOpt</code>・<code>optparse-applicative</code> について紹介</li>
+<li><code>optparse-applicative</code> + <code>extensible</code> でサブコマンドも網羅性をチェック</li>
+<li>「<a href="2018-05-10-make-cli-with-haskell-in-2018">オレ的 Haskell で CLI を作る方法 2018</a>」</li>
+</ul></li>
+<li>Alt. Prelude
+<ul>
+<li>Prelude 微妙だなって思ったら Alt. Prelude なパッケージを使ってみようという話</li>
+<li>具体的には愛用している RIO を紹介した</li>
+<li>「<a href="2018-04-13-try-rio-1">rio ライブラリを試す その１</a>」</li>
+</ul></li>
+<li>Stack Template
+<ul>
+<li>よく使う依存パッケージやアプリのインターフェースの書き方がパターン化してきたら Stack Template 化しようという話</li>
+<li>Stack 1.9 から GitHub にあるテンプレートを参照できるようになった</li>
+<li>GitHub にあるテンプレートを出力する stack-tpls コマンドの紹介</li>
+<li>「<a href="2018-10-14-collect-stack-templates">stack-templates を集める with GraphQL</a>」</li>
+</ul></li>
+</ol>
+<p>Haskell を知ってる人にとってはあんまり面白くない話題だったかもしれないが，まぁまぁ(発言が)ウケていたのでよかった(?)．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>初心者がわかりやすく，玄人にもウケるネタってなんだろうね． 来年もやるかもしれないから考えておこう．</p>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+  <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+    <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+      <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+    </a>
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>
