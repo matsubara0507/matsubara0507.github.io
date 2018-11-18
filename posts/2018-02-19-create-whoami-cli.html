@@ -193,7 +193,7 @@
 </ul>
 <p>(なんか作者本人じゃないから気が引けて) Hackage にはあげてないがパッケージの体はしてるので，<a href="https://docs.haskellstack.org/en/stable/yaml_configuration/#git-and-mercurial-repos"><code>stack.yaml</code> の <code>extra-deps</code> に記述</a>することで使えるはず．</p>
 <h2 id="section-1"></h2>
-<p>注意点として <a href="https://github.com/fumieval/extensible">fumieval/extensible</a> の<a href="https://github.com/fumieval/extensible/blob/master/examples/aeson.hs">例にある <code>FromJSON</code> のインスタンス</a>とは微妙に実装が違う． 作者さんのは <code>Maybe a</code> にしてもキーが存在しないといけないのだが，<code>aeson</code> の <code>Generics</code> は <code>Maybe a</code> ならキーが無くても良いので，そっちに合わせた．</p>
+<p>注意点として <a href="https://github.com/fumieval/extensible">fumieval/extensible</a> の<a href="https://github.com/fumieval/extensible/blob/3f601a087039bb5764c0fa8c5f4dcd5d907c412f/examples/aeson.hs">例にある <code>FromJSON</code> のインスタンス</a>とは微妙に実装が違う． 作者さんのは <code>Maybe a</code> にしてもキーが存在しないといけないのだが，<code>aeson</code> の <code>Generics</code> は <code>Maybe a</code> ならキーが無くても良いので，そっちに合わせた．</p>
 <h2 id="仕組み">仕組み</h2>
 <p>コード自体は<a href="https://github.com/matsubara0507/whoami">このリポジトリ</a>にある．</p>
 <h3 id="基本的な部分">基本的な部分</h3>
