@@ -8,8 +8,214 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2018-12-02T00:00:00Z</updated>
+    <updated>2018-12-05T00:00:00Z</updated>
     <entry>
+    <title>Dhall を試して物足りない部分を補うツールを自作した</title>
+    <link href="https://matsubara0507.github.io/posts/2018-12-05-create-dhall-ex.html" />
+    <id>https://matsubara0507.github.io/posts/2018-12-05-create-dhall-ex.html</id>
+    <published>2018-12-05T00:00:00Z</published>
+    <updated>2018-12-05T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Dhall を試して物足りない部分を補うツールを自作した</h1>
+    <p class="post-meta">
+      <time datetime="2018-12-05" itemprop="datePublished">
+        Dec 5, 2018
+      </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a> <a href="/tags/Dhall.html">Dhall</a>
+      </div>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>本稿は <a href="https://qiita.com/advent-calendar/2018/haskell">Haskell Advent Calendar 2018</a> 5日目の記事です．</p>
+<p>Haskell Day 2018 の発表をきっかけに，兼ねてから気になっていた Dhall を試した． いくつかツールが欲しくなったので作りましたっていう話です．</p>
+<p>作ったものはこれ:</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/yaml-to-dhall">matsubara0507/yaml-to-dhall - GitHub</a></li>
+<li><a href="https://github.com/matsubara0507/dhall-ex">matsubara0507/dhall-ex - GitHub</a></li>
+</ul>
+<p>ちなみに，今回作ったツールは現状の stack の stable resolver にある v1.5.1 を利用している．</p>
+<h2 id="dhall">Dhall</h2>
+<p><a href="https://github.com/dhall-lang/dhall-lang">Dhall</a> は静的型付けされた設定記述言語である． 多くの場合，プログラミング言語やアプリケーションに使われる設定ファイルには JSON や YAML が利用されている． プログラミング言語のビルドシステムのような設定ファイル一つ程度なら問題ないが，Kubernetes や Ansible のような膨大な設定ファイルが依存しあう場合，静的型付けプログラミング言語のようにコンパイルによる型検査を導入したくなるだろう． Dhall はそのための言語であり，また便利な関数が用意されているため，非常に再利用性の高い設定ファイルを記述できる．</p>
+<h3 id="例">例:</h3>
+<p>Dhall は静的片付け言語なので，まずは型を定義しよう:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb1-1" title="1">$ cat ./User.dhall</a>
+<a class="sourceLine" id="cb1-2" title="2">{ homeDirectory : Text, privateKeyFile : Text, publicKeyFile : Text }</a></code></pre></div>
+<p>このユーザ型の値はユーザ名から一意に生成されることは容易に想像できるだろう:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb2-1" title="1">$ cat ./makeUser.dhall</a>
+<a class="sourceLine" id="cb2-2" title="2">  \(user_name : Text)</a>
+<a class="sourceLine" id="cb2-3" title="3">-&gt;    <span class="kw">let</span> homeDirectory = <span class="st">&quot;/home/${user_name}&quot;</span></a>
+<a class="sourceLine" id="cb2-4" title="4"></a>
+<a class="sourceLine" id="cb2-5" title="5">  <span class="kw">in</span>  <span class="kw">let</span> privateKeyFile = <span class="st">&quot;${homeDirectory}/id_rsa&quot;</span></a>
+<a class="sourceLine" id="cb2-6" title="6"></a>
+<a class="sourceLine" id="cb2-7" title="7">  <span class="kw">in</span>  <span class="kw">let</span> publicKeyFile = <span class="st">&quot;${privateKeyFile}.pub&quot;</span></a>
+<a class="sourceLine" id="cb2-8" title="8"></a>
+<a class="sourceLine" id="cb2-9" title="9">  <span class="kw">in</span>    { homeDirectory =</a>
+<a class="sourceLine" id="cb2-10" title="10">            homeDirectory</a>
+<a class="sourceLine" id="cb2-11" title="11">        , privateKeyFile =</a>
+<a class="sourceLine" id="cb2-12" title="12">            privateKeyFile</a>
+<a class="sourceLine" id="cb2-13" title="13">        , publicKeyFile =</a>
+<a class="sourceLine" id="cb2-14" title="14">            publicKeyFile</a>
+<a class="sourceLine" id="cb2-15" title="15">        }</a>
+<a class="sourceLine" id="cb2-16" title="16">      : ./User.dhall</a></code></pre></div>
+<p>この <code>./makeUser.dhall</code> は任意の文字列を与えると，それをユーザ名として <code>./User.dhall</code> 型の値を生成してくれる． さらに，高階関数を使って複数のユーザに対し一気に適用してみよう．</p>
+<pre class="dhall"><code>$ cat ./users.dhall
+let User = ./User.dhall
+
+in  let map =
+      https://raw.githubusercontent.com/dhall-lang/dhall-lang/0a7f596d03b3ea760a96a8e03935f4baa64274e1/Prelude/List/map
+
+in  map Text User ./makeUser.dhall [ &quot;alice&quot;, &quot;bob&quot;, &quot;curry&quot; ] : List User</code></pre>
+<p><code>map</code> には <a href="https://github.com/dhall-lang/dhall-lang/blob/master/Prelude/List/map">dhall のリポジトリにある標準パッケージの関数</a>を直接インポートしている． <code>map</code> の型は <code>∀(a : Type) → ∀(b : Type) → (a → b) → List a → List b</code> となっている． 基本的に Dhall で多相な高階関数を利用するときは，引数から直接型を与えてあげる必要がある．</p>
+<p>さて，これを dhall でビルドすると次のような結果を得る:</p>
+<pre class="dhall"><code>$ dhall &lt;&lt;&lt; ./users.dhall
+[ { homeDirectory =
+      &quot;/home/alice&quot;
+  , privateKeyFile =
+      &quot;/home/alice/id_rsa&quot;
+  , publicKeyFile =
+      &quot;/home/alice/id_rsa.pub&quot;
+  }
+, { homeDirectory =
+      &quot;/home/bob&quot;
+  , privateKeyFile =
+      &quot;/home/bob/id_rsa&quot;
+  , publicKeyFile =
+      &quot;/home/bob/id_rsa.pub&quot;
+  }
+, { homeDirectory =
+      &quot;/home/curry&quot;
+  , privateKeyFile =
+      &quot;/home/curry/id_rsa&quot;
+  , publicKeyFile =
+      &quot;/home/curry/id_rsa.pub&quot;
+  }
+]</code></pre>
+<p>これは次のようなYAMLに対応し，<code>dhall-to-yaml</code> などのツールで変換可能だ:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">-</span> <span class="fu">privateKeyFile:</span><span class="at"> /home/alice/id_rsa</span></a>
+<a class="sourceLine" id="cb5-2" title="2">  <span class="fu">publicKeyFile:</span><span class="at"> /home/alice/id_rsa.pub</span></a>
+<a class="sourceLine" id="cb5-3" title="3">  <span class="fu">homeDirectory:</span><span class="at"> /home/alice</span></a>
+<a class="sourceLine" id="cb5-4" title="4"><span class="kw">-</span> <span class="fu">privateKeyFile:</span><span class="at"> /home/bob/id_rsa</span></a>
+<a class="sourceLine" id="cb5-5" title="5">  <span class="fu">publicKeyFile:</span><span class="at"> /home/bob/id_rsa.pub</span></a>
+<a class="sourceLine" id="cb5-6" title="6">  <span class="fu">homeDirectory:</span><span class="at"> /home/bob</span></a>
+<a class="sourceLine" id="cb5-7" title="7"><span class="kw">-</span> <span class="fu">privateKeyFile:</span><span class="at"> /home/curry/id_rsa</span></a>
+<a class="sourceLine" id="cb5-8" title="8">  <span class="fu">publicKeyFile:</span><span class="at"> /home/curry/id_rsa.pub</span></a>
+<a class="sourceLine" id="cb5-9" title="9">  <span class="fu">homeDirectory:</span><span class="at"> /home/curry</span></a></code></pre></div>
+<h2 id="section"></h2>
+<p>また，ざっくりとしたイメージを得るには、先日あった <a href="https://wiki.haskell.jp/Workshop/HaskellDay/2018">Haskell Day 2018</a> での<a href="https://speakerdeck.com/syocy/dhall-haskellfalsexin-tanakiraapuri">発表資料</a>がわかりやすくてオススメ．</p>
+<h3 id="使ってみて思うところ">使ってみて思うところ</h3>
+<p>もしかしたら最新のバージョンであれば改善しているものもあるかもしれない．</p>
+<ul>
+<li>基本的な高階関数があり便利
+<ul>
+<li>map,fold,filter など</li>
+</ul></li>
+<li>普通のプログラミングのように式を再利用できる</li>
+<li>型推論がザコい
+<ul>
+<li>パラメトリック多相を挟むとダメみたいですね</li>
+</ul></li>
+<li>結構ビルドエラーがエスパー
+<ul>
+<li>慣れの問題か？</li>
+</ul></li>
+<li>YAML のいわゆる連想配列への変換ができない</li>
+<li>日本語が化ける ;;
+<ul>
+<li>まぁ原因はわかるので最新でも治ってなかったらPRしてみるか</li>
+</ul></li>
+</ul>
+<h2 id="何に導入したか">何に導入したか</h2>
+<p>弊社が企画してる学生向けの競技型イベントに関するシステムの設定ファイルを Dhall に置き換えてみた． そのシステムは，インフラ・スコアボード・デプロイツールの3つのリポジトリに別れており，ところどころ重複した設定が3つのリポジトリに存在する． そこで，設定用のリポジトリを作って，そこに Dhall で記述した設定を置き，そこから各リポジトリに設定を撒くような仕組みを考えることにした．</p>
+<p><img src="/assets/create-dhall-ex/system-with-dhall.png" /></p>
+<p>別に Dhall にしたからといって劇的に何かがよくなるわけでは無いのだが，ちょうど良いサンドボックスがあったのでイロイロと試してみる，というのが本音です（笑）</p>
+<h2 id="yaml-to-dhall">yaml-to-dhall</h2>
+<p>最初の方はせっせと手作業で変換していたが，何個かやって変換の仕方の勘所がわかって来た． そうなると後は作業でしか無いので，なんとかして大量にある設定ファイルを一括変換したい．</p>
+<p>調べた限り，YAML から Dhall に変換するプログラムは無さそう(逆はもちろんあるけど)． なのですっごい雑なものを作った．</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/yaml-to-dhall">matsubara0507/yaml-to-dhall - GitHub</a></li>
+</ul>
+<p>これは極めて単純なことしかできない． 数値は全て Float に変換されるし，Optional や空リストの書き方が間違っている． とりあえず変換して，手元のエディタで置換すればいいかなと思ったので雑なままである．</p>
+<p>時間ができたらそのうち直すかも．</p>
+<h2 id="dhall-ex">dhall-ex</h2>
+<p>前述した通り，一組の設定ファイル群から複数のリポジトリの設定ファイルを生成したかったのでその仕組みを作った． dhall-ex は次のような設定ファイルを記述する:</p>
+<pre class="dhall"><code>{ GH_TOKEN =
+      [ &quot;matsubara0507:XXXX&quot; ] : Optional Text
+  , root =
+      &quot;configs&quot;
+  , exports =
+      [ { name =
+            &quot;deploy-tool&quot;
+        , repo =
+            [ &quot;git-challenge/deploy-tool&quot; ] : Optional Text
+        , paths =
+            [ &quot;settings/orgs/orgs.yml&quot;
+            , &quot;settings/orgs/review.yml&quot;
+            ...
+            ]
+        }
+      ...
+      ]
+}</code></pre>
+<p>別にどっちでもよかったのだが，せっかくなので dhall-ex の設定ファイルも Dhall で記述するようにした． なので，具体例より<a href="https://github.com/matsubara0507/dhall-ex/blob/master/dhall/dhall-ex-type.dhall">型</a>を見た方が早いだろう．</p>
+<pre class="dhall"><code>let Export = { name : Text, repo : Optional Text, paths : List Text }
+in  { GH_TOKEN : Optional Text, root : Text, exports : List Export }</code></pre>
+<p><code>root</code> は設定ファイル群を置くパスで，<code>exports</code> が設定ファイル群の更新先のリポジトリなどの情報だ． <code>repo</code> で GitHub リポジトリを指定し，<code>paths</code> で関連する設定ファイルを列挙する． 例の場合 <code>./config/settings/orgs/orgs.yml.dhall</code> を <code>./.dhall-ex/git-challenge/deploy-tool/settings/orgs/orgs.yml</code> に dhall でビルドする．</p>
+<p>ちなみに Dhall のバージョンが古いので <code>Optional</code> がリストのリテラルを利用しているが，最新の Dhall には <code>Some</code> と <code>None</code> があるはず．</p>
+<h3 id="機能">機能</h3>
+<p>現状はこんな感じ:</p>
+<pre><code>$ dhall-ex --help
+dhall-ex - cli tool to support dhall
+
+Usage: dhall-ex [-v|--verbose] [-c|--config PATH] [--only NAME] COMMAND
+                [--version]
+
+Available options:
+  -v,--verbose             Enable verbose mode: verbosity level &quot;debug&quot;
+  -c,--config PATH         Configuration file
+  --only NAME              Exec subcommand only NAME in config
+  --version                Show version
+  -h,--help                Show this help text
+
+Available commands:
+  sort                     Sort record keys in dhall file
+  echo                     Echo TEXT
+  init                     Init dhall-ex work directory
+  build                    Build Dhall file to YAML or JSON
+  deploy                   Deploy builded config file to remote repository
+  checkout                 Checkout repository in dhall workspace
+  pull                     Pull repository in dhall workspace</code></pre>
+<p><code>echo</code> は設定が正しく読み取れるかどうかにだけ使う雑機能． <code>sort</code> レコードのフィールドの順番を型に合わせて並び替えてくれるコマンドだ． 前述した <code>yaml-to-dhall</code> などを使った後に使った(並び変える必要はないんだけど，なんか読みやすいように)．</p>
+<p><code>init</code> でリポジトリなどの初期化をし，<code>build</code> で設定ファイルを変換し，<code>deploy</code> でコミットとプッシュを行ってくれる． <code>checkout</code> や <code>pull</code> はただの git コマンドのラッパーだ．</p>
+<p>また，<code>--only deploy-tool</code> などとすることでコマンドの実行を特定のリポジトリに限定できる．</p>
+<h3 id="実装">実装</h3>
+<p>実は内部実装はそこまで難しいことをしていない． Dhall のファイルを読み込み，ビルドし，それを dhall-ex の設定ファイルに則って出力するだけだ． <code>build</code> 以外のコマンドは <a href="http://hackage.haskell.org/package/shelly"><code>shelly</code></a> を使ってシェルスクリプトもどきを実行している．</p>
+<h3 id="todo">ToDo</h3>
+<ul>
+<li>例外処理が雑なのを直す
+<ul>
+<li>だいたいこの部分が残る（笑）</li>
+</ul></li>
+<li>任意のコマンドを各リポジトリのワークスペースで実行できるようにする
+<ul>
+<li>なんか <code>git status</code> とか <code>git branch</code> とかしたい</li>
+</ul></li>
+<li>並行処理</li>
+</ul>
+<h1 id="おしまい">おしまい</h1>
+<p>随分雑な記事になってしまった．</p>
+  </div>
+</div>
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>Stack の Docker Integration とイメージの自動更新</title>
     <link href="https://matsubara0507.github.io/posts/2018-12-02-stack-docker-travici.html" />
     <id>https://matsubara0507.github.io/posts/2018-12-02-stack-docker-travici.html</id>
@@ -1099,438 +1305,6 @@ test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out</cod
 <a class="sourceLine" id="cb9-14" title="14"><span class="op">}</span></a></code></pre></div>
 <h2 id="おしまい">おしまい</h2>
 <p>Haskell 版でも作ってみようかしらん．</p>
-  </div>
-</div>
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>Earlang ＆ Elixir Fest 2018 に参加してきた</title>
-    <link href="https://matsubara0507.github.io/posts/2018-06-18-join-elixir-festa-2108.html" />
-    <id>https://matsubara0507.github.io/posts/2018-06-18-join-elixir-festa-2108.html</id>
-    <published>2018-06-18T00:00:00Z</published>
-    <updated>2018-06-18T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
- <div class="card-content">
-  <header class="post-header">
-    <h1 class="post-title" itemprop="name headline">Earlang ＆ Elixir Fest 2018 に参加してきた</h1>
-    <p class="post-meta">
-      <time datetime="2018-06-18" itemprop="datePublished">
-        Jun 18, 2018
-      </time>
-      
-      
-      <div class="tags">
-          <i class="fa fa-tags"></i> <a href="/tags/Elixir.html">Elixir</a> <a href="/tags/event.html">event</a>
-      </div>
-      
-    </p>
-  </header>
-
-  <div class="post-content" itemprop="articleBody">
-    <p>先日(6/16)，<a href="https://elixir-fest.jp/">Earlang &amp; Elixir Fest 2018</a> に参加してきたので，そのメモ書きです． ちなみに，Elixir は普段たいして使ってないけど LT もしてきました．</p>
-<h4 id="追記2018.06.21">追記(2018.06.21)</h4>
-<p>本稿公開後に公開してくださった発表スライドのリンクを追記しました．</p>
-<h2 id="section"></h2>
-<p>今年で2回目らしく，去年は Elixir の作者の <a href="https://twitter.com/josevalim">Jose Valim</a> 氏を呼んで Keynote してもらい，全体のセッション内容としては Elixir を導入し始めた・挑戦中という話がメインだったようだ． 今年はどっちかっていうとプロダクトに実践導入・運用してみてどうだったかという話がメインだそうだ． また，並行してハンズオンがあったらしいが，行ってないのでそっちは良く分からない． ハンズオンの資料は GitHub に公開してあるので，いずれやってみたい(同期とかとハンズオンしてみてもいいかも)．</p>
-<ul>
-<li><a href="https://github.com/ohr486/ErlangElixirFestHandsOn">ohr486/ErlangElixirFestHandsOn - GitHub</a></li>
-</ul>
-<p>あと <a href="https://togetter.com/li/1238110">Togetter にまとめてみました</a>．</p>
-<h2 id="メモ">メモ</h2>
-<p>各企業での導入した話が多かったので簡単なメモばっかです．</p>
-<h4 id="らくらく連絡網が-elixir-でリアルタイムメッセージング基盤を刷新した話">「らくらく連絡網」が Elixir でリアルタイムメッセージング基盤を刷新した話</h4>
-<p>(ネットワーク設定にバタバタしてたのでメモが少ない)</p>
-<ul>
-<li><a href="https://github.com/rinosamakanata">rinosamakanata</a> 氏の発表</li>
-<li><a href="https://eole-repos.github.io/public/elixirfest/2018/elixirfest2018-eole-rinosamakanata.pdf">発表スライドはコチラ</a></li>
-<li>もともとは RoR らしい</li>
-<li>技術的課題
-<ul>
-<li>分散の問題</li>
-<li>長い目で見たときの保守・運用</li>
-</ul></li>
-<li>フロントエンドは Elm
-<ul>
-<li>「関数型良いよね」</li>
-</ul></li>
-<li>負荷テストのために不可掛けの Docker コンテナを作った</li>
-<li>Elixir のバージョンアップが多い(リリースしてから9回もあった)
-<ul>
-<li><a href="https://github.com/asdf-vm/asdf-elixir">asdf</a> で難なく</li>
-<li>Ruby や RoR よりぜんぜん簡単</li>
-</ul></li>
-<li>実質的にメンテナンスフリー</li>
-<li>Erlang は書けなくても導入できる
-<ul>
-<li>ただし BEAM の知識はいる</li>
-<li><a href="https://github.com/happi/theBeamBook">The BEAM Book</a> おすすめ</li>
-</ul></li>
-</ul>
-<p>最近 Ruby や Ruby のライブラリのバージョンアップで苦しんでいるのを見てたのでバージョンアップがシームレスなの羨ましい．</p>
-<h4 id="初めてのerlangサーバ開発と運用">初めてのErlangサーバ開発と運用</h4>
-<ul>
-<li><a href="https://github.com/mookjp">mookjp</a> 氏の発表</li>
-<li><a href="https://speakerdeck.com/mookjp/chu-metefalseerlangsahakai-fa-toyun-yong?slide=1">発表スライドはコチラ</a></li>
-<li>Erlang をどう勉強したかや失敗談などの話</li>
-<li>Node.js から Erlang へ (たぶん)</li>
-<li><a href="http://erlang.org/doc/man/observer.html">observer</a> という Erlang プロセスの可視化ツールが便利</li>
-<li>Erlang サーバーをプロダクションに導入するときの設定
-<ul>
-<li>思想の記事ばっか！</li>
-<li>実際の設定に関する記事が少ない！！</li>
-</ul></li>
-<li>不必要なプロセスやその監視プロセスが微妙に残ってじわじわ CPU 使用率が上がってしまった</li>
-<li><a href="https://www.erlang-in-anger.com/">Erlang in Anger</a> を絶対に読む
-<ul>
-<li>運用に役立ちそうなことがたくさん書いてある</li>
-</ul></li>
-<li><a href="https://erlang-slack.herokuapp.com/">Erlang の Slack ワークスペース</a>がおススメ！
-<ul>
-<li>紹介した監視の VMStats もここで教えてもらった</li>
-</ul></li>
-</ul>
-<p>思想の記事が多い話，なんとなく Haskell にも似たようなところがあって笑った</p>
-<h4 id="keep-phoenix-app-productivity">Keep Phoenix App Productivity</h4>
-<ul>
-<li><a href="https://twitter.com/kanmo_ak">kanmo_ak</a> 氏の発表</li>
-<li><a href="https://speakerdeck.com/kanmo/keep-phoenix-app-productivity?slide=1">発表スライドはコチラ</a></li>
-<li>Phoenix Application 開発1年・運用1年してみた結果の話</li>
-<li><a href="https://elixirschool.com/en/lessons/advanced/umbrella-projects/">Umbrella</a> によって Project を分割
-<ul>
-<li>肥大化してきた</li>
-<li>複数のサービスをひとつのリポジトリで別々に開発</li>
-<li>サービス間でコードを共有できる</li>
-</ul></li>
-<li>ひとつのファイルを書き換えるだけでコンパイル対象が膨大…
-<ul>
-<li>ファイル間の依存関係がひどいので切っていく</li>
-<li>マクロを変更するとやり直し</li>
-<li>構造体を変更するとやばい</li>
-<li>プロトコルも依存がある</li>
-<li><a href="https://hexdocs.pm/mix/Mix.Tasks.Xref.html"><code>mix xref</code></a> タスクが便利</li>
-<li>モジュール名を動的に組み立てて依存を無理やり切る黒魔術(使わない方がいい)</li>
-</ul></li>
-<li>Erlang プロセスだと remsh で起動中のプロセスに接続して調査できる</li>
-<li>Elixir バージョンアップは追いやすい
-<ul>
-<li>RoR に比べて(笑)</li>
-</ul></li>
-<li>Type Spec を書いておくとドキュメントになる
-<ul>
-<li>Dializer は使ってない(時間が無かった)</li>
-<li>spec ないとつらいと感じたの私自身です</li>
-</ul></li>
-</ul>
-<p>昔 Type Spec が書いてあったが間違ってるおかげで痛い目にあったので書いたやつを静的にチェックしたいですよね…</p>
-<h4 id="from-python-to-elixir">from Python to Elixir</h4>
-<ul>
-<li><a href="https://github.com/kenichirow">kenichirow</a> 氏の発表</li>
-<li>Python から Elixir に移行
-<ul>
-<li>Python 2020 年問題(2系のサポートが終わる)</li>
-</ul></li>
-<li>Phoenix は最初は使わないつもりだった
-<ul>
-<li>Django からだと暗黙的な何某が多い印象(マクロ)</li>
-<li>PubSub いらない</li>
-<li>なので自作 FW を作ってた</li>
-</ul></li>
-<li>突然 Phoenix 宣言
-<ul>
-<li>「お前 Dis れるほど Phoenix 知ってるのかよ」</li>
-</ul></li>
-<li>Ecto にはいくつかの問題</li>
-<li>なのでライブラリを作った <a href="https://github.com/gumi/yacto">Yacto</a>
-<ul>
-<li>DB分割・XAトランザクションなど</li>
-</ul></li>
-<li>各ゲームの基盤を Template にしていたがバージョン管理がつらいのでライブラリに</li>
-<li>Elixir のサポートチーム
-<ul>
-<li>ググる前に聞け</li>
-<li>最近しんどいので Stack Overflow Team を導入</li>
-</ul></li>
-<li>言語変えて解決した問題は少しだけ
-<ul>
-<li>ただ整備するきっかけにはなった</li>
-</ul></li>
-</ul>
-<p>基盤チームカッコいい</p>
-<h4 id="ステートフルで大規模アクセスのあるsoft-realtimeなゲームサーバーをeasyにつくる">ステートフルで大規模アクセスのあるsoft-realtimeなゲームサーバーをeasyにつくる</h4>
-<ul>
-<li><a href="https://github.com/ne-sachirou">さっちゃん</a> 氏の発表</li>
-<li><a href="https://speakerdeck.com/ne_sachirou/sutetohurudeda-gui-mo-akusesufalsearusoft-realtimenagemusabawoeasynitukuru">発表スライドはコチラ</a></li>
-<li>Phoenix でゲーム作って運用したはなし</li>
-<li>AWS + Kube + Phoenix</li>
-<li>Real time PvP がメインなのに RoR は大変</li>
-<li>どっちみちイロイロ知見が無いので新しい技術使っても苦労はするでしょ
-<ul>
-<li>Elixir の知見はある</li>
-</ul></li>
-<li><a href="https://hexdocs.pm/inner_cotton/readme.html">InnerCotton</a> を作った</li>
-<li>FP は知ってた</li>
-<li>Channel と Redis で PvP</li>
-<li>ホットデプロイはあきらめた</li>
-<li>優先度付きキューを自作 <a href="https://hex.pm/packages/pqueue2">queue2</a>
-<ul>
-<li>既存のモノは間違ってるものが多かったので</li>
-<li>スタックになっているものもあった</li>
-</ul></li>
-<li><a href="https://hub.docker.com/r/nesachirou/elixir/">docker image</a> を作った(Elixir と Erlang の両方が指定できる)</li>
-<li>Elixir の監視つらい</li>
-<li>もっと publish していこうぜ</li>
-</ul>
-<p>社内でやったことドンドン Publish できるのいいなぁ．</p>
-<h4 id="channel先生-pubsubがしたいです">Channel先生…!! PubSubがしたいです…</h4>
-<ul>
-<li><a href="https://github.com/ohr486">ohrdev</a> 氏の発表</li>
-<li><a href="https://speakerdeck.com/ohr486/erlangelixirfest2018-ohr486-session">発表スライドはコチラ</a></li>
-<li>~Erlang in Anger~ PubSub in Channel</li>
-<li>「PubSub しない Phoenix はただの Rails だ」</li>
-<li>Phoenix Channel + PubSub</li>
-<li>PubSub は2種類ある
-<ul>
-<li>ローカル PubSub ・リモート PubSub</li>
-</ul></li>
-<li>「これカッコよくないっすか、見るたびにすごいぞくぞくする」</li>
-<li>PubSub バックエンドは選択できる</li>
-<li>どれだけ知っといた方がいいか？
-<ul>
-<li>基本は知らなくても</li>
-<li>新しい Adaptar を作る場合は知ってないといけない</li>
-</ul></li>
-</ul>
-<p>PubSub 完全に理解した(嘘)</p>
-<h4 id="antikythera-framework-an-elixir-framework-for-multiple-web-services">Antikythera Framework: An Elixir framework for multiple web services</h4>
-<ul>
-<li><a href="https://github.com/skirino">skirino</a> 氏の発表</li>
-<li><a href="https://skirino.github.io/slides/antikythera_framework.html#/">発表スライドはコチラ</a></li>
-<li>社内で作ったフレームワークの紹介 : <a href="https://github.com/access-company/antikythera">antikythera</a></li>
-<li>Antikythera メカニズム
-<ul>
-<li>ギリシャ時代のオーパーツ</li>
-<li>なにかよくわからない</li>
-<li>星の動き？？</li>
-</ul></li>
-<li>複数のサービスをひとつのフレームワークで管理</li>
-<li>Gear : Webサービスの単位・他の Gear に依存しうる
-<ul>
-<li>instance より細かい単位</li>
-</ul></li>
-<li>コア機能
-<ul>
-<li>リソースコントロール</li>
-<li>自動オペレーション(ホットデプロイなど)</li>
-<li>ログなどビルドインに</li>
-</ul></li>
-<li>Gear はマイクロサービスで疎結合だが管理は統一</li>
-<li>リソース管理は ErlangVM なので一長一短</li>
-<li>DB はどうするか？
-<ul>
-<li>DB は知らない(Gear にしない)</li>
-<li>ふつうに Ecto とかで</li>
-</ul></li>
-<li>なぜ Erlang じゃないか？
-<ul>
-<li>mix が優秀</li>
-<li>mix compiler でフックできる</li>
-</ul></li>
-</ul>
-<p>mix すごいのはよくわかる．</p>
-<h4 id="任意のbeam系言語でプラグインを書ける安定したフレームワークの作りかた">任意のBEAM系言語でプラグインを書ける安定したフレームワークの作りかた</h4>
-<ul>
-<li><a href="https://github.com/niku">niku</a> 氏の発表</li>
-<li><a href="https://niku.name/2018/06/16/slide.html">発表スライドはコチラ</a></li>
-<li>BEAM系プラグインを作る上でのノウハウ</li>
-<li>また PubSub の話ですいません</li>
-<li>フレームワークとプラグイン</li>
-<li>プラグイン機構を持つ FW には登場人物が3人
-<ul>
-<li>フレームワークとプラグインを使う人</li>
-</ul></li>
-<li>プラグインでエラーが起きたときフレームワークはどうするか</li>
-<li>「絵にかくとこんな感じ」</li>
-<li>Supervisor は他の言語ではあまりない
-<ul>
-<li>こいつのおかげで別粒度間のプロセス管理が楽</li>
-</ul></li>
-<li>ゆかいに学ぼうの Supervisor の章は良くできている</li>
-</ul>
-<p>絵に書くとこんな感じってのがじわじわ来る．</p>
-<h4 id="erlang-事例紹介-メディアストリーム中継システム">Erlang 事例紹介: メディアストリーム中継システム</h4>
-<ul>
-<li><a href="https://github.com/amutake">amutake</a> 氏の発表</li>
-<li><a href="https://niconare.nicovideo.jp/watch/kn3115">発表スライドはコチラ</a>
-<ul>
-<li>ニコニコのスライド置き場あったんだ(笑)</li>
-</ul></li>
-<li>ニコ生で使われる(予定)のシステムの話(Erlang 製)</li>
-<li>生放送の中継ツリー</li>
-<li>生放送に求められる性質</li>
-<li>ストリーム中継システム : sluicegate の作成
-<ul>
-<li>いつか OSS になる</li>
-</ul></li>
-<li>学術的に研究されたアルゴリズム(独自ではなく)
-<ul>
-<li>HyParView</li>
-<li>Plumtree</li>
-</ul></li>
-<li>簡単にできるけど無駄にメッセージパッシングすると遅くなる
-<ul>
-<li>軽い処理をメッセージパッシングするとだめ</li>
-</ul></li>
-<li>Erlang クラスタは組まない</li>
-<li>Plumtree の性質があれだった
-<ul>
-<li>なので自分たちで改造</li>
-<li>根幹なので定理証明(Coq で実装)
-<ul>
-<li>PPLにて発表した</li>
-<li>生放送ストリーム中継システムのCoqによる形式化と検証</li>
-</ul></li>
-</ul></li>
-<li>ぱぶさぶくん(検証ツール)</li>
-<li>水道局(可視化ツール)
-<ul>
-<li>水路という自作ライブラリを使っている</li>
-</ul></li>
-<li>分散アルゴリズムを書きやすい</li>
-<li>調査しやすい
-<ul>
-<li>reduction の取得のしやすさは Erlang in Anger</li>
-</ul></li>
-<li>Coq のコードから Erlang に変換するものがある</li>
-</ul>
-<p>なんか研究の話聞いてるみたいで聞きやすかった(笑)</p>
-<h3 id="lt">LT</h3>
-<p>自分も LT したので細かいメモは無い</p>
-<ul>
-<li>NOC の話
-<ul>
-<li>朝にアクシデントがあったようで…</li>
-</ul></li>
-<li>個人で Elixir してきた話(日本一 Elixir 本を書いている)</li>
-<li>Elixir 完全に理解した(ちょっとできる人がいればいい)</li>
-<li>Elixir Programming with Type checking (自分)</li>
-<li>ElixirScript の話</li>
-<li>PubSub Redis
-<ul>
-<li>phoenix_pubusu_redis_z</li>
-</ul></li>
-<li>Dialyzer のすすめ</li>
-<li>Erlang on ARM サーバー
-<ul>
-<li>未発表のもの</li>
-<li>秒間40まんリクエストをさばいてる</li>
-<li>ミドルウェアの世界に来い</li>
-</ul></li>
-</ul>
-<p>どうやら MVP は「Elixirを2週間で完全に理解した」新卒の子．</p>
-<h3 id="keynote">Keynote</h3>
-<h4 id="共有からメッセージパッシングへ-erlangotpやelixirと歩んだこの10年">共有からメッセージパッシングへ: Erlang/OTPやElixirと歩んだこの10年</h4>
-<ul>
-<li><a href="https://twitter.com/jj1bdx">力武健次</a>氏</li>
-<li><a href="https://speakerdeck.com/jj1bdx/erlang-and-elixir-fest-2018-keynote?slide=1">発表資料はコチラ</a></li>
-<li>BIND ??? 脆弱性の多い DNS サーバーについて昔やってた
-<ul>
-<li>1000行マクロ</li>
-</ul></li>
-<li>Erlang に出会う
-<ul>
-<li>うるう秒の修正パッチを送る</li>
-<li>SSH のセキュリティの研究</li>
-</ul></li>
-<li>ICFP’11 の Erlang Workshop の実行委員長</li>
-<li>Erlang in Anger のサイン本もらった</li>
-<li>Elixir のロゴは商標登録されている</li>
-<li>Catalyze Changes
-<ul>
-<li>Erlang は読みにくい！</li>
-<li>レコードが難しい！</li>
-<li>ドキュメントがない！</li>
-<li>何とかっしようぜ！</li>
-<li>by Dave Tomas</li>
-<li>大変だった…(jose)</li>
-<li>有言実行しててElixir本を7冊も出版している</li>
-</ul></li>
-<li>Ruby コミュニティをちらほら見かけるようになった</li>
-<li>2018/2 大事件</li>
-<li><a href="https://codesync.global/conferences/code-beam-sf-2018/">Code BEAM 2018</a>
-<ul>
-<li>Open Erlang 20周年</li>
-<li>BEAM コミュニティの融合</li>
-</ul></li>
-<li>共通してどこがおいしいのか</li>
-<li>Immutability ディープコピー 参照を使わない
-<ul>
-<li>自分が思う Erlang のすばらしさ</li>
-</ul></li>
-<li>従来は実態を共有(はやい？)</li>
-<li>「安全よりも効率」</li>
-<li>C++ の愚痴
-<ul>
-<li>参照なの？値なの？</li>
-<li>const の話が大変</li>
-<li>コンストラクタいつ動く？？</li>
-<li>shared_ptr と unique_ptr (参照カウンタと所有権)</li>
-</ul></li>
-<li>例外: ETSやプロセス辞書</li>
-<li>「効率より安全」
-<ul>
-<li>とても遅い</li>
-<li>型検査は無いけど非常に厳格</li>
-</ul></li>
-<li>Joe (Erlang の作者)「processes messgae and links が重要な部分(gen_server は後から)」
-<ul>
-<li>他はどうでもいい</li>
-<li>軽量並行プロセスとエラーハンドリング</li>
-</ul></li>
-<li>綺麗に落とすのは大変
-<ul>
-<li>プロセスキューが詰まると終了</li>
-</ul></li>
-<li>link and monitor
-<ul>
-<li>昔のSDの自分の記事を読み返した</li>
-</ul></li>
-<li>今後
-<ul>
-<li>基本理念 「ほどほどなのが一番良い」</li>
-<li>手を抜かずに高速化</li>
-</ul></li>
-<li>Code BEAM で話題にあがったもの
-<ul>
-<li>組込み分野えの応用</li>
-<li>大規模クラスタ</li>
-<li><a href="https://github.com/josefs/Gradualizer">Gradual Type System</a> (ツールの発表があった)</li>
-<li>Language Server Protcol</li>
-</ul></li>
-<li>英語圏で発表しよう
-<ul>
-<li>Code BEAM 2018 は日本人一人</li>
-</ul></li>
-</ul>
-<p>クライアントの同期の子が，不変性のすばらしさの話を指して「Rust や Elixir を勉強したとに同じことを感じた！」と喜んでいた．</p>
-<h2 id="自分の話">自分の話</h2>
-<p>Elchemy の紹介話をしてきました． スライドはこちら</p>
-<h2 id="section-1"></h2>
-<iframe src="//www.slideshare.net/slideshow/embed_code/key/ocbuQdsbw2EmG5" width="595" height="485" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen>
-</iframe>
-<h2 id="section-2"></h2>
-<p>実は前日(6/15)に別の LT で Elchemy の Docker image を作る話をしてきた． その時のスライドはこちら．</p>
-<h2 id="section-3"></h2>
-<iframe src="//www.slideshare.net/slideshow/embed_code/key/al30fSfPGB5HGN" width="595" height="485" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen>
-</iframe>
-<h2 id="section-4"></h2>
-<p>実は以下の記事でもっと詳しくまとめてあるので，プレゼンを見る必要は無いんです(笑)</p>
-<ul>
-<li><a href="https://matsubara0507.github.io/posts/2018-06-15-introduce-elchemy-part1.html">Elchemy 入門 : その１</a></li>
-<li><a href="https://matsubara0507.github.io/posts/2018-06-16-introduce-elchemy-part2.html">Elchemy 入門 : その２</a></li>
-</ul>
-<h2 id="おしまい">おしまい</h2>
-<p>来年はもっと型のハナシができるといいなぁ．</p>
   </div>
 </div>
 </article>
