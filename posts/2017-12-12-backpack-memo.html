@@ -142,7 +142,11 @@
 <li>新しくシグネチャを導入(モジュールの型みたいなもの)</li>
 <li>パッケージはシグネチャとモジュールを持てる</li>
 </ul></li>
-<li>シンプルな MixIn デザインを採用 - ベースは <a href="https://github.com/rossberg/mixml">MixML</a> - いくつか問題があったので Haskell に対応させた</li>
+<li>シンプルな MixIn デザインを採用
+<ul>
+<li>ベースは <a href="https://github.com/rossberg/mixml">MixML</a></li>
+<li>いくつか問題があったので Haskell に対応させた</li>
+</ul></li>
 <li>ジェネリックな設計なので他の弱いモジュール性を持つ言語でも機能する(だろう)</li>
 </ul>
 <p>ちなみに，誰もが羨むモジュールシステム(要出典)ML系のファンクターではダメだったのかというと</p>
@@ -259,7 +263,10 @@
 <ul>
 <li>Backpack’14 を実用的に改良</li>
 <li>コンパイラとパッケージマネージャーの障壁(バリア)を保持</li>
-<li>GHC8.2 と Cabal 2.0 に導入された - 我らがヒーロー Stack 様はまだ対応できてない…</li>
+<li>GHC8.2 と Cabal 2.0 に導入された
+<ul>
+<li>我らがヒーロー Stack 様はまだ対応できてない…</li>
+</ul></li>
 </ul>
 <p>ちなみに，パッケージシステムが変わったため現状の Hackage は使えず，代わりに Hackage をフォークした <a href="http://next.hackage.haskell.org:8080/">next.hackage</a> を用いるらしい． また，<a href="https://github.com/ezyang/ghc-proposals/blob/backpack/proposals/0000-backpack.rst#unresolved-questions">既知の未解決問題</a>として，(3) の再帰的リンクは実現できていないそうだ． 残念(面白いけども有用か？と言われると分からんし困らない気はする)．</p>
 <h3 id="ghc8.2-だけで試す">GHC8.2 だけで試す</h3>
@@ -344,17 +351,13 @@
 <li>単一のパッケージで管理する場合
 <ul>
 <li><a href="https://github.com/ezyang/backpack-regex-example/tree/single-package"><code>single-package</code></a>ブランチや</li>
-<li><a href="https://github.com/ezyang/backpack-regex-example/tree/better-single-package"><code>better-single-package</code></a>ブランチ
-<ul>
+<li><a href="https://github.com/ezyang/backpack-regex-example/tree/better-single-package"><code>better-single-package</code></a>ブランチ</li>
 <li><code>cabal build</code> でビルドできる</li>
-</ul></li>
 </ul></li>
 <li>分割してパッケージを管理する場合
 <ul>
-<li><a href="https://github.com/ezyang/backpack-regex-example/tree/multiple-packages"><code>multiple-packages</code></a>
-<ul>
+<li><a href="https://github.com/ezyang/backpack-regex-example/tree/multiple-packages"><code>multiple-packages</code></a></li>
 <li><code>cabal new-build</code> でビルドする</li>
-</ul></li>
 </ul></li>
 </ol>
 <p>単一のパッケージ(<code>cabal</code> ファイルがひとつ)の場合はパッケージでカプセル化される(要するにシグネチャと言う曖昧なものが外に出てこない)ため，<code>cabal-build</code> でうまく動作する(らしい)． しかし，各 <code>unit</code> を別々のパッケージとして公開する場合は，シグネチャを持つようなパッケージも個別にインスタンスする必要があり，それができるのは <code>cabal-new-build</code> だけだそうだ(この辺りはうっすらイメージできるぐらいで，自分も良く分かってない…)．</p>
@@ -413,8 +416,15 @@ True</code></pre>
 <h2 id="結局なにがうれしいのか">結局なにがうれしいのか</h2>
 <p>ちゃんと論文読んでないので，ぼくが思うところですけど</p>
 <ul>
-<li>本質的には関係ない実装を利用者側で選択できる - <code>A</code> パッケージの文字列に <code>Text</code> を使うか <code>ByteString</code> を使うかは利用者の自由 - <code>A-text</code> とか <code>A-bytestring</code> とか別に作る必要が無い</li>
-<li>型クラスに無理やり突っ込んでたモノが解決 - モジュールレベルにアドホック多相ができる(たぶん)</li>
+<li>本質的には関係ない実装を利用者側で選択できる
+<ul>
+<li><code>A</code> パッケージの文字列に <code>Text</code> を使うか <code>ByteString</code> を使うかは利用者の自由</li>
+<li><code>A-text</code> とか <code>A-bytestring</code> とか別に作る必要が無い</li>
+</ul></li>
+<li>型クラスに無理やり突っ込んでたモノが解決
+<ul>
+<li>モジュールレベルにアドホック多相ができる(たぶん)</li>
+</ul></li>
 <li><strong>面白い</strong></li>
 </ul>
 <h2 id="おまけ-stack-と-backpack">おまけ: stack と Backpack</h2>
