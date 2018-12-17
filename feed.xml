@@ -8,8 +8,300 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2018-12-11T00:00:00Z</updated>
+    <updated>2018-12-18T00:00:00Z</updated>
     <entry>
+    <title>GHC 8.x 勉強会に行ってきた</title>
+    <link href="https://matsubara0507.github.io/posts/2018-12-18-ghc8x.html" />
+    <id>https://matsubara0507.github.io/posts/2018-12-18-ghc8x.html</id>
+    <published>2018-12-18T00:00:00Z</published>
+    <updated>2018-12-18T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">GHC 8.x 勉強会に行ってきた</h1>
+    <p class="post-meta">
+      <time datetime="2018-12-18" itemprop="datePublished">
+        Dec 18, 2018
+      </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a> <a href="/tags/event.html">event</a>
+      </div>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>本記事は <a href="https://qiita.com/advent-calendar/2018/haskell2">Haskell (その2) Advent Calendar 2018</a> の18日目の記事です． 空いていたのでついでに埋めました．</p>
+<h2 id="section"></h2>
+<p>12/7 の10-17時半ぐらいに IIJ-II で GHC8 系のバージョンアップを追う会的なイベントが企画されました． このイベントは IIJ-II の Haskell チームで発案・企画し，Haskell-jp の Slack で募集をかけていました． 定員12人かつ，平日昼間でしたが，面白そうなので有給とって行ってきた(僕は IIJ-II では無いので)． 多少クローズドな会ということもあり，せっかくなので色々と議論したことを記事に起こしておきます． 正確な情報は GHC のドキュメントを呼んでください．</p>
+<h2 id="進め方">進め方</h2>
+<p>GHCには<a href="https://downloads.haskell.org/~ghc/8.0.2/docs/html/users_guide/8.0.1-notes.html">こんな感じ</a>のリリースノートがある． 当日は8系のリリースノートのハイライトを追っていくという感じだった．</p>
+<p>事前に一人一つぐらいは調べてきて発表する感じだったが，担当者がいない内容でも，紹介記事を引っ張ってきたりなんだりしてた．</p>
+<h2 id="section-1">8.0</h2>
+<p><a href="https://downloads.haskell.org/~ghc/8.0.2/docs/html/users_guide/8.0.1-notes.html">リリースノートはこれ</a>． 8.0だけめっちゃ多い． 当初は 7.12 とかにする予定だったが，あまりにも差分があったので 8 にした的な話があるとかないとか(要出典)．</p>
+<h3 id="typeintype-など">TypeInType など</h3>
+<ul>
+<li><a href="https://downloads.haskell.org/~ghc/8.0.2/docs/html/users_guide/glasgow_exts.html#ghc-flag--XTypeInType"><code>TypeInType</code></a> 言語拡張について</li>
+<li>以下3つの言語拡張も包含している
+<ul>
+<li>PolyKinds</li>
+<li>DataKinds</li>
+<li>KindSignatures</li>
+</ul></li>
+<li>PolyKind: 型変数のカインドが多相的になる（本来は <code>*</code>）</li>
+<li>DataKinds: 定義した型をカインドとして利用できる</li>
+<li>KindSignatures: カインドを明示的に指定できる</li>
+<li>TypeInType:
+<ul>
+<li>上記全部を利用可</li>
+<li>多相カインド</li>
+<li>RankNTypes も追加で高階カインドも可能</li>
+</ul></li>
+<li>Q: 結局目指すところは？
+<ul>
+<li><a href="https://ghc.haskell.org/trac/ghc/wiki/DependentHaskell">Dependent Haskell</a> のマイルストーンの一部では？</li>
+<li>Merging Types and Kinds</li>
+</ul></li>
+</ul>
+<h3 id="patternsynonyms-系">PatternSynonyms 系</h3>
+<ul>
+<li><a href="https://downloads.haskell.org/~ghc/8.0.2/docs/html/users_guide/glasgow_exts.html#record-patsyn">Record Pattern Synonyms</a> をサポート</li>
+<li>レコード型でも PatternSynonyms を利用</li>
+<li><a href="https://kazu-yamamoto.hatenablog.jp/entry/20170919/1505787393">PatternSynonymsのススメ - あどけない話</a>
+<ul>
+<li>そもそも PatternSynonyms って？</li>
+<li>PatternSynonyms それ自体は 7.8.1 から</li>
+</ul></li>
+<li>8.0 から export 時に <code>pattern</code> キーワードがいらなくなった
+<ul>
+<li>すごい助かるって意見もあれば</li>
+<li>あえて明示的にすべきという意見も</li>
+</ul></li>
+<li>ネットワーク屋さん的にはこのパターンは本当に便利という話</li>
+<li>BangPattern や ViewPattern の組み合わせ</li>
+</ul>
+<h3 id="deriveanyclass">DeriveAnyClass</h3>
+<ul>
+<li><a href="https://downloads.haskell.org/~ghc/8.0.2/docs/html/users_guide/glasgow_exts.html#derive-any-class">DeriveAnyClass</a> 言語拡張について</li>
+<li>名前の通り任意の型クラスに対して <code>deriving</code> を利用する仕組みを提供</li>
+<li><code>deriving</code> 可能な型クラスからデフォルト実装を定義したり</li>
+</ul>
+<h3 id="injective-type-families">Injective type families</h3>
+<ul>
+<li><a href="https://downloads.haskell.org/~ghc/8.0.2/docs/html/users_guide/glasgow_exts.html#injective-ty-fams"><code>TypeFamilyDependencies</code></a> 言語拡張について</li>
+<li><a href="https://qiita.com/lotz/items/6c038698c8f04f57113a">型族が単射だと嬉しい理由 - Qiita</a></li>
+<li>(書いた当人は書いてたこと忘れてた笑)</li>
+</ul>
+<h3 id="applicativedo">ApplicativeDo</h3>
+<ul>
+<li><a href="https://downloads.haskell.org/~ghc/8.0.2/docs/html/users_guide/glasgow_exts.html#applicative-do"><code>ApplicativeDo</code></a> 言語拡張について</li>
+<li>do 記法が Applicative でも使える</li>
+<li>だけじゃなく，do 記法が特定の条件を満たすと勝手に Applicative や Functor に脱糖してくれる
+<ul>
+<li>この条件がなかなか(笑)</li>
+</ul></li>
+</ul>
+<p>なんか結構盛り上がった(笑)</p>
+<h3 id="wildcards-in-data-and-type-family">Wildcards in data and type family</h3>
+<p><a href="https://downloads.haskell.org/~ghc/8.0.2/docs/html/users_guide/glasgow_exts.html#wildcards-on-the-lhs-of-data-and-type-family-instances">この辺り</a>？ ちょっと何話したか忘れた．</p>
+<h3 id="strict-系">Strict 系</h3>
+<ul>
+<li><a href="https://downloads.haskell.org/~ghc/8.0.2/docs/html/users_guide/glasgow_exts.html#strict-haskell"><code>Strict</code></a> 言語拡張について</li>
+<li><a href="https://kazu-yamamoto.hatenablog.jp/entry/20151117/1447726679">Strict Haskell - あどけない話</a></li>
+<li>昔から正格評価にする記法はあったが，この拡張によりデフォルトの評価戦略を切り替えれる．</li>
+<li>実は逆に <code>~x</code> とすることで <code>x</code> を遅延評価できる</li>
+<li>Q: パターンマッチの反駁不能パターンはどうなるんだろ？
+<ul>
+<li><code>~(~x)</code> のようにチルダをカッコで重ねる</li>
+</ul></li>
+</ul>
+<h3 id="duplicate-record-fields">Duplicate record fields</h3>
+<ul>
+<li><a href="https://kazu-yamamoto.hatenablog.jp/entry/20160114/1452735514">重複したフィールドラベル - あどけない話</a></li>
+<li>Q: <code>instance (a ~ Int) =&gt; IsLabel &quot;same&quot; (Foo -&gt; a)</code> の <code>a ~ Int</code> はなぜ必要か？
+<ul>
+<li><code>IsLabel &quot;same&quot; (Foo -&gt; Int)</code> ではなく</li>
+<li>推論の順番を明示的にする</li>
+</ul></li>
+<li>Q: ボイラーテンプレートの件は進んだの？？
+<ul>
+<li>なんか放置されてる</li>
+</ul></li>
+<li>SystemF + レコード多相は死ぬ
+<ul>
+<li>OCaml は分けている</li>
+</ul></li>
+</ul>
+<h3 id="ユーザ定義-typeerror">ユーザ定義 TypeError</h3>
+<ul>
+<li>型エラーをユーザーで定義できる？</li>
+<li><a href="https://ghc.haskell.org/trac/ghc/wiki/Proposal/CustomTypeErrors">プロポーザル</a></li>
+<li>どんな話したか忘れました，すいません</li>
+</ul>
+<h3 id="ghci-関連">GHCi 関連</h3>
+<ul>
+<li>本来 GHCi はコードを同一のプロセスと共通のヒープで実行する</li>
+<li>それを <a href="https://downloads.haskell.org/~ghc/8.0.2/docs/html/users_guide/ghci.html#external-interpreter"><code>fexternal-interpreter</code></a> オプションでコントロールできる</li>
+<li>だっけか（また細かい話は忘れました，すいません）</li>
+</ul>
+<h2 id="section-2">8.2</h2>
+<p><a href="https://downloads.haskell.org/~ghc/8.2.2/docs/html/users_guide/8.2.1-notes.html">リリースノートはこれ</a>．</p>
+<ul>
+<li>Typeable mechanism, Type.Reflection</li>
+<li>そういえばCUIがカラフルになったね</li>
+<li>Heap 系
+<ul>
+<li>あんまりよく覚えてないごめんなさい</li>
+</ul></li>
+</ul>
+<h3 id="derivingstrategies">DerivingStrategies</h3>
+<ul>
+<li><code>DerivingStrategies</code> 言語拡張について</li>
+<li><a href="https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/DerivingStrategies">Commentary/Compiler/DerivingStrategies – GHC</a></li>
+<li><a href="https://github.com/kakkun61/deriving-strategies-playground">kakkun 氏の資料</a></li>
+<li><code>deriving</code> する時に <code>newtype</code> や <code>stock</code> などのキーワードを指定することで <code>deriving</code> の仕方をコントロールできる</li>
+</ul>
+<h3 id="unboxedsums">UnboxedSums</h3>
+<ul>
+<li><a href="https://downloads.haskell.org/~ghc/8.2.2/docs/html/users_guide/glasgow_exts.html#ghc-flag--XUnboxedSums"><code>UnboxedSums</code></a> 言語拡張について</li>
+<li><a href="https://gist.github.com/maoe/e5888fad16a190a9c7cf58b8bedb1d04">maoe 氏の資料</a></li>
+</ul>
+<h3 id="compact-regions">Compact Regions</h3>
+<ul>
+<li><a href="https://github.com/ezyang/compact">ezyang/compact - GitHub</a></li>
+<li>処理系によってGCされないデータ領域</li>
+<li>インターフェースは充実してる</li>
+<li>ただしデータの追加しかできない（書き換えは不可）</li>
+<li>Q: 何に使える？
+<ul>
+<li>強大な辞書とか？</li>
+<li>設定ファイルとか？（巨大なら）</li>
+<li>NGワード集とか？</li>
+</ul></li>
+</ul>
+<p>GHC8.x 勉強会のあとに記事にしてくれた:</p>
+<ul>
+<li><a href="https://qiita.com/ruicc/items/c955e794c5dc74c4cb58">Compact Regionsについて軽く - Qiita</a></li>
+</ul>
+<h3 id="backpack">Backpack</h3>
+<ul>
+<li><a href="https://ghc.haskell.org/trac/ghc/wiki/Backpack">Backpack – GHC</a></li>
+<li>雑にいうと: ML系のファンクターのようなより強力なモジュールシステム</li>
+<li>モジュールのインターフェースと実装を分離できる</li>
+<li><a href="https://matsubara0507.github.io/posts/2017-12-12-backpack-memo.html">Haskell Backpack 覚え書き - ひげメモ</a>
+<ul>
+<li>自分の記事だけど1年近く前で覚えてない(笑)</li>
+</ul></li>
+<li>Q: どんな時に有用？
+<ul>
+<li>本質的には型クラスと同じ用途のはず</li>
+<li>ただし型に依存しない（型クラスは型によって実装をディスパッチ）</li>
+<li>不自然な <code>Proxy a</code> を渡さなくていい（苦肉の策でそういう実装をしている型クラスがある）</li>
+</ul></li>
+<li>そういえば最近 <a href="https://github.com/kowainik/containers-backpack">contains の Backpack 版</a>がでた</li>
+</ul>
+<p>作者さんが忙しくて Stack への適用を断念したため，なかなか浸透しない． 今「Stack への適用をやりたい」という人が現れたが時間がかかりそう．</p>
+<h3 id="脱線-各位リンカどうしてるの">脱線: 各位リンカどうしてるの？</h3>
+<p>kazu yamamoto 氏が GHC 8.6 になってから(だっけ？)リンカ周りで動作しなくて困ってるらしい(OS は Mac)． 僕は適当にやってて困ったことないのでよくわからない．</p>
+<p>ちなみに GHC 8.6.3 で無事動いたらしい:</p>
+<blockquote class="twitter-tweet" data-lang="ja">
+<p lang="ja" dir="ltr">
+吉報：GHC 8.6.3 は macOS で問題なく使えるようになりました！
+</p>
+— 山本和彦 (<span class="citation" data-cites="kazu_yamamoto">@kazu_yamamoto</span>) <a href="https://twitter.com/kazu_yamamoto/status/1072030847799255040?ref_src=twsrc%5Etfw">2018年12月10日</a>
+</blockquote>
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+<h2 id="section-3">8.4</h2>
+<p><a href="https://downloads.haskell.org/~ghc/8.4.4/docs/html/users_guide/8.4.1-notes.html">リリースノートはこれ</a>．</p>
+<p>そういえば，8.4.4 は 8.6 系が出てから出て，ちゃんとバグフィックス出すんだと感心した的な話をした．</p>
+<h3 id="semigroup-monoid-proposal">Semigroup-Monoid Proposal</h3>
+<ul>
+<li><code>Monoid</code> にサブクラスとして <code>Semigroup</code> を持たせる
+<ul>
+<li>その方が数学的に自然</li>
+</ul></li>
+<li><a href="https://kazu-yamamoto.hatenablog.jp/entry/20180306/1520314185">あなたの知らないSemigroupの世界 - あどけない話</a></li>
+<li>前のバージョンアから <code>-Wnoncanonical-monoid-instances</code> などの警告を付け足して段階的にやっている
+<ul>
+<li>しかし <code>-Wall</code> に含まれてないので気づかず</li>
+<li>なんか 8.4 で急にエラーに</li>
+</ul></li>
+<li>ちなみに以降は <code>Monoid</code> をインポートしなくても <code>(&lt;&gt;)</code> が使える</li>
+</ul>
+<h3 id="monadfail-と-no-return">MonadFail と no return</h3>
+<p>ここは脱線．</p>
+<ul>
+<li><a href="https://wiki.haskell.org/MonadFail_Proposal">MonadFail Proposal - HaskellWiki</a></li>
+<li><code>Monad</code> には <code>fail</code> が定義されている
+<ul>
+<li>が <code>error</code> などを利用している残念な実装もある</li>
+</ul></li>
+<li><code>MonadFail</code> という型クラスで切り出す</li>
+<li><code>-Wnoncanonical-monadfail-instances</code> ができた？</li>
+<li>8.6: <a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#extension-MonadFailDesugaring"><code>MonadFailDesugaring</code></a> 言語拡張がデフォルトに
+<ul>
+<li>do 記法の <code>fail</code> への脱糖が <code>MonadFail</code> のものになる</li>
+</ul></li>
+</ul>
+<h2 id="section-4">8.6</h2>
+<p><a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/8.6.1-notes.html">リリースノートはこれ</a>．</p>
+<h3 id="quantifiedconstraints">QuantifiedConstraints</h3>
+<ul>
+<li><a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#extension-QuantifiedConstraints">QuantifiedConstraints</a> 言語拡張を追加</li>
+<li>インスタンスの定義に量化が使える
+<ul>
+<li>例: <code>instance (Eq a, forall b. (Eq b) =&gt; Eq (f b)) =&gt; Eq (Rose f a)</code></li>
+</ul></li>
+<li><a href="http://the.igreque.info/slides/2018-12-07-ghc8x.html">igrap 氏の資料</a></li>
+<li>Q: Constraint のシノニムでも使える？
+<ul>
+<li>無理だった orz</li>
+</ul></li>
+</ul>
+<h3 id="derivingvia">DerivingVia</h3>
+<ul>
+<li><a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#extension-DerivingVia"><code>DerivingVia</code></a> 言語拡張について</li>
+<li><code>via</code> キーワードを使ってインスタンスを明示的に選択できるようになる</li>
+<li><a href="https://github.com/kayhide/try-ghc86">kayhide 氏の資料</a>
+<ul>
+<li>QuickCheck の例</li>
+<li>テストの実装を Via で定義</li>
+</ul></li>
+<li>わかりやすい<a href="https://speakerdeck.com/konn/ben-dang-hasugoi-newtype">スライド</a>
+<ul>
+<li>後半の方</li>
+<li>タプルの例</li>
+</ul></li>
+</ul>
+<h3 id="plugin-mechanism">Plugin mechanism</h3>
+<p>(誰も調べてはない) ちょうど記事があった</p>
+<ul>
+<li><a href="https://qiita.com/waddlaw/items/65b57517f105fcbbe724">GHC Source Plugin 作ってみた - Qiita</a></li>
+</ul>
+<p>終わった後の雑談で，Scala には似たような機能(Scala Compiler Plugins?)が既にあるので，真似するといいとかなんとか．</p>
+<h3 id="valid-hole-fits">Valid hole fits</h3>
+<ul>
+<li><a href="https://wiki.haskell.org/GHC/Typed_holes">Type holes</a> という機能についての拡張
+<ul>
+<li><a href="https://haskell.jp/blog/posts/2017/07-TypedHoles.html">Type Hole については Haskell-jp に記事がある</a></li>
+</ul></li>
+<li><a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#typed-hole-valid-hole-fits">コンパイルフラグ</a>で type Holes での推論アルゴリズム(?)のコントロールができるようになった(って感じかな)</li>
+</ul>
+<h3 id="シンタックスの言語拡張">シンタックスの言語拡張</h3>
+<ul>
+<li>数値リテラルに <code>_</code> が使える: <code>10_000_000</code> とか</li>
+<li><code>do</code> 記法の前に <code>$</code> などがいらなくなる: <code>\x -&gt; do ...</code> とか</li>
+</ul>
+<h1 id="おしまい">おしまい</h1>
+<p>時間経ちすぎてめっちゃ適当になってしまった． すいません． ただ，めっちゃ楽しかった．</p>
+  </div>
+</div>
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>詳解 elm/url !!</title>
     <link href="https://matsubara0507.github.io/posts/2018-12-11-detail-elm-url.html" />
     <id>https://matsubara0507.github.io/posts/2018-12-11-detail-elm-url.html</id>
@@ -1299,79 +1591,6 @@ https://github.com/commercialhaskell/stack-templates/blob/master/rio.hsfiles</co
 <a class="sourceLine" id="cb10-20" title="20">  getContextEntry (<span class="dt">GitHubKey</span> x <span class="fu">:.</span> _) <span class="fu">=</span> x</a></code></pre></div>
 <h1 id="おしまい">おしまい</h1>
 <p>ちなみに，手元で試すときには ngrok を使った． 便利．</p>
-  </div>
-</div>
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>Ruby Hack Challenge ＃4 に参加してきた</title>
-    <link href="https://matsubara0507.github.io/posts/2018-07-01-join-ruby-hack-challenge4.html" />
-    <id>https://matsubara0507.github.io/posts/2018-07-01-join-ruby-hack-challenge4.html</id>
-    <published>2018-07-01T00:00:00Z</published>
-    <updated>2018-07-01T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
- <div class="card-content">
-  <header class="post-header">
-    <h1 class="post-title" itemprop="name headline">Ruby Hack Challenge ＃4 に参加してきた</h1>
-    <p class="post-meta">
-      <time datetime="2018-07-01" itemprop="datePublished">
-        Jul 1, 2018
-      </time>
-      
-      
-      <div class="tags">
-          <i class="fa fa-tags"></i> <a href="/tags/Ruby.html">Ruby</a> <a href="/tags/event.html">event</a>
-      </div>
-      
-    </p>
-  </header>
-
-  <div class="post-content" itemprop="articleBody">
-    <p>先週 <a href="https://cookpad.connpass.com/event/88471/">Ruby Hack Cavalage #4</a> に参加してきたので，そのメモ書きです．</p>
-<p>ちなみに，Ruby は自分が最初に触ったスクリプト言語で，現在仕事で使っているメインの言語です． 推し言語(Haskell)とは異なり，動的型付けではありますが，「<a href="http://i.loveruby.net/ja/rhg/book/">Rubyソースコード完全解説</a>」や「<a href="https://tatsu-zine.com/books/ruby-under-a-microscope-ja">Rubyのしくみ</a>」のような処理系内部を紹介してる読み物も多く，かなり好きな方な言語です.</p>
-<h2 id="ruby-hack-challenge">Ruby Hack Challenge</h2>
-<p>Ruby 処理系をハックしようというイベントで，コアコミッタの <a href="https://github.com/mame">mame</a> 氏と <a href="https://github.com/ko1">ko1</a> 氏が講師として企画してくれている． ふたりが在籍しているということで，会場はクックパッドで行っている．</p>
-<p>毎回，前半に講義的なものがあり，後半で実際に手を動かして Ruby にコミットするといった感じらしい． ただし，2日開催だったり，半日だったり時間はまちまち(今回は半日だった)． イベント名的に Ruby のハッカソンみたいだが，Ruby 処理系はC言語で書かれているためC言語を書くことになる(笑)</p>
-<h3 id="カバレッジ特別会">カバレッジ特別会</h3>
-<p>しかし，4回目(となっているが3回目が見当たらないので3回目かも？？)となる今回は，カバレッジ特別会ということで多くの人たちが Ruby を読み書きしていた． なぜかというと，標準ライブラリは Ruby で書かれており，今回は標準ライブラリのテストカバレッジをあげても良かったからだ． というか，C で書かれているコア部分は mame 氏が昔に大分カバレッジをあげてしまったため，そっちをやるのは難しいと言っていた．</p>
-<h2 id="section"></h2>
-<p>C言語の部分で残っているとすれば本質的に難しい部分(副作用とか並行並列とか)か最近追加された部分か(JITとか？)だそうだ．</p>
-<h3 id="資料">資料</h3>
-<p>今までのも含め，資料は(いくつか？)公開されているので誰でも見れる．</p>
-<ul>
-<li><a href="https://github.com/ko1/rubyhackchallenge">ko1/rubyhackchallenge - GitHub</a></li>
-<li><a href="https://www.slideshare.net/mametter/ruby-hack-challenge-4">Ruby Hack Challenge #4 カバレッジ特別回 資料 - SlideShare</a></li>
-</ul>
-<p>また Gitter で連絡を取り合っており，実は誰でも参加できる(たぶん)．</p>
-<ul>
-<li><a href="https://gitter.im/rubyhackchallenge/Lobby">rubyhackchallenge/Lobby - Gitter</a></li>
-</ul>
-<h2 id="section-1"></h2>
-<p>ちなみに，ボクはもともとこのイベントは参加したいなぁと思っていた(言語好きなので)．</p>
-<h2 id="ruby-のテストカバレッジ">Ruby のテストカバレッジ</h2>
-<p>Ruby のテストカバレッジは Web から確認できる．</p>
-<ul>
-<li><a href="https://rubyci.s3.amazonaws.com/debian8-coverage/ruby-trunk/lcov/index.html">LCOV - code coverage report</a></li>
-</ul>
-<p>これを見てカバレッジの低いところにねらい目を付けてテストを追加する(ないしは不要な実装なら削る)． 標準ライブラリのいくつかは個別に GitHub で管理されているので，GitHub で管理されてる場合はそっちに PR を投げれば良いようだ(今回は事情が共有されてたせいかすぐマージされた)．</p>
-<h2 id="section-2"></h2>
-<p>ちなみに，<a href="https://github.com/ruby/ruby/blob/trunk/doc/maintainers.rdoc">ココ</a>を見ると誰がメンテナーで，どこに報告すれば良いかが書いてある．</p>
-<h3 id="環境構築">環境構築</h3>
-<p>は事前にやっとくと，当日はすんなりコミットできた(構築方法はスライドに書いてある)． 事前にって言ってもぼくは行きの電車でやったけど(笑)</p>
-<p>Windows と Mac を持ってるけど，どっちも素でやるのは難しいので，Debian の Docker コンテナの上で構築した． Docker ありがとう！ ビルドがめっちゃ遅いけどね！</p>
-<h2 id="当日やったこと">当日やったこと</h2>
-<p>すっっっごい簡単にカバレッジをあげれそうなのがあったのサクッと直して PR をだした．</p>
-<ul>
-<li><a href="https://github.com/ruby/cmath/pull/2">Add test for coverage by matsubara0507 · Pull Request #2 · ruby/cmath</a></li>
-</ul>
-<p><code>CMath</code> モジュールは <code>Math</code> モジュールをラップして複素数(Complex number)にまで対応させたものだ． そのため，虚数を含む複素数に関するテストしかなく，実数に関するテストが無かったためカバレッジが低かった． 愚直に全部書いたら100%まで行きましたちゃんちゃんってだけです．</p>
-<h2 id="section-3"></h2>
-<p>ちなみに，他にも4,5個ほど PR が出ていた． すごいね！</p>
-<h2 id="もくもく会">もくもく会</h2>
-<p>あと，Ruby Hack Challenge もくもく会というのがあるらしいので行ってみたい(<a href="https://connpass.com/event/93131/">次回はこれ</a>)． MJIT のコードとか読んでみたいよね． それと型検査(はどうなるかまだ分からないらしいけど)．</p>
-<h2 id="おしまい">おしまい</h2>
-<p>そういえば，ko1 氏がお子さんと奥さんを連れてきていた(たぶん)． そういう事に理解のある会社っていいなぁと感じた．</p>
   </div>
 </div>
 </article>
