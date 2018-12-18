@@ -8,8 +8,697 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2018-12-18T00:00:00Z</updated>
+    <updated>2018-12-19T00:00:00Z</updated>
     <entry>
+    <title>Elm 0.19 で作るライフゲーム</title>
+    <link href="https://matsubara0507.github.io/posts/2018-12-19-create-lifegame.html" />
+    <id>https://matsubara0507.github.io/posts/2018-12-19-create-lifegame.html</id>
+    <published>2018-12-19T00:00:00Z</published>
+    <updated>2018-12-19T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Elm 0.19 で作るライフゲーム</h1>
+    <p class="post-meta">
+      <time datetime="2018-12-19" itemprop="datePublished">
+        Dec 19, 2018
+      </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/Elm.html">Elm</a> <a href="/tags/application.html">application</a>
+      </div>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>本記事は <a href="https://qiita.com/advent-calendar/2018/elm2">Elm2(完全版) Advent Calendar 2018</a> の19日目の記事です．</p>
+<h2 id="section"></h2>
+<p>ライフゲームを Elm で作りました。 ウェブアプリケーション(?)としては，鉄板中の鉄板ですね． 完全に一発ネタ+思いつきでやったのですが，Elm の最新バージョンによる違いもあり，いくつか躓いたのでそのメモ書きです(巷の資料の多くは旧バージョン)． まぁそれでも2日ぐらいでできるので Elm は便利ですね．</p>
+<p>完成品は<a href="https://matsubara0507.github.io/lifegame">コレ</a>で，コードは GitHub においてある．</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/lifegame">matsubara0507/lifegame - GitHub</a></li>
+</ul>
+<h2 id="ライフゲーム">ライフゲーム</h2>
+<p>ライフゲームのルールは:</p>
+<ul>
+<li>囲碁や将棋のような NxM マスの盤上（今回は正方形 NxN）</li>
+<li>マスの状態は「生」と「死」がある</li>
+<li>状態の更新の規則は以下の3つ
+<ol type="1">
+<li>生の状態の回りに生の状態のマスが2つか3つならば生のまま</li>
+<li>死の状態の回りに生の状態のマスが3つならば生になる</li>
+<li>それ以外は死の状態になる</li>
+</ol></li>
+</ul>
+<p>ここでいう「回り」というのは，自身のマスの周囲８マスのことを指す．</p>
+<h2 id="作ったもの">作ったもの</h2>
+<p>一般的なライフゲームに加えて，次のようなことを実現した．</p>
+<ol type="1">
+<li>レンジスライダーで盤面の粒度をコントロール</li>
+<li>レンジスライダーで盤面の更新間隔をコントロール</li>
+<li>URLのクエリから生と死の画像を上書き</li>
+<li>スマホでも動作するように Touch イベントをいい感じに</li>
+</ol>
+<h2 id="実装について">実装について</h2>
+<p>次の記事を参考にした:</p>
+<ul>
+<li><a href="https://qiita.com/miyamo_madoka/items/2cad5473010292982303">[Elm]Life Gameで生命を生み出す - Qiita</a></li>
+</ul>
+<p>記憶に新しいのでステップバイステップにまとめる．</p>
+<h3 id="盤面の描写">盤面の描写</h3>
+<p>まずはモデルを考える． 適当にパッケージを探して見たが， Elm 0.19 に対応している良さげなものはなかったので自作することにした:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">type</span> alisa <span class="dt">Board</span> <span class="fu">=</span></a>
+<a class="sourceLine" id="cb1-2" title="2">    { size <span class="fu">:</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb1-3" title="3">    , cells <span class="fu">:</span> <span class="dt">Array</span> <span class="dt">Cell</span></a>
+<a class="sourceLine" id="cb1-4" title="4">    }</a>
+<a class="sourceLine" id="cb1-5" title="5"></a>
+<a class="sourceLine" id="cb1-6" title="6"><span class="kw">type</span> <span class="dt">Cell</span> <span class="fu">=</span> <span class="dt">Alive</span> <span class="fu">|</span> <span class="dt">Dead</span></a></code></pre></div>
+<p>今回は正方形を想定するので <code>size</code> は一辺のマス数にする． つまり初期化関数は次のようになる．</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1">initBoard <span class="fu">:</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Board</span></a>
+<a class="sourceLine" id="cb2-2" title="2">initBoard n <span class="fu">=</span> { size <span class="fu">=</span> n, cells <span class="fu">=</span> Array.repeat (n <span class="fu">*</span> n) <span class="dt">Dead</span> }</a></code></pre></div>
+<p>次に盤面をどうやって描写するかを考えた． テーブルでゴリゴリ書くのもいいかなと思ったが，あんまりエレガントではない気がした． ヒントを得るために GitHub をブラブラしてたら個人ページの左下の組織アカウント一覧に目が行った． HTMLを見てみると，これは直列に繋いだ <code>div</code> を適当なタイミングで折り返しているようだ． このやり方なら <code>cells</code> を <code>size</code> 個ごとに行へとする必要がなく，完全にCSSだけでなんとかなる．</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1">main <span class="fu">=</span> viewBoard (initBoard <span class="dv">30</span>)</a>
+<a class="sourceLine" id="cb3-2" title="2"></a>
+<a class="sourceLine" id="cb3-3" title="3">viewBoard <span class="fu">:</span> <span class="dt">Board</span> <span class="ot">-&gt;</span> <span class="dt">Html</span> msg</a>
+<a class="sourceLine" id="cb3-4" title="4">viewBoard board <span class="fu">=</span></a>
+<a class="sourceLine" id="cb3-5" title="5">    <span class="kw">let</span></a>
+<a class="sourceLine" id="cb3-6" title="6">        attr <span class="fu">=</span></a>
+<a class="sourceLine" id="cb3-7" title="7">            [ style <span class="st">&quot;width&quot;</span> (maxLength <span class="fu">|&gt;</span> vmin)</a>
+<a class="sourceLine" id="cb3-8" title="8">            , style <span class="st">&quot;height&quot;</span> (maxLength <span class="fu">|&gt;</span> vmin)</a>
+<a class="sourceLine" id="cb3-9" title="9">            ]</a>
+<a class="sourceLine" id="cb3-10" title="10">    <span class="kw">in</span></a>
+<a class="sourceLine" id="cb3-11" title="11">    concatMapWith (Html.div attr) (viewCell board) board</a>
+<a class="sourceLine" id="cb3-12" title="12"></a>
+<a class="sourceLine" id="cb3-13" title="13">viewCell <span class="fu">:</span> <span class="dt">Board</span> <span class="ot">-&gt;</span> <span class="dt">Cell</span> <span class="ot">-&gt;</span> <span class="dt">Html</span> msg</a>
+<a class="sourceLine" id="cb3-14" title="14">viewCell board cell <span class="fu">=</span></a>
+<a class="sourceLine" id="cb3-15" title="15">    <span class="kw">let</span></a>
+<a class="sourceLine" id="cb3-16" title="16">        styleAttrs <span class="fu">=</span></a>
+<a class="sourceLine" id="cb3-17" title="17">            [ style <span class="st">&quot;width&quot;</span> (maxLength <span class="fu">/</span> toFloat board<span class="fu">.</span>size <span class="fu">|&gt;</span> vmin)</a>
+<a class="sourceLine" id="cb3-18" title="18">            , style <span class="st">&quot;height&quot;</span> (maxLength <span class="fu">/</span> toFloat board<span class="fu">.</span>size <span class="fu">|&gt;</span> vmin)</a>
+<a class="sourceLine" id="cb3-19" title="19">            , style <span class="st">&quot;margin&quot;</span> <span class="st">&quot;0&quot;</span></a>
+<a class="sourceLine" id="cb3-20" title="20">            , style <span class="st">&quot;box-sizing&quot;</span> <span class="st">&quot;border-box&quot;</span></a>
+<a class="sourceLine" id="cb3-21" title="21">            , style <span class="st">&quot;border&quot;</span> <span class="st">&quot;0.2vmin solid gray&quot;</span></a>
+<a class="sourceLine" id="cb3-22" title="22">            ]</a>
+<a class="sourceLine" id="cb3-23" title="23">    <span class="kw">in</span></a>
+<a class="sourceLine" id="cb3-24" title="24">    Html.img (List.concat [ styleAttrs, [ src <span class="st">&quot;static/image/dead.png&quot;</span> ] ]) []</a>
+<a class="sourceLine" id="cb3-25" title="25"></a>
+<a class="sourceLine" id="cb3-26" title="26">concatMapWith <span class="fu">:</span> (<span class="dt">List</span> a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (<span class="dt">Cell</span> <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> <span class="dt">Board</span> <span class="ot">-&gt;</span> b</a>
+<a class="sourceLine" id="cb3-27" title="27">concatMapWith f g board <span class="fu">=</span></a>
+<a class="sourceLine" id="cb3-28" title="28">    board<span class="fu">.</span>cells</a>
+<a class="sourceLine" id="cb3-29" title="29">        <span class="fu">|&gt;</span> Array.map g</a>
+<a class="sourceLine" id="cb3-30" title="30">        <span class="fu">|&gt;</span> Array.toList</a>
+<a class="sourceLine" id="cb3-31" title="31">        <span class="fu">|&gt;</span> f</a>
+<a class="sourceLine" id="cb3-32" title="32"></a>
+<a class="sourceLine" id="cb3-33" title="33">maxLength <span class="fu">:</span> <span class="dt">Float</span></a>
+<a class="sourceLine" id="cb3-34" title="34">maxLength <span class="fu">=</span> <span class="fl">90.0</span></a>
+<a class="sourceLine" id="cb3-35" title="35"></a>
+<a class="sourceLine" id="cb3-36" title="36">vmin <span class="fu">:</span> <span class="dt">Float</span> <span class="ot">-&gt;</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb3-37" title="37">vmin n <span class="fu">=</span> <span class="dt">String</span><span class="fu">.</span>append (<span class="dt">String</span><span class="fu">.</span>fromFloat n) <span class="st">&quot;vmin&quot;</span></a></code></pre></div>
+<p><a href="https://ellie-app.com/4bx9X6b6S7Ma1">結果こんな感じ</a>．</p>
+<p>プログラムの中で割り算を記述するのは気がひけるが，まぁ上手く描写されているのでよしとする．</p>
+<h3 id="粒度スライダーの導入">粒度スライダーの導入</h3>
+<p>スライダーには次のパッケージを利用した:</p>
+<ul>
+<li><a href="https://package.elm-lang.org/packages/carwow/elm-slider/6.0.1/">carwow/elm-slider - Elm Packages</a></li>
+</ul>
+<p>今回は <a href="https://package.elm-lang.org/packages/carwow/elm-slider/6.0.1/SingleSlider">SingleSlider</a> を使いたい． SingleSlider の中に <code>Model</code> や <code>Msg</code> などが定義されているので，それらを適切に使えば良い．</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1">main <span class="fu">=</span> Browser.element</a>
+<a class="sourceLine" id="cb4-2" title="2">  { <span class="fu">init</span> <span class="fu">=</span> <span class="fu">init</span></a>
+<a class="sourceLine" id="cb4-3" title="3">  , view <span class="fu">=</span> view</a>
+<a class="sourceLine" id="cb4-4" title="4">  , update <span class="fu">=</span> update</a>
+<a class="sourceLine" id="cb4-5" title="5">  , subscriptions <span class="fu">=</span> always Sub.none</a>
+<a class="sourceLine" id="cb4-6" title="6">  }</a>
+<a class="sourceLine" id="cb4-7" title="7"></a>
+<a class="sourceLine" id="cb4-8" title="8"><span class="kw">type</span> alias <span class="dt">Model</span> <span class="fu">=</span></a>
+<a class="sourceLine" id="cb4-9" title="9">  { board <span class="fu">:</span> <span class="dt">Board</span></a>
+<a class="sourceLine" id="cb4-10" title="10">  , sizeSlider <span class="fu">:</span> <span class="dt">SingleSlider.Model</span></a>
+<a class="sourceLine" id="cb4-11" title="11">  }</a>
+<a class="sourceLine" id="cb4-12" title="12"></a>
+<a class="sourceLine" id="cb4-13" title="13"><span class="fu">init</span> <span class="fu">:</span> () <span class="ot">-&gt;</span> (<span class="dt">Model</span>, <span class="dt">Cmd</span> <span class="dt">Msg</span>)</a>
+<a class="sourceLine" id="cb4-14" title="14"><span class="fu">init</span> <span class="fu">=</span> always (initModel, Cmd.none)</a>
+<a class="sourceLine" id="cb4-15" title="15"></a>
+<a class="sourceLine" id="cb4-16" title="16">initModel <span class="fu">:</span> <span class="dt">Model</span></a>
+<a class="sourceLine" id="cb4-17" title="17">initModel <span class="fu">=</span></a>
+<a class="sourceLine" id="cb4-18" title="18">    <span class="kw">let</span></a>
+<a class="sourceLine" id="cb4-19" title="19">        size <span class="fu">=</span></a>
+<a class="sourceLine" id="cb4-20" title="20">            <span class="dv">30</span></a>
+<a class="sourceLine" id="cb4-21" title="21"></a>
+<a class="sourceLine" id="cb4-22" title="22">        defaultSlider <span class="fu">=</span></a>
+<a class="sourceLine" id="cb4-23" title="23">            SingleSlider.defaultModel</a>
+<a class="sourceLine" id="cb4-24" title="24"></a>
+<a class="sourceLine" id="cb4-25" title="25">        sizeSlider <span class="fu">=</span></a>
+<a class="sourceLine" id="cb4-26" title="26">            { defaultSlider</a>
+<a class="sourceLine" id="cb4-27" title="27">                <span class="fu">|</span> <span class="fu">min</span> <span class="fu">=</span> <span class="fl">5.0</span></a>
+<a class="sourceLine" id="cb4-28" title="28">                , <span class="fu">max</span> <span class="fu">=</span> <span class="fl">50.0</span></a>
+<a class="sourceLine" id="cb4-29" title="29">                , step <span class="fu">=</span> <span class="fl">1.0</span></a>
+<a class="sourceLine" id="cb4-30" title="30">                , value <span class="fu">=</span> size</a>
+<a class="sourceLine" id="cb4-31" title="31">                , minFormatter <span class="fu">=</span> always <span class="st">&quot;&quot;</span></a>
+<a class="sourceLine" id="cb4-32" title="32">                , maxFormatter <span class="fu">=</span> always <span class="st">&quot;&quot;</span></a>
+<a class="sourceLine" id="cb4-33" title="33">                , currentValueFormatter <span class="fu">=</span></a>
+<a class="sourceLine" id="cb4-34" title="34">                    \n _ <span class="ot">-&gt;</span> <span class="dt">String</span><span class="fu">.concat</span> [ <span class="st">&quot;1列のマス数: &quot;</span>, <span class="dt">String</span><span class="fu">.</span>fromFloat n ]</a>
+<a class="sourceLine" id="cb4-35" title="35">            }</a>
+<a class="sourceLine" id="cb4-36" title="36">    <span class="kw">in</span></a>
+<a class="sourceLine" id="cb4-37" title="37">    { board <span class="fu">=</span> initBoard size, sizeSlider <span class="fu">=</span> sizeSlider }</a>
+<a class="sourceLine" id="cb4-38" title="38"></a>
+<a class="sourceLine" id="cb4-39" title="39"><span class="kw">type</span> <span class="dt">Msg</span></a>
+<a class="sourceLine" id="cb4-40" title="40">    <span class="fu">=</span> <span class="dt">SizeSliderMsg</span> <span class="dt">SingleSlider.Msg</span></a>
+<a class="sourceLine" id="cb4-41" title="41"></a>
+<a class="sourceLine" id="cb4-42" title="42">update <span class="fu">:</span> <span class="dt">Msg</span> <span class="ot">-&gt;</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> (<span class="dt">Model</span>, <span class="dt">Cmd</span> <span class="dt">Msg</span>)</a>
+<a class="sourceLine" id="cb4-43" title="43">update msg model <span class="fu">=</span></a>
+<a class="sourceLine" id="cb4-44" title="44">    <span class="kw">case</span> msg <span class="kw">of</span></a>
+<a class="sourceLine" id="cb4-45" title="45">        <span class="dt">SizeSliderMsg</span> subMsg <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb4-46" title="46">            <span class="kw">let</span></a>
+<a class="sourceLine" id="cb4-47" title="47">                ( updatedSlider, cmd, _ ) <span class="fu">=</span></a>
+<a class="sourceLine" id="cb4-48" title="48">                    SingleSlider.update subMsg model<span class="fu">.</span>sizeSlider</a>
+<a class="sourceLine" id="cb4-49" title="49"></a>
+<a class="sourceLine" id="cb4-50" title="50">                updatedBoard <span class="fu">=</span></a>
+<a class="sourceLine" id="cb4-51" title="51">                    initBoard (<span class="fu">truncate</span> updatedSlider<span class="fu">.</span>value)</a>
+<a class="sourceLine" id="cb4-52" title="52">            <span class="kw">in</span></a>
+<a class="sourceLine" id="cb4-53" title="53">            ( { model <span class="fu">|</span> board <span class="fu">=</span> updatedBoard, sizeSlider <span class="fu">=</span> updatedSlider }</a>
+<a class="sourceLine" id="cb4-54" title="54">            , Cmd.map <span class="dt">SizeSliderMsg</span> cmd</a>
+<a class="sourceLine" id="cb4-55" title="55">            )</a>
+<a class="sourceLine" id="cb4-56" title="56"></a>
+<a class="sourceLine" id="cb4-57" title="57">view <span class="fu">:</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> <span class="dt">Html</span> <span class="dt">Msg</span></a>
+<a class="sourceLine" id="cb4-58" title="58">view model <span class="fu">=</span></a>
+<a class="sourceLine" id="cb4-59" title="59">    <span class="kw">let</span></a>
+<a class="sourceLine" id="cb4-60" title="60">        sliderAttrs <span class="fu">=</span></a>
+<a class="sourceLine" id="cb4-61" title="61">            [ style <span class="st">&quot;margin-left&quot;</span> <span class="st">&quot;10px&quot;</span></a>
+<a class="sourceLine" id="cb4-62" title="62">            , style <span class="st">&quot;margin-right&quot;</span> <span class="st">&quot;10px&quot;</span></a>
+<a class="sourceLine" id="cb4-63" title="63">            ]</a>
+<a class="sourceLine" id="cb4-64" title="64">    <span class="kw">in</span></a>
+<a class="sourceLine" id="cb4-65" title="65">      <span class="fu">div</span> []</a>
+<a class="sourceLine" id="cb4-66" title="66">        [ <span class="fu">div</span></a>
+<a class="sourceLine" id="cb4-67" title="67">            [ style <span class="st">&quot;text-align&quot;</span> <span class="st">&quot;center&quot;</span></a>
+<a class="sourceLine" id="cb4-68" title="68">            , style <span class="st">&quot;display&quot;</span> <span class="st">&quot;flex&quot;</span></a>
+<a class="sourceLine" id="cb4-69" title="69">            , style <span class="st">&quot;justify-content&quot;</span> <span class="st">&quot;center&quot;</span></a>
+<a class="sourceLine" id="cb4-70" title="70">            ]</a>
+<a class="sourceLine" id="cb4-71" title="71">            [ <span class="fu">div</span> sliderAttrs</a>
+<a class="sourceLine" id="cb4-72" title="72">                [ Html.map <span class="dt">SizeSliderMsg</span> (SingleSlider.view model<span class="fu">.</span>sizeSlider) ]</a>
+<a class="sourceLine" id="cb4-73" title="73">            ]</a>
+<a class="sourceLine" id="cb4-74" title="74">        , viewBoard model<span class="fu">.</span>board</a>
+<a class="sourceLine" id="cb4-75" title="75">        ]</a></code></pre></div>
+<p><a href="https://ellie-app.com/4bXck9C58qFa1">結果こんな感じ</a>．</p>
+<p><code>Model</code> の初期化関数，<code>update</code> と <code>view</code> メソッドがそれぞれあって，それを呼び出して <code>map</code> するだけ． こういう風に細かいパーツを呼び出すだけでできるデザインいいですよね．</p>
+<h3 id="状態と入力">状態と入力</h3>
+<p>現状はまだ全セルが死んでいる状態なので，何らかの入力を受け取って好きなセルを生きてる状態にできるようにする必要がある． まずはPCだけ考えるとして，できればセルを一個一個クリックして更新する形にはしたくない(めんどくさいから)． 生状態にできるかどうかのフラグと，オンの時だけマウスオーバーで生状態にするようにしたい． なので，まずはフラグを <code>Model</code> に追加した:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">type</span> alias <span class="dt">Board</span> <span class="fu">=</span></a>
+<a class="sourceLine" id="cb5-2" title="2">    { size <span class="fu">:</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb5-3" title="3">    , cells <span class="fu">:</span> <span class="dt">Array</span> <span class="dt">Cell</span></a>
+<a class="sourceLine" id="cb5-4" title="4">    , planting <span class="fu">:</span> <span class="dt">Bool</span> <span class="co">-- 状態の更新が可能か</span></a>
+<a class="sourceLine" id="cb5-5" title="5">    }</a>
+<a class="sourceLine" id="cb5-6" title="6"></a>
+<a class="sourceLine" id="cb5-7" title="7">initBoard <span class="fu">:</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Board</span></a>
+<a class="sourceLine" id="cb5-8" title="8">initBoard n <span class="fu">=</span></a>
+<a class="sourceLine" id="cb5-9" title="9">    { size <span class="fu">=</span> n</a>
+<a class="sourceLine" id="cb5-10" title="10">    , cells <span class="fu">=</span> Array.repeat (n <span class="fu">*</span> n) <span class="dt">Dead</span></a>
+<a class="sourceLine" id="cb5-11" title="11">    , planting <span class="fu">=</span> <span class="dt">False</span></a>
+<a class="sourceLine" id="cb5-12" title="12">    }</a></code></pre></div>
+<p><code>planting</code> が真のときだけマウスオーバーでセルを生状態にできる(ようにする)． したがって「<code>planting</code> のオンオフ」と「セルを生状態にする」の二つの <code>Msg</code> が必要だ:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">type</span> <span class="dt">BoardMsg</span></a>
+<a class="sourceLine" id="cb6-2" title="2">    <span class="fu">=</span> <span class="dt">Born</span> <span class="dt">Int</span> <span class="co">-- インデックスのセルを生状態にする</span></a>
+<a class="sourceLine" id="cb6-3" title="3">    <span class="fu">|</span> <span class="dt">Planting</span> <span class="co">-- 生状態への変更を可能にする</span></a>
+<a class="sourceLine" id="cb6-4" title="4"></a>
+<a class="sourceLine" id="cb6-5" title="5">updateBoard <span class="fu">:</span> <span class="dt">BoardMsg</span> <span class="ot">-&gt;</span> <span class="dt">Board</span> <span class="ot">-&gt;</span> ( <span class="dt">Board</span>, <span class="dt">Cmd</span> <span class="dt">BoardMsg</span> )</a>
+<a class="sourceLine" id="cb6-6" title="6">updateBoard msg board <span class="fu">=</span></a>
+<a class="sourceLine" id="cb6-7" title="7">    <span class="kw">case</span> msg <span class="kw">of</span></a>
+<a class="sourceLine" id="cb6-8" title="8">        <span class="dt">Born</span> idx <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb6-9" title="9">            ( born idx board, Cmd.none )</a>
+<a class="sourceLine" id="cb6-10" title="10"></a>
+<a class="sourceLine" id="cb6-11" title="11">        <span class="dt">Planting</span> <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb6-12" title="12">            ( { board <span class="fu">|</span> planting <span class="fu">=</span> xor board<span class="fu">.</span>planting <span class="dt">True</span> }, Cmd.none )</a>
+<a class="sourceLine" id="cb6-13" title="13"></a>
+<a class="sourceLine" id="cb6-14" title="14">born <span class="fu">:</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Board</span> <span class="ot">-&gt;</span> <span class="dt">Board</span></a>
+<a class="sourceLine" id="cb6-15" title="15">born idx board <span class="fu">=</span></a>
+<a class="sourceLine" id="cb6-16" title="16">    { board <span class="fu">|</span> cells <span class="fu">=</span> Array.set idx <span class="dt">Alive</span> board<span class="fu">.</span>cells }</a></code></pre></div>
+<p>そして，盤上をクリックして <code>planting</code> のオンオフをし，マウスオーバーで生状態にするように <code>view</code> へ <code>Msg</code> を追加する:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">import</span> <span class="dt">Html.Events.Extra.Pointer</span> <span class="kw">as</span> <span class="dt">Pointer</span></a>
+<a class="sourceLine" id="cb7-2" title="2"></a>
+<a class="sourceLine" id="cb7-3" title="3">viewBoard <span class="fu">:</span> <span class="dt">Board</span> <span class="ot">-&gt;</span> <span class="dt">Html</span> <span class="dt">BoardMsg</span></a>
+<a class="sourceLine" id="cb7-4" title="4">viewBoard board <span class="fu">=</span></a>
+<a class="sourceLine" id="cb7-5" title="5">    <span class="kw">let</span></a>
+<a class="sourceLine" id="cb7-6" title="6">        attr <span class="fu">=</span></a>
+<a class="sourceLine" id="cb7-7" title="7">            [ style <span class="st">&quot;width&quot;</span> (maxLength <span class="fu">|&gt;</span> vmin)</a>
+<a class="sourceLine" id="cb7-8" title="8">            , style <span class="st">&quot;height&quot;</span> (maxLength <span class="fu">|&gt;</span> vmin)</a>
+<a class="sourceLine" id="cb7-9" title="9">            ]</a>
+<a class="sourceLine" id="cb7-10" title="10">    <span class="kw">in</span></a>
+<a class="sourceLine" id="cb7-11" title="11">    concatIndexedMapWith (Html.div attr) (viewCell board) board</a>
+<a class="sourceLine" id="cb7-12" title="12"></a>
+<a class="sourceLine" id="cb7-13" title="13">viewCell <span class="fu">:</span> <span class="dt">Board</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Cell</span> <span class="ot">-&gt;</span> <span class="dt">Html</span> <span class="dt">Msg</span></a>
+<a class="sourceLine" id="cb7-14" title="14">viewCell board idx cell <span class="fu">=</span></a>
+<a class="sourceLine" id="cb7-15" title="15">    <span class="kw">let</span></a>
+<a class="sourceLine" id="cb7-16" title="16">        styleAttrs <span class="fu">=</span></a>
+<a class="sourceLine" id="cb7-17" title="17">            [ style <span class="st">&quot;width&quot;</span> (maxLength <span class="fu">/</span> toFloat board<span class="fu">.</span>size <span class="fu">|&gt;</span> vmin)</a>
+<a class="sourceLine" id="cb7-18" title="18">            , style <span class="st">&quot;height&quot;</span> (maxLength <span class="fu">/</span> toFloat board<span class="fu">.</span>size <span class="fu">|&gt;</span> vmin)</a>
+<a class="sourceLine" id="cb7-19" title="19">            , style <span class="st">&quot;margin&quot;</span> <span class="st">&quot;0&quot;</span></a>
+<a class="sourceLine" id="cb7-20" title="20">            , style <span class="st">&quot;box-sizing&quot;</span> <span class="st">&quot;border-box&quot;</span></a>
+<a class="sourceLine" id="cb7-21" title="21">            , style <span class="st">&quot;border&quot;</span> <span class="st">&quot;0.2vmin solid gray&quot;</span></a>
+<a class="sourceLine" id="cb7-22" title="22">            ]</a>
+<a class="sourceLine" id="cb7-23" title="23"></a>
+<a class="sourceLine" id="cb7-24" title="24">        bornAttr <span class="fu">=</span></a>
+<a class="sourceLine" id="cb7-25" title="25">            <span class="kw">if</span> board<span class="fu">.</span>planting <span class="kw">then</span></a>
+<a class="sourceLine" id="cb7-26" title="26">                [ Pointer.onDown (always <span class="dt">Planting</span>)</a>
+<a class="sourceLine" id="cb7-27" title="27">                , Pointer.onOver (always (<span class="dt">Born</span> idx))</a>
+<a class="sourceLine" id="cb7-28" title="28">                ]</a>
+<a class="sourceLine" id="cb7-29" title="29"></a>
+<a class="sourceLine" id="cb7-30" title="30">            <span class="kw">else</span></a>
+<a class="sourceLine" id="cb7-31" title="31">                [ Pointer.onDown (always <span class="dt">Planting</span>) ]</a>
+<a class="sourceLine" id="cb7-32" title="32"></a>
+<a class="sourceLine" id="cb7-33" title="33">        imageLink <span class="fu">=</span></a>
+<a class="sourceLine" id="cb7-34" title="34">            <span class="kw">case</span> cell <span class="kw">of</span></a>
+<a class="sourceLine" id="cb7-35" title="35">                <span class="dt">Dead</span> <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb7-36" title="36">                    [ src <span class="st">&quot;static/image/dead.png&quot;</span> ]</a>
+<a class="sourceLine" id="cb7-37" title="37"></a>
+<a class="sourceLine" id="cb7-38" title="38">                <span class="dt">Alive</span> <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb7-39" title="39">                    [ src <span class="st">&quot;static/image/alive.png&quot;</span> ]</a>
+<a class="sourceLine" id="cb7-40" title="40">    <span class="kw">in</span></a>
+<a class="sourceLine" id="cb7-41" title="41">    Html.img (List.concat [ styleAttrs, bornAttr, imageLink ]) []</a>
+<a class="sourceLine" id="cb7-42" title="42"></a>
+<a class="sourceLine" id="cb7-43" title="43">concatIndexedMapWith <span class="fu">:</span> (<span class="dt">List</span> a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Cell</span> <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> <span class="dt">Board</span> <span class="ot">-&gt;</span> b</a>
+<a class="sourceLine" id="cb7-44" title="44">concatIndexedMapWith f g board <span class="fu">=</span></a>
+<a class="sourceLine" id="cb7-45" title="45">    board<span class="fu">.</span>cells</a>
+<a class="sourceLine" id="cb7-46" title="46">        <span class="fu">|&gt;</span> Array.indexedMap g</a>
+<a class="sourceLine" id="cb7-47" title="47">        <span class="fu">|&gt;</span> Array.toList</a>
+<a class="sourceLine" id="cb7-48" title="48">        <span class="fu">|&gt;</span> f</a></code></pre></div>
+<p>マウスイベントには，おいおいスマホ対応もできるように <a href="https://package.elm-lang.org/packages/mpizenberg/elm-pointer-events/latest"><code>mpizenberg/elm-pointer-events</code></a> パッケージを利用した． あとは <code>main</code> 側を書き換えれば出来上がり:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">type</span> <span class="dt">Msg</span></a>
+<a class="sourceLine" id="cb8-2" title="2">    <span class="fu">=</span> <span class="dt">SizeSliderMsg</span> <span class="dt">SingleSlider.Msg</span></a>
+<a class="sourceLine" id="cb8-3" title="3">    <span class="fu">|</span> <span class="dt">BoardMsg</span> <span class="dt">BoardMsg</span></a>
+<a class="sourceLine" id="cb8-4" title="4"></a>
+<a class="sourceLine" id="cb8-5" title="5">update <span class="fu">:</span> <span class="dt">Msg</span> <span class="ot">-&gt;</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> (<span class="dt">Model</span>, <span class="dt">Cmd</span> <span class="dt">Msg</span>)</a>
+<a class="sourceLine" id="cb8-6" title="6">update msg model <span class="fu">=</span></a>
+<a class="sourceLine" id="cb8-7" title="7">    <span class="kw">case</span> msg <span class="kw">of</span></a>
+<a class="sourceLine" id="cb8-8" title="8">        <span class="dt">SizeSliderMsg</span> subMsg <span class="ot">-&gt;</span> <span class="fu">...</span></a>
+<a class="sourceLine" id="cb8-9" title="9"></a>
+<a class="sourceLine" id="cb8-10" title="10">        <span class="dt">BoardMsg</span> subMsg <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb8-11" title="11">            <span class="kw">let</span></a>
+<a class="sourceLine" id="cb8-12" title="12">                ( updatedBoard, cmd ) <span class="fu">=</span></a>
+<a class="sourceLine" id="cb8-13" title="13">                    updateBoard subMsg model<span class="fu">.</span>board</a>
+<a class="sourceLine" id="cb8-14" title="14">            <span class="kw">in</span></a>
+<a class="sourceLine" id="cb8-15" title="15">            ( { model <span class="fu">|</span> board <span class="fu">=</span> updatedBoard }, Cmd.map <span class="dt">BoardMsg</span> cmd )</a>
+<a class="sourceLine" id="cb8-16" title="16"></a>
+<a class="sourceLine" id="cb8-17" title="17">view <span class="fu">:</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> <span class="dt">Html</span> <span class="dt">Msg</span></a>
+<a class="sourceLine" id="cb8-18" title="18">view model <span class="fu">=</span></a>
+<a class="sourceLine" id="cb8-19" title="19">    <span class="kw">let</span></a>
+<a class="sourceLine" id="cb8-20" title="20">        sliderAttrs <span class="fu">=</span></a>
+<a class="sourceLine" id="cb8-21" title="21">            [ style <span class="st">&quot;margin-left&quot;</span> <span class="st">&quot;10px&quot;</span></a>
+<a class="sourceLine" id="cb8-22" title="22">            , style <span class="st">&quot;margin-right&quot;</span> <span class="st">&quot;10px&quot;</span></a>
+<a class="sourceLine" id="cb8-23" title="23">            ]</a>
+<a class="sourceLine" id="cb8-24" title="24">    <span class="kw">in</span></a>
+<a class="sourceLine" id="cb8-25" title="25">      <span class="fu">div</span> []</a>
+<a class="sourceLine" id="cb8-26" title="26">        [ <span class="fu">div</span></a>
+<a class="sourceLine" id="cb8-27" title="27">            [ style <span class="st">&quot;text-align&quot;</span> <span class="st">&quot;center&quot;</span></a>
+<a class="sourceLine" id="cb8-28" title="28">            , style <span class="st">&quot;display&quot;</span> <span class="st">&quot;flex&quot;</span></a>
+<a class="sourceLine" id="cb8-29" title="29">            , style <span class="st">&quot;justify-content&quot;</span> <span class="st">&quot;center&quot;</span></a>
+<a class="sourceLine" id="cb8-30" title="30">            ]</a>
+<a class="sourceLine" id="cb8-31" title="31">            [ <span class="fu">div</span> sliderAttrs</a>
+<a class="sourceLine" id="cb8-32" title="32">                [ Html.map <span class="dt">SizeSliderMsg</span> (SingleSlider.view model<span class="fu">.</span>sizeSlider) ]</a>
+<a class="sourceLine" id="cb8-33" title="33">            ]</a>
+<a class="sourceLine" id="cb8-34" title="34">        , Html.map <span class="dt">BoardMsg</span> (viewBoard model<span class="fu">.</span>board)</a>
+<a class="sourceLine" id="cb8-35" title="35">        ]</a></code></pre></div>
+<p><a href="https://ellie-app.com/4c3qbgJmvZ8a1">結果こんな感じ</a>．</p>
+<h3 id="更新を追加">更新を追加</h3>
+<p>いよいよライフゲーム化． まず，上述した状態変化の定義を関数(<code>nextCell</code>)にする:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1">nextBoard <span class="fu">:</span> <span class="dt">Board</span> <span class="ot">-&gt;</span> <span class="dt">Board</span></a>
+<a class="sourceLine" id="cb9-2" title="2">nextBoard board <span class="fu">=</span></a>
+<a class="sourceLine" id="cb9-3" title="3">    { board <span class="fu">|</span> cells <span class="fu">=</span> Array.indexedMap (nextCell board) board<span class="fu">.</span>cells }</a>
+<a class="sourceLine" id="cb9-4" title="4"></a>
+<a class="sourceLine" id="cb9-5" title="5">nextCell <span class="fu">:</span> <span class="dt">Board</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Cell</span> <span class="ot">-&gt;</span> <span class="dt">Cell</span></a>
+<a class="sourceLine" id="cb9-6" title="6">nextCell board idx cell <span class="fu">=</span></a>
+<a class="sourceLine" id="cb9-7" title="7">    <span class="kw">case</span> ( countAroundAliveCell board idx, cell ) <span class="kw">of</span></a>
+<a class="sourceLine" id="cb9-8" title="8">        ( <span class="dv">2</span>, <span class="dt">Alive</span> ) <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb9-9" title="9">            <span class="dt">Alive</span></a>
+<a class="sourceLine" id="cb9-10" title="10"></a>
+<a class="sourceLine" id="cb9-11" title="11">        ( <span class="dv">3</span>, _ ) <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb9-12" title="12">            <span class="dt">Alive</span></a>
+<a class="sourceLine" id="cb9-13" title="13"></a>
+<a class="sourceLine" id="cb9-14" title="14">        _ <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb9-15" title="15">            <span class="dt">Dead</span></a>
+<a class="sourceLine" id="cb9-16" title="16"></a>
+<a class="sourceLine" id="cb9-17" title="17">countAroundAliveCell <span class="fu">:</span> <span class="dt">Board</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb9-18" title="18">countAroundAliveCell board idx <span class="fu">=</span> Debug.todo <span class="st">&quot;todo&quot;</span></a></code></pre></div>
+<p><code>countAroundAliveCell</code> は「回り」の生状態のセル数を返す想定． ここで少し大変． <code>cells</code> を2次元配列ではなく，1次元配列にしてCSSで折りたたむようにしてしまったので，壁際にあるかどうかの判定をインデックスと盤面のサイズから導く必要があった:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1">countAroundAliveCell <span class="fu">:</span> <span class="dt">Board</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb10-2" title="2">countAroundAliveCell board idx <span class="fu">=</span></a>
+<a class="sourceLine" id="cb10-3" title="3">    aroundCell board idx <span class="fu">|&gt;</span> List.filter ((<span class="fu">==</span>) <span class="dt">Alive</span>) <span class="fu">|&gt;</span> List.length</a>
+<a class="sourceLine" id="cb10-4" title="4"></a>
+<a class="sourceLine" id="cb10-5" title="5">aroundCell <span class="fu">:</span> <span class="dt">Board</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">List</span> <span class="dt">Cell</span></a>
+<a class="sourceLine" id="cb10-6" title="6">aroundCell board idx <span class="fu">=</span></a>
+<a class="sourceLine" id="cb10-7" title="7">    [ <span class="kw">if</span> modBy board<span class="fu">.</span>size idx <span class="fu">==</span> <span class="dv">0</span> <span class="kw">then</span></a>
+<a class="sourceLine" id="cb10-8" title="8">        [] <span class="co">-- 左端にいる場合</span></a>
+<a class="sourceLine" id="cb10-9" title="9"></a>
+<a class="sourceLine" id="cb10-10" title="10">      <span class="kw">else</span></a>
+<a class="sourceLine" id="cb10-11" title="11">        [ idx <span class="fu">-</span> board<span class="fu">.</span>size <span class="fu">-</span> <span class="dv">1</span>, idx <span class="fu">-</span> <span class="dv">1</span>, idx <span class="fu">+</span> board<span class="fu">.</span>size <span class="fu">-</span> <span class="dv">1</span> ]</a>
+<a class="sourceLine" id="cb10-12" title="12">    , [ idx <span class="fu">-</span> board<span class="fu">.</span>size, idx <span class="fu">+</span> board<span class="fu">.</span>size ] <span class="co">-- 上下は `Array.get` で `Nothing` になる</span></a>
+<a class="sourceLine" id="cb10-13" title="13">    , <span class="kw">if</span> modBy board<span class="fu">.</span>size idx <span class="fu">==</span> board<span class="fu">.</span>size <span class="fu">-</span> <span class="dv">1</span> <span class="kw">then</span>        </a>
+<a class="sourceLine" id="cb10-14" title="14">        [] <span class="co">-- 右端にいる場合</span></a>
+<a class="sourceLine" id="cb10-15" title="15"></a>
+<a class="sourceLine" id="cb10-16" title="16">      <span class="kw">else</span></a>
+<a class="sourceLine" id="cb10-17" title="17">        [ idx <span class="fu">-</span> board<span class="fu">.</span>size <span class="fu">+</span> <span class="dv">1</span>, idx <span class="fu">+</span> <span class="dv">1</span>, idx <span class="fu">+</span> board<span class="fu">.</span>size <span class="fu">+</span> <span class="dv">1</span> ]</a>
+<a class="sourceLine" id="cb10-18" title="18">    ]</a>
+<a class="sourceLine" id="cb10-19" title="19">        <span class="fu">|&gt;</span> List.concat</a>
+<a class="sourceLine" id="cb10-20" title="20">        <span class="fu">|&gt;</span> List.filterMap (\n <span class="ot">-&gt;</span> Array.get n board<span class="fu">.</span>cells)</a></code></pre></div>
+<p>これで更新部分はできた． 次に <code>nextBoard</code> 関数を呼び出すタイミングを <code>subscriptions</code> と <code>Msg</code> で定義する:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1">main <span class="fu">=</span> Browser.element</a>
+<a class="sourceLine" id="cb11-2" title="2">  { <span class="fu">init</span> <span class="fu">=</span> <span class="fu">init</span></a>
+<a class="sourceLine" id="cb11-3" title="3">  , view <span class="fu">=</span> view</a>
+<a class="sourceLine" id="cb11-4" title="4">  , update <span class="fu">=</span> update</a>
+<a class="sourceLine" id="cb11-5" title="5">  , subscriptions <span class="fu">=</span> subscriptions</a>
+<a class="sourceLine" id="cb11-6" title="6">  }</a>
+<a class="sourceLine" id="cb11-7" title="7"></a>
+<a class="sourceLine" id="cb11-8" title="8"><span class="kw">type</span> <span class="dt">Msg</span></a>
+<a class="sourceLine" id="cb11-9" title="9">    <span class="fu">=</span> <span class="dt">SizeSliderMsg</span> <span class="dt">SingleSlider.Msg</span></a>
+<a class="sourceLine" id="cb11-10" title="10">    <span class="fu">|</span> <span class="dt">BoardMsg</span> <span class="dt">BoardMsg</span></a>
+<a class="sourceLine" id="cb11-11" title="11">    <span class="fu">|</span> <span class="dt">NextTick</span></a>
+<a class="sourceLine" id="cb11-12" title="12"></a>
+<a class="sourceLine" id="cb11-13" title="13">update <span class="fu">:</span> <span class="dt">Msg</span> <span class="ot">-&gt;</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> (<span class="dt">Model</span>, <span class="dt">Cmd</span> <span class="dt">Msg</span>)</a>
+<a class="sourceLine" id="cb11-14" title="14">update msg model <span class="fu">=</span></a>
+<a class="sourceLine" id="cb11-15" title="15">    <span class="kw">case</span> msg <span class="kw">of</span></a>
+<a class="sourceLine" id="cb11-16" title="16">        <span class="dt">SizeSliderMsg</span> subMsg <span class="ot">-&gt;</span> <span class="fu">...</span></a>
+<a class="sourceLine" id="cb11-17" title="17"></a>
+<a class="sourceLine" id="cb11-18" title="18">        <span class="dt">BoardMsg</span> subMsg <span class="ot">-&gt;</span> <span class="fu">...</span></a>
+<a class="sourceLine" id="cb11-19" title="19"></a>
+<a class="sourceLine" id="cb11-20" title="20">        <span class="dt">NextTick</span> <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb11-21" title="21">            ( { model <span class="fu">|</span> board <span class="fu">=</span> nextBoard model<span class="fu">.</span>board }, Cmd.none )</a>
+<a class="sourceLine" id="cb11-22" title="22"></a>
+<a class="sourceLine" id="cb11-23" title="23">subscriptions <span class="fu">:</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> <span class="dt">Sub</span> <span class="dt">Msg</span></a>
+<a class="sourceLine" id="cb11-24" title="24">subscriptions model <span class="fu">=</span></a>
+<a class="sourceLine" id="cb11-25" title="25">    <span class="kw">if</span> model<span class="fu">.</span>board<span class="fu">.</span>planting <span class="kw">then</span></a>
+<a class="sourceLine" id="cb11-26" title="26">        Sub.none</a>
+<a class="sourceLine" id="cb11-27" title="27"></a>
+<a class="sourceLine" id="cb11-28" title="28">    <span class="kw">else</span></a>
+<a class="sourceLine" id="cb11-29" title="29">        Time.every <span class="dv">100</span> (always <span class="dt">NextTick</span>)</a></code></pre></div>
+<p><a href="https://ellie-app.com/4c7ncvvgQVqa1">結果こんな感じ</a>．</p>
+<h3 id="時間スライダーの導入">時間スライダーの導入</h3>
+<p>ついでに更新間隔の時間もスライダーで設定できるようにした． やり方は簡単で，<code>Model</code> にもう一つ <code>SingleSlider</code> を生やせばいい:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="kw">type</span> alias <span class="dt">Model</span> <span class="fu">=</span></a>
+<a class="sourceLine" id="cb12-2" title="2">  { board <span class="fu">:</span> <span class="dt">Board</span></a>
+<a class="sourceLine" id="cb12-3" title="3">  , sizeSlider <span class="fu">:</span> <span class="dt">SingleSlider.Model</span></a>
+<a class="sourceLine" id="cb12-4" title="4">  , tickSlider <span class="fu">:</span> <span class="dt">SingleSlider.Model</span></a>
+<a class="sourceLine" id="cb12-5" title="5">  }</a>
+<a class="sourceLine" id="cb12-6" title="6"></a>
+<a class="sourceLine" id="cb12-7" title="7">initModel <span class="fu">:</span> <span class="dt">Model</span></a>
+<a class="sourceLine" id="cb12-8" title="8">initModel <span class="fu">=</span></a>
+<a class="sourceLine" id="cb12-9" title="9">    <span class="kw">let</span></a>
+<a class="sourceLine" id="cb12-10" title="10">        <span class="fu">...</span></a>
+<a class="sourceLine" id="cb12-11" title="11"></a>
+<a class="sourceLine" id="cb12-12" title="12">        tickSlider <span class="fu">=</span></a>
+<a class="sourceLine" id="cb12-13" title="13">            { defaultSlider</a>
+<a class="sourceLine" id="cb12-14" title="14">                <span class="fu">|</span> <span class="fu">min</span> <span class="fu">=</span> <span class="fl">50.0</span></a>
+<a class="sourceLine" id="cb12-15" title="15">                , <span class="fu">max</span> <span class="fu">=</span> <span class="fl">1000.0</span></a>
+<a class="sourceLine" id="cb12-16" title="16">                , step <span class="fu">=</span> <span class="fl">10.0</span></a>
+<a class="sourceLine" id="cb12-17" title="17">                , value <span class="fu">=</span> <span class="fl">100.0</span></a>
+<a class="sourceLine" id="cb12-18" title="18">                , minFormatter <span class="fu">=</span> always <span class="st">&quot;&quot;</span></a>
+<a class="sourceLine" id="cb12-19" title="19">                , maxFormatter <span class="fu">=</span> always <span class="st">&quot;&quot;</span></a>
+<a class="sourceLine" id="cb12-20" title="20">                , currentValueFormatter <span class="fu">=</span></a>
+<a class="sourceLine" id="cb12-21" title="21">                    \n _ <span class="ot">-&gt;</span> <span class="dt">String</span><span class="fu">.concat</span> [ <span class="st">&quot;更新間隔: &quot;</span>, <span class="dt">String</span><span class="fu">.</span>fromFloat n, <span class="st">&quot;ms&quot;</span> ]</a>
+<a class="sourceLine" id="cb12-22" title="22">            }</a>
+<a class="sourceLine" id="cb12-23" title="23">    <span class="kw">in</span></a>
+<a class="sourceLine" id="cb12-24" title="24">    { board <span class="fu">=</span> initBoard size</a>
+<a class="sourceLine" id="cb12-25" title="25">    , sizeSlider <span class="fu">=</span> sizeSlider</a>
+<a class="sourceLine" id="cb12-26" title="26">    , tickSlider <span class="fu">=</span> tickSlider</a>
+<a class="sourceLine" id="cb12-27" title="27">    }</a>
+<a class="sourceLine" id="cb12-28" title="28"></a>
+<a class="sourceLine" id="cb12-29" title="29"><span class="kw">type</span> <span class="dt">Msg</span></a>
+<a class="sourceLine" id="cb12-30" title="30">    <span class="fu">=</span> <span class="dt">SizeSliderMsg</span> <span class="dt">SingleSlider.Msg</span></a>
+<a class="sourceLine" id="cb12-31" title="31">    <span class="fu">|</span> <span class="dt">TickSliderMsg</span> <span class="dt">SingleSlider.Msg</span> <span class="co">-- 追加</span></a>
+<a class="sourceLine" id="cb12-32" title="32">    <span class="fu">|</span> <span class="dt">BoardMsg</span> <span class="dt">BoardMsg</span></a>
+<a class="sourceLine" id="cb12-33" title="33">    <span class="fu">|</span> <span class="dt">NextTick</span></a>
+<a class="sourceLine" id="cb12-34" title="34"></a>
+<a class="sourceLine" id="cb12-35" title="35">update <span class="fu">:</span> <span class="dt">Msg</span> <span class="ot">-&gt;</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> (<span class="dt">Model</span>, <span class="dt">Cmd</span> <span class="dt">Msg</span>)</a>
+<a class="sourceLine" id="cb12-36" title="36">update msg model <span class="fu">=</span></a>
+<a class="sourceLine" id="cb12-37" title="37">    <span class="kw">case</span> msg <span class="kw">of</span></a>
+<a class="sourceLine" id="cb12-38" title="38">        <span class="dt">SizeSliderMsg</span> subMsg <span class="ot">-&gt;</span> <span class="fu">...</span></a>
+<a class="sourceLine" id="cb12-39" title="39"></a>
+<a class="sourceLine" id="cb12-40" title="40">        <span class="dt">TickSliderMsg</span> subMsg <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb12-41" title="41">            <span class="kw">let</span></a>
+<a class="sourceLine" id="cb12-42" title="42">                ( updatedSlider, cmd, _ ) <span class="fu">=</span></a>
+<a class="sourceLine" id="cb12-43" title="43">                    SingleSlider.update subMsg model<span class="fu">.</span>tickSlider</a>
+<a class="sourceLine" id="cb12-44" title="44">            <span class="kw">in</span></a>
+<a class="sourceLine" id="cb12-45" title="45">            ( { model <span class="fu">|</span> tickSlider <span class="fu">=</span> updatedSlider }</a>
+<a class="sourceLine" id="cb12-46" title="46">            , Cmd.batch [ Cmd.map <span class="dt">TickSliderMsg</span> cmd ]</a>
+<a class="sourceLine" id="cb12-47" title="47">            )</a>
+<a class="sourceLine" id="cb12-48" title="48"></a>
+<a class="sourceLine" id="cb12-49" title="49">        <span class="dt">BoardMsg</span> subMsg <span class="ot">-&gt;</span> <span class="fu">...</span></a>
+<a class="sourceLine" id="cb12-50" title="50"></a>
+<a class="sourceLine" id="cb12-51" title="51">        <span class="dt">NextTick</span> <span class="ot">-&gt;</span> <span class="fu">...</span></a>
+<a class="sourceLine" id="cb12-52" title="52"></a>
+<a class="sourceLine" id="cb12-53" title="53">view <span class="fu">:</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> <span class="dt">Html</span> <span class="dt">Msg</span></a>
+<a class="sourceLine" id="cb12-54" title="54">view model <span class="fu">=</span></a>
+<a class="sourceLine" id="cb12-55" title="55">    <span class="kw">let</span></a>
+<a class="sourceLine" id="cb12-56" title="56">        <span class="fu">...</span></a>
+<a class="sourceLine" id="cb12-57" title="57">    <span class="kw">in</span></a>
+<a class="sourceLine" id="cb12-58" title="58">      <span class="fu">div</span> []</a>
+<a class="sourceLine" id="cb12-59" title="59">        [ <span class="fu">div</span></a>
+<a class="sourceLine" id="cb12-60" title="60">            [ style <span class="st">&quot;text-align&quot;</span> <span class="st">&quot;center&quot;</span></a>
+<a class="sourceLine" id="cb12-61" title="61">            , style <span class="st">&quot;display&quot;</span> <span class="st">&quot;flex&quot;</span></a>
+<a class="sourceLine" id="cb12-62" title="62">            , style <span class="st">&quot;justify-content&quot;</span> <span class="st">&quot;center&quot;</span></a>
+<a class="sourceLine" id="cb12-63" title="63">            ]</a>
+<a class="sourceLine" id="cb12-64" title="64">            [ <span class="fu">div</span> sliderAttrs</a>
+<a class="sourceLine" id="cb12-65" title="65">                [ Html.map <span class="dt">SizeSliderMsg</span> (SingleSlider.view model<span class="fu">.</span>sizeSlider) ]</a>
+<a class="sourceLine" id="cb12-66" title="66">            , <span class="fu">div</span> sliderAttrs</a>
+<a class="sourceLine" id="cb12-67" title="67">                [ Html.map <span class="dt">TickSliderMsg</span> (SingleSlider.view model<span class="fu">.</span>tickSlider) ]</a>
+<a class="sourceLine" id="cb12-68" title="68">            ]</a>
+<a class="sourceLine" id="cb12-69" title="69">        , Html.map <span class="dt">BoardMsg</span> (viewBoard model<span class="fu">.</span>board)</a>
+<a class="sourceLine" id="cb12-70" title="70">        ]</a></code></pre></div>
+<p>これでスライダーが増えた． あとは <code>subscriptions</code> のところを書き換えるだけ:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1">subscriptions <span class="fu">:</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> <span class="dt">Sub</span> <span class="dt">Msg</span></a>
+<a class="sourceLine" id="cb13-2" title="2">subscriptions model <span class="fu">=</span></a>
+<a class="sourceLine" id="cb13-3" title="3">    <span class="kw">if</span> model<span class="fu">.</span>board<span class="fu">.</span>planting <span class="kw">then</span></a>
+<a class="sourceLine" id="cb13-4" title="4">        Sub.none</a>
+<a class="sourceLine" id="cb13-5" title="5"></a>
+<a class="sourceLine" id="cb13-6" title="6">    <span class="kw">else</span></a>
+<a class="sourceLine" id="cb13-7" title="7">        Time.every model<span class="fu">.</span>tickSlider<span class="fu">.</span>value (always <span class="dt">NextTick</span>)</a></code></pre></div>
+<p>簡単ですね． <a href="https://ellie-app.com/4c7nNjzjy44a1">結果こんな感じ</a>．</p>
+<h3 id="urlパーサー">URLパーサー</h3>
+<p>生状態や死状態の画像を好きなのに変えたいなと思った． そこで，ちょうど elm/url の勉強をしたので，url のクエリから指定できるようにしようと考えた． まずは状態の画像のリンクを <code>Board</code> に持たせる:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="kw">type</span> alias <span class="dt">Board</span> <span class="fu">=</span></a>
+<a class="sourceLine" id="cb14-2" title="2">    { size <span class="fu">:</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb14-3" title="3">    , cells <span class="fu">:</span> <span class="dt">Array</span> <span class="dt">Cell</span></a>
+<a class="sourceLine" id="cb14-4" title="4">    , planting <span class="fu">:</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb14-5" title="5">    , links <span class="fu">:</span> <span class="dt">Links</span></a>
+<a class="sourceLine" id="cb14-6" title="6">    }</a>
+<a class="sourceLine" id="cb14-7" title="7"></a>
+<a class="sourceLine" id="cb14-8" title="8"><span class="kw">type</span> alias <span class="dt">Links</span> <span class="fu">=</span></a>
+<a class="sourceLine" id="cb14-9" title="9">    { alive <span class="fu">:</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb14-10" title="10">    , dead <span class="fu">:</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb14-11" title="11">    }</a>
+<a class="sourceLine" id="cb14-12" title="12"></a>
+<a class="sourceLine" id="cb14-13" title="13">initBoard <span class="fu">:</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Links</span> <span class="ot">-&gt;</span> <span class="dt">Board</span></a>
+<a class="sourceLine" id="cb14-14" title="14">initBoard n links <span class="fu">=</span></a>
+<a class="sourceLine" id="cb14-15" title="15">    { size <span class="fu">=</span> n</a>
+<a class="sourceLine" id="cb14-16" title="16">    , cells <span class="fu">=</span> Array.repeat (n <span class="fu">*</span> n) <span class="dt">Dead</span></a>
+<a class="sourceLine" id="cb14-17" title="17">    , planting <span class="fu">=</span> <span class="dt">False</span></a>
+<a class="sourceLine" id="cb14-18" title="18">    , links <span class="fu">=</span> links</a>
+<a class="sourceLine" id="cb14-19" title="19">    }</a>
+<a class="sourceLine" id="cb14-20" title="20"></a>
+<a class="sourceLine" id="cb14-21" title="21">viewCell <span class="fu">:</span> <span class="dt">Board</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Cell</span> <span class="ot">-&gt;</span> <span class="dt">Html</span> <span class="dt">Msg</span></a>
+<a class="sourceLine" id="cb14-22" title="22">viewCell board idx cell <span class="fu">=</span></a>
+<a class="sourceLine" id="cb14-23" title="23">    <span class="kw">let</span></a>
+<a class="sourceLine" id="cb14-24" title="24">        <span class="fu">...</span></a>
+<a class="sourceLine" id="cb14-25" title="25"></a>
+<a class="sourceLine" id="cb14-26" title="26">        imageLink <span class="fu">=</span></a>
+<a class="sourceLine" id="cb14-27" title="27">            <span class="kw">case</span> cell <span class="kw">of</span></a>
+<a class="sourceLine" id="cb14-28" title="28">                <span class="dt">Dead</span> <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb14-29" title="29">                    [ src board<span class="fu">.</span>links<span class="fu">.</span>dead ]</a>
+<a class="sourceLine" id="cb14-30" title="30"></a>
+<a class="sourceLine" id="cb14-31" title="31">                <span class="dt">Alive</span> <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb14-32" title="32">                    [ src board<span class="fu">.</span>links<span class="fu">.</span>alive ]</a>
+<a class="sourceLine" id="cb14-33" title="33">    <span class="kw">in</span></a>
+<a class="sourceLine" id="cb14-34" title="34">    Html.img (List.concat [ styleAttrs, bornAttr, imageLink ]) []</a></code></pre></div>
+<p>次は URL から値を取得する． URL を取得するには <code>Browser.application</code> を使う必要がある:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" title="1">main <span class="fu">=</span></a>
+<a class="sourceLine" id="cb15-2" title="2">    Browser.application</a>
+<a class="sourceLine" id="cb15-3" title="3">        { <span class="fu">init</span> <span class="fu">=</span> <span class="fu">init</span></a>
+<a class="sourceLine" id="cb15-4" title="4">        , update <span class="fu">=</span> update</a>
+<a class="sourceLine" id="cb15-5" title="5">        , view <span class="fu">=</span> view</a>
+<a class="sourceLine" id="cb15-6" title="6">        , subscriptions <span class="fu">=</span> subscriptions</a>
+<a class="sourceLine" id="cb15-7" title="7">        , onUrlRequest <span class="fu">=</span> always (<span class="dt">ChangeUrl</span> defaultLinks)</a>
+<a class="sourceLine" id="cb15-8" title="8">        , onUrlChange <span class="fu">=</span> \url <span class="ot">-&gt;</span> <span class="dt">ChangeUrl</span> (parseUrl url)</a>
+<a class="sourceLine" id="cb15-9" title="9">        }</a>
+<a class="sourceLine" id="cb15-10" title="10"></a>
+<a class="sourceLine" id="cb15-11" title="11"><span class="fu">init</span> <span class="fu">:</span> () <span class="ot">-&gt;</span> <span class="dt">Url</span> <span class="ot">-&gt;</span> <span class="dt">Key</span> <span class="ot">-&gt;</span> (<span class="dt">Model</span>, <span class="dt">Cmd</span> <span class="dt">Msg</span>)</a>
+<a class="sourceLine" id="cb15-12" title="12"><span class="fu">init</span> _ url _ <span class="fu">=</span> (initModel url, Cmd.none)</a>
+<a class="sourceLine" id="cb15-13" title="13"></a>
+<a class="sourceLine" id="cb15-14" title="14">initModel <span class="fu">:</span> <span class="dt">Url</span> <span class="ot">-&gt;</span> <span class="dt">Model</span></a>
+<a class="sourceLine" id="cb15-15" title="15">initModel url <span class="fu">=</span></a>
+<a class="sourceLine" id="cb15-16" title="16">    <span class="kw">let</span></a>
+<a class="sourceLine" id="cb15-17" title="17">        <span class="fu">...</span></a>
+<a class="sourceLine" id="cb15-18" title="18">    <span class="kw">in</span></a>
+<a class="sourceLine" id="cb15-19" title="19">    { board <span class="fu">=</span> initBoard size (parseUrl url)</a>
+<a class="sourceLine" id="cb15-20" title="20">    , sizeSlider <span class="fu">=</span> sizeSlider</a>
+<a class="sourceLine" id="cb15-21" title="21">    , tickSlider <span class="fu">=</span> tickSlider</a>
+<a class="sourceLine" id="cb15-22" title="22">    }</a>
+<a class="sourceLine" id="cb15-23" title="23"></a>
+<a class="sourceLine" id="cb15-24" title="24">defaultLinks <span class="fu">=</span></a>
+<a class="sourceLine" id="cb15-25" title="25">    { alive <span class="fu">=</span> <span class="st">&quot;static/image/alive.png&quot;</span></a>
+<a class="sourceLine" id="cb15-26" title="26">    , dead <span class="fu">=</span> <span class="st">&quot;static/image/dead.png&quot;</span></a>
+<a class="sourceLine" id="cb15-27" title="27">    }</a>
+<a class="sourceLine" id="cb15-28" title="28"></a>
+<a class="sourceLine" id="cb15-29" title="29">parseUrl <span class="fu">:</span> <span class="dt">Url</span> <span class="ot">-&gt;</span> <span class="dt">Links</span></a>
+<a class="sourceLine" id="cb15-30" title="30">parseUrl url <span class="fu">=</span> Debug.todo <span class="st">&quot;parser&quot;</span></a></code></pre></div>
+<p><code>.onUrlRequest</code> や <code>.onUrlChange</code> は SPA 内で URL を変更して遷移した場合に使う． 今回はおそらく不要だが適当にそれっぽい <code>Msg</code> を生やした:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" title="1"><span class="kw">type</span> <span class="dt">Msg</span></a>
+<a class="sourceLine" id="cb16-2" title="2">    <span class="fu">=</span> <span class="dt">SizeSliderMsg</span> <span class="dt">SingleSlider.Msg</span></a>
+<a class="sourceLine" id="cb16-3" title="3">    <span class="fu">|</span> <span class="dt">TickSliderMsg</span> <span class="dt">SingleSlider.Msg</span></a>
+<a class="sourceLine" id="cb16-4" title="4">    <span class="fu">|</span> <span class="dt">BoardMsg</span> <span class="dt">Board.Msg</span></a>
+<a class="sourceLine" id="cb16-5" title="5">    <span class="fu">|</span> <span class="dt">NextTick</span></a>
+<a class="sourceLine" id="cb16-6" title="6">    <span class="fu">|</span> <span class="dt">ChangeUrl</span> <span class="dt">Links</span></a>
+<a class="sourceLine" id="cb16-7" title="7"></a>
+<a class="sourceLine" id="cb16-8" title="8">update <span class="fu">:</span> <span class="dt">Msg</span> <span class="ot">-&gt;</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> (<span class="dt">Model</span>, <span class="dt">Cmd</span> <span class="dt">Msg</span>)</a>
+<a class="sourceLine" id="cb16-9" title="9">update msg model <span class="fu">=</span></a>
+<a class="sourceLine" id="cb16-10" title="10">    <span class="kw">case</span> msg <span class="kw">of</span></a>
+<a class="sourceLine" id="cb16-11" title="11">        <span class="dt">SizeSliderMsg</span> subMsg <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb16-12" title="12">            <span class="kw">let</span></a>
+<a class="sourceLine" id="cb16-13" title="13">                ( updatedSlider, cmd, _ ) <span class="fu">=</span></a>
+<a class="sourceLine" id="cb16-14" title="14">                    SingleSlider.update subMsg model<span class="fu">.</span>sizeSlider</a>
+<a class="sourceLine" id="cb16-15" title="15"></a>
+<a class="sourceLine" id="cb16-16" title="16">                updatedBoard <span class="fu">=</span></a>
+<a class="sourceLine" id="cb16-17" title="17">                    initBoard (<span class="fu">truncate</span> updatedSlider<span class="fu">.</span>value) model<span class="fu">.</span>board<span class="fu">.</span>links <span class="co">-- 追記</span></a>
+<a class="sourceLine" id="cb16-18" title="18">            <span class="kw">in</span></a>
+<a class="sourceLine" id="cb16-19" title="19">            ( { model <span class="fu">|</span> board <span class="fu">=</span> updatedBoard, sizeSlider <span class="fu">=</span> updatedSlider }</a>
+<a class="sourceLine" id="cb16-20" title="20">            , Cmd.map <span class="dt">SizeSliderMsg</span> cmd</a>
+<a class="sourceLine" id="cb16-21" title="21">            )</a>
+<a class="sourceLine" id="cb16-22" title="22"></a>
+<a class="sourceLine" id="cb16-23" title="23">        <span class="dt">TickSliderMsg</span> subMsg <span class="ot">-&gt;</span> <span class="fu">...</span></a>
+<a class="sourceLine" id="cb16-24" title="24"></a>
+<a class="sourceLine" id="cb16-25" title="25">        <span class="dt">BoardMsg</span> subMsg <span class="ot">-&gt;</span> <span class="fu">...</span></a>
+<a class="sourceLine" id="cb16-26" title="26"></a>
+<a class="sourceLine" id="cb16-27" title="27">        <span class="dt">NextTick</span> <span class="ot">-&gt;</span> <span class="fu">...</span></a>
+<a class="sourceLine" id="cb16-28" title="28"></a>
+<a class="sourceLine" id="cb16-29" title="29">        <span class="dt">ChangeUrl</span> links <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb16-30" title="30">            <span class="kw">let</span></a>
+<a class="sourceLine" id="cb16-31" title="31">                board <span class="fu">=</span></a>
+<a class="sourceLine" id="cb16-32" title="32">                    model<span class="fu">.</span>board</a>
+<a class="sourceLine" id="cb16-33" title="33"></a>
+<a class="sourceLine" id="cb16-34" title="34">                updatedBoard <span class="fu">=</span></a>
+<a class="sourceLine" id="cb16-35" title="35">                    { board <span class="fu">|</span> links <span class="fu">=</span> links }</a>
+<a class="sourceLine" id="cb16-36" title="36">            <span class="kw">in</span></a>
+<a class="sourceLine" id="cb16-37" title="37">            ( { model <span class="fu">|</span> board <span class="fu">=</span> updatedBoard }, Cmd.none )</a></code></pre></div>
+<p>さぁいよいよ URL のパーサーだ:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" title="1"><span class="kw">import</span> <span class="dt">Url</span> exposing (<span class="dt">Url</span>)</a>
+<a class="sourceLine" id="cb17-2" title="2"><span class="kw">import</span> <span class="dt">Url.Parser</span> <span class="kw">as</span> <span class="dt">Url</span> exposing ((&lt;/&gt;), (&lt;?&gt;))</a>
+<a class="sourceLine" id="cb17-3" title="3"><span class="kw">import</span> <span class="dt">Url.Parser.Query</span> <span class="kw">as</span> <span class="dt">UrlQuery</span></a>
+<a class="sourceLine" id="cb17-4" title="4"></a>
+<a class="sourceLine" id="cb17-5" title="5">parseUrl <span class="fu">:</span> <span class="dt">Url</span> <span class="ot">-&gt;</span> <span class="dt">Links</span></a>
+<a class="sourceLine" id="cb17-6" title="6">parseUrl url <span class="fu">=</span></a>
+<a class="sourceLine" id="cb17-7" title="7">    <span class="kw">let</span></a>
+<a class="sourceLine" id="cb17-8" title="8">        queryParser <span class="fu">=</span></a>
+<a class="sourceLine" id="cb17-9" title="9">            UrlQuery.map2</a>
+<a class="sourceLine" id="cb17-10" title="10">                <span class="dt">Links</span></a>
+<a class="sourceLine" id="cb17-11" title="11">                (UrlQuery.string <span class="st">&quot;alive&quot;</span> <span class="fu">|&gt;</span> UrlQuery.map (<span class="dt">Maybe</span><span class="fu">.</span>withDefault defaultLinks<span class="fu">.</span>alive))</a>
+<a class="sourceLine" id="cb17-12" title="12">                (UrlQuery.string <span class="st">&quot;dead&quot;</span> <span class="fu">|&gt;</span> UrlQuery.map (<span class="dt">Maybe</span><span class="fu">.</span>withDefault defaultLinks<span class="fu">.</span>dead))</a>
+<a class="sourceLine" id="cb17-13" title="13"></a>
+<a class="sourceLine" id="cb17-14" title="14">        parser <span class="fu">=</span></a>
+<a class="sourceLine" id="cb17-15" title="15">            Url.top <span class="fu">&lt;?&gt;</span> queryParser</a>
+<a class="sourceLine" id="cb17-16" title="16">    <span class="kw">in</span></a>
+<a class="sourceLine" id="cb17-17" title="17">    { url <span class="fu">|</span> path <span class="fu">=</span> <span class="st">&quot;&quot;</span> }</a>
+<a class="sourceLine" id="cb17-18" title="18">        <span class="fu">|&gt;</span> Url.parse parser</a>
+<a class="sourceLine" id="cb17-19" title="19">        <span class="fu">|&gt;</span> <span class="dt">Maybe</span><span class="fu">.</span>withDefault defaultLinks</a></code></pre></div>
+<p>今回の要件ではクエリしか必要ないので <code>{ url | path = &quot;&quot; }</code> とパースする前にした． 現状の全体のコードは<a href="https://gist.github.com/matsubara0507/b3c5b33505fbe50f63c1d3242414eece">こんな感じ</a>(ellie は application を動かせない)． これで <code>https://matsubara0507.github.io/lifegame?alive=http://4.bp.blogspot.com/-_A6aKYIGbf8/UOJXnVPCmQI/AAAAAAAAKH0/CHFd0OPz0Hk/s180-c/virus_character.png</code> などで状態の画像が指定できるようになった．</p>
+<h3 id="スマホ対応">スマホ対応</h3>
+<p>最後にスマホでもできるようにした． 色々試行錯誤してみたが，マウスのような <code>onOver</code> を使うことはできない． マウスのように一筆書きのみたいに入力するには <code>Touch.onMove</code> を使うしかなく，このためには <code>Model</code> に <code>Touch.onMove</code> イベントで取得した値を保持させる必要があった:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb18-1" title="1"><span class="kw">type</span> alias <span class="dt">Board</span> <span class="fu">=</span></a>
+<a class="sourceLine" id="cb18-2" title="2">    { size <span class="fu">:</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb18-3" title="3">    , cells <span class="fu">:</span> <span class="dt">Array</span> <span class="dt">Cell</span></a>
+<a class="sourceLine" id="cb18-4" title="4">    , planting <span class="fu">:</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb18-5" title="5">    , links <span class="fu">:</span> <span class="dt">Links</span></a>
+<a class="sourceLine" id="cb18-6" title="6">    , touchPos <span class="fu">:</span> ( <span class="dt">Float</span>, <span class="dt">Float</span> )</a>
+<a class="sourceLine" id="cb18-7" title="7">    }</a>
+<a class="sourceLine" id="cb18-8" title="8"></a>
+<a class="sourceLine" id="cb18-9" title="9">initBoard <span class="fu">:</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Links</span> <span class="ot">-&gt;</span> <span class="dt">Board</span></a>
+<a class="sourceLine" id="cb18-10" title="10">initBoard n links <span class="fu">=</span></a>
+<a class="sourceLine" id="cb18-11" title="11">    { size <span class="fu">=</span> n</a>
+<a class="sourceLine" id="cb18-12" title="12">    , cells <span class="fu">=</span> Array.repeat (n <span class="fu">*</span> n) <span class="dt">Dead</span></a>
+<a class="sourceLine" id="cb18-13" title="13">    , planting <span class="fu">=</span> <span class="dt">False</span></a>
+<a class="sourceLine" id="cb18-14" title="14">    , links <span class="fu">=</span> links</a>
+<a class="sourceLine" id="cb18-15" title="15">    , touchPos <span class="fu">=</span> ( <span class="dv">0</span>, <span class="dv">0</span> )</a>
+<a class="sourceLine" id="cb18-16" title="16">    }</a></code></pre></div>
+<p><code>.touchPos</code> を更新するために <code>BoardMsg</code> と <code>view</code> を書き換える:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb19-1" title="1"><span class="kw">type</span> <span class="dt">BoardMsg</span></a>
+<a class="sourceLine" id="cb19-2" title="2">    <span class="fu">=</span> <span class="dt">Born</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb19-3" title="3">    <span class="fu">|</span> <span class="dt">Planting</span></a>
+<a class="sourceLine" id="cb19-4" title="4">    <span class="fu">|</span> <span class="dt">TouchMovePos</span> ( <span class="dt">Float</span>, <span class="dt">Float</span> )</a>
+<a class="sourceLine" id="cb19-5" title="5"></a>
+<a class="sourceLine" id="cb19-6" title="6">updateBoard <span class="fu">:</span> <span class="dt">BoardMsg</span> <span class="ot">-&gt;</span> <span class="dt">Board</span> <span class="ot">-&gt;</span> ( <span class="dt">Board</span>, <span class="dt">Cmd</span> <span class="dt">BoardMsg</span> )</a>
+<a class="sourceLine" id="cb19-7" title="7">updateBoard msg board <span class="fu">=</span></a>
+<a class="sourceLine" id="cb19-8" title="8">    <span class="kw">case</span> msg <span class="kw">of</span></a>
+<a class="sourceLine" id="cb19-9" title="9">        <span class="fu">...</span></a>
+<a class="sourceLine" id="cb19-10" title="10"></a>
+<a class="sourceLine" id="cb19-11" title="11">        <span class="dt">TouchMovePos</span> pos <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb19-12" title="12">            ( { board <span class="fu">|</span> touchPos <span class="fu">=</span> pos }</a>
+<a class="sourceLine" id="cb19-13" title="13">            , Cmd.none</a>
+<a class="sourceLine" id="cb19-14" title="14">            )</a>
+<a class="sourceLine" id="cb19-15" title="15"></a>
+<a class="sourceLine" id="cb19-16" title="16">view <span class="fu">:</span> <span class="dt">Board</span> <span class="ot">-&gt;</span> <span class="dt">Html</span> <span class="dt">BoardMsg</span></a>
+<a class="sourceLine" id="cb19-17" title="17">view board <span class="fu">=</span></a>
+<a class="sourceLine" id="cb19-18" title="18">    <span class="kw">let</span></a>
+<a class="sourceLine" id="cb19-19" title="19">        <span class="fu">...</span></a>
+<a class="sourceLine" id="cb19-20" title="20"></a>
+<a class="sourceLine" id="cb19-21" title="21">        getTouchPos event <span class="fu">=</span></a>
+<a class="sourceLine" id="cb19-22" title="22">            List.head event<span class="fu">.</span>targetTouches</a>
+<a class="sourceLine" id="cb19-23" title="23">                <span class="fu">|&gt;</span> <span class="dt">Maybe</span><span class="fu">.map</span> <span class="fu">.</span>clientPos</a>
+<a class="sourceLine" id="cb19-24" title="24">                <span class="fu">|&gt;</span> <span class="dt">Maybe</span><span class="fu">.</span>withDefault ( <span class="dv">0</span>, <span class="dv">0</span> )</a>
+<a class="sourceLine" id="cb19-25" title="25"></a>
+<a class="sourceLine" id="cb19-26" title="26">        bornAttr <span class="fu">=</span></a>
+<a class="sourceLine" id="cb19-27" title="27">            [ Touch.onWithOptions</a>
+<a class="sourceLine" id="cb19-28" title="28">                <span class="st">&quot;touchmove&quot;</span></a>
+<a class="sourceLine" id="cb19-29" title="29">                { stopPropagation <span class="fu">=</span> <span class="dt">False</span>, preventDefault <span class="fu">=</span> <span class="dt">True</span> }</a>
+<a class="sourceLine" id="cb19-30" title="30">                (<span class="dt">TouchMovePos</span> <span class="fu">&lt;&lt;</span> getTouchPos)</a>
+<a class="sourceLine" id="cb19-31" title="31">            ]    </a>
+<a class="sourceLine" id="cb19-32" title="32">    <span class="kw">in</span></a>
+<a class="sourceLine" id="cb19-33" title="33">    concatIndexedMapWith (Html.div (attr <span class="fu">++</span> bornAttr)) (viewCell board) board</a></code></pre></div>
+<p>確か <code>.preventDefault</code> を <code>True</code> にするとスワイプ(?)で画面が動いてしまうのを止めてくれるらしい． さて問題はここから． <code>cells</code> を1次元配列にしてしまった弊害パート2で，この <code>.touchPos</code> からなんとかして配列のインデックスを出さなきゃいけない． 幸いなことにセル一つの大きさは相対サイズにしていたので，盤全体の実際の大きさとセル数がわかれば逆算できる． 盤全体の大きさを得るには <code>Dom.getElement</code> を使う必要があり，そのためには <code>BoardMsg</code> を追加する必要があった:</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb20-1" title="1"><span class="kw">type</span> <span class="dt">BoardMsg</span></a>
+<a class="sourceLine" id="cb20-2" title="2">    <span class="fu">=</span> <span class="dt">Born</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb20-3" title="3">    <span class="fu">|</span> <span class="dt">Planting</span></a>
+<a class="sourceLine" id="cb20-4" title="4">    <span class="fu">|</span> <span class="dt">TouchMovePos</span> ( <span class="dt">Float</span>, <span class="dt">Float</span> )</a>
+<a class="sourceLine" id="cb20-5" title="5">    <span class="fu">|</span> <span class="dt">BornWithTouch</span> (<span class="dt">Maybe</span> <span class="dt">Element</span>)</a>
+<a class="sourceLine" id="cb20-6" title="6"></a>
+<a class="sourceLine" id="cb20-7" title="7">update <span class="fu">:</span> <span class="dt">BoardMsg</span> <span class="ot">-&gt;</span> <span class="dt">Board</span> <span class="ot">-&gt;</span> ( <span class="dt">Board</span>, <span class="dt">Cmd</span> <span class="dt">BoardMsg</span> )</a>
+<a class="sourceLine" id="cb20-8" title="8">update msg board <span class="fu">=</span></a>
+<a class="sourceLine" id="cb20-9" title="9">    <span class="kw">case</span> msg <span class="kw">of</span></a>
+<a class="sourceLine" id="cb20-10" title="10">        <span class="fu">...</span></a>
+<a class="sourceLine" id="cb20-11" title="11"></a>
+<a class="sourceLine" id="cb20-12" title="12">        <span class="dt">TouchMovePos</span> pos <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb20-13" title="13">            ( { board <span class="fu">|</span> touchPos <span class="fu">=</span> pos }</a>
+<a class="sourceLine" id="cb20-14" title="14">            , Dom.getElement <span class="st">&quot;board&quot;</span></a>
+<a class="sourceLine" id="cb20-15" title="15">                <span class="fu">|&gt;</span> Task.attempt (<span class="dt">BornWithTouch</span> <span class="fu">&lt;&lt;</span> Result.toMaybe)</a>
+<a class="sourceLine" id="cb20-16" title="16">            )</a>
+<a class="sourceLine" id="cb20-17" title="17"></a>
+<a class="sourceLine" id="cb20-18" title="18">        <span class="dt">BornWithTouch</span> <span class="dt">Nothing</span> <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb20-19" title="19">            ( board, Cmd.none )</a>
+<a class="sourceLine" id="cb20-20" title="20"></a>
+<a class="sourceLine" id="cb20-21" title="21">        <span class="dt">BornWithTouch</span> (<span class="dt">Just</span> <span class="fu">elem</span>) <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb20-22" title="22">            <span class="kw">let</span></a>
+<a class="sourceLine" id="cb20-23" title="23">                <span class="co">-- 1セルの大きさ</span></a>
+<a class="sourceLine" id="cb20-24" title="24">                ( px, py ) <span class="fu">=</span></a>
+<a class="sourceLine" id="cb20-25" title="25">                    ( <span class="fu">elem.</span>element<span class="fu">.</span>width <span class="fu">/</span> toFloat board<span class="fu">.</span>size</a>
+<a class="sourceLine" id="cb20-26" title="26">                    , <span class="fu">elem.</span>element<span class="fu">.</span>height <span class="fu">/</span> toFloat board<span class="fu">.</span>size</a>
+<a class="sourceLine" id="cb20-27" title="27">                    )</a>
+<a class="sourceLine" id="cb20-28" title="28"></a>
+<a class="sourceLine" id="cb20-29" title="29">                ( tx, ty ) <span class="fu">=</span></a>
+<a class="sourceLine" id="cb20-30" title="30">                    board<span class="fu">.</span>touchPos</a>
+<a class="sourceLine" id="cb20-31" title="31"></a>
+<a class="sourceLine" id="cb20-32" title="32">                <span class="co">-- タップしたところの2次元座標</span></a>
+<a class="sourceLine" id="cb20-33" title="33">                ( x, y ) <span class="fu">=</span></a>
+<a class="sourceLine" id="cb20-34" title="34">                    ( (tx <span class="fu">-</span> <span class="fu">elem.</span>element<span class="fu">.</span>x) <span class="fu">/</span> px <span class="fu">|&gt;</span> <span class="fu">floor</span></a>
+<a class="sourceLine" id="cb20-35" title="35">                    , (ty <span class="fu">-</span> <span class="fu">elem.</span>element<span class="fu">.</span>y) <span class="fu">/</span> py <span class="fu">|&gt;</span> <span class="fu">floor</span></a>
+<a class="sourceLine" id="cb20-36" title="36">                    )</a>
+<a class="sourceLine" id="cb20-37" title="37">            <span class="kw">in</span></a>
+<a class="sourceLine" id="cb20-38" title="38">            ( born (y <span class="fu">*</span> board<span class="fu">.</span>size <span class="fu">+</span> x) board, Cmd.none )</a></code></pre></div>
+<p>これで完成． ちなみに，最初は全てのセルの <code>Dom.getElement</code> して，<code>element.width</code> を比較する全探索方式でやってみたが，遅すぎて使い物にならなかったので，逆算するようにした． まぁ多少誤差があったってもともと指でなぞってるだけなのでいいでしょう．</p>
+<h2 id="section-1"></h2>
+<p>ちなみに，<code>.touchPos</code> みたいな要素を盤面の <code>Model</code> に入れるべきか？って気がするが，今回はやっつけなので大目にみてください．</p>
+<h1 id="おしまい">おしまい</h1>
+<p>無駄にコードを貼りまくったせいで長くなってしまった． できたアプリ，意外と気に入ってます．</p>
+  </div>
+</div>
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>GHC 8.x 勉強会に行ってきた</title>
     <link href="https://matsubara0507.github.io/posts/2018-12-18-ghc8x.html" />
     <id>https://matsubara0507.github.io/posts/2018-12-18-ghc8x.html</id>
@@ -1400,197 +2089,6 @@ https://github.com/commercialhaskell/stack-templates/blob/master/rio.hsfiles</co
 <p>特に最後のがすごい気になっていて，現状は完全に文字列を埋め込んでいるだけなのだ． できれば，強力な型システムを利用した GitHub GraphQL Client ライブラリを作りたい(なんか昔に Haskell-jp で話題に上がったなぁ)．</p>
 <h2 id="おしまい">おしまい</h2>
 <p>GraphQL，クライアント側に取ってすごい便利．</p>
-  </div>
-</div>
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>Haskell Servant で GitHub Webhook</title>
-    <link href="https://matsubara0507.github.io/posts/2018-08-18-haskell-github-webhook.html" />
-    <id>https://matsubara0507.github.io/posts/2018-08-18-haskell-github-webhook.html</id>
-    <published>2018-08-18T00:00:00Z</published>
-    <updated>2018-08-18T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
- <div class="card-content">
-  <header class="post-header">
-    <h1 class="post-title" itemprop="name headline">Haskell Servant で GitHub Webhook</h1>
-    <p class="post-meta">
-      <time datetime="2018-08-18" itemprop="datePublished">
-        Aug 18, 2018
-      </time>
-      
-      
-      <div class="tags">
-          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a> <a href="/tags/rio.html">rio</a>
-      </div>
-      
-    </p>
-  </header>
-
-  <div class="post-content" itemprop="articleBody">
-    <p>久々の投稿． とある事情で GitHub Webhook 用のサーバーを Haskell で書いたのでそのメモ書きです．</p>
-<h2 id="やったこと">やったこと</h2>
-<ul>
-<li><a href="http://hackage.haskell.org/package/rio">rio</a> のロガーを Servant で使う</li>
-<li><a href="http://hackage.haskell.org/package/servant-github-webhook">servant-github-webhook</a> を使って Webhook 用の Servant サーバーの構築</li>
-</ul>
-<p>実際に書いたコードは<a href="https://github.com/matsubara0507/git-plantation/commit/b93ed3398b30dbba105a580d58e947f131cf1a9a">この辺り</a>を見ると良いかな． 色々と途中のうえ，そもそも GitHub Webhook がメインではないリポジトリなので見にくい気がするけど．</p>
-<h2 id="servant-で-rio-モナド">Servant で rio モナド</h2>
-<p>これはまぁおまけですね． rio はロギングとかが便利なので，先に紹介して以降で利用する．</p>
-<h3 id="ロガーの準備">ロガーの準備</h3>
-<p>まずはロギング用のモナドを定義する．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="ot">{-# LANGUAGE DataKinds        #-}</span></a>
-<a class="sourceLine" id="cb1-2" title="2"><span class="ot">{-# LANGUAGE OverloadedLabels #-}</span></a>
-<a class="sourceLine" id="cb1-3" title="3"><span class="ot">{-# LANGUAGE TypeOperators    #-}</span></a>
-<a class="sourceLine" id="cb1-4" title="4"></a>
-<a class="sourceLine" id="cb1-5" title="5"><span class="kw">import</span>           <span class="dt">RIO</span></a>
-<a class="sourceLine" id="cb1-6" title="6"><span class="kw">import</span>           <span class="dt">Data.Extensible</span></a>
-<a class="sourceLine" id="cb1-7" title="7"></a>
-<a class="sourceLine" id="cb1-8" title="8"><span class="kw">type</span> <span class="dt">Env</span> <span class="fu">=</span> <span class="dt">Record</span></a>
-<a class="sourceLine" id="cb1-9" title="9">  &#39;[ <span class="st">&quot;logger&quot;</span> <span class="fu">&gt;:</span> <span class="dt">LogFunc</span></a>
-<a class="sourceLine" id="cb1-10" title="10">   ]</a>
-<a class="sourceLine" id="cb1-11" title="11"></a>
-<a class="sourceLine" id="cb1-12" title="12"><span class="kw">instance</span> <span class="dt">HasLogFunc</span> <span class="dt">Env</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb1-13" title="13">  logFuncL <span class="fu">=</span> lens (view <span class="fu">#</span>logger) (\x y <span class="ot">-&gt;</span> x <span class="fu">&amp;</span> <span class="fu">#</span>logger <span class="ot">`set`</span> y)</a></code></pre></div>
-<p>いわゆる Has パターンというやつ． これで <code>RIO Env</code> というのがロガーを扱えるモナドとなる．</p>
-<h3 id="servant-でカスタムモナド">Servant でカスタムモナド</h3>
-<p>Servent Server のメイン関数は下記のように定義できる．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="kw">import</span>           <span class="dt">RIO</span></a>
-<a class="sourceLine" id="cb2-2" title="2"></a>
-<a class="sourceLine" id="cb2-3" title="3"><span class="kw">import</span>           <span class="dt">Data.Extensible</span></a>
-<a class="sourceLine" id="cb2-4" title="4"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Network.Wai.Handler.Warp</span> <span class="kw">as</span> <span class="dt">Warp</span></a>
-<a class="sourceLine" id="cb2-5" title="5"><span class="kw">import</span>           <span class="dt">Servant</span></a>
-<a class="sourceLine" id="cb2-6" title="6"></a>
-<a class="sourceLine" id="cb2-7" title="7"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb2-8" title="8">main <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb2-9" title="9">  logOpts <span class="ot">&lt;-</span> logOptionsHandle stdout <span class="dt">False</span></a>
-<a class="sourceLine" id="cb2-10" title="10">  withLogFunc logOpts <span class="fu">$</span> \logger <span class="ot">-&gt;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb2-11" title="11">    <span class="kw">let</span> env <span class="fu">=</span> <span class="fu">#</span>logger <span class="fu">@=</span> logger</a>
-<a class="sourceLine" id="cb2-12" title="12">           <span class="fu">&lt;:</span><span class="ot"> nil ::</span> <span class="dt">Env</span></a>
-<a class="sourceLine" id="cb2-13" title="13">    hPutBuilder stdout <span class="st">&quot;Listening on port 8080&quot;</span></a>
-<a class="sourceLine" id="cb2-14" title="14">    Warp.run <span class="dv">8080</span> <span class="fu">$</span> app env</a>
-<a class="sourceLine" id="cb2-15" title="15"></a>
-<a class="sourceLine" id="cb2-16" title="16"><span class="ot">app ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Application</span></a>
-<a class="sourceLine" id="cb2-17" title="17">app <span class="fu">=</span> <span class="fu">undefined</span></a></code></pre></div>
-<p>さて，問題はこの <code>app</code> 関数だ． 普通は <a href="http://hackage.haskell.org/package/servant-server-0.14.1/docs/Servant-Server.html#t:Server"><code>Server</code></a> 型と <a href="http://hackage.haskell.org/package/servant-server-0.14.1/docs/Servant-Server.html#v:serve"><code>serve</code></a> 関数を用いて次のように書く．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">type</span> <span class="dt">API</span> <span class="fu">=</span> <span class="fu">...</span></a>
-<a class="sourceLine" id="cb3-2" title="2"></a>
-<a class="sourceLine" id="cb3-3" title="3"><span class="ot">api ::</span> <span class="dt">Proxy</span> <span class="dt">API</span></a>
-<a class="sourceLine" id="cb3-4" title="4">api <span class="fu">=</span> <span class="dt">Proxy</span></a>
-<a class="sourceLine" id="cb3-5" title="5"></a>
-<a class="sourceLine" id="cb3-6" title="6"><span class="ot">server ::</span> <span class="dt">Server</span> <span class="dt">API</span></a>
-<a class="sourceLine" id="cb3-7" title="7">server <span class="fu">=</span> <span class="fu">...</span></a>
-<a class="sourceLine" id="cb3-8" title="8"></a>
-<a class="sourceLine" id="cb3-9" title="9"><span class="ot">app ::</span> <span class="dt">Application</span></a>
-<a class="sourceLine" id="cb3-10" title="10">app <span class="fu">=</span>  serve api server</a></code></pre></div>
-<p><code>Server</code> 型の代わりに，カスタムモナドを利用するには <a href="http://hackage.haskell.org/package/servant-server-0.14.1/docs/Servant-Server.html#t:ServerT"><code>ServerT</code></a> 型と <a href="http://hackage.haskell.org/package/servant-server-0.14.1/docs/Servant-Server.html#v:hoistServer"><code>hoistServer</code></a> 関数を用いる． それぞれの型定義は次のようになっている．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="kw">type</span> <span class="dt">Server</span> api <span class="fu">=</span> <span class="dt">ServerT</span> api <span class="dt">Handler</span></a>
-<a class="sourceLine" id="cb4-2" title="2"></a>
-<a class="sourceLine" id="cb4-3" title="3"><span class="ot">serve ::</span> <span class="dt">HasServer</span> api &#39;[] <span class="ot">=&gt;</span> <span class="dt">Proxy</span> api <span class="ot">-&gt;</span> <span class="dt">Server</span> api <span class="ot">-&gt;</span> <span class="dt">Application</span></a>
-<a class="sourceLine" id="cb4-4" title="4"><span class="ot">hoistServer ::</span> <span class="dt">HasServer</span> api &#39;[] <span class="ot">=&gt;</span> <span class="dt">Proxy</span> api <span class="ot">-&gt;</span> (<span class="kw">forall</span> x<span class="fu">.</span> m x <span class="ot">-&gt;</span> n x) <span class="ot">-&gt;</span> <span class="dt">ServerT</span> api m <span class="ot">-&gt;</span> <span class="dt">ServerT</span> api n</a></code></pre></div>
-<p>さぁあとは型パズルだ！</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="ot">server ::</span> <span class="dt">ServerT</span> (<span class="dt">RIO</span> <span class="dt">Env</span>) <span class="dt">API</span></a>
-<a class="sourceLine" id="cb5-2" title="2">server <span class="fu">=</span> <span class="fu">...</span></a>
-<a class="sourceLine" id="cb5-3" title="3"></a>
-<a class="sourceLine" id="cb5-4" title="4"><span class="ot">app ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Application</span></a>
-<a class="sourceLine" id="cb5-5" title="5">app env <span class="fu">=</span> serve api <span class="fu">$</span> hoistServer api (runRIO env) server</a></code></pre></div>
-<p>これで　<code>server</code> 関数で呼び出す， API ごとの関数で <code>logInfo</code> のような rio のロギング関数を呼ぶことができる．</p>
-<h2 id="servant-で-github-webhhok">Servant で GitHub Webhhok</h2>
-<p>さて色々準備ができたので，いよいよ GitHub Webhook の方に話を移す． Haskell Servant で GitHub Webhook を使うには <a href="http://hackage.haskell.org/package/servant-github-webhook">servant-github-webhook</a>というパッケージを使う． 意外と，このパッケージの使い方を書いた記事がなく手間取ったのでまとめる．</p>
-<h3 id="ping-api-を作る">ping API を作る</h3>
-<p>ping API は GitHub Webhook の設定がうまくできてるかを確認する API だ．</p>
-<p><img src="/assets/haskell-github-webhook/ping-event.jpg" /></p>
-<p>ping API は次のように設定すれば良い．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">import</span>           <span class="dt">GitHub.Data.Webhooks.Events</span></a>
-<a class="sourceLine" id="cb6-2" title="2"><span class="kw">import</span>           <span class="dt">Servant</span></a>
-<a class="sourceLine" id="cb6-3" title="3"><span class="kw">import</span>           <span class="dt">Servant.GitHub.Webhook</span></a>
-<a class="sourceLine" id="cb6-4" title="4"></a>
-<a class="sourceLine" id="cb6-5" title="5"><span class="kw">type</span> <span class="dt">API</span> <span class="fu">=</span> <span class="st">&quot;hook&quot;</span> <span class="fu">:&gt;</span> <span class="dt">WebhookAPI</span></a>
-<a class="sourceLine" id="cb6-6" title="6"></a>
-<a class="sourceLine" id="cb6-7" title="7"><span class="kw">type</span> <span class="dt">WebhookAPI</span></a>
-<a class="sourceLine" id="cb6-8" title="8">      <span class="fu">=</span> <span class="dt">GitHubEvent</span> &#39;[ <span class="dt">&#39;WebhookPingEvent</span> ]</a>
-<a class="sourceLine" id="cb6-9" title="9">        <span class="fu">:&gt;</span> <span class="dt">GitHubSignedReqBody</span> &#39;[<span class="dt">JSON</span>] <span class="dt">PublicEvent</span></a>
-<a class="sourceLine" id="cb6-10" title="10">        <span class="fu">:&gt;</span> <span class="dt">Post</span> &#39;[<span class="dt">JSON</span>] ()</a>
-<a class="sourceLine" id="cb6-11" title="11"></a>
-<a class="sourceLine" id="cb6-12" title="12"><span class="ot">server ::</span> <span class="dt">ServerT</span> (<span class="dt">RIO</span> <span class="dt">Env</span>) <span class="dt">API</span></a>
-<a class="sourceLine" id="cb6-13" title="13">server <span class="fu">=</span> pingWebhook</a>
-<a class="sourceLine" id="cb6-14" title="14"></a>
-<a class="sourceLine" id="cb6-15" title="15"><span class="ot">pingWebhook ::</span></a>
-<a class="sourceLine" id="cb6-16" title="16">  <span class="dt">RepoWebhookEvent</span> <span class="ot">-&gt;</span> ((), <span class="dt">PublicEvent</span>) <span class="ot">-&gt;</span> <span class="dt">Plant</span> ()</a>
-<a class="sourceLine" id="cb6-17" title="17">pingWebhook _ (_, ev) <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb6-18" title="18">  logInfo <span class="fu">$</span> <span class="st">&quot;Hook Ping Event: &quot;</span> <span class="fu">&lt;&gt;</span> displayShow ev</a></code></pre></div>
-<p>GitHub Webhook を使うには Servant の Context 機能でシークレットキーを渡す必要がある．</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">import</span>           <span class="dt">System.Environment</span>       (getEnv)</a>
-<a class="sourceLine" id="cb7-2" title="2"></a>
-<a class="sourceLine" id="cb7-3" title="3"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb7-4" title="4">main <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb7-5" title="5">    <span class="fu">...</span></a>
-<a class="sourceLine" id="cb7-6" title="6">    <span class="kw">let</span> key <span class="fu">=</span> gitHubKey <span class="fu">$</span> fromString <span class="fu">&lt;$&gt;</span> getEnv <span class="st">&quot;GH_SECRET&quot;</span></a>
-<a class="sourceLine" id="cb7-7" title="7">    Warp.run <span class="dv">8080</span> <span class="fu">$</span> app env key</a>
-<a class="sourceLine" id="cb7-8" title="8"></a>
-<a class="sourceLine" id="cb7-9" title="9"><span class="ot">app ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">GitHubKey</span> <span class="dt">PublicEvent</span> <span class="ot">-&gt;</span> <span class="dt">Application</span></a>
-<a class="sourceLine" id="cb7-10" title="10">app env key <span class="fu">=</span></a>
-<a class="sourceLine" id="cb7-11" title="11">  serveWithContext api (key <span class="fu">:.</span> <span class="dt">EmptyContext</span>) <span class="fu">$</span></a>
-<a class="sourceLine" id="cb7-12" title="12">    hoistServerWithContext api context (runRIO env) server</a>
-<a class="sourceLine" id="cb7-13" title="13"></a>
-<a class="sourceLine" id="cb7-14" title="14"><span class="ot">context ::</span> <span class="dt">Proxy</span> &#39;[ <span class="dt">GitHubKey</span> <span class="dt">PublicEvent</span> ]</a>
-<a class="sourceLine" id="cb7-15" title="15">context <span class="fu">=</span> <span class="dt">Proxy</span></a></code></pre></div>
-<p>実行するときは <code>GH_SECRET</code> 環境変数に設定した文字列を GitHub Webhook の設定の Secret に書き込む．</p>
-<h3 id="push-api-を加える">push API を加える</h3>
-<p>もう一個 API を生やしてみよう．</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">type</span> <span class="dt">WebhookAPI</span></a>
-<a class="sourceLine" id="cb8-2" title="2">      <span class="fu">=</span> <span class="dt">GitHubEvent</span> &#39;[ <span class="dt">&#39;WebhookPingEvent</span> ]</a>
-<a class="sourceLine" id="cb8-3" title="3">        <span class="fu">:&gt;</span> <span class="dt">GitHubSignedReqBody</span> &#39;[<span class="dt">JSON</span>] <span class="dt">PublicEvent</span></a>
-<a class="sourceLine" id="cb8-4" title="4">        <span class="fu">:&gt;</span> <span class="dt">Post</span> &#39;[<span class="dt">JSON</span>] ()</a>
-<a class="sourceLine" id="cb8-5" title="5">   <span class="fu">:&lt;|&gt;</span> <span class="dt">GitHubEvent</span> &#39;[ <span class="dt">&#39;WebhookPushEvent</span> ]</a>
-<a class="sourceLine" id="cb8-6" title="6">        <span class="fu">:&gt;</span> <span class="dt">GitHubSignedReqBody</span> &#39;[<span class="dt">JSON</span>] <span class="dt">PushEvent</span></a>
-<a class="sourceLine" id="cb8-7" title="7">        <span class="fu">:&gt;</span> <span class="dt">Post</span> &#39;[<span class="dt">JSON</span>] ()</a>
-<a class="sourceLine" id="cb8-8" title="8"></a>
-<a class="sourceLine" id="cb8-9" title="9"><span class="ot">server ::</span> <span class="dt">ServerT</span> (<span class="dt">RIO</span> <span class="dt">Env</span>) <span class="dt">API</span></a>
-<a class="sourceLine" id="cb8-10" title="10">server <span class="fu">=</span> pingWebhook <span class="fu">:&lt;|&gt;</span> pushWebhook</a>
-<a class="sourceLine" id="cb8-11" title="11"></a>
-<a class="sourceLine" id="cb8-12" title="12"><span class="ot">pushWebhook ::</span> <span class="dt">RepoWebhookEvent</span> <span class="ot">-&gt;</span> ((), <span class="dt">PushEvent</span>) <span class="ot">-&gt;</span> <span class="dt">Plant</span> ()</a>
-<a class="sourceLine" id="cb8-13" title="13">pushWebhook _ (_, ev) <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb8-14" title="14">  logInfo <span class="fu">$</span> <span class="st">&quot;Hook Push Event: &quot;</span> <span class="fu">&lt;&gt;</span> displayShow ev</a></code></pre></div>
-<p>これでビルドすると次のようなエラーが出てくる．</p>
-<pre><code>Main.hs:38:3: error:
-    • No instance for (HasContextEntry &#39;[] (GitHubKey&#39; () PushEvent))
-        arising from a use of ‘serveWithContext’
-    • In the expression: serveWithContext api (key :. EmptyContext)
-      In the expression:
-        serveWithContext api (key :. EmptyContext)
-          $ hoistServerWithContext api context (runRIO env) server
-      In an equation for ‘app’:
-          app env key
-            = serveWithContext api (key :. EmptyContext)
-                $ hoistServerWithContext api context (runRIO env) server
-   |
-38 |   serveWithContext api (key :. EmptyContext) $ hoistServerWithContext api context (runRIO env) server
-   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</code></pre>
-<p><a href="https://github.com/tsani/servant-github-webhook/issues/13#issuecomment-408463124">ググった結果</a>，こうするといいらしい．</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="ot">{-# LANGUAGE MultiParamTypeClasses #-}</span></a>
-<a class="sourceLine" id="cb10-2" title="2"></a>
-<a class="sourceLine" id="cb10-3" title="3"><span class="kw">import</span>           <span class="dt">Servant.GitHub.Webhook</span>    <span class="kw">hiding</span> (<span class="dt">GitHubKey</span>, gitHubKey)</a>
-<a class="sourceLine" id="cb10-4" title="4"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Servant.GitHub.Webhook</span>   (<span class="dt">GitHubKey</span>, gitHubKey)</a>
-<a class="sourceLine" id="cb10-5" title="5"></a>
-<a class="sourceLine" id="cb10-6" title="6"><span class="ot">app ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">GitHubKey</span> <span class="ot">-&gt;</span> <span class="dt">Application</span></a>
-<a class="sourceLine" id="cb10-7" title="7">app env key <span class="fu">=</span> <span class="fu">...</span></a>
-<a class="sourceLine" id="cb10-8" title="8"></a>
-<a class="sourceLine" id="cb10-9" title="9"><span class="ot">context ::</span> <span class="dt">Proxy</span> &#39;[ <span class="dt">GitHubKey</span> ]</a>
-<a class="sourceLine" id="cb10-10" title="10">context <span class="fu">=</span> <span class="dt">Proxy</span></a>
-<a class="sourceLine" id="cb10-11" title="11"></a>
-<a class="sourceLine" id="cb10-12" title="12"><span class="co">-- HACK</span></a>
-<a class="sourceLine" id="cb10-13" title="13"><span class="kw">newtype</span> <span class="dt">GitHubKey</span> <span class="fu">=</span></a>
-<a class="sourceLine" id="cb10-14" title="14">  <span class="dt">GitHubKey</span> (<span class="kw">forall</span> result<span class="fu">.</span> <span class="dt">Servant.GitHub.Webhook.GitHubKey</span> result)</a>
-<a class="sourceLine" id="cb10-15" title="15"></a>
-<a class="sourceLine" id="cb10-16" title="16"><span class="ot">gitHubKey ::</span> <span class="dt">IO</span> <span class="dt">ByteString</span> <span class="ot">-&gt;</span> <span class="dt">GitHubKey</span></a>
-<a class="sourceLine" id="cb10-17" title="17">gitHubKey k <span class="fu">=</span> <span class="dt">GitHubKey</span> (Servant.GitHub.Webhook.gitHubKey k)</a>
-<a class="sourceLine" id="cb10-18" title="18"></a>
-<a class="sourceLine" id="cb10-19" title="19"><span class="kw">instance</span> <span class="dt">HasContextEntry</span> &#39;[<span class="dt">GitHubKey</span>] (<span class="dt">Servant.GitHub.Webhook.GitHubKey</span> result) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb10-20" title="20">  getContextEntry (<span class="dt">GitHubKey</span> x <span class="fu">:.</span> _) <span class="fu">=</span> x</a></code></pre></div>
-<h1 id="おしまい">おしまい</h1>
-<p>ちなみに，手元で試すときには ngrok を使った． 便利．</p>
   </div>
 </div>
 </article>
