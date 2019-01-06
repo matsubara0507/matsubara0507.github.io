@@ -8,8 +8,136 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2019-01-05T00:00:00Z</updated>
+    <updated>2019-01-06T00:00:00Z</updated>
     <entry>
+    <title>GCS で Drone 1.0 をキャッシュする</title>
+    <link href="https://matsubara0507.github.io/posts/2019-01-06-use-drone-cache-with-gcs.html" />
+    <id>https://matsubara0507.github.io/posts/2019-01-06-use-drone-cache-with-gcs.html</id>
+    <published>2019-01-06T00:00:00Z</published>
+    <updated>2019-01-06T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">GCS で Drone 1.0 をキャッシュする</h1>
+    <p class="post-meta">
+      <time datetime="2019-01-06" itemprop="datePublished">
+        Jan 6, 2019
+      </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/Drone.html">Drone</a> <a href="/tags/Haskell.html">Haskell</a>
+      </div>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>Drone ネタ2本目． せっかく drone-haskell を作ったので TravisCI でテストを回すのではなく，Drone で回そうかなと思ったのだが，Stack でフルビルドするとめっちゃ時間かかる． なので，Drone のキャッシュをやってみましたっていう小話です．</p>
+<h2 id="cache-in-drone">Cache in Drone</h2>
+<p>Drone でキャッシュを利用するには次のような Plugin を使用する:</p>
+<ul>
+<li>drone-s3-cache: <a href="https://github.com/drone-plugins/drone-s3-cache">GitHub</a>・<a href="http://plugins.drone.io/drone-plugins/drone-s3-cache/">Marketplace</a></li>
+<li>drone-volume-cache: <a href="https://github.com/drone-plugins/drone-volume-cache">GitHub</a>・<a href="http://plugins.drone.io/drillster/drone-volume-cache/">Marketplace</a></li>
+<li>drone-gcs-cache: <a href="https://github.com/hvalle/drone-gcs-cache">GitHub</a>・<a href="http://plugins.drone.io/hvalle/drone-gcs-cache/">Marketplace</a></li>
+</ul>
+<p>s3-cache や gcs-cache は任意のフォルダを tar かなんかに固めて各種クラウドストレージに保存する． volume-cache はローカルに保存してくれるのだが，これを利用するためにはリポジトリの <code>Trusted</code> フラグを立てる必要がある． ただし，これは Admin しかできないので，Drone Cloud では利用できない． なので s3-cache や gcs-cache を使うしかない．</p>
+<p>ちなみに公式で提供してくれてるのは s3-cache なので，そっちを使うべきなのだが，見事に AWS のパスワードやらを忘れてしまったので GCP の Cloud Storage の方を利用した(オイ)． ただ，gcs-cache は 0.8.x 時代の設定方法しか書いてない． いろいろ調べてみた結果，YAML の書き方を変えるだけでそのまま利用できそうだったのでそのまま drone-gcs-cache を利用する．</p>
+<h2 id="drone-gcs-cache">Drone GCS Cache</h2>
+<h3 id="認証鍵の設定">認証鍵の設定</h3>
+<p>GCS の認証にはサービスアカウントの JSON Key を使う． GCP コンソールの <code>APIとサービス</code> の <code>認証情報</code> からサービスアカウントを作成し(このときに JSON が DL される)，<code>IAMと管理</code> の <code>IAM</code> からさっき作ったアカウントに <code>ストレージ管理者</code> を追加した IAM を作成する．</p>
+<p>この JSON を Drone のウェブコンソールから Secret として設定する． 改行込みでファイルの中身そのままコピペで大丈夫． もし PR を作成したときにも動作させたいなら <code>Allow Pull Requests</code> にチェックする．</p>
+<h3 id="yaml-の設定">YAML の設定</h3>
+<p>あとは YAML を設定するだけ． 例えば drone-gcs-cache の古い設定を書き直すと次のようになる:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb1-1" title="1"><span class="fu">kind:</span><span class="at"> pipeline</span></a>
+<a class="sourceLine" id="cb1-2" title="2"><span class="fu">name:</span><span class="at"> default</span></a>
+<a class="sourceLine" id="cb1-3" title="3"></a>
+<a class="sourceLine" id="cb1-4" title="4"><span class="fu">steps:</span></a>
+<a class="sourceLine" id="cb1-5" title="5"><span class="kw">-</span> <span class="fu">name:</span><span class="at"> restore</span></a>
+<a class="sourceLine" id="cb1-6" title="6">  <span class="fu">image:</span><span class="at"> homerovalle/drone-gcs-cache</span></a>
+<a class="sourceLine" id="cb1-7" title="7">  <span class="fu">settings:</span></a>
+<a class="sourceLine" id="cb1-8" title="8">    <span class="fu">pull:</span><span class="at"> </span><span class="ch">true</span></a>
+<a class="sourceLine" id="cb1-9" title="9">    <span class="fu">bucket:</span><span class="at"> gcs_bucket</span></a>
+<a class="sourceLine" id="cb1-10" title="10">    <span class="fu">json_key:</span></a>
+<a class="sourceLine" id="cb1-11" title="11">      <span class="fu">from_secret:</span><span class="at"> gcs-access-json-key</span></a>
+<a class="sourceLine" id="cb1-12" title="12">    <span class="fu">restore:</span><span class="at"> </span><span class="ch">true</span></a>
+<a class="sourceLine" id="cb1-13" title="13"></a>
+<a class="sourceLine" id="cb1-14" title="14"><span class="kw">-</span> <span class="fu">name:</span><span class="at"> build</span></a>
+<a class="sourceLine" id="cb1-15" title="15">  <span class="fu">image:</span><span class="at"> node</span></a>
+<a class="sourceLine" id="cb1-16" title="16">  <span class="fu">commands:</span></a>
+<a class="sourceLine" id="cb1-17" title="17">  <span class="kw">-</span> npm install</a>
+<a class="sourceLine" id="cb1-18" title="18"></a>
+<a class="sourceLine" id="cb1-19" title="19"><span class="kw">-</span> <span class="fu">name:</span><span class="at"> rebuild</span></a>
+<a class="sourceLine" id="cb1-20" title="20">  <span class="fu">image:</span><span class="at"> homerovalle/drone-gcs-cache</span></a>
+<a class="sourceLine" id="cb1-21" title="21">  <span class="fu">settings:</span></a>
+<a class="sourceLine" id="cb1-22" title="22">    <span class="fu">pull:</span><span class="at"> </span><span class="ch">true</span></a>
+<a class="sourceLine" id="cb1-23" title="23">    <span class="fu">bucket:</span><span class="at"> gcs_bucket</span></a>
+<a class="sourceLine" id="cb1-24" title="24">    <span class="fu">json_key:</span></a>
+<a class="sourceLine" id="cb1-25" title="25">      <span class="fu">from_secret:</span><span class="at"> gcs-access-json-key</span></a>
+<a class="sourceLine" id="cb1-26" title="26">    <span class="fu">rebuild:</span><span class="at"> </span><span class="ch">true</span></a>
+<a class="sourceLine" id="cb1-27" title="27">    <span class="fu">mount:</span></a>
+<a class="sourceLine" id="cb1-28" title="28">      <span class="kw">-</span> node_modules</a>
+<a class="sourceLine" id="cb1-29" title="29">    <span class="fu">when:</span></a>
+<a class="sourceLine" id="cb1-30" title="30">      <span class="fu">event:</span><span class="at"> push</span></a>
+<a class="sourceLine" id="cb1-31" title="31"></a>
+<a class="sourceLine" id="cb1-32" title="32"><span class="kw">-</span> <span class="fu">name:</span><span class="at"> flush</span></a>
+<a class="sourceLine" id="cb1-33" title="33">  <span class="fu">image:</span><span class="at"> homerovalle/drone-gcs-cache</span></a>
+<a class="sourceLine" id="cb1-34" title="34">  <span class="fu">settings:</span></a>
+<a class="sourceLine" id="cb1-35" title="35">    <span class="fu">pull:</span><span class="at"> </span><span class="ch">true</span></a>
+<a class="sourceLine" id="cb1-36" title="36">    <span class="fu">bucket:</span><span class="at"> gcs_bucket</span></a>
+<a class="sourceLine" id="cb1-37" title="37">    <span class="fu">json_key:</span></a>
+<a class="sourceLine" id="cb1-38" title="38">      <span class="fu">from_secret:</span><span class="at"> gcs-access-json-key</span></a>
+<a class="sourceLine" id="cb1-39" title="39">    <span class="fu">flush:</span><span class="at"> </span><span class="ch">true</span></a>
+<a class="sourceLine" id="cb1-40" title="40">    <span class="fu">flush_age:</span><span class="at"> </span><span class="dv">14</span></a></code></pre></div>
+<p>これは Drone の Secret に <code>gcs-access-json-key</code> という名前で登録している場合である． ちなみに <code>flush_age</code> は，ここで設定した日付よりも前のキャッシュを削除する設定のようだ(デフォルトは30)．</p>
+<h2 id="haskell-で試す">Haskell で試す</h2>
+<p>ちなみに<a href="https://github.com/matsubara0507/drone-haskell/pull/3">導入したPRはこれ</a>． <code>.stack</code> と <code>.stack-work</code> をキャッシュする:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb2-1" title="1"><span class="fu">kind:</span><span class="at"> pipeline</span></a>
+<a class="sourceLine" id="cb2-2" title="2"><span class="fu">name:</span><span class="at"> default</span></a>
+<a class="sourceLine" id="cb2-3" title="3"></a>
+<a class="sourceLine" id="cb2-4" title="4"><span class="fu">steps:</span></a>
+<a class="sourceLine" id="cb2-5" title="5"><span class="kw">-</span> <span class="fu">name:</span><span class="at"> restore</span></a>
+<a class="sourceLine" id="cb2-6" title="6">  <span class="fu">image:</span><span class="at"> homerovalle/drone-gcs-cache</span></a>
+<a class="sourceLine" id="cb2-7" title="7">  <span class="fu">settings:</span></a>
+<a class="sourceLine" id="cb2-8" title="8">    ...</a>
+<a class="sourceLine" id="cb2-9" title="9"></a>
+<a class="sourceLine" id="cb2-10" title="10"><span class="kw">-</span> <span class="fu">name:</span><span class="at"> test</span></a>
+<a class="sourceLine" id="cb2-11" title="11">  <span class="fu">image:</span><span class="at"> haskell:8.6</span></a>
+<a class="sourceLine" id="cb2-12" title="12">  <span class="fu">commands:</span></a>
+<a class="sourceLine" id="cb2-13" title="13">  <span class="kw">-</span> stack --no-terminal --stack-root `pwd`/.stack --install-ghc test --bench --only-dependencies</a>
+<a class="sourceLine" id="cb2-14" title="14">  <span class="kw">-</span> stack --no-terminal --stack-root `pwd`/.stack test --bench --no-run-benchmarks --no-haddock-deps --pedantic</a>
+<a class="sourceLine" id="cb2-15" title="15"></a>
+<a class="sourceLine" id="cb2-16" title="16"><span class="kw">-</span> <span class="fu">name:</span><span class="at"> rebuild</span></a>
+<a class="sourceLine" id="cb2-17" title="17">  <span class="fu">image:</span><span class="at"> homerovalle/drone-gcs-cache</span></a>
+<a class="sourceLine" id="cb2-18" title="18">  <span class="fu">settings:</span></a>
+<a class="sourceLine" id="cb2-19" title="19">    <span class="fu">pull:</span><span class="at"> </span><span class="ch">true</span></a>
+<a class="sourceLine" id="cb2-20" title="20">    <span class="fu">bucket:</span><span class="at"> matsubara-drone-cache</span></a>
+<a class="sourceLine" id="cb2-21" title="21">    <span class="fu">json_key:</span></a>
+<a class="sourceLine" id="cb2-22" title="22">      <span class="fu">from_secret:</span><span class="at"> gcs-access-json-key</span></a>
+<a class="sourceLine" id="cb2-23" title="23">    <span class="fu">rebuild:</span><span class="at"> </span><span class="ch">true</span></a>
+<a class="sourceLine" id="cb2-24" title="24">    <span class="fu">mount:</span></a>
+<a class="sourceLine" id="cb2-25" title="25">      <span class="kw">-</span> .stack</a>
+<a class="sourceLine" id="cb2-26" title="26">      <span class="kw">-</span> .stack-work</a>
+<a class="sourceLine" id="cb2-27" title="27">    <span class="fu">when:</span></a>
+<a class="sourceLine" id="cb2-28" title="28">      <span class="fu">event:</span><span class="at"> push</span></a>
+<a class="sourceLine" id="cb2-29" title="29"></a>
+<a class="sourceLine" id="cb2-30" title="30"><span class="kw">-</span> <span class="fu">name:</span><span class="at"> flush</span></a>
+<a class="sourceLine" id="cb2-31" title="31">  <span class="fu">image:</span><span class="at"> homerovalle/drone-gcs-cache</span></a>
+<a class="sourceLine" id="cb2-32" title="32">  <span class="fu">settings:</span></a>
+<a class="sourceLine" id="cb2-33" title="33">    ...</a></code></pre></div>
+<p><code>restore</code> と <code>flush</code> は同じなので割愛． <code>$HOME/.stack</code> だと動作しなかったので，いっそのことカレントディレクトリに <code>.stack</code> を持ってくることにした． で，実際どれくらい早くなったのか． ビフォー:</p>
+<p><img src="/assets/use-drone-cache-with-gcs/before.jpg" /></p>
+<p>9分は長い． そんでアフター:</p>
+<p><img src="/assets/use-drone-cache-with-gcs/after.jpg" /></p>
+<p>4GB弱キャッシュされてるので，restore に結構かかってしまう． まぁ半分近くになったのでこれで良しとしましょう(GCS分のお金はかかるけど)．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>Drone は Crone を hourly で使えるから haskell-antenna を Drone に移行してみようかしら．</p>
+  </div>
+</div>
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>Drone 1.0 を docker-compose up する</title>
     <link href="https://matsubara0507.github.io/posts/2019-01-05-docker-compose-up-drone-1-0.html" />
     <id>https://matsubara0507.github.io/posts/2019-01-05-docker-compose-up-drone-1-0.html</id>
@@ -1958,82 +2086,6 @@ $ stack --docker image container</code></pre>
 <p>アメリカ以外はだいたいひと月ほどで届くらしい． ちなみに，去年は12月20日ぐらいに届いてた．</p>
 <h3 id="おしまい">おしまい</h3>
 <p>あんまり OSS っぽい PR を出せなくて残念…</p>
-  </div>
-</div>
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>GHC 8.6 がインストールできなかった</title>
-    <link href="https://matsubara0507.github.io/posts/2018-10-28-ghc-8-6-error-no-gmp.html" />
-    <id>https://matsubara0507.github.io/posts/2018-10-28-ghc-8-6-error-no-gmp.html</id>
-    <published>2018-10-28T00:00:00Z</published>
-    <updated>2018-10-28T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
- <div class="card-content">
-  <header class="post-header">
-    <h1 class="post-title" itemprop="name headline">GHC 8.6 がインストールできなかった</h1>
-    <p class="post-meta">
-      <time datetime="2018-10-28" itemprop="datePublished">
-        Oct 28, 2018
-      </time>
-      
-      
-      <div class="tags">
-          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a>
-      </div>
-      
-    </p>
-  </header>
-
-  <div class="post-content" itemprop="articleBody">
-    <p>対したことではないんだけど，日本語の記事が無っかたのでメモ． ちなみに OS は macOS Sierra (10.12.6) です．</p>
-<h2 id="ghc-8.6-でビルドできない">GHC 8.6 でビルドできない</h2>
-<p>現在 stackage の Nightly は最新の GHC バージョンである 8.6 がインストールされる． 結構パッケージも揃ってきたので，自分のパッケージもビルドしてみようかなと思って，resolver を Nightly に変えて <code>stack build</code> したら下記のようなエラーが出た．</p>
-<pre class="shell"><code>$ stack build
-Downloaded nightly-2018-10-26 build plan.    
-Preparing to install GHC to an isolated location.
-This will not interfere with any system-level installation.
-Downloaded ghc-8.6.1.                                      
-Installing GHC ...                                                                         
-Received ExitFailure 2 when running
-Raw command: /usr/bin/make install
-Run from: /Users/username/.stack/programs/x86_64-osx/ghc-8.6.1.temp/ghc-8.6.1/</code></pre>
-<p><code>--vebose</code> を付けて詳細を見てみる．</p>
-<pre class="shell"><code>$ stack build --verbose
-Version 1.9.1, Git revision f9d0042c141660e1d38f797e1d426be4a99b2a3c (6168 commits) x86_64 hpack-0.31.0
-2018-10-28 13:31:22.068195: [debug] Checking for project config at: /Users/username/git/haskell/servant-kotlin/stack.yaml
-2018-10-28 13:31:22.069706: [debug] Loading project config file stack.yaml
- .
- .
- .
-2018-10-28 13:32:21.355443: [debug] /Library/Developer/CommandLineTools/usr/bin/ranlib: file: /Users/username/.stack/programs/x86_64-osx/ghc-8.6.1/lib/ghc-8.6.1/rts/libHSrts_thr_p.a(Select.thr_p_o) has no symbols
-2018-10-28 13:32:21.621133: [debug] &quot;utils/ghc-cabal/dist-install/build/tmp/ghc-cabal-bindist&quot; copy libraries/ghc-prim dist-install &quot;strip&quot; &#39;&#39; &#39;/Users/username/.stack/programs/x86_64-osx/ghc-8.6.1&#39; &#39;/Users/username/.stack/programs/x86_64-osx/ghc-8.6.1/lib/ghc-8.6.1&#39; &#39;/Users/username/.stack/programs/x86_64-osx/ghc-8.6.1/share/doc/ghc-8.6.1/html/libraries&#39; &#39;v p dyn&#39;  
-2018-10-28 13:32:21.841900: [debug] dyld: Library not loaded: /usr/local/opt/gmp/lib/libgmp.10.dylib
-2018-10-28 13:32:21.842003: [debug]   Referenced from: /Users/username/.stack/programs/x86_64-osx/ghc-8.6.1.temp/ghc-8.6.1/libraries/base/dist-install/build/libHSbase-4.12.0.0-ghc8.6.1.dylib
-2018-10-28 13:32:21.842062: [debug]   Reason: image not found
-2018-10-28 13:32:21.842273: [debug] make[1]: *** [install_packages] Abort trap: 6
-2018-10-28 13:32:21.844303: [debug] make: *** [install] Error 2
-Installing GHC ...
-Received ExitFailure 2 when running
-Raw command: /usr/bin/make install
-Run from: /Users/username/.stack/programs/x86_64-osx/ghc-8.6.1.temp/ghc-8.6.1/</code></pre>
-<p>どうやら <code>/usr/local/opt/gmp/lib/libgmp.10.dylib</code> が無いみたいだ．</p>
-<pre class="shell"><code>$ ls /usr/local/opt/gmp/lib/libgmp.10.dylib
-ls: /usr/local/opt/gmp/lib/libgmp.10.dylib: No such file or directory</code></pre>
-<p>これで検索すると，Ruby に関することだが <a href="https://stackoverflow.com/questions/34912946">StackOverflow があった</a>． 曰く，<code>gmp</code> パッケージを入れれば良いらしい（多くの人は他のどこかのタイミングで入ってるのかも）．</p>
-<pre class="shell"><code>$ brew reinstall gmp
-==&gt; Reinstalling gmp
-==&gt; Downloading https://homebrew.bintray.com/bottles/gmp-6.1.2_2.sierra.bottle.tar.gz
-######################################################################## 100.0%
-==&gt; Pouring gmp-6.1.2_2.sierra.bottle.tar.gz
-🍺  /usr/local/Cellar/gmp/6.1.2_2: 18 files, 3.1MB
-
-$ ls /usr/local/opt/gmp/lib/libgmp.10.dylib
-/usr/local/opt/gmp/lib/libgmp.10.dylib</code></pre>
-<p>これで GHC 8.6 で <code>stack build</code> できるようになった．</p>
-<h2 id="おしまい">おしまい</h2>
-<p>まぁ一応ね，一応メモした．</p>
   </div>
 </div>
 </article>
