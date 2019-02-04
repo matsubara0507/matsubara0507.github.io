@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
     <url>
+        <loc>https://matsubara0507.github.io/posts/2019-02-04-re-recommend-marp.html</loc>
+        <changefreq>never</changefreq>
+        <lastmod>2019-02-04</lastmod>
+        <priority>0.8</priority>
+    </url>
+
+    <url>
         <loc>https://matsubara0507.github.io/posts/2019-01-20-create-drone-git-with-ssh.html</loc>
         <changefreq>never</changefreq>
         <lastmod>2019-01-20</lastmod>
