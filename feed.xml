@@ -33,7 +33,9 @@
   </header>
 
   <div class="post-content" itemprop="articleBody">
-    <p><a href="https://yhatt.github.io/marp/">Marp</a> というのは Markdown 記法で書けるスライド作成ツールです．</p>
+    <p><strong>2019.4.6 Marp-core-0.6.0 での更新を反映した</strong></p>
+<h1 id="section"></h1>
+<p><a href="https://yhatt.github.io/marp/">Marp</a> というのは Markdown 記法で書けるスライド作成ツールです．</p>
 <ul>
 <li>Markdown 記法で手軽に書ける</li>
 <li>見た目が綺麗</li>
@@ -46,7 +48,7 @@
 <li><a href="https://qiita.com/yhatt/items/874d5bfa919c32728403">Puppeteer &amp; Carlo を Markdown スライド作成 CLI ツール (Marp CLI) で活用する - Qiita</a></li>
 </ul>
 <p>時折，リポジトリをチェックして更新がないかを見ていたのですが，いよいよ Web UI まで出来上がっているので，現状のを試しに使ってみることにしました，というメモです．</p>
-<h1 id="section"></h1>
+<h1 id="section-1"></h1>
 <p>ちなみに，本記事での Marp Next のバージョンは <code>marp-cli-0.6</code> ぐらいを想定しています(現在開発が活発なので既に古くなっているかも)．</p>
 <h2 id="marp-next">Marp Next</h2>
 <p>新しい Marp の大きな目的は，よりメンテナブルな設計になることのようで，旧 Marp と異なり，機能ごとに個別の JS パッケージとなっている:</p>
@@ -108,6 +110,7 @@
 <li>それらはテーマのイチ <code>class</code> となっている</li>
 <li>前の <code>template</code> も <code>class</code> なので組み合わせれない</li>
 <li>明示的に指定できるようになったのは嬉しい</li>
+<li>class を複数設定できるようになった！ (<a href="https://github.com/marp-team/marp-core/pull/69">marp-core-0.6.0~</a>)</li>
 </ul></li>
 <li>KaTeX のバージョンアップ (Marp Core)
 <ul>
@@ -211,6 +214,7 @@ yarn start</code></pre>
 <ul>
 <li>scss で書いてるので <code>lead</code> を適当に mixi-in にして include するだけ</li>
 <li>これもできれば <code>class</code> の組み合わせができるようになって欲しい</li>
+<li>marp-core-0.6.0 から class を複数設定できるようになったので、これはいらない ;)</li>
 </ul></li>
 </ul>
 <h3 id="olive">Olive</h3>
@@ -631,7 +635,9 @@ PLUGIN_COMMANDS</code></pre>
   </header>
 
   <div class="post-content" itemprop="articleBody">
-    <p>新年一発目です． <a href="https://drone.io/">Drone CI</a> が，めでたくバージョン1.0(まだ rc だけど)をリリースしてドキュメントも刷新されたんですけど，<a href="https://0-8-0.docs.drone.io/install-for-github/">0.8.x 時代にはあった <code>docker-compose</code> でのやり方</a>が書いてなかった(見つけられなかった)ので，そのメモ書きです． ちなみに経緯は，結構前に作っていた <a href="https://github.com/matsubara0507/drone-haskell">drone-haskell</a> と言う Drone CI の Haskell クライアントを Drone 1.0 に対応したくて，手元で Drone を起動しようとしたためです． めでたく，Haskell クライアントも 1.0 に対応したので，それの紹介もおまけでします．</p>
+    <p><strong>2019.4.6 YAMLの設定が一部間違っていたので修正しました</strong></p>
+<h1 id="section"></h1>
+<p>新年一発目です． <a href="https://drone.io/">Drone CI</a> が，めでたくバージョン1.0(まだ rc だけど)をリリースしてドキュメントも刷新されたんですけど，<a href="https://0-8-0.docs.drone.io/install-for-github/">0.8.x 時代にはあった <code>docker-compose</code> でのやり方</a>が書いてなかった(見つけられなかった)ので，そのメモ書きです． ちなみに経緯は，結構前に作っていた <a href="https://github.com/matsubara0507/drone-haskell">drone-haskell</a> と言う Drone CI の Haskell クライアントを Drone 1.0 に対応したくて，手元で Drone を起動しようとしたためです． めでたく，Haskell クライアントも 1.0 に対応したので，それの紹介もおまけでします．</p>
 <h2 id="drone-ci">Drone CI</h2>
 <p>Drone.io, Inc. というアメリカ企業が開発している継続的デリバリーを支援するためのプラットフォームである． 同種のものに Jenkins や TravisCI，CircleCI などが挙げられます(多分)． 単純な利用者側(リポジトリにCIなどを設定する側)としては，TravisCI・CircleCI に似ているが，これらとの大きな違いとして，Drone は GitHub 上に OSS として公開されている点だ:</p>
 <ul>
@@ -655,32 +661,31 @@ PLUGIN_COMMANDS</code></pre>
 <a class="sourceLine" id="cb2-6" title="6">    <span class="fu">ports:</span></a>
 <a class="sourceLine" id="cb2-7" title="7">      <span class="kw">-</span> 8000:80</a>
 <a class="sourceLine" id="cb2-8" title="8">      <span class="kw">-</span> 443:443</a>
-<a class="sourceLine" id="cb2-9" title="9">      <span class="kw">-</span> <span class="dv">9000</span></a>
-<a class="sourceLine" id="cb2-10" title="10">    <span class="fu">volumes:</span></a>
-<a class="sourceLine" id="cb2-11" title="11">      <span class="kw">-</span> /var/run/docker.sock:/var/run/docker.sock</a>
-<a class="sourceLine" id="cb2-12" title="12">      <span class="kw">-</span> .:/data</a>
-<a class="sourceLine" id="cb2-13" title="13">    <span class="fu">restart:</span><span class="at"> always</span></a>
-<a class="sourceLine" id="cb2-14" title="14">    <span class="fu">environment:</span></a>
-<a class="sourceLine" id="cb2-15" title="15">      <span class="kw">-</span> DRONE_GITHUB_SERVER=https://github.com</a>
-<a class="sourceLine" id="cb2-16" title="16">      <span class="kw">-</span> DRONE_GITHUB_CLIENT_ID=XXX</a>
-<a class="sourceLine" id="cb2-17" title="17">      <span class="kw">-</span> DRONE_GITHUB_CLIENT_SECRET=YYY</a>
-<a class="sourceLine" id="cb2-18" title="18">      <span class="kw">-</span> DRONE_RPC_SECRET=ZZZ</a>
-<a class="sourceLine" id="cb2-19" title="19">      <span class="kw">-</span> DRONE_SERVER_HOST=abcdef.ngrok.io</a>
-<a class="sourceLine" id="cb2-20" title="20">      <span class="kw">-</span> DRONE_SERVER_PROTO=https</a>
-<a class="sourceLine" id="cb2-21" title="21">      <span class="kw">-</span> DRONE_TLS_AUTOCERT=true</a>
-<a class="sourceLine" id="cb2-22" title="22"></a>
-<a class="sourceLine" id="cb2-23" title="23">  <span class="fu">drone-agent:</span></a>
-<a class="sourceLine" id="cb2-24" title="24">    <span class="fu">image:</span><span class="at"> drone/agent:1.0.0-rc.3</span></a>
-<a class="sourceLine" id="cb2-25" title="25">    <span class="fu">command:</span><span class="at"> agent</span></a>
-<a class="sourceLine" id="cb2-26" title="26">    <span class="fu">restart:</span><span class="at"> always</span></a>
-<a class="sourceLine" id="cb2-27" title="27">    <span class="fu">depends_on:</span></a>
-<a class="sourceLine" id="cb2-28" title="28">      <span class="kw">-</span> drone-server</a>
-<a class="sourceLine" id="cb2-29" title="29">    <span class="fu">volumes:</span></a>
-<a class="sourceLine" id="cb2-30" title="30">      <span class="kw">-</span> /var/run/docker.sock:/var/run/docker.sock</a>
-<a class="sourceLine" id="cb2-31" title="31">    <span class="fu">environment:</span></a>
-<a class="sourceLine" id="cb2-32" title="32">      <span class="kw">-</span> DRONE_RPC_SERVER=drone-server:9000</a>
-<a class="sourceLine" id="cb2-33" title="33">      <span class="kw">-</span> DRONE_RPC_SECRET=ZZZ</a>
-<a class="sourceLine" id="cb2-34" title="34">      <span class="kw">-</span> DRONE_RUNNER_CAPACITY=2</a></code></pre></div>
+<a class="sourceLine" id="cb2-9" title="9">    <span class="fu">volumes:</span></a>
+<a class="sourceLine" id="cb2-10" title="10">      <span class="kw">-</span> /var/run/docker.sock:/var/run/docker.sock</a>
+<a class="sourceLine" id="cb2-11" title="11">      <span class="kw">-</span> .:/data</a>
+<a class="sourceLine" id="cb2-12" title="12">    <span class="fu">restart:</span><span class="at"> always</span></a>
+<a class="sourceLine" id="cb2-13" title="13">    <span class="fu">environment:</span></a>
+<a class="sourceLine" id="cb2-14" title="14">      <span class="kw">-</span> DRONE_GITHUB_SERVER=https://github.com</a>
+<a class="sourceLine" id="cb2-15" title="15">      <span class="kw">-</span> DRONE_GITHUB_CLIENT_ID=XXX</a>
+<a class="sourceLine" id="cb2-16" title="16">      <span class="kw">-</span> DRONE_GITHUB_CLIENT_SECRET=YYY</a>
+<a class="sourceLine" id="cb2-17" title="17">      <span class="kw">-</span> DRONE_RPC_SECRET=ZZZ</a>
+<a class="sourceLine" id="cb2-18" title="18">      <span class="kw">-</span> DRONE_SERVER_HOST=abcdef.ngrok.io</a>
+<a class="sourceLine" id="cb2-19" title="19">      <span class="kw">-</span> DRONE_SERVER_PROTO=https</a>
+<a class="sourceLine" id="cb2-20" title="20">      <span class="kw">-</span> DRONE_TLS_AUTOCERT=true</a>
+<a class="sourceLine" id="cb2-21" title="21"></a>
+<a class="sourceLine" id="cb2-22" title="22">  <span class="fu">drone-agent:</span></a>
+<a class="sourceLine" id="cb2-23" title="23">    <span class="fu">image:</span><span class="at"> drone/agent:1.0.0-rc.3</span></a>
+<a class="sourceLine" id="cb2-24" title="24">    <span class="fu">command:</span><span class="at"> agent</span></a>
+<a class="sourceLine" id="cb2-25" title="25">    <span class="fu">restart:</span><span class="at"> always</span></a>
+<a class="sourceLine" id="cb2-26" title="26">    <span class="fu">depends_on:</span></a>
+<a class="sourceLine" id="cb2-27" title="27">      <span class="kw">-</span> drone-server</a>
+<a class="sourceLine" id="cb2-28" title="28">    <span class="fu">volumes:</span></a>
+<a class="sourceLine" id="cb2-29" title="29">      <span class="kw">-</span> /var/run/docker.sock:/var/run/docker.sock</a>
+<a class="sourceLine" id="cb2-30" title="30">    <span class="fu">environment:</span></a>
+<a class="sourceLine" id="cb2-31" title="31">      <span class="kw">-</span> DRONE_RPC_SERVER=http://drone-server</a>
+<a class="sourceLine" id="cb2-32" title="32">      <span class="kw">-</span> DRONE_RPC_SECRET=ZZZ</a>
+<a class="sourceLine" id="cb2-33" title="33">      <span class="kw">-</span> DRONE_RUNNER_CAPACITY=2</a></code></pre></div>
 <p><code>XXX</code> は GitHub OAuth App の Client ID を，<code>YYY</code> には Client Secret を記述する． <code>DRONE_RPC_SECRET</code> の <code>ZZZ</code> は server と agent で同じであればなんでも良いのだが，<a href="https://docs.drone.io/installation/github/multi-machine/#create-a-shared-secret">ここ</a>に <code>openssl rand -hex 16</code> で生成すると書いてあるので，それに従う． これであとは <code>docker-compose up</code> をすれば無事起動完了だ．</p>
 <pre><code>$ curl http://localhost:8000/version
 {&quot;source&quot;:&quot;https://github.com/drone/drone.git&quot;,&quot;version&quot;:&quot;latest&quot;,&quot;commit&quot;:&quot;ffe3ad2aa2a30d0ba4d848c1cd0f61238b73a21c&quot;}</code></pre>

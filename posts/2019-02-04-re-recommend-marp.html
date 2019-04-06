@@ -87,7 +87,9 @@
   </header>
 
   <div class="post-content" itemprop="articleBody">
-    <p><a href="https://yhatt.github.io/marp/">Marp</a> というのは Markdown 記法で書けるスライド作成ツールです．</p>
+    <p><strong>2019.4.6 Marp-core-0.6.0 での更新を反映した</strong></p>
+<h1 id="section"></h1>
+<p><a href="https://yhatt.github.io/marp/">Marp</a> というのは Markdown 記法で書けるスライド作成ツールです．</p>
 <ul>
 <li>Markdown 記法で手軽に書ける</li>
 <li>見た目が綺麗</li>
@@ -100,7 +102,7 @@
 <li><a href="https://qiita.com/yhatt/items/874d5bfa919c32728403">Puppeteer &amp; Carlo を Markdown スライド作成 CLI ツール (Marp CLI) で活用する - Qiita</a></li>
 </ul>
 <p>時折，リポジトリをチェックして更新がないかを見ていたのですが，いよいよ Web UI まで出来上がっているので，現状のを試しに使ってみることにしました，というメモです．</p>
-<h1 id="section"></h1>
+<h1 id="section-1"></h1>
 <p>ちなみに，本記事での Marp Next のバージョンは <code>marp-cli-0.6</code> ぐらいを想定しています(現在開発が活発なので既に古くなっているかも)．</p>
 <h2 id="marp-next">Marp Next</h2>
 <p>新しい Marp の大きな目的は，よりメンテナブルな設計になることのようで，旧 Marp と異なり，機能ごとに個別の JS パッケージとなっている:</p>
@@ -162,6 +164,7 @@
 <li>それらはテーマのイチ <code>class</code> となっている</li>
 <li>前の <code>template</code> も <code>class</code> なので組み合わせれない</li>
 <li>明示的に指定できるようになったのは嬉しい</li>
+<li>class を複数設定できるようになった！ (<a href="https://github.com/marp-team/marp-core/pull/69">marp-core-0.6.0~</a>)</li>
 </ul></li>
 <li>KaTeX のバージョンアップ (Marp Core)
 <ul>
@@ -265,6 +268,7 @@ yarn start</code></pre>
 <ul>
 <li>scss で書いてるので <code>lead</code> を適当に mixi-in にして include するだけ</li>
 <li>これもできれば <code>class</code> の組み合わせができるようになって欲しい</li>
+<li>marp-core-0.6.0 から class を複数設定できるようになったので、これはいらない ;)</li>
 </ul></li>
 </ul>
 <h3 id="olive">Olive</h3>
