@@ -8,8 +8,191 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2019-02-04T00:00:00Z</updated>
+    <updated>2019-04-06T00:00:00Z</updated>
     <entry>
+    <title>Drone 1.0 を GCE 上に構築する</title>
+    <link href="https://matsubara0507.github.io/posts/2019-04-06-drone-1-0-in-gce.html" />
+    <id>https://matsubara0507.github.io/posts/2019-04-06-drone-1-0-in-gce.html</id>
+    <published>2019-04-06T00:00:00Z</published>
+    <updated>2019-04-06T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Drone 1.0 を GCE 上に構築する</h1>
+    <p class="post-meta">
+      <time datetime="2019-04-06" itemprop="datePublished">
+        Apr 6, 2019
+      </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/Drone.html">Drone</a> <a href="/tags/GCP.html">GCP</a>
+      </div>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>先月ついに <a href="https://drone.io/">Drone CI</a> のバージョン1.0がリリースされました(rc でも無い方)． まだドキュメントの方が追いついてないところもありますが，これで大手を振って本番導入できますね！</p>
+<p>で，別に本番導入したわけじゃ無いんですけど，とあるイベントで Drone CI を使いたかったので GCE 上に立てました． 本記事はそのメモ書きです．</p>
+<h2 id="drone-ci">Drone CI</h2>
+<p>Jenkins のような OSS な CI/CD プラットフォーム． 使い勝手的には TravisCI や CircleCI に近く、<code>.drone.yml</code> という設定ファイルにパイプラインを使って記述する:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb1-1" title="1"><span class="fu">kind:</span><span class="at"> pipeline</span></a>
+<a class="sourceLine" id="cb1-2" title="2"><span class="fu">steps:</span></a>
+<a class="sourceLine" id="cb1-3" title="3"><span class="kw">-</span> <span class="fu">name:</span><span class="at"> test</span></a>
+<a class="sourceLine" id="cb1-4" title="4">  <span class="fu">image:</span><span class="at"> node</span></a>
+<a class="sourceLine" id="cb1-5" title="5">  <span class="fu">commands:</span></a>
+<a class="sourceLine" id="cb1-6" title="6">  <span class="kw">-</span> npm install</a>
+<a class="sourceLine" id="cb1-7" title="7">  <span class="kw">-</span> npm test</a>
+<a class="sourceLine" id="cb1-8" title="8"><span class="fu">services:</span></a>
+<a class="sourceLine" id="cb1-9" title="9"><span class="kw">-</span> <span class="fu">name:</span><span class="at"> database</span></a>
+<a class="sourceLine" id="cb1-10" title="10">  <span class="fu">image:</span><span class="at"> mysql</span></a>
+<a class="sourceLine" id="cb1-11" title="11">  <span class="fu">ports:</span></a>
+<a class="sourceLine" id="cb1-12" title="12">  <span class="kw">-</span> <span class="dv">3306</span></a></code></pre></div>
+<p>Go言語製で，Docker との親和性がかなり高いという特徴を持っている． また，<a href="https://cloud.drone.io/">Drone Cloud</a> というクラウドサービスも提供されているので，とりあえず試したい人はぜひ．</p>
+<h2 id="drone-on-gcp">Drone on GCP</h2>
+<p>Drone 自体は Docker で起動できる(<a href="https://docs.drone.io/installation">公式ドキュメント</a>)． docker-compose を次のように記述することで簡単に起動可能だ:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb2-1" title="1"><span class="fu">version:</span><span class="at"> </span><span class="st">&#39;2&#39;</span></a>
+<a class="sourceLine" id="cb2-2" title="2"></a>
+<a class="sourceLine" id="cb2-3" title="3"><span class="fu">services:</span></a>
+<a class="sourceLine" id="cb2-4" title="4">  <span class="fu">drone:</span></a>
+<a class="sourceLine" id="cb2-5" title="5">    <span class="fu">image:</span><span class="at"> drone/drone:1</span></a>
+<a class="sourceLine" id="cb2-6" title="6">    <span class="fu">ports:</span></a>
+<a class="sourceLine" id="cb2-7" title="7">      <span class="kw">-</span> 8000:80</a>
+<a class="sourceLine" id="cb2-8" title="8">      <span class="kw">-</span> 443:443</a>
+<a class="sourceLine" id="cb2-9" title="9">    <span class="fu">volumes:</span></a>
+<a class="sourceLine" id="cb2-10" title="10">      <span class="kw">-</span> /var/run/docker.sock:/var/run/docker.sock</a>
+<a class="sourceLine" id="cb2-11" title="11">      <span class="kw">-</span> /var/lib/drone:/data</a>
+<a class="sourceLine" id="cb2-12" title="12">    <span class="fu">restart:</span><span class="at"> always</span></a>
+<a class="sourceLine" id="cb2-13" title="13">    <span class="fu">environment:</span></a>
+<a class="sourceLine" id="cb2-14" title="14">      <span class="kw">-</span> DRONE_GITHUB_SERVER=https://github.com</a>
+<a class="sourceLine" id="cb2-15" title="15">      <span class="kw">-</span> DRONE_GITHUB_CLIENT_ID=$<span class="kw">{</span>DRONE_GITHUB_CLIENT<span class="kw">}</span></a>
+<a class="sourceLine" id="cb2-16" title="16">      <span class="kw">-</span> DRONE_GITHUB_CLIENT_SECRET=$<span class="kw">{</span>DRONE_GITHUB_SECRET<span class="kw">}</span></a>
+<a class="sourceLine" id="cb2-17" title="17">      <span class="kw">-</span> DRONE_AGENTS_ENABLED=true</a>
+<a class="sourceLine" id="cb2-18" title="18">      <span class="kw">-</span> DRONE_RPC_SECRET=$<span class="kw">{</span>DRONE_SECRET<span class="kw">}</span></a>
+<a class="sourceLine" id="cb2-19" title="19">      <span class="kw">-</span> DRONE_SERVER_HOST=$<span class="kw">{</span>DRONE_HOST<span class="kw">}</span></a>
+<a class="sourceLine" id="cb2-20" title="20">      <span class="kw">-</span> DRONE_SERVER_PROTO=https</a>
+<a class="sourceLine" id="cb2-21" title="21">      <span class="kw">-</span> DRONE_TLS_AUTOCERT=true</a>
+<a class="sourceLine" id="cb2-22" title="22"></a>
+<a class="sourceLine" id="cb2-23" title="23">  <span class="fu">agent:</span></a>
+<a class="sourceLine" id="cb2-24" title="24">    <span class="fu">image:</span><span class="at"> drone/agent:1</span></a>
+<a class="sourceLine" id="cb2-25" title="25">    <span class="fu">restart:</span><span class="at"> always</span></a>
+<a class="sourceLine" id="cb2-26" title="26">    <span class="fu">depends_on:</span></a>
+<a class="sourceLine" id="cb2-27" title="27">      <span class="kw">-</span> drone</a>
+<a class="sourceLine" id="cb2-28" title="28">    <span class="fu">volumes:</span></a>
+<a class="sourceLine" id="cb2-29" title="29">      <span class="kw">-</span> /var/run/docker.sock:/var/run/docker.sock</a>
+<a class="sourceLine" id="cb2-30" title="30">    <span class="fu">environment:</span></a>
+<a class="sourceLine" id="cb2-31" title="31">      <span class="kw">-</span> DRONE_RPC_SERVER=http://drone</a>
+<a class="sourceLine" id="cb2-32" title="32">      <span class="kw">-</span> DRONE_RPC_SECRET=$<span class="kw">{</span>DRONE_SECRET<span class="kw">}</span></a>
+<a class="sourceLine" id="cb2-33" title="33">      <span class="kw">-</span> DRONE_RUNNER_CAPACITY=2</a>
+<a class="sourceLine" id="cb2-34" title="34">      <span class="kw">-</span> DRONE_RUNNER_NAME=$<span class="kw">{</span>HOSTNAME<span class="kw">}</span></a></code></pre></div>
+<p>(<a href="/posts/2019-01-05-docker-compose-up-drone-1-0.html">ローカルで試す話は前に書いた</a>)</p>
+<p>今回はこれを GCE 上でやることにした(GKE を試そうとも思ったが，まだ時期尚早って感じだったのでやめた)．</p>
+<h3 id="gcpでの準備">GCPでの準備</h3>
+<p>HTTPS 通信をやりたいのでドメインの取得をし，HTTP(S) LB と Managed SSL を使って簡単に証明書を発行することにした． この仕組みは下記の記事を参考にした:</p>
+<ul>
+<li><a href="https://qiita.com/koshilife/items/a75a69d03e2524f33c8e">GCP managed SSL(β版)を利用したhttpsサーバ構築 - Qiita</a></li>
+</ul>
+<p>β版だったためか，ところどころ違った気がするけど概ね記事の通りできた．</p>
+<ol type="1">
+<li>GCEインスタンスを立てる
+<ul>
+<li>スペックは <code>n1-standard-1（vCPU x 1、メモリ 3.75 GB）+ 10GB disk</code> にした</li>
+<li>HTTPアクセスを許可しておく</li>
+</ul></li>
+<li>インスタンスグループを作成</li>
+<li>HTTP(S) LB を作成
+<ul>
+<li>バックエンド: (2)のインスタンスグループを選んで他はデフォルト値</li>
+<li>ホストとパスのルール: 特になし</li>
+<li>フロントエンド: エフェラメルIPでHTTP/HTTPSの2つを作成</li>
+</ul></li>
+<li>DNSのAレコードを作成
+<ul>
+<li>有効化されるのに長いと1時間ぐらいかかる</li>
+</ul></li>
+</ol>
+<p>ドメインは Google Domain で取得したのだが，そっちの DNS 設定を切っておくのを忘れて有効化に失敗していた．</p>
+<h3 id="drone-の準備と起動">Drone の準備と起動</h3>
+<p>上記手順の(1)で以下のプログラムをインストール:</p>
+<ul>
+<li><code>docker</code></li>
+<li><code>docker-compose</code></li>
+<li><code>nginx</code></li>
+</ul>
+<p>nginx の設定は雑に次のような感じ(<a href="https://angristan.xyz/host-your-own-ci-cd-server-with-drone/">参考</a>):</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode conf"><code class="sourceCode ini"><a class="sourceLine" id="cb3-1" title="1"><span class="dt">server {</span></a>
+<a class="sourceLine" id="cb3-2" title="2"><span class="dt">  listen 80 default_server;</span></a>
+<a class="sourceLine" id="cb3-3" title="3"><span class="dt">  listen </span><span class="kw">[::]</span><span class="dt">:80 default_server;</span></a>
+<a class="sourceLine" id="cb3-4" title="4"><span class="dt">  server_name _;</span></a>
+<a class="sourceLine" id="cb3-5" title="5"><span class="dt">  return 444;</span></a>
+<a class="sourceLine" id="cb3-6" title="6"><span class="dt">}</span></a>
+<a class="sourceLine" id="cb3-7" title="7"></a>
+<a class="sourceLine" id="cb3-8" title="8"><span class="dt">server {</span></a>
+<a class="sourceLine" id="cb3-9" title="9"><span class="dt">  listen 80;</span></a>
+<a class="sourceLine" id="cb3-10" title="10"><span class="dt">  server_name </span><span class="kw">[(4)で設定するドメイン]</span><span class="dt">;</span></a>
+<a class="sourceLine" id="cb3-11" title="11"></a>
+<a class="sourceLine" id="cb3-12" title="12"><span class="dt">  if ($http_x_forwarded_proto </span><span class="ot">=</span><span class="st"> &#39;http&#39;) {</span></a>
+<a class="sourceLine" id="cb3-13" title="13"><span class="dt">    return 301 https://$server_name$request_uri;</span></a>
+<a class="sourceLine" id="cb3-14" title="14"><span class="dt">  }</span></a>
+<a class="sourceLine" id="cb3-15" title="15"></a>
+<a class="sourceLine" id="cb3-16" title="16"><span class="dt">  location / {</span></a>
+<a class="sourceLine" id="cb3-17" title="17"><span class="dt">    proxy_set_header Host $http_host;</span></a>
+<a class="sourceLine" id="cb3-18" title="18"><span class="dt">    proxy_set_header X-Real-IP $remote_addr;</span></a>
+<a class="sourceLine" id="cb3-19" title="19"><span class="dt">    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;</span></a>
+<a class="sourceLine" id="cb3-20" title="20"><span class="dt">    proxy_set_header X-Forwarded-Proto $scheme;</span></a>
+<a class="sourceLine" id="cb3-21" title="21"><span class="dt">    proxy_pass http://localhost:8000;</span></a>
+<a class="sourceLine" id="cb3-22" title="22"><span class="dt">    proxy_redirect off;</span></a>
+<a class="sourceLine" id="cb3-23" title="23"><span class="dt">    proxy_buffering off;</span></a>
+<a class="sourceLine" id="cb3-24" title="24"><span class="dt">    chunked_transfer_encoding off;</span></a>
+<a class="sourceLine" id="cb3-25" title="25"><span class="dt">  }</span></a>
+<a class="sourceLine" id="cb3-26" title="26"><span class="dt">}</span></a></code></pre></div>
+<p>これで (4) で設定したドメインの HTTPS 通信のみ許可するようになった． あとは適当なところで <code>docker-compose up -d</code> とすれば良い．</p>
+<p><img src="/assets/drone-1-0-in-gce/my-drone-example.jpg" /></p>
+<h2 id="おまけ">おまけ</h2>
+<h3 id="drone-起動時の環境変数">Drone 起動時の環境変数</h3>
+<p>このあたりのを適宜使った:</p>
+<ul>
+<li>DRONE_USER_FILTER
+<ul>
+<li>認証後に閲覧できるユーザーを絞る</li>
+<li>ただし Public は誰でも見れる(はず)</li>
+<li>ちなみに Internal はここで指定したユーザー全員が見れる</li>
+</ul></li>
+<li>DRONE_USER_CREATE
+<ul>
+<li>Admin ユーザーみたいな感じ</li>
+</ul></li>
+<li>DRONE_LOGS_DEBUG,DRONE_LOGS_TRACE
+<ul>
+<li>この二つをオンにしておくと <code>docker logs</code> でだいたいログを追える</li>
+</ul></li>
+</ul>
+<h3 id="drone-の情報">Drone の情報</h3>
+<p>冒頭で述べた通り，Drone の公式情報は綺麗にまとまってるとは言い難い． 基本は以下の公式ドキュメント:</p>
+<ul>
+<li><a href="https://docs.drone.io/">Drone Documentation</a></li>
+</ul>
+<p><code>.drone.yml</code> の書き方はここにまとまってるので Drone CI を使うってだけならここで概ね問題ないでしょう． API を使ったり，drone-cli を使ったり，コンテナ起動時の設定を調べたりは情報が足りない時がちょくちょくある． Drone は <a href="https://github.com/search?q=org%3Adrone&amp;type=Issues">GitHub Issue</a> の他に <a href="https://discourse.org/">Discourse</a> というサービスを使っている:</p>
+<ul>
+<li><a href="https://discourse.drone.io/">Drone</a></li>
+</ul>
+<p>具体的なエラーなんかは StackOverflow よりここを検索した方が見つかる． またチャットサービスとして Gitter も用意しているので，そこに聞きに行ってもいいかもしれない:</p>
+<ul>
+<li><a href="https://gitter.im/drone/home">drone/home - Gitter</a></li>
+</ul>
+<p>まぁあとは OSS なので直接コードを観に行けばだいたい仕様はわかる． 特に，API に関する情報は 0.8 以前の古いものしかなく，<a href="https://github.com/matsubara0507/drone-haskell">Haskell の Drone クライアント</a>を作るときは直接ソースコードを見ていた:</p>
+<ul>
+<li><a href="https://github.com/drone/drone">drone/drone - GitHub</a>: <code>handler/api</code> とか見ると良い</li>
+<li><a href="https://github.com/drone/drone-go">drone/drone-go - GitHub</a>: Drone API の Go クライアント</li>
+</ul>
+<h1 id="おしまい">おしまい</h1>
+  </div>
+</div>
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>Re: Marp のすゝめ</title>
     <link href="https://matsubara0507.github.io/posts/2019-02-04-re-recommend-marp.html" />
     <id>https://matsubara0507.github.io/posts/2019-02-04-re-recommend-marp.html</id>
@@ -2306,92 +2489,6 @@ $ stack --docker image container</code></pre>
 <p>実は <code>stack --docker image container</code> でビルドまでしてくれる． Docker Hub には Token のようなものはないので <code>--password-stdin</code> とパイプを使って普通のパスワードでログインする． あとは <code>image.container.name</code> で指定する名前を <code>hoge</code> ではなく <code>user_name/repo_name</code> としておけば良い． もちろんこれは GitHub と Docker Hub のユーザ名が同じ場合にしか使えない． 違う場合は直接書いてね．</p>
 <h1 id="おしまい">おしまい</h1>
 <p>この方法なら実行ファイルしか入ってないイメージが出来上がるので軽いし， stack のビルド遅すぎて利用者側は厳しい問題も緩和するので最近のマイブームです．</p>
-  </div>
-</div>
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>Haskell Day 2018 に参加してきた</title>
-    <link href="https://matsubara0507.github.io/posts/2018-11-17-join-haskell-day-2018.html" />
-    <id>https://matsubara0507.github.io/posts/2018-11-17-join-haskell-day-2018.html</id>
-    <published>2018-11-17T00:00:00Z</published>
-    <updated>2018-11-17T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
- <div class="card-content">
-  <header class="post-header">
-    <h1 class="post-title" itemprop="name headline">Haskell Day 2018 に参加してきた</h1>
-    <p class="post-meta">
-      <time datetime="2018-11-17" itemprop="datePublished">
-        Nov 17, 2018
-      </time>
-      
-      
-      <div class="tags">
-          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a> <a href="/tags/event.html">event</a>
-      </div>
-      
-    </p>
-  </header>
-
-  <div class="post-content" itemprop="articleBody">
-    <p>11月10日にあった「<a href="https://haskell-jp.connpass.com/event/92617/">Haskell Day 2018</a>」に参加してきたのでメモ書きです．</p>
-<h2 id="午前中-ハンズオン">午前中 : ハンズオン</h2>
-<p><a href="https://github.com/igrep">igrep</a> 氏が中心になって作成した <a href="https://github.com/haskell-jp/makeMistakesToLearnHaskell"><code>makeMistakesToLearnHaskell</code></a> を使ったハンズオン． ぼくも少しだけコミットした．</p>
-<p>当日の様子は，みなさんかなり黙々と作業してて静かだったが，Twitter 上で質問している人がチラチラいた． それらの Twitter の様子などをみてリアルタイムに修正を行なっていたのはすごい．</p>
-<h2 id="午後">午後</h2>
-<p>そのうちログミーが公開されるそうなので，概要と感想だけ．</p>
-<h3 id="haskellを導入した話hrrの話">Haskellを導入した話/HRRの話</h3>
-<p><a href="https://htmlpreview.github.io/?https://github.com/khibino/haskell-day-2018/blob/master/presentation.html">発表資料はこちら</a>．</p>
-<p>10年近く職業 Haskeller をやっていた <a href="https://github.com/khibino">khibino</a> 氏が，当時 Haskell を導入するに至った話と，彼が作った <a href="https://hackage.haskell.org/package/relational-record">HRR</a> というライブラリの紹介 Perl に変わるグルー言語を求めて Haskell に行き着いたそうだ． 「GHC6.8 ですよ，GHC8.6 じゃなく，すごく無いですか？」すごい． HRRは面白そうだけど，使うタイミングがないや．</p>
-<h3 id="servantで実現する高速かつ安全なapi">Servantで実現する高速かつ安全なAPI</h3>
-<p><a href="https://speakerdeck.com/daishi/servantdexing-uan-quan-katugao-su-naapikai-fa">発表資料はこちら</a>．</p>
-<p>同様に職業 Haskeller の <a href="https://github.com/nakaji-dayo">nakaji</a> 氏の発表． <a href="https://haskell-servant.github.io/">Servant</a> という型レベルに RSETful API を定義できるパッケージを実際にどのように使っているかという話． Servant は僕もよく使う． 「実際に依存してるパッケージの紹介」や「実運用する上で困ったこと」などもあって興味深い．</p>
-<h3 id="並列並行言語haskell">並列並行言語Haskell</h3>
-<p><a href="https://speakerdeck.com/syocy/bing-lie-bing-xing-yan-yu-haskell">発表資料はこちら</a>．</p>
-<p>次のも含めて2本連続で <a href="https://github.com/syocy">syocy</a> 氏の発表． Haskell における並行・並列プログラミングについての紹介． 並行・並列プログラミングとして最近は Go・Elixir/Erlang・Rust などが注目されているが，Haskell は20年近く前から並行・並列に対して意識してる． おまけとして，ツールの話や並行並列系パッケージの話があって勉強になる． 余談として「<a href="https://a-tour-of-go-in-haskell.syocy.net/ja_JP/index.html">A Tour of Go in Haskell</a>」というのを作ったが，英語版も作ったところめっさ PR が来たという話をしてくれた． やっぱ分母の大きい自然言語は強い．</p>
-<h3 id="dhall-haskellの新たなキラーアプリ">Dhall: Haskellの新たなキラーアプリ</h3>
-<p><a href="https://speakerdeck.com/syocy/dhall-haskellfalsexin-tanakiraapuri">発表資料はこちら</a>．</p>
-<p>個人的に今回一番面白かった． <a href="https://github.com/dhall-lang/dhall-lang">Dhall</a> というアプリケーションの紹介． Dhall は設定ファイルを記述するための DSL である． 設定ファイルの多くは YAML や JSON などで書かれるが，複数の YAML が複雑な依存関係を持っている場合(k8sとか)は静的解析したいよね？ しかし逆に「設定ファイルとしての領分」を守って欲しいという要求もある(汎用プログラミング言語としての役割はいらない)． そこで Dhall です！って感じの発表だった． 最後の導入事例として，自社の設定ファイル群を書き換えた話も面白かった．</p>
-<h3 id="semigroupとはmonoidとは環とは">Semigroupとは？Monoidとは？環とは？</h3>
-<p><a href="https://aiya000.github.io/Maid/haskell-day-2018-algebra/">発表資料はこちら</a>．</p>
-<p><a href="https://github.com/aiya000">aiya</a> 氏の発表． 群や環などの代数的構造についての話． ステップバイステップに要件が増えていくのでわかりやすい説明だった．</p>
-<p>ちなみに個人的な肌感として，このような数学的な素養がないと Haskell プログラミングができないかというと，そうでもないと思う． 僕自身は教養としてそのあたりを知ってはいるので微妙なところだが，普段 Haskell プログラミングしてる時に意識してはいないはず． ただ，いくつかの言語機能やライブラリは数学や論理学など学術的なバックグランドを持ってることがある． そのような場合は「なぜこのような仕様なのか」「どうしてこのような仕組みでうまくいくかのか」などは，学術論文にしか書いてないことが多い． そのため，そういう機能やライブラリの仕組みを <strong>ちゃんと</strong> 追おうとする場合は数学的素養がないと厳しいかもしれない．</p>
-<h3 id="haskellで作るcli">Haskellで作るCLI</h3>
-<p>僕の発表．後述します．</p>
-<h3 id="gloss-動かして遊んで学ぶhaskell">gloss: 動かして遊んで学ぶHaskell</h3>
-<p><a href="https://qiita.com/lotz/items/bdb04c771efc8919b79c">発表資料はこちら</a>．</p>
-<p><a href="https://github.com/lotz84">lotz</a> 氏の発表． Haskell を勉強したあと何するかシリーズ，GUI 編． 作りたいものがはっきりないときは <a href="http://hackage.haskell.org/package/gloss">gloss</a> で振り子やライフゲームを作って遊んでみよう，という感じ． 僕自身はあんまり GUI に関心がないけど，実際に作りたいものがない場合はこういうので色々出力して手をうごしてみるのは正しい． 時間あるときになんか変なことできないか調べてみようかな．</p>
-<h3 id="liszt-あるいは永続データ構造を真に永続させる方法">Liszt あるいは永続データ構造を真に永続させる方法</h3>
-<p><a href="https://shared-assets.adobe.com/link/353213c2-281a-4a53-6cff-a52bff1314c1">発表資料はこちら</a>．</p>
-<p>僕が愛用している extensible というライブラリの作者，<a href="https://github.com/fumieval">fumieval</a> 氏の発表． <a href="https://github.com/fumieval/liszt">liszt</a> を作り始めていたことは知っていたので気になっていた． Liszt は Kafka のような大量のデータを収集・配信するためのプログラムだそうだ(名前も <a href="https://ja.wikipedia.org/wiki/フランツ・カフカ">Franz Kafka</a> に対抗して <a href="https://ja.wikipedia.org/wiki/フランツ・リスト">Franz Liszt</a> らしい)． 内部のデータ構造として Skew binary random access list を要素としてもつ 2-3 木 を用いている． このあたりの詳しい話は「<a href="https://asciidwango.jp/post/160831986220/純粋関数型データ構造">純粋関数型データ構造</a>」を読むと良いとのこと(本の名前が上がった瞬間「ですよね〜」となってたw)．</p>
-<h2 id="自分の話">自分の話</h2>
-<p>Haskell で CLI を作るうえでの小話をした。 スライドはこれ． <iframe src="//www.slideshare.net/slideshow/embed_code/key/FQE1QxbCST8kYi" width="595" height="485" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen> </iframe></p>
-<p>実はどれも，既に記事におこしたことのあるネタだった．</p>
-<ol type="1">
-<li>コマンドライン引数
-<ul>
-<li><code>getArgs</code>・<code>GetOpt</code>・<code>optparse-applicative</code> について紹介</li>
-<li><code>optparse-applicative</code> + <code>extensible</code> でサブコマンドも網羅性をチェック</li>
-<li>「<a href="2018-05-10-make-cli-with-haskell-in-2018">オレ的 Haskell で CLI を作る方法 2018</a>」</li>
-</ul></li>
-<li>Alt. Prelude
-<ul>
-<li>Prelude 微妙だなって思ったら Alt. Prelude なパッケージを使ってみようという話</li>
-<li>具体的には愛用している RIO を紹介した</li>
-<li>「<a href="2018-04-13-try-rio-1">rio ライブラリを試す その１</a>」</li>
-</ul></li>
-<li>Stack Template
-<ul>
-<li>よく使う依存パッケージやアプリのインターフェースの書き方がパターン化してきたら Stack Template 化しようという話</li>
-<li>Stack 1.9 から GitHub にあるテンプレートを参照できるようになった</li>
-<li>GitHub にあるテンプレートを出力する stack-tpls コマンドの紹介</li>
-<li>「<a href="2018-10-14-collect-stack-templates">stack-templates を集める with GraphQL</a>」</li>
-</ul></li>
-</ol>
-<p>Haskell を知ってる人にとってはあんまり面白くない話題だったかもしれないが，まぁまぁ(発言が)ウケていたのでよかった(?)．</p>
-<h2 id="おしまい">おしまい</h2>
-<p>初心者がわかりやすく，玄人にもウケるネタってなんだろうね． 来年もやるかもしれないから考えておこう．</p>
   </div>
 </div>
 </article>
