@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
     <url>
+        <loc>https://matsubara0507.github.io/posts/2019-05-12-create-my-github-cards.html</loc>
+        <changefreq>never</changefreq>
+        <lastmod>2019-05-12</lastmod>
+        <priority>0.8</priority>
+    </url>
+
+    <url>
         <loc>https://matsubara0507.github.io/posts/2019-04-06-drone-1-0-in-gce.html</loc>
         <changefreq>never</changefreq>
         <lastmod>2019-04-06</lastmod>

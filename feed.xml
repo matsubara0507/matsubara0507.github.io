@@ -8,8 +8,176 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2019-04-06T00:00:00Z</updated>
+    <updated>2019-05-12T00:00:00Z</updated>
     <entry>
+    <title>GitHub Card を生成する SPA を Elm で作った</title>
+    <link href="https://matsubara0507.github.io/posts/2019-05-12-create-my-github-cards.html" />
+    <id>https://matsubara0507.github.io/posts/2019-05-12-create-my-github-cards.html</id>
+    <published>2019-05-12T00:00:00Z</published>
+    <updated>2019-05-12T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">GitHub Card を生成する SPA を Elm で作った</h1>
+    <p class="post-meta">
+      <time datetime="2019-05-12" itemprop="datePublished">
+        May 12, 2019
+      </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="/tags/Elm.html">Elm</a> <a href="/tags/Haskell.html">Haskell</a> <a href="/tags/application.html">application</a>
+      </div>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>Qiita や自分のブログに GitHub のリポジトリのリンク貼ってもなんか寂しいからいい感じのカードっぽいやつ生成するやつを作ったって話です． iframe で埋め込むことができます。</p>
+<p><strong>だがしかし！Qiita などに任意の iframe が埋め込めるわけないジャーーーン！</strong></p>
+<p>ということに，だいたい完成してから気づいた orz</p>
+<h3 id="github-card">GitHub Card</h3>
+<p>特別定義はないけど，<a href="https://lab.lepture.com/github-cards/">こんな感じ</a>のを iframe で作りたかった．</p>
+<h2 id="作る">作る</h2>
+<p>マイフェィバリット JS 系プログラミング言語 Elm を使った． だいたい半日ぐらいかかった．GWの最終日．GW最高． リポジトリはこれ:</p>
+<h4 id="section"><iframe width="426" height="162" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/github-card" ></iframe></h4>
+<p><a href="https://matsubara0507.github.io/github-card">GitHub Pages に置いた</a>ので誰でも試せる． ただし，裏では GitHub API v3 をトークンなしで叩いてる…</p>
+<p>こんな感じになる:</p>
+<p><a href="https://matsubara0507.github.io/github-card/#matsubara0507"><img src="/assets/create-my-github-cards/user-github-card.jpg" style="max-width: 500px;"></a></p>
+<p><a href="https://matsubara0507.github.io/github-card/#matsubara0507/github-card"><img src="/assets/create-my-github-cards/repo-github-card.jpg" style="max-width: 500px;"></a></p>
+<p>上がユーザーのカードで下がリポジトリのカード． <code>Embed:</code> の下に書いてある iframe タグをコピペすることで埋め込める．</p>
+<h3 id="ちょっとした工夫">ちょっとした工夫</h3>
+<p>Elm の <code>Browser.application</code> の URL 機能を<del>わざわざ</del>使って色々工夫してる:</p>
+<ul>
+<li><code>https://xxxx#name</code> とすることで直接任意ユーザー/リポジトリのカードのページを開ける
+<ul>
+<li>実は <code>Build</code> ボタンで <code>#name</code> にジャンプしてる笑</li>
+</ul></li>
+<li><code>https://xxx?target=name</code> とすることで <code>name</code> のカードだけを表示
+<ul>
+<li>iframe にはこっちを使う</li>
+</ul></li>
+<li><code>getElementById</code> とか<del>わざわざ</del>してぴったりの <code>width</code> と <code>height</code> を iframe に生成してる</li>
+</ul>
+<h3 id="問題点">問題点</h3>
+<p>上述した通り，GitHub API をトークンなしで利用しているので rate limit がある(同一アドレスから60req/h)． 開いた人によってはページが見れないのは悲しい…</p>
+<h2 id="作るパート2">作る(パート2)</h2>
+<p>ウンウン考えながら帰宅してたら気づいた． どーせ GitHub のユーザーやリポジトリのステータスなんてコロコロ変わるもんでもないし，<strong>適当に JSON で吐いておいて毎日更新する CI でも回しておけば良くない??</strong> と．</p>
+<p>ということで、思いついてしまったので作ってしまった． 気づいたら朝4時．GW延長戦(????)．</p>
+<h3 id="できたもの">できたもの</h3>
+<p>集める部分と表示する部分を分けた:</p>
+<h4 id="section-1"><iframe width="426" height="162" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/selfcat" ></iframe></h4>
+<h4 id="section-2"><iframe width="426" height="162" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/my-github-cards" ></iframe></h4>
+<p>前回の <a href="https://github.com/matsubara0507/github-card">matsubara0507/github-card</a> と違い自分専用． selfcat という CLI ツールで次のような設定ファイル <code>.selfcat.yaml</code> にあるユーザーとリポジトリの情報を収集(GitHub API v3)し，JSON として保存する． もちろん Haskell 製．</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb1-1" title="1"><span class="fu">owner:</span><span class="at"> matsubara0507</span></a>
+<a class="sourceLine" id="cb1-2" title="2"><span class="fu">repos:</span></a>
+<a class="sourceLine" id="cb1-3" title="3"><span class="kw">-</span> mix.hs</a>
+<a class="sourceLine" id="cb1-4" title="4"><span class="kw">-</span> selfcat</a></code></pre></div>
+<p><code>--compact</code> オプションをつけることで一つの JSON にまとめてくれる． my-github-cards の方は selfcat を使って一つにまとめて生成した JSON ファイルを読み込んで GitHub Card を表示する． 表示した見た目は前回のと同じ．</p>
+<h3 id="selfcat">selfcat</h3>
+<p>これはやってること単純:</p>
+<ol type="1">
+<li>設定ファイルの YAML を読み込み (<a href="http://hackage.haskell.org/package/yaml">yaml</a> パッケージ)</li>
+<li>GitHub API を叩き (<a href="http://hackage.haskell.org/package/github">github</a> パッケージ)</li>
+<li>JSON を吐くだけ (<a href="http://hackage.haskell.org/package/aeson">aeson</a> パッケージ)</li>
+</ol>
+<p>例のごとく，<a href="http://hackage.haskell.org/package/rio">rio</a> + <a href="http://hackage.haskell.org/package/extensible">extensible</a> でサクッと作った．</p>
+<p>中身を見るとわかるのだが <a href="https://github.com/matsubara0507/mix.hs">mix</a> というパッケージを使っている． これは rio + extensible のいつも自分が使うパターンをパッケージ化したもの． そのうちまたまとめます．</p>
+<h3 id="生成した-json-ファイルを読み込む">生成した JSON ファイルを読み込む</h3>
+<p>Elm で「生成した JSON ファイルを読み込む」というのは少し大変だった． Elm で初期値を与えるには <code>init</code> 関数の <code>Flag</code> というのを使う。<a href="https://qiita.com/jinjor/items/245959d2da710eda18fa#browserelement">このあたりが参考になる</a>．</p>
+<p>で，問題はどうやってローカルの JSON を読み込むか． <a href="https://github.com/matsubara0507/git-plantation/blob/8b0c44e6e6e20bd23998f7df5e0817fcf17fb6a8/src/Git/Plantation/API.hs#L47-L48">git-plantation では Haskell で埋め込んでいた</a>のだが，今回はサーバー側がないのでできない． ググったら出てきた:</p>
+<ul>
+<li><a href="https://codepen.io/KryptoniteDove/post/load-json-file-locally-using-pure-javascript">Load JSON file locally using pure Javascript by Rich on CodePen</a></li>
+</ul>
+<p>JS 詳しくないのでこれが良い方法なのかはわからないけど，これを参考にして次のような JS を書いて <code>index.html</code> から読み込むようにした:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb2-1" title="1"><span class="st">&quot;use strict&quot;</span><span class="op">;</span></a>
+<a class="sourceLine" id="cb2-2" title="2"></a>
+<a class="sourceLine" id="cb2-3" title="3"><span class="kw">function</span> <span class="at">loadJSON</span>(callback) <span class="op">{</span></a>
+<a class="sourceLine" id="cb2-4" title="4">   <span class="kw">var</span> xobj <span class="op">=</span> <span class="kw">new</span> <span class="at">XMLHttpRequest</span>()<span class="op">;</span></a>
+<a class="sourceLine" id="cb2-5" title="5">       <span class="va">xobj</span>.<span class="at">overrideMimeType</span>(<span class="st">&quot;application/json&quot;</span>)<span class="op">;</span></a>
+<a class="sourceLine" id="cb2-6" title="6">   <span class="va">xobj</span>.<span class="at">open</span>(<span class="st">&#39;GET&#39;</span><span class="op">,</span> <span class="st">&#39;static/info.json&#39;</span><span class="op">,</span> <span class="kw">true</span>)<span class="op">;</span></a>
+<a class="sourceLine" id="cb2-7" title="7">   <span class="va">xobj</span>.<span class="at">onreadystatechange</span> <span class="op">=</span> <span class="kw">function</span> () <span class="op">{</span></a>
+<a class="sourceLine" id="cb2-8" title="8">         <span class="cf">if</span> (<span class="va">xobj</span>.<span class="at">readyState</span> <span class="op">==</span> <span class="dv">4</span> <span class="op">&amp;&amp;</span> <span class="va">xobj</span>.<span class="at">status</span> <span class="op">==</span> <span class="st">&quot;200&quot;</span>) <span class="op">{</span></a>
+<a class="sourceLine" id="cb2-9" title="9">           <span class="at">callback</span>(<span class="va">xobj</span>.<span class="at">responseText</span>)<span class="op">;</span></a>
+<a class="sourceLine" id="cb2-10" title="10">         <span class="op">}</span></a>
+<a class="sourceLine" id="cb2-11" title="11">   <span class="op">};</span></a>
+<a class="sourceLine" id="cb2-12" title="12">   <span class="va">xobj</span>.<span class="at">send</span>(<span class="kw">null</span>)<span class="op">;</span></a>
+<a class="sourceLine" id="cb2-13" title="13"><span class="op">}</span></a>
+<a class="sourceLine" id="cb2-14" title="14"></a>
+<a class="sourceLine" id="cb2-15" title="15"><span class="at">loadJSON</span>(<span class="kw">function</span>(response) <span class="op">{</span></a>
+<a class="sourceLine" id="cb2-16" title="16">  <span class="kw">var</span> json <span class="op">=</span> <span class="va">JSON</span>.<span class="at">parse</span>(response)<span class="op">;</span></a>
+<a class="sourceLine" id="cb2-17" title="17">  <span class="va">Elm</span>.<span class="va">Main</span>.<span class="at">init</span>(</a>
+<a class="sourceLine" id="cb2-18" title="18">    <span class="op">{</span> <span class="dt">node</span><span class="op">:</span> <span class="va">document</span>.<span class="at">getElementById</span>(<span class="st">&#39;main&#39;</span>)</a>
+<a class="sourceLine" id="cb2-19" title="19">    <span class="op">,</span> <span class="dt">flags</span><span class="op">:</span> <span class="op">{</span> <span class="dt">info</span><span class="op">:</span> json <span class="op">}</span></a>
+<a class="sourceLine" id="cb2-20" title="20">    <span class="op">}</span></a>
+<a class="sourceLine" id="cb2-21" title="21">  )<span class="op">;</span></a>
+<a class="sourceLine" id="cb2-22" title="22"><span class="op">}</span>)<span class="op">;</span></a></code></pre></div>
+<p>少なくとも，うまく動作はしている．</p>
+<p>いつも通り，GitHub Pages に置いたので<a href="https://matsubara0507.github.io/my-github-cards/">ここ</a>から見れる． というか，さっきから表示している GitHub Card がこれで埋め込んだものだ．</p>
+<h3 id="daily-cron-on-travisci">Daily cron on TravisCI</h3>
+<p>更新は TravisCI の Daily cron を使う． <a href="https://hub.docker.com/r/matsubara0507/selfcat/">selfcat は Docker Image にした</a>ので selfcat をビルドする必要はない． <code>docker run</code> で JSON を生成し，差分があったら GitHub に push する．</p>
+<p>知らぬ間に，TravisCI の設定方法に <code>deploy</code> という設定が増えていたんですね:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb3-1" title="1"><span class="co"># .travis.yml</span></a>
+<a class="sourceLine" id="cb3-2" title="2"><span class="fu">language:</span><span class="at"> generic</span></a>
+<a class="sourceLine" id="cb3-3" title="3"><span class="fu">services:</span></a>
+<a class="sourceLine" id="cb3-4" title="4">  <span class="kw">-</span> docker</a>
+<a class="sourceLine" id="cb3-5" title="5"></a>
+<a class="sourceLine" id="cb3-6" title="6"><span class="fu">before_install:</span></a>
+<a class="sourceLine" id="cb3-7" title="7"><span class="kw">-</span> docker pull matsubara0507/selfcat</a>
+<a class="sourceLine" id="cb3-8" title="8"></a>
+<a class="sourceLine" id="cb3-9" title="9"><span class="fu">jobs:</span></a>
+<a class="sourceLine" id="cb3-10" title="10">  <span class="fu">include:</span></a>
+<a class="sourceLine" id="cb3-11" title="11">    <span class="kw">-</span> <span class="fu">stage:</span><span class="at"> exec selfcat</span></a>
+<a class="sourceLine" id="cb3-12" title="12">      <span class="fu">if:</span><span class="at"> branch = master</span></a>
+<a class="sourceLine" id="cb3-13" title="13">      <span class="fu">script:</span><span class="at"> docker run --rm -e GH_TOKEN -v `pwd`:/app matsubara0507/selfcat bin/bash -c &#39;cd app &amp;&amp; selfcat --output=docs/static/info.json --compact .selfcat.yaml&#39;</span></a>
+<a class="sourceLine" id="cb3-14" title="14"></a>
+<a class="sourceLine" id="cb3-15" title="15"><span class="fu">deploy:</span></a>
+<a class="sourceLine" id="cb3-16" title="16">  <span class="kw">-</span> <span class="fu">provider:</span><span class="at"> script</span></a>
+<a class="sourceLine" id="cb3-17" title="17">    <span class="fu">skip_cleanup:</span><span class="at"> </span><span class="ch">true</span></a>
+<a class="sourceLine" id="cb3-18" title="18">    <span class="fu">script:</span><span class="at"> bash .travis/deploy.bash</span></a>
+<a class="sourceLine" id="cb3-19" title="19">    <span class="fu">on:</span></a>
+<a class="sourceLine" id="cb3-20" title="20">      <span class="fu">branch:</span><span class="at"> master</span></a></code></pre></div>
+<p><code>deploy</code> のところで読んでいるスクリプトは以下:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb4-1" title="1"><span class="co">#!/bin/bash</span></a>
+<a class="sourceLine" id="cb4-2" title="2"><span class="kw">set</span> <span class="ex">-eux</span></a>
+<a class="sourceLine" id="cb4-3" title="3"></a>
+<a class="sourceLine" id="cb4-4" title="4"><span class="co"># setup ssh-agent and provide the GitHub deploy key</span></a>
+<a class="sourceLine" id="cb4-5" title="5"><span class="bu">eval</span> <span class="st">&quot;</span><span class="va">$(</span><span class="fu">ssh-agent</span> -s<span class="va">)</span><span class="st">&quot;</span></a>
+<a class="sourceLine" id="cb4-6" title="6"><span class="ex">openssl</span> aes-256-cbc -K <span class="va">$encrypted_3b94903f5871_key</span> -iv <span class="va">$encrypted_3b94903f5871_iv</span> -in .travis/id_rsa.enc -out .travis/id_rsa -d</a>
+<a class="sourceLine" id="cb4-7" title="7"><span class="fu">chmod</span> 600 .travis/id_rsa</a>
+<a class="sourceLine" id="cb4-8" title="8"><span class="fu">ssh-add</span> .travis/id_rsa</a>
+<a class="sourceLine" id="cb4-9" title="9"></a>
+<a class="sourceLine" id="cb4-10" title="10"><span class="co"># commit the assets in docs/ if changed, and push to GitHub using SSH</span></a>
+<a class="sourceLine" id="cb4-11" title="11"><span class="fu">git</span> config user.name <span class="st">&quot;</span><span class="va">${GIT_NAME}</span><span class="st">&quot;</span></a>
+<a class="sourceLine" id="cb4-12" title="12"><span class="fu">git</span> config user.email <span class="st">&quot;</span><span class="va">${GIT_EMAIL}</span><span class="st">&quot;</span></a>
+<a class="sourceLine" id="cb4-13" title="13"><span class="fu">git</span> remote set-url origin git@github.com:<span class="va">${TRAVIS_REPO_SLUG}</span>.git</a>
+<a class="sourceLine" id="cb4-14" title="14"></a>
+<a class="sourceLine" id="cb4-15" title="15"><span class="fu">git</span> checkout master</a>
+<a class="sourceLine" id="cb4-16" title="16"><span class="fu">git</span> status</a>
+<a class="sourceLine" id="cb4-17" title="17"><span class="fu">git</span> add docs</a>
+<a class="sourceLine" id="cb4-18" title="18"><span class="fu">git</span> diff --staged --quiet <span class="kw">||</span> <span class="fu">git</span> commit -m <span class="st">&quot;[skip ci] Update docs by selfcat&quot;</span></a>
+<a class="sourceLine" id="cb4-19" title="19"><span class="fu">git</span> push origin master</a></code></pre></div>
+<p>GitHub の Personal Access Token を使うのが嫌なので deploy key を登録して，暗号化したものをリポジトリに置き，それを CI の中で複合して使うという方法をとっている． ググったら下記の記事が出てきてそのまま使わせてもらった:</p>
+<ul>
+<li><a href="https://medium.com/@simon.legner/deploy-to-github-pages-using-travis-ci-and-deploy-keys-db84fed7a929">Deploy to GitHub Pages using Travis CI and deploy keys - Medium</a></li>
+</ul>
+<p>暗号化/複合の部分は TravisCI の <a href="https://docs.travis-ci.com/user/encrypting-files/">Encrypting Files</a> を使うことで簡単に行える． 記事で1点，スクリプトの呼び出しが <code>script: ./.travis-deploy.sh</code> では呼べなかった． ググったら <a href="https://github.com/travis-ci/travis-ci/issues/5538">Issue</a> があり，<code>script: sh deploy.sh</code> とすれば良いみたいだったのでそうしたらうまくいった．</p>
+<h1 id="section-3"></h1>
+<p>ちなみに，<a href="https://github.com/matsubara0507/my-github-cards">matsubara0507/my-github-cards</a> をフォークして，selfcat と TravisCI の設定(<code>.travis/id_rsa.enc</code> と環境変数など)を変えれば誰でも my-github-cards を使える． 気が向いたらドキュメントにしよ．</p>
+<h2 id="todo">ToDo</h2>
+<ul>
+<li>入力してエンターキーで Build ボタン押したことにしたい</li>
+<li>Embed のところにクリップボードにコピーボタン欲しい</li>
+</ul>
+<p>あと，特に Elm はやっつけで書いたので全体的にコードが汚い気がする．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>自分(self)の GitHub (Octocat)の情報を集めるから selfcat です(????)。</p>
+  </div>
+</div>
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>Drone 1.0 を GCE 上に構築する</title>
     <link href="https://matsubara0507.github.io/posts/2019-04-06-drone-1-0-in-gce.html" />
     <id>https://matsubara0507.github.io/posts/2019-04-06-drone-1-0-in-gce.html</id>
@@ -2404,91 +2572,6 @@ Available commands:
 </ul>
 <h1 id="おしまい">おしまい</h1>
 <p>随分雑な記事になってしまった．</p>
-  </div>
-</div>
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>Stack の Docker Integration とイメージの自動更新</title>
-    <link href="https://matsubara0507.github.io/posts/2018-12-02-stack-docker-travici.html" />
-    <id>https://matsubara0507.github.io/posts/2018-12-02-stack-docker-travici.html</id>
-    <published>2018-12-02T00:00:00Z</published>
-    <updated>2018-12-02T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
- <div class="card-content">
-  <header class="post-header">
-    <h1 class="post-title" itemprop="name headline">Stack の Docker Integration とイメージの自動更新</h1>
-    <p class="post-meta">
-      <time datetime="2018-12-02" itemprop="datePublished">
-        Dec 2, 2018
-      </time>
-      
-      
-      <div class="tags">
-          <i class="fa fa-tags"></i> <a href="/tags/Haskell.html">Haskell</a> <a href="/tags/Docker.html">Docker</a>
-      </div>
-      
-    </p>
-  </header>
-
-  <div class="post-content" itemprop="articleBody">
-    <p>本稿は <a href="https://qiita.com/advent-calendar/2018/haskell2">Haskell (その2) Advent Calendar 2018</a> 2日目の記事です．</p>
-<p>最近よく CLI ツールを作るんですが，Haskell Stack を持ってなくても CLI ツールが使えるように，ツールを Docker イメージ化するようにしています． その流れを書き留めておこうというの本稿の趣旨です．</p>
-<p>ちなみに，以下のリポジトリで実際に試しています．</p>
-<ul>
-<li><a href="https://github.com/matsubara0507/mdium">matsubara0507/mdium - GitHub</a></li>
-<li><a href="https://github.com/matsubara0507/dhall-ex">matsubara0507/dhall-ex - GitHub</a></li>
-</ul>
-<h2 id="docker-integration">Docker Integration</h2>
-<p>Haskell のビルドツール Stack には Dcoker Integration という機能がある（現在最新の安定版である v1.9.1 を想定しています）．</p>
-<ul>
-<li><a href="https://docs.haskellstack.org/en/v1.9.1/docker_integration/">Docker integration - The Haskell Tool Stack</a></li>
-<li><a href="https://docs.haskellstack.org/en/v1.9.1/yaml_configuration/#image">Image - Yaml configuration - The Haskell Tool Stack</a></li>
-</ul>
-<p>Docker Integration として，ざっくりと次のような機能がある．</p>
-<ol type="1">
-<li>指定したイメージのコンテナでビルド・実行をする</li>
-<li>ビルドした実行ファイルを含めた Docker イメージの作成</li>
-</ol>
-<p>(2 は正確には Docker Integration とは呼ばない)</p>
-<p>ちなみに，Stack はワークスペース内の <code>.stack-work</code> の中に中間結果などを含むビルド結果をバージョンやビルド環境ごとに保存する． そして，<code>--docker</code> オプションでビルドすることで，ローカルではなく Docker のコンテナ内でビルドをしたり，生成したプログラムを実行したりできる． しかも，コンテナ内でビルドした場合でもビルド結果をローカルの <code>.stack-work</code> に保存するのだ．</p>
-<h2 id="docker-イメージ内でビルド">Docker イメージ内でビルド</h2>
-<p>まず stack.yaml に次のような設定を追加する．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb1-1" title="1"><span class="fu">docker:</span></a>
-<a class="sourceLine" id="cb1-2" title="2">  <span class="fu">enable:</span><span class="at"> </span><span class="ch">false</span></a>
-<a class="sourceLine" id="cb1-3" title="3">  <span class="fu">repo:</span><span class="at"> </span><span class="st">&quot;fpco/stack-build&quot;</span></a></code></pre></div>
-<p><code>enable: true</code> にすると，以降の <code>--docker</code> オプションを省けるが，逆に普通にローカルでビルドしたい場合は <code>--no-docker</code> オプションが必要になる． <code>repo</code> でビルドするイメージを指定する． [<code>fpco/stack-build</code> はこれだ]（https://hub.docker.com/r/fpco/stack-build/）． stack.yaml の <code>resolver</code> からイメージタグを自動的に選んでくれるはずだ．</p>
-<p>あとは次のコマンドでビルドできる．</p>
-<pre><code># repo で指定した docker image の pull
-$ stack docker pull
-
-# docker コンテナ内でビルド
-$ stack build --docker</code></pre>
-<p>他にも細かい設定がかけるが割愛（上述したドキュメントを参照してください）．</p>
-<h2 id="docker-イメージを作る">Docker イメージを作る</h2>
-<p>stack.yaml に次の設定を追加する．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb3-1" title="1"><span class="fu">image:</span></a>
-<a class="sourceLine" id="cb3-2" title="2">  <span class="fu">container:</span></a>
-<a class="sourceLine" id="cb3-3" title="3">    <span class="fu">name:</span><span class="at"> hoge</span></a>
-<a class="sourceLine" id="cb3-4" title="4">    <span class="fu">base:</span><span class="at"> fpco/ubuntu-with-libgmp</span></a></code></pre></div>
-<p><code>image.container.name</code> は生成する Docker イメージの名前で，<code>image.container.base</code> は生成する Docker イメージに使うベースイメージだ． ベースイメージは <code>docker.repo</code> などで指定したイメージのOSとあってさえいれば良い（ちなみに <code>fpco/stack-build</code> は <code>ubuntu:16.04</code>）． やってくれることは簡単で， <code>stack build --docker</code> で作成した実行ファイルをベースイメージの <code>local/bin</code> などにコピーするだけだ． なので，もし静的リンクしていない場合はリンクが含まれるベースイメージを指定すると良い(<a href="https://hub.docker.com/r/fpco/ubuntu-with-libgmp/"><code>fpco/ubuntu-with-libgmp</code></a> はそのために使っている)．</p>
-<p>あとは次のコマンドでイメージの作成ができる．</p>
-<pre><code># repo で指定した docker image の pull
-$ stack --docker image container</code></pre>
-<p><code>--docker</code> を指定しないとローカルでビルドした実行ファイルをコピーして，生成したイメージのコンテナで実行できなくなるので注意してください（もちろんローカルが ubuntu なら問題ないけど）． あと， stack によるイメージ作成方法では他に Dockerfile の <code>add</code> っぽいことと <code>entrypoints</code> っぽいことができるが，それ以上のことはできない． もっと複雑な設定をしたい場合は，生成したイメージをベースイメージにした Dockerfile を書いたり， Docker のマルチステージビルドを使って設定を上書きしたりするとと良いだろう．</p>
-<h2 id="travisci-docker-hub">TravisCI + Docker Hub</h2>
-<p>Docker Integration の欠点は Docker Hub の Automated build が使えない点だ． そこで，TravisCI を使って自動ビルドし，Docker Hub にプッシュするようにした． 次のような設定を travis.yml に書くと良いだろう．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">-</span> <span class="fu">stage:</span><span class="at"> push docker image</span></a>
-<a class="sourceLine" id="cb5-2" title="2">  <span class="fu">if:</span><span class="at"> branch = master</span></a>
-<a class="sourceLine" id="cb5-3" title="3">  <span class="fu">script:</span></a>
-<a class="sourceLine" id="cb5-4" title="4">   <span class="kw">-</span> stack docker pull</a>
-<a class="sourceLine" id="cb5-5" title="5">   <span class="kw">-</span> stack --docker image container</a>
-<a class="sourceLine" id="cb5-6" title="6">   <span class="kw">-</span> echo <span class="st">&quot;$DOCKER_PASSWORD&quot;</span> | docker login -u <span class="st">&quot;$DOCKER_USERNAME&quot;</span> --password-stdin</a>
-<a class="sourceLine" id="cb5-7" title="7">   <span class="kw">-</span> docker push $TRAVIS_REPO_SLUG</a></code></pre></div>
-<p>実は <code>stack --docker image container</code> でビルドまでしてくれる． Docker Hub には Token のようなものはないので <code>--password-stdin</code> とパイプを使って普通のパスワードでログインする． あとは <code>image.container.name</code> で指定する名前を <code>hoge</code> ではなく <code>user_name/repo_name</code> としておけば良い． もちろんこれは GitHub と Docker Hub のユーザ名が同じ場合にしか使えない． 違う場合は直接書いてね．</p>
-<h1 id="おしまい">おしまい</h1>
-<p>この方法なら実行ファイルしか入ってないイメージが出来上がるので軽いし， stack のビルド遅すぎて利用者側は厳しい問題も緩和するので最近のマイブームです．</p>
   </div>
 </div>
 </article>
