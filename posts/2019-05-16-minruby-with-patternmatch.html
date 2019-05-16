@@ -1,0 +1,388 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="Ruby のパターンマッチング機能を MinRuby で試す" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        Ruby のパターンマッチング機能を MinRuby で試す
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Ruby のパターンマッチング機能を MinRuby で試す</h1>
+    <p class="post-meta">
+      <time datetime="2019-05-16" itemprop="datePublished">
+        May 16, 2019
+      </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="../tags/Ruby.html">Ruby</a>
+      </div>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>Ruby 2.7 で導入予定で，すでに <a href="https://github.com/ruby/ruby">Ruby リポジトリ</a>の trunk (いわゆる master ブランチのこと) にマージ済みの「パターンマッチング」機能を試してみたので，そのメモ書きです． 特に包括的に検証したわけではないので注意してください．</p>
+<h2 id="パターンマッチング">パターンマッチング</h2>
+<p>(わざわざ解説することでもないけど)</p>
+<p>パターンマッチングは <code>if</code> 文や <code>case</code> 文のようなプログラムの分岐に使うプログラミング機能． <code>if</code> 文が真偽値を返す条件式 (e.g. <code>a &gt; 0 &amp;&amp; x == 'hoge'</code>) の結果により分岐し，<code>case</code> 文が指定した変数の値によって分岐するのに対し，パターンマッチングは指定した変数のデータ構造によって分岐する．</p>
+<p>例えば Ruby に導入されたパターンマッチングだと次のようになる:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode ruby"><code class="sourceCode ruby"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">case</span> var <span class="co"># var のデータ構造により分岐</span></a>
+<a class="sourceLine" id="cb1-2" title="2"><span class="kw">in</span> []</a>
+<a class="sourceLine" id="cb1-3" title="3">  puts <span class="st">&quot;var is empty list&quot;</span></a>
+<a class="sourceLine" id="cb1-4" title="4"><span class="kw">in</span> [a]</a>
+<a class="sourceLine" id="cb1-5" title="5">  puts <span class="st">&quot;var is singleton: </span><span class="ot">#{</span>a<span class="ot">}</span><span class="st">&quot;</span> <span class="co"># 変数 a に値を代入する</span></a>
+<a class="sourceLine" id="cb1-6" title="6"><span class="kw">in</span> [<span class="st">:hoge</span>, a, b]</a>
+<a class="sourceLine" id="cb1-7" title="7">  puts <span class="st">&quot;var is hoge list: </span><span class="ot">#{</span>[a, b]<span class="ot">}</span><span class="st">&quot;</span> <span class="co"># 一要素目が :hoge の3要素リスト</span></a>
+<a class="sourceLine" id="cb1-8" title="8"><span class="kw">else</span></a>
+<a class="sourceLine" id="cb1-9" title="9">  puts <span class="st">&quot;No match: </span><span class="ot">#{</span>var<span class="ot">}</span><span class="st">&quot;</span> <span class="co"># else はどれにもマッチしないとき</span></a>
+<a class="sourceLine" id="cb1-10" title="10"><span class="kw">end</span></a></code></pre></div>
+<p>このようにデータ構造(例えば配列の要素数など)によって分岐かつ変数への代入が可能になる． パターンマッチングは様々なデータを扱うようなプログラミングを行う時に極めて簡潔にかつ直感的にプログラムを記述することができる．</p>
+<p>ちなみに，パターンマッチングがあれば基本的に <code>if</code> 文も <code>case</code> 文も要らない． どちらもパターンマッチングの糖衣構文として表現でき，現に Haskell ではそうなっている(たぶん)．</p>
+<h3 id="ruby-のパターンマッチング">Ruby のパターンマッチング</h3>
+<p>ちょこちょこ既に記事があるが，RubyKaigi 2019 でも作者からの発表があり参考になる:</p>
+<iframe class="embedly-embed" src="//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fspeakerdeck.com%2Fplayer%2Fa853a73bba9d48ae88860f7c9b068334&amp;url=https%3A%2F%2Fspeakerdeck.com%2Fk_tsj%2Fpattern-matching-new-feature-in-ruby-2-dot-7&amp;image=https%3A%2F%2Fspeakerd.s3.amazonaws.com%2Fpresentations%2Fa853a73bba9d48ae88860f7c9b068334%2Fslide_0.jpg%3F510667&amp;key=internal&amp;type=text%2Fhtml&amp;schema=speakerdeck" width="500" height="299" scrolling="no" frameborder="0" allow="autoplay; fullscreen" allowfullscreen="true">
+</iframe>
+<p>すでに <a href="https://www.youtube.com/watch?v=paBlgsqoKk8">YouTube で動画も公開された</a>． ちなみに，2012 ぐらいからずっと作っていたらしい．</p>
+<p>Elixir のピンパターン(<code>^var</code>)など，数多くのパターンマッチング機能がある(後発の利点ですね)． ただし，変数のスコープが個人的には思ってたのと違った:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode ruby"><code class="sourceCode ruby"><a class="sourceLine" id="cb2-1" title="1">irb(main):<span class="dv">001</span>:<span class="dv">0</span>&gt; <span class="kw">case</span> [<span class="dv">1</span>, <span class="dv">2</span>]</a>
+<a class="sourceLine" id="cb2-2" title="2">irb(main):<span class="dv">002</span>:<span class="dv">1</span>&gt; <span class="kw">in</span> [a, <span class="dv">3</span>] <span class="kw">then</span> p a</a>
+<a class="sourceLine" id="cb2-3" title="3">irb(main):<span class="dv">003</span>:<span class="dv">1</span>&gt; <span class="kw">in</span> [b, c] <span class="kw">then</span> p c</a>
+<a class="sourceLine" id="cb2-4" title="4">irb(main):<span class="dv">004</span>:<span class="dv">1</span>&gt; <span class="kw">end</span></a>
+<a class="sourceLine" id="cb2-5" title="5"><span class="dv">2</span></a>
+<a class="sourceLine" id="cb2-6" title="6">=&gt; <span class="dv">2</span></a>
+<a class="sourceLine" id="cb2-7" title="7">irb(main):<span class="dv">005</span>:<span class="dv">0</span>&gt; [a,b,c]</a>
+<a class="sourceLine" id="cb2-8" title="8">=&gt; [<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">2</span>]</a></code></pre></div>
+<p><code>in ..</code> ごとにスコープは閉じてるのが一般的な気がするけど Ruby でそれは難しいのだろうか(<code>if</code> 文や <code>case</code> 文でもこんな感じの挙動)．</p>
+<h2 id="試す">試す</h2>
+<h3 id="ruby2.7-dev">Ruby2.7-dev</h3>
+<p>前述した通り，パターンマッチングは trunk にマージされているので Ruby2.7-dev で試すことができる． trunk を試す方法はいくつかあると思うが，僕は手っ取り早く <a href="https://github.com/rbenv/rbenv">rbenv</a> を使った．</p>
+<pre><code>$ rbenv install 2.7.0-dev</code></pre>
+<h3 id="minruby">MinRuby</h3>
+<p>パターンマッチングを試す対象として，「<a href="https://ascii.jp/elem/000/001/230/1230449/">Ruby で学ぶ Ruby</a>」という連載で作っている，かなり簡易的な Ruby のサブセット処理系 MinRuby を利用する．</p>
+<p>最終的な処理系は <a href="https://github.com/matsubara0507/MinRuby.rb/blob/dbe9891f916877fc3c260135696f48344bceb98a/interp.rb">Ruby コード一枚</a>でできている(一番めんどくさい構文解析を <a href="https://github.com/ruby/ruby/tree/970a25b10415bc3735e6e3c165e167e6abc3d7f4/ext/ripper">ripper</a> とそのラッパー <a href="https://github.com/mame/minruby">minruby</a> というのに任せているので):</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode ruby"><code class="sourceCode ruby"><a class="sourceLine" id="cb4-1" title="1"><span class="co"># interp.rb</span></a>
+<a class="sourceLine" id="cb4-2" title="2">require <span class="st">&quot;minruby&quot;</span></a>
+<a class="sourceLine" id="cb4-3" title="3"></a>
+<a class="sourceLine" id="cb4-4" title="4"><span class="kw">def</span> evaluate(tree, genv, lenv)</a>
+<a class="sourceLine" id="cb4-5" title="5">  <span class="kw">case</span> tree[<span class="dv">0</span>]</a>
+<a class="sourceLine" id="cb4-6" title="6">  <span class="kw">when</span> <span class="st">&quot;lit&quot;</span></a>
+<a class="sourceLine" id="cb4-7" title="7">    tree[<span class="dv">1</span>]</a>
+<a class="sourceLine" id="cb4-8" title="8">  <span class="kw">when</span> <span class="st">&quot;+&quot;</span></a>
+<a class="sourceLine" id="cb4-9" title="9">    evaluate(tree[<span class="dv">1</span>], genv, lenv) + evaluate(tree[<span class="dv">2</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-10" title="10">  <span class="kw">when</span> <span class="st">&quot;-&quot;</span></a>
+<a class="sourceLine" id="cb4-11" title="11">    evaluate(tree[<span class="dv">1</span>], genv, lenv) - evaluate(tree[<span class="dv">2</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-12" title="12">  <span class="kw">when</span> <span class="st">&quot;*&quot;</span></a>
+<a class="sourceLine" id="cb4-13" title="13">    evaluate(tree[<span class="dv">1</span>], genv, lenv) * evaluate(tree[<span class="dv">2</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-14" title="14">  <span class="kw">when</span> <span class="st">&quot;/&quot;</span></a>
+<a class="sourceLine" id="cb4-15" title="15">    evaluate(tree[<span class="dv">1</span>], genv, lenv) / evaluate(tree[<span class="dv">2</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-16" title="16">  <span class="kw">when</span> <span class="st">&quot;%&quot;</span></a>
+<a class="sourceLine" id="cb4-17" title="17">    evaluate(tree[<span class="dv">1</span>], genv, lenv) % evaluate(tree[<span class="dv">2</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-18" title="18">  <span class="kw">when</span> <span class="st">&quot;&lt;&quot;</span></a>
+<a class="sourceLine" id="cb4-19" title="19">    evaluate(tree[<span class="dv">1</span>], genv, lenv) &lt; evaluate(tree[<span class="dv">2</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-20" title="20">  <span class="kw">when</span> <span class="st">&quot;&lt;=&quot;</span></a>
+<a class="sourceLine" id="cb4-21" title="21">    evaluate(tree[<span class="dv">1</span>], genv, lenv) &lt;= evaluate(tree[<span class="dv">2</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-22" title="22">  <span class="kw">when</span> <span class="st">&quot;==&quot;</span></a>
+<a class="sourceLine" id="cb4-23" title="23">    evaluate(tree[<span class="dv">1</span>], genv, lenv) == evaluate(tree[<span class="dv">2</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-24" title="24">  <span class="kw">when</span> <span class="st">&quot;!=&quot;</span></a>
+<a class="sourceLine" id="cb4-25" title="25">    evaluate(tree[<span class="dv">1</span>], genv, lenv) != evaluate(tree[<span class="dv">2</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-26" title="26">  <span class="kw">when</span> <span class="st">&quot;&gt;=&quot;</span></a>
+<a class="sourceLine" id="cb4-27" title="27">    evaluate(tree[<span class="dv">1</span>], genv, lenv) &gt;= evaluate(tree[<span class="dv">2</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-28" title="28">  <span class="kw">when</span> <span class="st">&quot;&gt;&quot;</span></a>
+<a class="sourceLine" id="cb4-29" title="29">    evaluate(tree[<span class="dv">1</span>], genv, lenv) &gt; evaluate(tree[<span class="dv">2</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-30" title="30">  <span class="kw">when</span> <span class="st">&quot;stmts&quot;</span></a>
+<a class="sourceLine" id="cb4-31" title="31">    i = <span class="dv">1</span></a>
+<a class="sourceLine" id="cb4-32" title="32">    last = <span class="dv">nil</span></a>
+<a class="sourceLine" id="cb4-33" title="33">    <span class="kw">while</span> tree[i]</a>
+<a class="sourceLine" id="cb4-34" title="34">      last = evaluate(tree[i], genv, lenv)</a>
+<a class="sourceLine" id="cb4-35" title="35">      i = i + <span class="dv">1</span></a>
+<a class="sourceLine" id="cb4-36" title="36">    <span class="kw">end</span></a>
+<a class="sourceLine" id="cb4-37" title="37">    last</a>
+<a class="sourceLine" id="cb4-38" title="38">  <span class="kw">when</span> <span class="st">&quot;var_assign&quot;</span></a>
+<a class="sourceLine" id="cb4-39" title="39">    lenv[tree[<span class="dv">1</span>]] = evaluate(tree[<span class="dv">2</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-40" title="40">  <span class="kw">when</span> <span class="st">&quot;var_ref&quot;</span></a>
+<a class="sourceLine" id="cb4-41" title="41">    lenv[tree[<span class="dv">1</span>]]</a>
+<a class="sourceLine" id="cb4-42" title="42">  <span class="kw">when</span> <span class="st">&quot;if&quot;</span></a>
+<a class="sourceLine" id="cb4-43" title="43">    <span class="kw">if</span> evaluate(tree[<span class="dv">1</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-44" title="44">      evaluate(tree[<span class="dv">2</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-45" title="45">    <span class="kw">else</span></a>
+<a class="sourceLine" id="cb4-46" title="46">      evaluate(tree[<span class="dv">3</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-47" title="47">    <span class="kw">end</span></a>
+<a class="sourceLine" id="cb4-48" title="48">  <span class="kw">when</span> <span class="st">&quot;while&quot;</span></a>
+<a class="sourceLine" id="cb4-49" title="49">    <span class="kw">while</span> evaluate(tree[<span class="dv">1</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-50" title="50">      evaluate(tree[<span class="dv">2</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-51" title="51">    <span class="kw">end</span></a>
+<a class="sourceLine" id="cb4-52" title="52">  <span class="kw">when</span> <span class="st">&quot;func_def&quot;</span></a>
+<a class="sourceLine" id="cb4-53" title="53">    genv[tree[<span class="dv">1</span>]] = [<span class="st">&quot;user_defined&quot;</span>, tree[<span class="dv">2</span>], tree[<span class="dv">3</span>]]</a>
+<a class="sourceLine" id="cb4-54" title="54">  <span class="kw">when</span> <span class="st">&quot;func_call&quot;</span></a>
+<a class="sourceLine" id="cb4-55" title="55">    args = []</a>
+<a class="sourceLine" id="cb4-56" title="56">    i = <span class="dv">0</span></a>
+<a class="sourceLine" id="cb4-57" title="57">    <span class="kw">while</span> tree[i + <span class="dv">2</span>]</a>
+<a class="sourceLine" id="cb4-58" title="58">      args[i] = evaluate(tree[i + <span class="dv">2</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-59" title="59">      i = i + <span class="dv">1</span></a>
+<a class="sourceLine" id="cb4-60" title="60">    <span class="kw">end</span></a>
+<a class="sourceLine" id="cb4-61" title="61">    mhd = genv[tree[<span class="dv">1</span>]]</a>
+<a class="sourceLine" id="cb4-62" title="62">    <span class="kw">if</span> mhd[<span class="dv">0</span>] == <span class="st">&quot;builtin&quot;</span></a>
+<a class="sourceLine" id="cb4-63" title="63">      minruby_call(mhd[<span class="dv">1</span>], args)</a>
+<a class="sourceLine" id="cb4-64" title="64">    <span class="kw">else</span></a>
+<a class="sourceLine" id="cb4-65" title="65">      new_lenv = {}</a>
+<a class="sourceLine" id="cb4-66" title="66">      params = mhd[<span class="dv">1</span>]</a>
+<a class="sourceLine" id="cb4-67" title="67">      i = <span class="dv">0</span></a>
+<a class="sourceLine" id="cb4-68" title="68">      <span class="kw">while</span> params[i]</a>
+<a class="sourceLine" id="cb4-69" title="69">        new_lenv[params[i]] = args[i]</a>
+<a class="sourceLine" id="cb4-70" title="70">        i = i + <span class="dv">1</span></a>
+<a class="sourceLine" id="cb4-71" title="71">      <span class="kw">end</span></a>
+<a class="sourceLine" id="cb4-72" title="72">      evaluate(mhd[<span class="dv">2</span>], genv, new_lenv)</a>
+<a class="sourceLine" id="cb4-73" title="73">    <span class="kw">end</span></a>
+<a class="sourceLine" id="cb4-74" title="74">  <span class="kw">when</span> <span class="st">&quot;ary_new&quot;</span></a>
+<a class="sourceLine" id="cb4-75" title="75">    ary = []</a>
+<a class="sourceLine" id="cb4-76" title="76">    i = <span class="dv">0</span></a>
+<a class="sourceLine" id="cb4-77" title="77">    <span class="kw">while</span> tree[i + <span class="dv">1</span>]</a>
+<a class="sourceLine" id="cb4-78" title="78">      ary[i] = evaluate(tree[i + <span class="dv">1</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-79" title="79">      i = i + <span class="dv">1</span></a>
+<a class="sourceLine" id="cb4-80" title="80">    <span class="kw">end</span></a>
+<a class="sourceLine" id="cb4-81" title="81">    ary</a>
+<a class="sourceLine" id="cb4-82" title="82">  <span class="kw">when</span> <span class="st">&quot;ary_ref&quot;</span></a>
+<a class="sourceLine" id="cb4-83" title="83">    ary = evaluate(tree[<span class="dv">1</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-84" title="84">    idx = evaluate(tree[<span class="dv">2</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-85" title="85">    ary[idx]</a>
+<a class="sourceLine" id="cb4-86" title="86">  <span class="kw">when</span> <span class="st">&quot;ary_assign&quot;</span></a>
+<a class="sourceLine" id="cb4-87" title="87">    ary = evaluate(tree[<span class="dv">1</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-88" title="88">    idx = evaluate(tree[<span class="dv">2</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-89" title="89">    val = evaluate(tree[<span class="dv">3</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-90" title="90">    ary[idx] = val</a>
+<a class="sourceLine" id="cb4-91" title="91">  <span class="kw">when</span> <span class="st">&quot;hash_new&quot;</span></a>
+<a class="sourceLine" id="cb4-92" title="92">    hsh = {}</a>
+<a class="sourceLine" id="cb4-93" title="93">    i = <span class="dv">0</span></a>
+<a class="sourceLine" id="cb4-94" title="94">    <span class="kw">while</span> tree[i + <span class="dv">1</span>]</a>
+<a class="sourceLine" id="cb4-95" title="95">      key = evaluate(tree[i + <span class="dv">1</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-96" title="96">      val = evaluate(tree[i + <span class="dv">2</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb4-97" title="97">      hsh[key] = val</a>
+<a class="sourceLine" id="cb4-98" title="98">      i = i + <span class="dv">2</span></a>
+<a class="sourceLine" id="cb4-99" title="99">    <span class="kw">end</span></a>
+<a class="sourceLine" id="cb4-100" title="100">    hsh</a>
+<a class="sourceLine" id="cb4-101" title="101">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb4-102" title="102"><span class="kw">end</span></a>
+<a class="sourceLine" id="cb4-103" title="103"></a>
+<a class="sourceLine" id="cb4-104" title="104">str = minruby_load()</a>
+<a class="sourceLine" id="cb4-105" title="105"></a>
+<a class="sourceLine" id="cb4-106" title="106">tree = minruby_parse(str)</a>
+<a class="sourceLine" id="cb4-107" title="107"></a>
+<a class="sourceLine" id="cb4-108" title="108">genv = {</a>
+<a class="sourceLine" id="cb4-109" title="109">  <span class="st">&quot;p&quot;</span> =&gt; [<span class="st">&quot;builtin&quot;</span>, <span class="st">&quot;p&quot;</span>],</a>
+<a class="sourceLine" id="cb4-110" title="110">  <span class="st">&quot;require&quot;</span> =&gt; [<span class="st">&quot;builtin&quot;</span>, <span class="st">&quot;require&quot;</span>],</a>
+<a class="sourceLine" id="cb4-111" title="111">  <span class="st">&quot;minruby_parse&quot;</span> =&gt; [<span class="st">&quot;builtin&quot;</span>, <span class="st">&quot;minruby_parse&quot;</span>],</a>
+<a class="sourceLine" id="cb4-112" title="112">  <span class="st">&quot;minruby_load&quot;</span> =&gt; [<span class="st">&quot;builtin&quot;</span>, <span class="st">&quot;minruby_load&quot;</span>],</a>
+<a class="sourceLine" id="cb4-113" title="113">  <span class="st">&quot;minruby_call&quot;</span> =&gt; [<span class="st">&quot;builtin&quot;</span>, <span class="st">&quot;minruby_call&quot;</span>],</a>
+<a class="sourceLine" id="cb4-114" title="114">}</a>
+<a class="sourceLine" id="cb4-115" title="115">lenv = {}</a>
+<a class="sourceLine" id="cb4-116" title="116">evaluate(tree, genv, lenv)</a></code></pre></div>
+<p>コードを見て分かるように(?)，配列の一引数目のリテラルで <code>case</code> 文による分岐をし，分岐先で配列の要素を引っ張っている． このようにデータ構造 + <code>case</code> 文による分岐はパターンマッチングにうってつけのユースケースだ．</p>
+<h3 id="minruby-パターンマッチング">MinRuby + パターンマッチング</h3>
+<p>作業リポジトリはこれ:</p>
+<iframe width="426" height="162" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/MinRuby.rb">
+</iframe>
+<p><code>pattern-match</code> というブランチにパターンマッチングで書き換えたコードがある． パターンマッチングで書き換えたのは <code>evaluate</code> 関数だけなのでそこだけ載せる:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode ruby"><code class="sourceCode ruby"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">def</span> evaluate(tree, genv, lenv)</a>
+<a class="sourceLine" id="cb5-2" title="2">  <span class="kw">case</span> tree</a>
+<a class="sourceLine" id="cb5-3" title="3">  <span class="kw">in</span> <span class="st">&quot;lit&quot;</span>, lit</a>
+<a class="sourceLine" id="cb5-4" title="4">    lit</a>
+<a class="sourceLine" id="cb5-5" title="5">  <span class="kw">in</span> <span class="st">&quot;+&quot;</span>, exp1, exp2</a>
+<a class="sourceLine" id="cb5-6" title="6">    evaluate(exp1, genv, lenv) + evaluate(exp2, genv, lenv)</a>
+<a class="sourceLine" id="cb5-7" title="7">  <span class="kw">in</span> <span class="st">&quot;-&quot;</span>, exp1, exp2</a>
+<a class="sourceLine" id="cb5-8" title="8">    evaluate(exp1, genv, lenv) - evaluate(exp2, genv, lenv)</a>
+<a class="sourceLine" id="cb5-9" title="9">  <span class="kw">in</span> <span class="st">&quot;*&quot;</span>, exp1, exp2</a>
+<a class="sourceLine" id="cb5-10" title="10">    evaluate(exp1, genv, lenv) * evaluate(exp2, genv, lenv)</a>
+<a class="sourceLine" id="cb5-11" title="11">  <span class="kw">in</span> <span class="st">&quot;/&quot;</span>, exp1, exp2</a>
+<a class="sourceLine" id="cb5-12" title="12">    evaluate(exp1, genv, lenv) / evaluate(exp2, genv, lenv)</a>
+<a class="sourceLine" id="cb5-13" title="13">  <span class="kw">in</span> <span class="st">&quot;%&quot;</span>, exp1, exp2</a>
+<a class="sourceLine" id="cb5-14" title="14">    evaluate(exp1, genv, lenv) % evaluate(exp2, genv, lenv)</a>
+<a class="sourceLine" id="cb5-15" title="15">  <span class="kw">in</span> <span class="st">&quot;&lt;&quot;</span>, exp1, exp2</a>
+<a class="sourceLine" id="cb5-16" title="16">    evaluate(exp1, genv, lenv) &lt; evaluate(exp2, genv, lenv)</a>
+<a class="sourceLine" id="cb5-17" title="17">  <span class="kw">in</span> <span class="st">&quot;&lt;=&quot;</span>, exp1, exp2</a>
+<a class="sourceLine" id="cb5-18" title="18">    evaluate(exp1, genv, lenv) &lt;= evaluate(exp2, genv, lenv)</a>
+<a class="sourceLine" id="cb5-19" title="19">  <span class="kw">in</span> <span class="st">&quot;==&quot;</span>, exp1, exp2</a>
+<a class="sourceLine" id="cb5-20" title="20">    evaluate(exp1, genv, lenv) == evaluate(exp2, genv, lenv)</a>
+<a class="sourceLine" id="cb5-21" title="21">  <span class="kw">in</span> <span class="st">&quot;!=&quot;</span>, exp1, exp2</a>
+<a class="sourceLine" id="cb5-22" title="22">    evaluate(exp1, genv, lenv) != evaluate(exp2, genv, lenv)</a>
+<a class="sourceLine" id="cb5-23" title="23">  <span class="kw">in</span> <span class="st">&quot;&gt;=&quot;</span>, exp1, exp2</a>
+<a class="sourceLine" id="cb5-24" title="24">    evaluate(exp1, genv, lenv) &gt;= evaluate(exp2, genv, lenv)</a>
+<a class="sourceLine" id="cb5-25" title="25">  <span class="kw">in</span> <span class="st">&quot;&gt;&quot;</span>, exp1, exp2</a>
+<a class="sourceLine" id="cb5-26" title="26">    evaluate(exp1, genv, lenv) &gt; evaluate(exp2, genv, lenv)</a>
+<a class="sourceLine" id="cb5-27" title="27">  <span class="kw">in</span> <span class="st">&quot;stmts&quot;</span>, *stmts</a>
+<a class="sourceLine" id="cb5-28" title="28">    last = <span class="dv">nil</span></a>
+<a class="sourceLine" id="cb5-29" title="29">    i = <span class="dv">0</span></a>
+<a class="sourceLine" id="cb5-30" title="30">    <span class="kw">while</span> stmts[i]</a>
+<a class="sourceLine" id="cb5-31" title="31">      last = evaluate(stmts[i], genv, lenv)</a>
+<a class="sourceLine" id="cb5-32" title="32">      i = i + <span class="dv">1</span></a>
+<a class="sourceLine" id="cb5-33" title="33">    <span class="kw">end</span></a>
+<a class="sourceLine" id="cb5-34" title="34">    last</a>
+<a class="sourceLine" id="cb5-35" title="35">  <span class="kw">in</span> <span class="st">&quot;var_assign&quot;</span>, var_name, var_value</a>
+<a class="sourceLine" id="cb5-36" title="36">    lenv[var_name] = evaluate(var_value, genv, lenv)</a>
+<a class="sourceLine" id="cb5-37" title="37">  <span class="kw">in</span> <span class="st">&quot;var_ref&quot;</span>, var_name</a>
+<a class="sourceLine" id="cb5-38" title="38">    lenv[var_name]</a>
+<a class="sourceLine" id="cb5-39" title="39">  <span class="kw">in</span> <span class="st">&quot;if&quot;</span>, cond, exp1, exp2</a>
+<a class="sourceLine" id="cb5-40" title="40">    <span class="kw">if</span> evaluate(cond, genv, lenv)</a>
+<a class="sourceLine" id="cb5-41" title="41">      evaluate(exp1, genv, lenv)</a>
+<a class="sourceLine" id="cb5-42" title="42">    <span class="kw">else</span></a>
+<a class="sourceLine" id="cb5-43" title="43">      evaluate(exp2, genv, lenv)</a>
+<a class="sourceLine" id="cb5-44" title="44">    <span class="kw">end</span></a>
+<a class="sourceLine" id="cb5-45" title="45">  <span class="kw">in</span> <span class="st">&quot;while&quot;</span>, cond, exp</a>
+<a class="sourceLine" id="cb5-46" title="46">    <span class="kw">while</span> evaluate(cond, genv, lenv)</a>
+<a class="sourceLine" id="cb5-47" title="47">      evaluate(exp, genv, lenv)</a>
+<a class="sourceLine" id="cb5-48" title="48">    <span class="kw">end</span></a>
+<a class="sourceLine" id="cb5-49" title="49">  <span class="kw">in</span> <span class="st">&quot;func_def&quot;</span>, func_name, func_args, func_body</a>
+<a class="sourceLine" id="cb5-50" title="50">    genv[func_name] = [<span class="st">&quot;user_defined&quot;</span>, func_args, func_body]</a>
+<a class="sourceLine" id="cb5-51" title="51">  <span class="kw">in</span> <span class="st">&quot;func_call&quot;</span>, func_name, *func_args</a>
+<a class="sourceLine" id="cb5-52" title="52">    args = []</a>
+<a class="sourceLine" id="cb5-53" title="53">    i = <span class="dv">0</span></a>
+<a class="sourceLine" id="cb5-54" title="54">    <span class="kw">while</span> func_args[i]</a>
+<a class="sourceLine" id="cb5-55" title="55">      args[i] = evaluate(func_args[i], genv, lenv)</a>
+<a class="sourceLine" id="cb5-56" title="56">      i = i + <span class="dv">1</span></a>
+<a class="sourceLine" id="cb5-57" title="57">    <span class="kw">end</span></a>
+<a class="sourceLine" id="cb5-58" title="58">    mhd = genv[func_name]</a>
+<a class="sourceLine" id="cb5-59" title="59">    <span class="kw">if</span> mhd[<span class="dv">0</span>] == <span class="st">&quot;builtin&quot;</span></a>
+<a class="sourceLine" id="cb5-60" title="60">      minruby_call(mhd[<span class="dv">1</span>], args)</a>
+<a class="sourceLine" id="cb5-61" title="61">    <span class="kw">else</span></a>
+<a class="sourceLine" id="cb5-62" title="62">      new_lenv = {}</a>
+<a class="sourceLine" id="cb5-63" title="63">      params = mhd[<span class="dv">1</span>]</a>
+<a class="sourceLine" id="cb5-64" title="64">      i = <span class="dv">0</span></a>
+<a class="sourceLine" id="cb5-65" title="65">      <span class="kw">while</span> params[i]</a>
+<a class="sourceLine" id="cb5-66" title="66">        new_lenv[params[i]] = args[i]</a>
+<a class="sourceLine" id="cb5-67" title="67">        i = i + <span class="dv">1</span></a>
+<a class="sourceLine" id="cb5-68" title="68">      <span class="kw">end</span></a>
+<a class="sourceLine" id="cb5-69" title="69">      evaluate(mhd[<span class="dv">2</span>], genv, new_lenv)</a>
+<a class="sourceLine" id="cb5-70" title="70">    <span class="kw">end</span></a>
+<a class="sourceLine" id="cb5-71" title="71">  <span class="kw">in</span> <span class="st">&quot;ary_new&quot;</span>, ary_values</a>
+<a class="sourceLine" id="cb5-72" title="72">    ary = []</a>
+<a class="sourceLine" id="cb5-73" title="73">    i = <span class="dv">0</span></a>
+<a class="sourceLine" id="cb5-74" title="74">    <span class="kw">while</span> ary_values[i]</a>
+<a class="sourceLine" id="cb5-75" title="75">      ary [i] = evaluate(ary_values[i], genv, lenv)</a>
+<a class="sourceLine" id="cb5-76" title="76">      i = i + <span class="dv">1</span></a>
+<a class="sourceLine" id="cb5-77" title="77">    <span class="kw">end</span></a>
+<a class="sourceLine" id="cb5-78" title="78">  <span class="kw">in</span> <span class="st">&quot;ary_ref&quot;</span>, ary_exp, idx_exp</a>
+<a class="sourceLine" id="cb5-79" title="79">    ary = evaluate(ary_exp, genv, lenv)</a>
+<a class="sourceLine" id="cb5-80" title="80">    idx = evaluate(idx_exp, genv, lenv)</a>
+<a class="sourceLine" id="cb5-81" title="81">    ary[idx]</a>
+<a class="sourceLine" id="cb5-82" title="82">  <span class="kw">in</span> <span class="st">&quot;ary_assign&quot;</span>, ary_exp, idx_exp, value_exp</a>
+<a class="sourceLine" id="cb5-83" title="83">    ary = evaluate(ary_exp, genv, lenv)</a>
+<a class="sourceLine" id="cb5-84" title="84">    idx = evaluate(idx_exp, genv, lenv)</a>
+<a class="sourceLine" id="cb5-85" title="85">    val = evaluate(value_exp, genv, lenv)</a>
+<a class="sourceLine" id="cb5-86" title="86">    ary[idx] = val</a>
+<a class="sourceLine" id="cb5-87" title="87">  <span class="kw">in</span> <span class="st">&quot;hash_new&quot;</span>, *key_values</a>
+<a class="sourceLine" id="cb5-88" title="88">    hsh = {}</a>
+<a class="sourceLine" id="cb5-89" title="89">    i = <span class="dv">0</span></a>
+<a class="sourceLine" id="cb5-90" title="90">    <span class="kw">while</span> key_values[i]</a>
+<a class="sourceLine" id="cb5-91" title="91">      key = evaluate(key_values[i], genv, lenv)</a>
+<a class="sourceLine" id="cb5-92" title="92">      val = evaluate(key_values[i + <span class="dv">1</span>], genv, lenv)</a>
+<a class="sourceLine" id="cb5-93" title="93">      hsh[key] = val</a>
+<a class="sourceLine" id="cb5-94" title="94">      i = i + <span class="dv">2</span></a>
+<a class="sourceLine" id="cb5-95" title="95">    <span class="kw">end</span></a>
+<a class="sourceLine" id="cb5-96" title="96">    hsh</a>
+<a class="sourceLine" id="cb5-97" title="97">  <span class="kw">end</span></a>
+<a class="sourceLine" id="cb5-98" title="98"><span class="kw">end</span></a></code></pre></div>
+<p>配列にマッチさせる場合，<code>in [a, b, c]</code> の <code>[]</code> を省くことができる． また，<code>in &quot;hoge&quot;, *rest</code> は配列の残りの要素全てを <code>*rest</code> にマッチさせる構文だ． 他は特別な機能を使ってないのできっと読めるでしょう．</p>
+<h2 id="おまけ-minruby-パターンマッチング">おまけ: minruby + パターンマッチング</h2>
+<p>試しに <code>minruby</code> もパターンマッチで書き換えてみた． 差分は<a href="https://github.com/matsubara0507/minruby-gem/pull/1">これ</a>． めちゃくちゃやっつけで作ったので穴があるかもしれない．</p>
+<p>ここでは新しく Alternative Pattern を使っている． こういうのだ:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode ruby"><code class="sourceCode ruby"><a class="sourceLine" id="cb6-1" title="1"><span class="co"># Alternative Pattern: hoge | fuga</span></a>
+<a class="sourceLine" id="cb6-2" title="2"><span class="kw">in</span> (<span class="st">:program</span> | <span class="st">:bodystmt</span>), exp1, *_</a>
+<a class="sourceLine" id="cb6-3" title="3">    make_stmts(exp1)</a></code></pre></div>
+<p>Alternative Pattern には注意点があって，このパターンでは変数へのマッチを利用することができない:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode ruby"><code class="sourceCode ruby"><a class="sourceLine" id="cb7-1" title="1"><span class="co"># Error: illegal variable in alternative pattern</span></a>
+<a class="sourceLine" id="cb7-2" title="2"><span class="kw">in</span> (<span class="st">:program</span> exp1, *_ | <span class="st">:bodystmt</span> exp1, *_),</a>
+<a class="sourceLine" id="cb7-3" title="3">    make_stmts(exp1)</a></code></pre></div>
+<p>ここからは余談． MinRuby は <code>ruby interp.rb interp.rb fizzbuzz.rb</code> のように自身を自身で評価することが可能だ(そのため <code>map</code> や <code>foreach</code> などを使わずに少し冗長なコードになっている)． しかし，パターンマッチングを導入しちゃうとこれができない． なんとかできないかなぁと思って <code>minruby</code> をパターンマッチングで書き換えてみたけど，まぁ無理でした． いいアイデアあったら教えて．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>次は型検査も試したいですね．</p>
+  </div>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+  <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+    <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+      <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+    </a>
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>
