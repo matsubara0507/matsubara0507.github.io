@@ -8,8 +8,195 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2019-05-26T00:00:00Z</updated>
+    <updated>2019-05-27T00:00:00Z</updated>
     <entry>
+    <title>rio + extensible なフレームワーク: mix</title>
+    <link href="https://matsubara0507.github.io/posts/2019-05-27-create-mix-libs.html" />
+    <id>https://matsubara0507.github.io/posts/2019-05-27-create-mix-libs.html</id>
+    <published>2019-05-27T00:00:00Z</published>
+    <updated>2019-05-27T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
+    <p>最近はよく <a href="https://hackage.haskell.org/package/rio">rio</a> + <a href="https://hackage.haskell.org/package/extensible">extensible</a> で Haskell アプリケーションを書きます(趣味の)． 前々から何となくパターン化できそうだなぁと思っていたのが，それをついにパターン化し mix パッケージとして形にしましたというお話です．</p>
+<p>ちなみに，それぞれのパッケージを軽く説明すると: - rio : Haskell のビルドツール Stack を開発しているチームが作っている Reader パターンをベースにした Alt. Prelude - extensible : 拡張可能レコードを始めとして様々な拡張可能なデータ構造を同一の形式で利用できるようになるパッケージ</p>
+<h2 id="mix-パッケージ">mix パッケージ</h2>
+<p>リポジトリはこれ:</p>
+<h5 id="section"><iframe width="426" height="183" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/mix.hs"></iframe></h5>
+<p>mix パッケージの目的は rio パッケージの <code>RIO env a</code> モナドの <code>env</code> の部分を extensible パッケージを用いて簡単に構築することであり，<code>env</code> をプラグインとして構築する． プラグインで構築という部分は <a href="https://hackage.haskell.org/package/tonatona">tonatona</a> から着想を得た(tonatona も rio のラッパーパッケージなはず)． 例えば，<code>rio</code> パッケージのロガーを利用して次のような簡易的なプログラムをかける:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb1-2" title="2"></a>
+<a class="sourceLine" id="cb1-3" title="3"><span class="kw">import</span>           <span class="dt">RIO</span></a>
+<a class="sourceLine" id="cb1-4" title="4"></a>
+<a class="sourceLine" id="cb1-5" title="5"><span class="kw">import</span>           <span class="dt">Data.Extensible</span></a>
+<a class="sourceLine" id="cb1-6" title="6"><span class="kw">import</span>           <span class="dt">Mix</span></a>
+<a class="sourceLine" id="cb1-7" title="7"><span class="kw">import</span>           <span class="dt">Mix.Plugin.Logger</span> <span class="kw">as</span> <span class="dt">MixLogger</span></a>
+<a class="sourceLine" id="cb1-8" title="8"></a>
+<a class="sourceLine" id="cb1-9" title="9"><span class="kw">type</span> <span class="dt">Env</span> <span class="fu">=</span> <span class="dt">Record</span></a>
+<a class="sourceLine" id="cb1-10" title="10">  &#39;[ <span class="st">&quot;logger&quot;</span> <span class="fu">&gt;:</span> <span class="dt">MixLogger.LogFunc</span></a>
+<a class="sourceLine" id="cb1-11" title="11">   , <span class="st">&quot;name&quot;</span>   <span class="fu">&gt;:</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb1-12" title="12">   ]</a>
+<a class="sourceLine" id="cb1-13" title="13"></a>
+<a class="sourceLine" id="cb1-14" title="14"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb1-15" title="15">main <span class="fu">=</span> Mix.run plugin <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-16" title="16">  name <span class="ot">&lt;-</span> asks (view <span class="fu">#</span>name)</a>
+<a class="sourceLine" id="cb1-17" title="17">  MixLogger.logDebug <span class="fu">$</span> display (<span class="st">&quot;This is debug: &quot;</span> <span class="fu">&lt;&gt;</span> name)</a>
+<a class="sourceLine" id="cb1-18" title="18">  MixLogger.logInfo  <span class="fu">$</span> display (<span class="st">&quot;This is info: &quot;</span>  <span class="fu">&lt;&gt;</span> name)</a>
+<a class="sourceLine" id="cb1-19" title="19">  MixLogger.logWarn  <span class="fu">$</span> display (<span class="st">&quot;This is warn: &quot;</span>  <span class="fu">&lt;&gt;</span> name)</a>
+<a class="sourceLine" id="cb1-20" title="20">  MixLogger.logError <span class="fu">$</span> display (<span class="st">&quot;This is error: &quot;</span> <span class="fu">&lt;&gt;</span> name)</a>
+<a class="sourceLine" id="cb1-21" title="21">  <span class="kw">where</span></a>
+<a class="sourceLine" id="cb1-22" title="22"><span class="ot">    plugin ::</span> <span class="dt">Plugin</span> () <span class="dt">IO</span> <span class="dt">Env</span></a>
+<a class="sourceLine" id="cb1-23" title="23">    plugin <span class="fu">=</span> hsequence</a>
+<a class="sourceLine" id="cb1-24" title="24">        <span class="fu">$</span> <span class="fu">#</span>logger <span class="fu">&lt;@=&gt;</span> MixLogger.buildPlugin (<span class="fu">#</span>handle <span class="fu">@=</span> stdout <span class="fu">&lt;:</span> <span class="fu">#</span>verbose <span class="fu">@=</span> <span class="dt">True</span> <span class="fu">&lt;:</span> nil)</a>
+<a class="sourceLine" id="cb1-25" title="25">       <span class="fu">&lt;:</span> <span class="fu">#</span>name   <span class="fu">&lt;@=&gt;</span> <span class="fu">pure</span> <span class="st">&quot;Hoge&quot;</span></a>
+<a class="sourceLine" id="cb1-26" title="26">       <span class="fu">&lt;:</span> nil</a></code></pre></div>
+<p>tonatona との違いは <code>RIO env a</code> の <code>env</code> に当たる部分に対して，特別なインスタンス宣言がいらない点だ． 単純に，設定っぽい extensible の拡張可能レコード(<code>#logger &lt;@=&gt; ...</code> とか)を記述するだけで良い． これの実行結果は次のようになる:</p>
+<pre class="shell"><code>$ stack runghc mix/sample/Main.hs
+2019-05-21 22:33:49.378471: [debug] This is debug: Hoge
+@(mix/sample/Main.hs:23:3)
+2019-05-21 22:33:49.381893: [info] This is info: Hoge
+@(mix/sample/Main.hs:24:3)
+2019-05-21 22:33:49.381943: [warn] This is warn: Hoge
+@(mix/sample/Main.hs:25:3)
+2019-05-21 22:33:49.382005: [error] This is error: Hoge
+@(mix/sample/Main.hs:26:3)</code></pre>
+<p>なぜ mix ではインスタンス宣言などせずに自由にプラグインのオンオフや設定のカスタマイズをすることができるのだろうか？ 言わずもがな，<code>extensible</code> の魔法によるものである．</p>
+<h3 id="extensible-の魔法">extensible の魔法</h3>
+<p>もっとも鬼門になったのは rio のロガーだ． rio のロガーは次のように利用する必要がある:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">newtype</span> <span class="dt">Env</span> <span class="fu">=</span> <span class="dt">Env</span> {<span class="ot"> logFunc ::</span> <span class="dt">LogFunc</span> }</a>
+<a class="sourceLine" id="cb3-2" title="2"></a>
+<a class="sourceLine" id="cb3-3" title="3"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb3-4" title="4">main <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb3-5" title="5">  opt <span class="ot">&lt;-</span> logOptionsHandle stdout <span class="dt">False</span></a>
+<a class="sourceLine" id="cb3-6" title="6">  withLogFunc opt <span class="fu">$</span> \logFunc <span class="ot">-&gt;</span> runRIO <span class="dt">Env</span>{<span class="fu">..</span>} <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb3-7" title="7">    logInfo <span class="st">&quot;hoge&quot;</span></a>
+<a class="sourceLine" id="cb3-8" title="8">    logDebug <span class="st">&quot;fuga&quot;</span></a></code></pre></div>
+<p><code>withLogFunc opt</code> の型は <code>MonadUnliftIO m =&gt; (LogFunc -&gt; m a) -&gt; m a</code> となっている． なぜこのような形になっているのかの秘密は(たぶん) <code>MonadUnliftIO</code> にあるのだが今回は割愛する． この型，よく見ると継続になっているのがわかるだろうか？</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="ot">withLogFunc ::</span> <span class="dt">MonadUnliftIO</span> m <span class="ot">=&gt;</span> <span class="dt">LogOptions</span> <span class="ot">-&gt;</span> (<span class="dt">LogFunc</span> <span class="ot">-&gt;</span> m a) <span class="ot">-&gt;</span> m a</a>
+<a class="sourceLine" id="cb4-2" title="2"></a>
+<a class="sourceLine" id="cb4-3" title="3"><span class="co">-- 継続(Continuation)のモナドトランスフォーム仕様の型</span></a>
+<a class="sourceLine" id="cb4-4" title="4"><span class="kw">newtype</span> <span class="dt">ContT</span> r m a <span class="fu">=</span> <span class="dt">ContT</span> {<span class="ot"> runContT ::</span> ((a <span class="ot">-&gt;</span> m r) <span class="ot">-&gt;</span> m r) }</a></code></pre></div>
+<p>継続は <code>Monad</code> 型クラスのインスタンスなのでモナディックに扱える． そして，extensible の拡張可能レコードの特徴として <strong>レコードのフィールドをモナディックに走査できる！</strong> というのがある(正確には <code>Applicative</code> ですが)． 例えば <a href="http://hackage.haskell.org/package/extensible-0.5/docs/Data-Extensible-Product.html#v:hsequence"><code>hsequence</code></a> という関数が走査する関数だ:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="ot">hsequence ::</span> <span class="dt">Applicative</span> f <span class="ot">=&gt;</span> (<span class="dt">Comp</span> f h <span class="fu">:*</span> xs) <span class="ot">-&gt;</span> f (h <span class="fu">:*</span> xs)</a></code></pre></div>
+<p>実は <code>Plugin</code> という型はただの継続で，<code>Mix.run plugin</code> は単純に <code>runContT</code> した中で <code>runRIO env action</code> しているだけだ:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">type</span> <span class="dt">Plugin</span> a m env <span class="fu">=</span> <span class="dt">ContT</span> a m env</a>
+<a class="sourceLine" id="cb6-2" title="2"></a>
+<a class="sourceLine" id="cb6-3" title="3"><span class="ot">run ::</span> <span class="dt">MonadIO</span> m <span class="ot">=&gt;</span> <span class="dt">Plugin</span> a m env <span class="ot">-&gt;</span> <span class="dt">RIO</span> env a <span class="ot">-&gt;</span> m a</a>
+<a class="sourceLine" id="cb6-4" title="4">run plugin act <span class="fu">=</span> (<span class="ot">`runRIO`</span> act) <span class="ot">`withPlugin`</span> plugin</a>
+<a class="sourceLine" id="cb6-5" title="5"></a>
+<a class="sourceLine" id="cb6-6" title="6"><span class="ot">withPlugin ::</span> (env <span class="ot">-&gt;</span> m a) <span class="ot">-&gt;</span> <span class="dt">Plugin</span> a m env <span class="ot">-&gt;</span> m a</a>
+<a class="sourceLine" id="cb6-7" title="7">withPlugin <span class="fu">=</span> <span class="fu">flip</span> runContT</a>
+<a class="sourceLine" id="cb6-8" title="8"></a>
+<a class="sourceLine" id="cb6-9" title="9"><span class="ot">toPlugin ::</span> ((env <span class="ot">-&gt;</span> m a) <span class="ot">-&gt;</span> m a) <span class="ot">-&gt;</span> <span class="dt">Plugin</span> a m env</a>
+<a class="sourceLine" id="cb6-10" title="10">toPlugin <span class="fu">=</span> <span class="dt">ContT</span></a></code></pre></div>
+<p>思いついてしまえば極めて簡単な仕組みだ(なおパフォーマンスについては特に考えていません)．</p>
+<h2 id="プラグイン">プラグイン</h2>
+<p>プラグインと言ったもののただの継続だ． 今あるのは:</p>
+<ul>
+<li>Logger</li>
+<li>Config</li>
+<li>API Client (GitHub, Drone)</li>
+<li>Shell</li>
+</ul>
+<p>だけで，ちょうど最近作ってたOSSで必要になった分だけ． そのうちDB系のやつを作ってもいいかもしれない． これらは全て mix と同じリポジトリに置いてある．</p>
+<h3 id="logger-と-config">Logger と Config</h3>
+<p>この2つは mix ライブラリに入っている． Logger は上記に載せた rio の Logger のラッパー． Config というのは設定ファイルを指しているつもり． <code>&quot;config&quot;</code> フィールドと任意の型と紐づかせている:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Mix.Plugin.Logger</span> <span class="kw">as</span> <span class="dt">MixLogger</span></a>
+<a class="sourceLine" id="cb7-2" title="2"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Mix.Plugin.Config</span> <span class="kw">as</span> <span class="dt">MixConfig</span></a>
+<a class="sourceLine" id="cb7-3" title="3"></a>
+<a class="sourceLine" id="cb7-4" title="4"><span class="kw">type</span> <span class="dt">Env</span> <span class="fu">=</span> <span class="dt">Record</span></a>
+<a class="sourceLine" id="cb7-5" title="5">  &#39;[ <span class="st">&quot;logger&quot;</span> <span class="fu">&gt;:</span> <span class="dt">MixLogger.LogFunc</span></a>
+<a class="sourceLine" id="cb7-6" title="6">   , <span class="st">&quot;config&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Config</span></a>
+<a class="sourceLine" id="cb7-7" title="7">   ]</a>
+<a class="sourceLine" id="cb7-8" title="8"></a>
+<a class="sourceLine" id="cb7-9" title="9"><span class="kw">type</span> <span class="dt">Config</span> <span class="fu">=</span> <span class="dt">Record</span></a>
+<a class="sourceLine" id="cb7-10" title="10">  &#39;[ <span class="st">&quot;name&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span></a>
+<a class="sourceLine" id="cb7-11" title="11">   ]</a>
+<a class="sourceLine" id="cb7-12" title="12"></a>
+<a class="sourceLine" id="cb7-13" title="13"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb7-14" title="14">main <span class="fu">=</span> Mix.run plugin <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb7-15" title="15">  config <span class="ot">&lt;-</span> MixConfig.askConfig</a>
+<a class="sourceLine" id="cb7-16" title="16">  MixLogger.logInfo <span class="fu">$</span> display (<span class="st">&quot;This is info: &quot;</span> <span class="fu">&lt;&gt;</span> config <span class="fu">^.</span> <span class="fu">#</span>name)</a>
+<a class="sourceLine" id="cb7-17" title="17">  <span class="kw">where</span></a>
+<a class="sourceLine" id="cb7-18" title="18"><span class="ot">    plugin ::</span> <span class="dt">Plugin</span> () <span class="dt">IO</span> <span class="dt">Env</span></a>
+<a class="sourceLine" id="cb7-19" title="19">    plugin <span class="fu">=</span> hsequence</a>
+<a class="sourceLine" id="cb7-20" title="20">        <span class="fu">$</span> <span class="fu">#</span>logger <span class="fu">&lt;@=&gt;</span> MixLogger.buildPlugin (<span class="fu">#</span>handle <span class="fu">@=</span> stdout <span class="fu">&lt;:</span> <span class="fu">#</span>verbose <span class="fu">@=</span> <span class="dt">True</span> <span class="fu">&lt;:</span> nil)</a>
+<a class="sourceLine" id="cb7-21" title="21">       <span class="fu">&lt;:</span> <span class="fu">#</span>config <span class="fu">&lt;@=&gt;</span> MixConfig.buildPlugin (<span class="fu">#</span>name <span class="fu">@=</span> <span class="st">&quot;hoge&quot;</span> <span class="fu">&lt;:</span> nil)</a>
+<a class="sourceLine" id="cb7-22" title="22">       <span class="fu">&lt;:</span> nil</a></code></pre></div>
+<p>Config は試しに作ってみたけど，いまいち使い道がない．</p>
+<h3 id="api-client">API Client</h3>
+<p>API クライアントを利用するのに必要な情報(API トークンなど)を <code>env</code> に載せて，クライアントを利用するときにほんの少しだけ簡単に利用できるプラグイン． GitHub と <a href="https://drone.io/">Drone CI</a> のものを作った． GitHub のクライアントは <a href="https://hackage.haskell.org/package/github">github</a> パッケージを Drone のクライアントは(僕が作った) <a href="https://hackage.haskell.org/package/drone">drone</a> パッケージを使う． 各プラグインのパッケージは <a href="https://github.com/matsubara0507/mix.hs/tree/master/mix-plugin-github">mix-plugin-github</a> と <a href="https://github.com/matsubara0507/mix.hs/tree/master/mix-plugin-drone">mix-plugin-drone</a> として matsubara0507/mix.hs リポジトリに置いてある．</p>
+<p>こんな感じに使える:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Drone</span></a>
+<a class="sourceLine" id="cb8-2" title="2"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">GitHub</span></a>
+<a class="sourceLine" id="cb8-3" title="3"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">GitHub.Endpoints.Users</span> <span class="kw">as</span> <span class="dt">GitHub</span></a>
+<a class="sourceLine" id="cb8-4" title="4"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Mix.Plugin.Drone</span>       <span class="kw">as</span> <span class="dt">MixDrone</span></a>
+<a class="sourceLine" id="cb8-5" title="5"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Mix.Plugin.GitHub</span>      <span class="kw">as</span> <span class="dt">MixGitHub</span></a>
+<a class="sourceLine" id="cb8-6" title="6"><span class="kw">import</span>           <span class="dt">System.Environment</span>     (getEnv)</a>
+<a class="sourceLine" id="cb8-7" title="7"></a>
+<a class="sourceLine" id="cb8-8" title="8"><span class="kw">type</span> <span class="dt">Env</span> <span class="fu">=</span> <span class="dt">Record</span></a>
+<a class="sourceLine" id="cb8-9" title="9">  &#39;[ <span class="st">&quot;logger&quot;</span> <span class="fu">&gt;:</span> <span class="dt">MixLogger.LogFunc</span></a>
+<a class="sourceLine" id="cb8-10" title="10">   , <span class="st">&quot;github&quot;</span> <span class="fu">&gt;:</span> <span class="dt">MixGitHub.Token</span></a>
+<a class="sourceLine" id="cb8-11" title="11">   , <span class="st">&quot;drone&quot;</span>  <span class="fu">&gt;:</span> <span class="dt">MixDrone.Config</span></a>
+<a class="sourceLine" id="cb8-12" title="12">   ]</a>
+<a class="sourceLine" id="cb8-13" title="13"></a>
+<a class="sourceLine" id="cb8-14" title="14"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb8-15" title="15">main <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-16" title="16">  gToken <span class="ot">&lt;-</span> liftIO <span class="fu">$</span> fromString <span class="fu">&lt;$&gt;</span> getEnv <span class="st">&quot;GH_TOKEN&quot;</span></a>
+<a class="sourceLine" id="cb8-17" title="17">  dHost  <span class="ot">&lt;-</span> liftIO <span class="fu">$</span> fromString <span class="fu">&lt;$&gt;</span> getEnv <span class="st">&quot;DRONE_HOST&quot;</span></a>
+<a class="sourceLine" id="cb8-18" title="18">  dToken <span class="ot">&lt;-</span> liftIO <span class="fu">$</span> fromString <span class="fu">&lt;$&gt;</span> getEnv <span class="st">&quot;DRONE_TOKEN&quot;</span></a>
+<a class="sourceLine" id="cb8-19" title="19">  <span class="kw">let</span> logConf <span class="fu">=</span> <span class="fu">#</span>handle <span class="fu">@=</span> stdout <span class="fu">&lt;:</span> <span class="fu">#</span>verbose <span class="fu">@=</span> <span class="dt">False</span> <span class="fu">&lt;:</span> nil</a>
+<a class="sourceLine" id="cb8-20" title="20">      dClient <span class="fu">=</span> <span class="fu">#</span>host <span class="fu">@=</span> dHost <span class="fu">&lt;:</span> <span class="fu">#</span>port <span class="fu">@=</span> <span class="dt">Nothing</span> <span class="fu">&lt;:</span> <span class="fu">#</span>token <span class="fu">@=</span> dToken <span class="fu">&lt;:</span> nil</a>
+<a class="sourceLine" id="cb8-21" title="21">      plugin <span class="fu">=</span> hsequence</a>
+<a class="sourceLine" id="cb8-22" title="22">            <span class="fu">$</span> <span class="fu">#</span>logger <span class="fu">&lt;@=&gt;</span> MixLogger.buildPlugin logConf</a>
+<a class="sourceLine" id="cb8-23" title="23">           <span class="fu">&lt;:</span> <span class="fu">#</span>github <span class="fu">&lt;@=&gt;</span> MixGitHub.buildPlugin gToken</a>
+<a class="sourceLine" id="cb8-24" title="24">           <span class="fu">&lt;:</span> <span class="fu">#</span>drone  <span class="fu">&lt;@=&gt;</span> MixDrone.buildPlugin dClient <span class="dt">True</span>  </a>
+<a class="sourceLine" id="cb8-25" title="25">           <span class="fu">&lt;:</span> nil</a>
+<a class="sourceLine" id="cb8-26" title="26">  Mix.run plugin app</a>
+<a class="sourceLine" id="cb8-27" title="27"></a>
+<a class="sourceLine" id="cb8-28" title="28"><span class="ot">app ::</span> <span class="dt">RIO</span> <span class="dt">Env</span> ()</a>
+<a class="sourceLine" id="cb8-29" title="29">app <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-30" title="30">  MixLogger.logInfo <span class="st">&quot;fetch GitHub user info:&quot;</span></a>
+<a class="sourceLine" id="cb8-31" title="31">  resp <span class="ot">&lt;-</span> MixGitHub.fetch GitHub.userInfoCurrent&#39;</a>
+<a class="sourceLine" id="cb8-32" title="32">  <span class="kw">case</span> resp <span class="kw">of</span></a>
+<a class="sourceLine" id="cb8-33" title="33">    <span class="dt">Left</span> err   <span class="ot">-&gt;</span> logError <span class="st">&quot;GitHub fetch error....&quot;</span></a>
+<a class="sourceLine" id="cb8-34" title="34">    <span class="dt">Right</span> user <span class="ot">-&gt;</span> logInfo <span class="fu">$</span> display (<span class="st">&quot;Hi &quot;</span> <span class="fu">&lt;&gt;</span> ghLogin user <span class="fu">&lt;&gt;</span> <span class="st">&quot;!!&quot;</span>)</a>
+<a class="sourceLine" id="cb8-35" title="35">  MixLogger.logInfo <span class="st">&quot;fetch Drone user info:&quot;</span></a>
+<a class="sourceLine" id="cb8-36" title="36">  tryAny (responseBody <span class="fu">&lt;$&gt;</span> MixDrone.fetch Drone.getSelf) <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span></a>
+<a class="sourceLine" id="cb8-37" title="37">    <span class="dt">Left</span> err   <span class="ot">-&gt;</span> logError <span class="st">&quot;Drone CI fetch error...&quot;</span></a>
+<a class="sourceLine" id="cb8-38" title="38">    <span class="dt">Right</span> user <span class="ot">-&gt;</span> logInfo <span class="fu">$</span> display (<span class="st">&quot;Hi &quot;</span> <span class="fu">&lt;&gt;</span> user <span class="fu">^.</span> <span class="fu">#</span>login <span class="fu">&lt;&gt;</span> <span class="st">&quot;!!&quot;</span>)</a>
+<a class="sourceLine" id="cb8-39" title="39">  <span class="kw">where</span></a>
+<a class="sourceLine" id="cb8-40" title="40">    ghLogin <span class="fu">=</span> GitHub.untagName <span class="fu">.</span> GitHub.userLogin</a></code></pre></div>
+<p>これを実行するとこんな感じ:</p>
+<pre><code>$ GH_TOKEN=xxx DRONE_HOST=cloud.drone.io DRONE_TOKEN=yyy stack runghc -- Main.hs
+fetch GitHub user info:
+Hi matsubara0507!!
+fetch Drone user info:
+Hi matsubara0507!!</code></pre>
+<p>本来は <code>env</code> を <code>Reader</code> モナドから取ってきて使うのを省いているだけなので，まぁ対して変わらない． 試しに実験的に作ってみただけ． インターフェースを揃えるとか，もう少し手を加えてもいいかもしれない．</p>
+<h3 id="shell-コマンド">Shell コマンド</h3>
+<p><a href="https://hackage.haskell.org/package/shelly">shelly</a> というパッケージを利用したシェルコマンドの実行を支援する． <code>env</code> にはシェルコマンドを実行したいパスを保存し，与えたシェルコマンドを <code>cd</code> した上で実行してくれる:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Mix.Plugin.Shell</span>  <span class="kw">as</span> <span class="dt">MixShell</span></a>
+<a class="sourceLine" id="cb10-2" title="2"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Shelly</span>            <span class="kw">as</span> <span class="dt">Shell</span></a>
+<a class="sourceLine" id="cb10-3" title="3"></a>
+<a class="sourceLine" id="cb10-4" title="4"><span class="kw">type</span> <span class="dt">Env</span> <span class="fu">=</span> <span class="dt">Record</span></a>
+<a class="sourceLine" id="cb10-5" title="5">  &#39;[ <span class="st">&quot;logger&quot;</span> <span class="fu">&gt;:</span> <span class="dt">MixLogger.LogFunc</span></a>
+<a class="sourceLine" id="cb10-6" title="6">   , <span class="st">&quot;work&quot;</span>   <span class="fu">&gt;:</span> <span class="dt">FilePath</span></a>
+<a class="sourceLine" id="cb10-7" title="7">   ]</a>
+<a class="sourceLine" id="cb10-8" title="8"></a>
+<a class="sourceLine" id="cb10-9" title="9"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb10-10" title="10">main <span class="fu">=</span> Mix.run plugin <span class="fu">$</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb10-11" title="11">  paths <span class="ot">&lt;-</span> MixShell.exec <span class="fu">$</span> Shell.ls <span class="st">&quot;.&quot;</span></a>
+<a class="sourceLine" id="cb10-12" title="12">  forM_ paths <span class="fu">$</span> \path <span class="ot">-&gt;</span> MixLogger.logInfo (display <span class="fu">$</span> Shell.toTextIgnore path)</a>
+<a class="sourceLine" id="cb10-13" title="13">  <span class="kw">where</span></a>
+<a class="sourceLine" id="cb10-14" title="14"><span class="ot">    plugin ::</span> <span class="dt">Plugin</span> () <span class="dt">IO</span> <span class="dt">Env</span></a>
+<a class="sourceLine" id="cb10-15" title="15">    plugin <span class="fu">=</span> hsequence</a>
+<a class="sourceLine" id="cb10-16" title="16">        <span class="fu">$</span> <span class="fu">#</span>logger <span class="fu">&lt;@=&gt;</span> MixLogger.buildPlugin (<span class="fu">#</span>handle <span class="fu">@=</span> stdout <span class="fu">&lt;:</span> <span class="fu">#</span>verbose <span class="fu">@=</span> <span class="dt">False</span> <span class="fu">&lt;:</span> nil)</a>
+<a class="sourceLine" id="cb10-17" title="17">       <span class="fu">&lt;:</span> <span class="fu">#</span>work   <span class="fu">&lt;@=&gt;</span> <span class="fu">pure</span> <span class="st">&quot;.&quot;</span></a>
+<a class="sourceLine" id="cb10-18" title="18">       <span class="fu">&lt;:</span> nil</a></code></pre></div>
+<h2 id="おしまい">おしまい</h2>
+<p>過去のツールをこれで mix で置き換えていきたい2019です． ちなみにパッケージの名前は現在(2019/5)所属してる社名から(せっかく入社したならって気分)．</p>
+  </div>]]></summary>
+</entry>
+<entry>
     <title>Drone Plugin を作ってみた: slack-notify-log</title>
     <link href="https://matsubara0507.github.io/posts/2019-05-26-create-drone-slack-notify-log.html" />
     <id>https://matsubara0507.github.io/posts/2019-05-26-create-drone-slack-notify-log.html</id>
@@ -2004,278 +2191,6 @@ PLUGIN_COMMANDS</code></pre>
 <p>ちなみに，<code>.touchPos</code> みたいな要素を盤面の <code>Model</code> に入れるべきか？って気がするが，今回はやっつけなので大目にみてください．</p>
 <h1 id="おしまい">おしまい</h1>
 <p>無駄にコードを貼りまくったせいで長くなってしまった． できたアプリ，意外と気に入ってます．</p>
-  </div>]]></summary>
-</entry>
-<entry>
-    <title>GHC 8.x 勉強会に行ってきた</title>
-    <link href="https://matsubara0507.github.io/posts/2018-12-18-ghc8x.html" />
-    <id>https://matsubara0507.github.io/posts/2018-12-18-ghc8x.html</id>
-    <published>2018-12-18T00:00:00Z</published>
-    <updated>2018-12-18T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
-    <p>本記事は <a href="https://qiita.com/advent-calendar/2018/haskell2">Haskell (その2) Advent Calendar 2018</a> の18日目の記事です． 空いていたのでついでに埋めました．</p>
-<h2 id="section"></h2>
-<p>12/7 の10-17時半ぐらいに IIJ-II で GHC8 系のバージョンアップを追う会的なイベントが企画されました． このイベントは IIJ-II の Haskell チームで発案・企画し，Haskell-jp の Slack で募集をかけていました． 定員12人かつ，平日昼間でしたが，面白そうなので有給とって行ってきた(僕は IIJ-II では無いので)． 多少クローズドな会ということもあり，せっかくなので色々と議論したことを記事に起こしておきます． 正確な情報は GHC のドキュメントを呼んでください．</p>
-<h2 id="進め方">進め方</h2>
-<p>GHCには<a href="https://downloads.haskell.org/~ghc/8.0.2/docs/html/users_guide/8.0.1-notes.html">こんな感じ</a>のリリースノートがある． 当日は8系のリリースノートのハイライトを追っていくという感じだった．</p>
-<p>事前に一人一つぐらいは調べてきて発表する感じだったが，担当者がいない内容でも，紹介記事を引っ張ってきたりなんだりしてた．</p>
-<h2 id="section-1">8.0</h2>
-<p><a href="https://downloads.haskell.org/~ghc/8.0.2/docs/html/users_guide/8.0.1-notes.html">リリースノートはこれ</a>． 8.0だけめっちゃ多い． 当初は 7.12 とかにする予定だったが，あまりにも差分があったので 8 にした的な話があるとかないとか(要出典)．</p>
-<h3 id="typeintype-など">TypeInType など</h3>
-<ul>
-<li><a href="https://downloads.haskell.org/~ghc/8.0.2/docs/html/users_guide/glasgow_exts.html#ghc-flag--XTypeInType"><code>TypeInType</code></a> 言語拡張について</li>
-<li>以下3つの言語拡張も包含している
-<ul>
-<li>PolyKinds</li>
-<li>DataKinds</li>
-<li>KindSignatures</li>
-</ul></li>
-<li>PolyKind: 型変数のカインドが多相的になる（本来は <code>*</code>）</li>
-<li>DataKinds: 定義した型をカインドとして利用できる</li>
-<li>KindSignatures: カインドを明示的に指定できる</li>
-<li>TypeInType:
-<ul>
-<li>上記全部を利用可</li>
-<li>多相カインド</li>
-<li>RankNTypes も追加で高階カインドも可能</li>
-</ul></li>
-<li>Q: 結局目指すところは？
-<ul>
-<li><a href="https://ghc.haskell.org/trac/ghc/wiki/DependentHaskell">Dependent Haskell</a> のマイルストーンの一部では？</li>
-<li>Merging Types and Kinds</li>
-</ul></li>
-</ul>
-<h3 id="patternsynonyms-系">PatternSynonyms 系</h3>
-<ul>
-<li><a href="https://downloads.haskell.org/~ghc/8.0.2/docs/html/users_guide/glasgow_exts.html#record-patsyn">Record Pattern Synonyms</a> をサポート</li>
-<li>レコード型でも PatternSynonyms を利用</li>
-<li><a href="https://kazu-yamamoto.hatenablog.jp/entry/20170919/1505787393">PatternSynonymsのススメ - あどけない話</a>
-<ul>
-<li>そもそも PatternSynonyms って？</li>
-<li>PatternSynonyms それ自体は 7.8.1 から</li>
-</ul></li>
-<li>8.0 から export 時に <code>pattern</code> キーワードがいらなくなった
-<ul>
-<li>すごい助かるって意見もあれば</li>
-<li>あえて明示的にすべきという意見も</li>
-</ul></li>
-<li>ネットワーク屋さん的にはこのパターンは本当に便利という話</li>
-<li>BangPattern や ViewPattern の組み合わせ</li>
-</ul>
-<h3 id="deriveanyclass">DeriveAnyClass</h3>
-<ul>
-<li><a href="https://downloads.haskell.org/~ghc/8.0.2/docs/html/users_guide/glasgow_exts.html#derive-any-class">DeriveAnyClass</a> 言語拡張について</li>
-<li>名前の通り任意の型クラスに対して <code>deriving</code> を利用する仕組みを提供</li>
-<li><code>deriving</code> 可能な型クラスからデフォルト実装を定義したり</li>
-</ul>
-<h3 id="injective-type-families">Injective type families</h3>
-<ul>
-<li><a href="https://downloads.haskell.org/~ghc/8.0.2/docs/html/users_guide/glasgow_exts.html#injective-ty-fams"><code>TypeFamilyDependencies</code></a> 言語拡張について</li>
-<li><a href="https://qiita.com/lotz/items/6c038698c8f04f57113a">型族が単射だと嬉しい理由 - Qiita</a></li>
-<li>(書いた当人は書いてたこと忘れてた笑)</li>
-</ul>
-<h3 id="applicativedo">ApplicativeDo</h3>
-<ul>
-<li><a href="https://downloads.haskell.org/~ghc/8.0.2/docs/html/users_guide/glasgow_exts.html#applicative-do"><code>ApplicativeDo</code></a> 言語拡張について</li>
-<li>do 記法が Applicative でも使える</li>
-<li>だけじゃなく，do 記法が特定の条件を満たすと勝手に Applicative や Functor に脱糖してくれる
-<ul>
-<li>この条件がなかなか(笑)</li>
-</ul></li>
-</ul>
-<p>なんか結構盛り上がった(笑)</p>
-<h3 id="wildcards-in-data-and-type-family">Wildcards in data and type family</h3>
-<p><a href="https://downloads.haskell.org/~ghc/8.0.2/docs/html/users_guide/glasgow_exts.html#wildcards-on-the-lhs-of-data-and-type-family-instances">この辺り</a>？ ちょっと何話したか忘れた．</p>
-<h3 id="strict-系">Strict 系</h3>
-<ul>
-<li><a href="https://downloads.haskell.org/~ghc/8.0.2/docs/html/users_guide/glasgow_exts.html#strict-haskell"><code>Strict</code></a> 言語拡張について</li>
-<li><a href="https://kazu-yamamoto.hatenablog.jp/entry/20151117/1447726679">Strict Haskell - あどけない話</a></li>
-<li>昔から正格評価にする記法はあったが，この拡張によりデフォルトの評価戦略を切り替えれる．</li>
-<li>実は逆に <code>~x</code> とすることで <code>x</code> を遅延評価できる</li>
-<li>Q: パターンマッチの反駁不能パターンはどうなるんだろ？
-<ul>
-<li><code>~(~x)</code> のようにチルダをカッコで重ねる</li>
-</ul></li>
-</ul>
-<h3 id="duplicate-record-fields">Duplicate record fields</h3>
-<ul>
-<li><a href="https://kazu-yamamoto.hatenablog.jp/entry/20160114/1452735514">重複したフィールドラベル - あどけない話</a></li>
-<li>Q: <code>instance (a ~ Int) =&gt; IsLabel &quot;same&quot; (Foo -&gt; a)</code> の <code>a ~ Int</code> はなぜ必要か？
-<ul>
-<li><code>IsLabel &quot;same&quot; (Foo -&gt; Int)</code> ではなく</li>
-<li>推論の順番を明示的にする</li>
-</ul></li>
-<li>Q: ボイラーテンプレートの件は進んだの？？
-<ul>
-<li>なんか放置されてる</li>
-</ul></li>
-<li>SystemF + レコード多相は死ぬ
-<ul>
-<li>OCaml は分けている</li>
-</ul></li>
-</ul>
-<h3 id="ユーザ定義-typeerror">ユーザ定義 TypeError</h3>
-<ul>
-<li>型エラーをユーザーで定義できる？</li>
-<li><a href="https://ghc.haskell.org/trac/ghc/wiki/Proposal/CustomTypeErrors">プロポーザル</a></li>
-<li>どんな話したか忘れました，すいません</li>
-</ul>
-<h3 id="ghci-関連">GHCi 関連</h3>
-<ul>
-<li>本来 GHCi はコードを同一のプロセスと共通のヒープで実行する</li>
-<li>それを <a href="https://downloads.haskell.org/~ghc/8.0.2/docs/html/users_guide/ghci.html#external-interpreter"><code>fexternal-interpreter</code></a> オプションでコントロールできる</li>
-<li>だっけか（また細かい話は忘れました，すいません）</li>
-</ul>
-<h2 id="section-2">8.2</h2>
-<p><a href="https://downloads.haskell.org/~ghc/8.2.2/docs/html/users_guide/8.2.1-notes.html">リリースノートはこれ</a>．</p>
-<ul>
-<li>Typeable mechanism, Type.Reflection</li>
-<li>そういえばCUIがカラフルになったね</li>
-<li>Heap 系
-<ul>
-<li>あんまりよく覚えてないごめんなさい</li>
-</ul></li>
-</ul>
-<h3 id="derivingstrategies">DerivingStrategies</h3>
-<ul>
-<li><code>DerivingStrategies</code> 言語拡張について</li>
-<li><a href="https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/DerivingStrategies">Commentary/Compiler/DerivingStrategies – GHC</a></li>
-<li><a href="https://github.com/kakkun61/deriving-strategies-playground">kakkun 氏の資料</a></li>
-<li><code>deriving</code> する時に <code>newtype</code> や <code>stock</code> などのキーワードを指定することで <code>deriving</code> の仕方をコントロールできる</li>
-</ul>
-<h3 id="unboxedsums">UnboxedSums</h3>
-<ul>
-<li><a href="https://downloads.haskell.org/~ghc/8.2.2/docs/html/users_guide/glasgow_exts.html#ghc-flag--XUnboxedSums"><code>UnboxedSums</code></a> 言語拡張について</li>
-<li><a href="https://gist.github.com/maoe/e5888fad16a190a9c7cf58b8bedb1d04">maoe 氏の資料</a></li>
-</ul>
-<h3 id="compact-regions">Compact Regions</h3>
-<ul>
-<li><a href="https://github.com/ezyang/compact">ezyang/compact - GitHub</a></li>
-<li>処理系によってGCされないデータ領域</li>
-<li>インターフェースは充実してる</li>
-<li>ただしデータの追加しかできない（書き換えは不可）</li>
-<li>Q: 何に使える？
-<ul>
-<li>強大な辞書とか？</li>
-<li>設定ファイルとか？（巨大なら）</li>
-<li>NGワード集とか？</li>
-</ul></li>
-</ul>
-<p>GHC8.x 勉強会のあとに記事にしてくれた:</p>
-<ul>
-<li><a href="https://qiita.com/ruicc/items/c955e794c5dc74c4cb58">Compact Regionsについて軽く - Qiita</a></li>
-</ul>
-<h3 id="backpack">Backpack</h3>
-<ul>
-<li><a href="https://ghc.haskell.org/trac/ghc/wiki/Backpack">Backpack – GHC</a></li>
-<li>雑にいうと: ML系のファンクターのようなより強力なモジュールシステム</li>
-<li>モジュールのインターフェースと実装を分離できる</li>
-<li><a href="https://matsubara0507.github.io/posts/2017-12-12-backpack-memo.html">Haskell Backpack 覚え書き - ひげメモ</a>
-<ul>
-<li>自分の記事だけど1年近く前で覚えてない(笑)</li>
-</ul></li>
-<li>Q: どんな時に有用？
-<ul>
-<li>本質的には型クラスと同じ用途のはず</li>
-<li>ただし型に依存しない（型クラスは型によって実装をディスパッチ）</li>
-<li>不自然な <code>Proxy a</code> を渡さなくていい（苦肉の策でそういう実装をしている型クラスがある）</li>
-</ul></li>
-<li>そういえば最近 <a href="https://github.com/kowainik/containers-backpack">contains の Backpack 版</a>がでた</li>
-</ul>
-<p>作者さんが忙しくて Stack への適用を断念したため，なかなか浸透しない． 今「Stack への適用をやりたい」という人が現れたが時間がかかりそう．</p>
-<h3 id="脱線-各位リンカどうしてるの">脱線: 各位リンカどうしてるの？</h3>
-<p>kazu yamamoto 氏が GHC 8.6 になってから(だっけ？)リンカ周りで動作しなくて困ってるらしい(OS は Mac)． 僕は適当にやってて困ったことないのでよくわからない．</p>
-<p>ちなみに GHC 8.6.3 で無事動いたらしい:</p>
-<blockquote class="twitter-tweet" data-lang="ja">
-<p lang="ja" dir="ltr">
-吉報：GHC 8.6.3 は macOS で問題なく使えるようになりました！
-</p>
-— 山本和彦 (<span class="citation" data-cites="kazu_yamamoto">@kazu_yamamoto</span>) <a href="https://twitter.com/kazu_yamamoto/status/1072030847799255040?ref_src=twsrc%5Etfw">2018年12月10日</a>
-</blockquote>
-<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
-<h2 id="section-3">8.4</h2>
-<p><a href="https://downloads.haskell.org/~ghc/8.4.4/docs/html/users_guide/8.4.1-notes.html">リリースノートはこれ</a>．</p>
-<p>そういえば，8.4.4 は 8.6 系が出てから出て，ちゃんとバグフィックス出すんだと感心した的な話をした．</p>
-<h3 id="semigroup-monoid-proposal">Semigroup-Monoid Proposal</h3>
-<ul>
-<li><code>Monoid</code> にサブクラスとして <code>Semigroup</code> を持たせる
-<ul>
-<li>その方が数学的に自然</li>
-</ul></li>
-<li><a href="https://kazu-yamamoto.hatenablog.jp/entry/20180306/1520314185">あなたの知らないSemigroupの世界 - あどけない話</a></li>
-<li>前のバージョンアから <code>-Wnoncanonical-monoid-instances</code> などの警告を付け足して段階的にやっている
-<ul>
-<li>しかし <code>-Wall</code> に含まれてないので気づかず</li>
-<li>なんか 8.4 で急にエラーに</li>
-</ul></li>
-<li>ちなみに以降は <code>Monoid</code> をインポートしなくても <code>(&lt;&gt;)</code> が使える</li>
-</ul>
-<h3 id="monadfail-と-no-return">MonadFail と no return</h3>
-<p>ここは脱線．</p>
-<ul>
-<li><a href="https://wiki.haskell.org/MonadFail_Proposal">MonadFail Proposal - HaskellWiki</a></li>
-<li><code>Monad</code> には <code>fail</code> が定義されている
-<ul>
-<li>が <code>error</code> などを利用している残念な実装もある</li>
-</ul></li>
-<li><code>MonadFail</code> という型クラスで切り出す</li>
-<li><code>-Wnoncanonical-monadfail-instances</code> ができた？</li>
-<li>8.6: <a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#extension-MonadFailDesugaring"><code>MonadFailDesugaring</code></a> 言語拡張がデフォルトに
-<ul>
-<li>do 記法の <code>fail</code> への脱糖が <code>MonadFail</code> のものになる</li>
-</ul></li>
-</ul>
-<h2 id="section-4">8.6</h2>
-<p><a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/8.6.1-notes.html">リリースノートはこれ</a>．</p>
-<h3 id="quantifiedconstraints">QuantifiedConstraints</h3>
-<ul>
-<li><a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#extension-QuantifiedConstraints">QuantifiedConstraints</a> 言語拡張を追加</li>
-<li>インスタンスの定義に量化が使える
-<ul>
-<li>例: <code>instance (Eq a, forall b. (Eq b) =&gt; Eq (f b)) =&gt; Eq (Rose f a)</code></li>
-</ul></li>
-<li><a href="http://the.igreque.info/slides/2018-12-07-ghc8x.html">igrap 氏の資料</a></li>
-<li>Q: Constraint のシノニムでも使える？
-<ul>
-<li>無理だった orz</li>
-</ul></li>
-</ul>
-<h3 id="derivingvia">DerivingVia</h3>
-<ul>
-<li><a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#extension-DerivingVia"><code>DerivingVia</code></a> 言語拡張について</li>
-<li><code>via</code> キーワードを使ってインスタンスを明示的に選択できるようになる</li>
-<li><a href="https://github.com/kayhide/try-ghc86">kayhide 氏の資料</a>
-<ul>
-<li>QuickCheck の例</li>
-<li>テストの実装を Via で定義</li>
-</ul></li>
-<li>わかりやすい<a href="https://speakerdeck.com/konn/ben-dang-hasugoi-newtype">スライド</a>
-<ul>
-<li>後半の方</li>
-<li>タプルの例</li>
-</ul></li>
-</ul>
-<h3 id="plugin-mechanism">Plugin mechanism</h3>
-<p>(誰も調べてはない) ちょうど記事があった</p>
-<ul>
-<li><a href="https://qiita.com/waddlaw/items/65b57517f105fcbbe724">GHC Source Plugin 作ってみた - Qiita</a></li>
-</ul>
-<p>終わった後の雑談で，Scala には似たような機能(Scala Compiler Plugins?)が既にあるので，真似するといいとかなんとか．</p>
-<h3 id="valid-hole-fits">Valid hole fits</h3>
-<ul>
-<li><a href="https://wiki.haskell.org/GHC/Typed_holes">Type holes</a> という機能についての拡張
-<ul>
-<li><a href="https://haskell.jp/blog/posts/2017/07-TypedHoles.html">Type Hole については Haskell-jp に記事がある</a></li>
-</ul></li>
-<li><a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#typed-hole-valid-hole-fits">コンパイルフラグ</a>で type Holes での推論アルゴリズム(?)のコントロールができるようになった(って感じかな)</li>
-</ul>
-<h3 id="シンタックスの言語拡張">シンタックスの言語拡張</h3>
-<ul>
-<li>数値リテラルに <code>_</code> が使える: <code>10_000_000</code> とか</li>
-<li><code>do</code> 記法の前に <code>$</code> などがいらなくなる: <code>\x -&gt; do ...</code> とか</li>
-</ul>
-<h1 id="おしまい">おしまい</h1>
-<p>時間経ちすぎてめっちゃ適当になってしまった． すいません． ただ，めっちゃ楽しかった．</p>
   </div>]]></summary>
 </entry>
 
