@@ -49,7 +49,7 @@
 <a class="sourceLine" id="cb1-25" title="25">       <span class="fu">&lt;:</span> <span class="fu">#</span>name   <span class="fu">&lt;@=&gt;</span> <span class="fu">pure</span> <span class="st">&quot;Hoge&quot;</span></a>
 <a class="sourceLine" id="cb1-26" title="26">       <span class="fu">&lt;:</span> nil</a></code></pre></div>
 <p>tonatona との違いは <code>RIO env a</code> の <code>env</code> に当たる部分に対して，特別なインスタンス宣言がいらない点だ． 単純に，設定っぽい extensible の拡張可能レコード(<code>#logger &lt;@=&gt; ...</code> とか)を記述するだけで良い． これの実行結果は次のようになる:</p>
-<pre class="shell"><code>$ stack runghc mix/sample/Main.hs
+<pre class="code"><code>$ stack runghc mix/sample/Main.hs
 2019-05-21 22:33:49.378471: [debug] This is debug: Hoge
 @(mix/sample/Main.hs:23:3)
 2019-05-21 22:33:49.381893: [info] This is info: Hoge
@@ -166,7 +166,7 @@
 <a class="sourceLine" id="cb8-39" title="39">  <span class="kw">where</span></a>
 <a class="sourceLine" id="cb8-40" title="40">    ghLogin <span class="fu">=</span> GitHub.untagName <span class="fu">.</span> GitHub.userLogin</a></code></pre></div>
 <p>これを実行するとこんな感じ:</p>
-<pre><code>$ GH_TOKEN=xxx DRONE_HOST=cloud.drone.io DRONE_TOKEN=yyy stack runghc -- Main.hs
+<pre class="code"><code>$ GH_TOKEN=xxx DRONE_HOST=cloud.drone.io DRONE_TOKEN=yyy stack runghc -- Main.hs
 fetch GitHub user info:
 Hi matsubara0507!!
 fetch Drone user info:
