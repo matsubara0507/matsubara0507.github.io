@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
     <url>
+        <loc>https://matsubara0507.github.io/posts/2019-06-10-build-haskell-app-docker-image-without-stack-image-cmd.html</loc>
+        <changefreq>never</changefreq>
+        <lastmod>2019-06-10</lastmod>
+        <priority>0.8</priority>
+    </url>
+
+    <url>
         <loc>https://matsubara0507.github.io/posts/2019-05-27-create-mix-libs.html</loc>
         <changefreq>never</changefreq>
         <lastmod>2019-05-27</lastmod>
