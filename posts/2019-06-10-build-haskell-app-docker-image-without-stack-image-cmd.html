@@ -85,9 +85,9 @@
   </header>
 
   <div class="post-content" itemprop="articleBody">
-    <p>自分は Haskell アプリケーションの Docker イメージを作るのに <code>stack image</code> コマンドを愛用している． しかし，悲しいことに <strong>stack v2 からはこの機能が無くなってしまう</strong> のだ． ということで，代替方法を考えてみた，というお話．</p>
+    <p>自分は Haskell アプリケーションの Docker イメージを作るのに <code>stack image</code> コマンドを愛用している． しかし悲しいことに <strong>stack v2 からはこの機能が無くなってしまう</strong> のだ． ということで代替方法を考えてみた，というお話．</p>
 <h2 id="tldr">tl;dr</h2>
-<p>matsubara0507/whoami というリポジトリで試したので，その PR をみると良い:</p>
+<p>matsubara0507/whoami というリポジトリで試したので，その PR を見ると良い:</p>
 <ul>
 <li><a href="https://github.com/matsubara0507/whoami/pull/6">Build docker image without stack image command by matsubara0507 · Pull Request #6 · matsubara0507/whoami</a></li>
 </ul>
@@ -100,7 +100,7 @@
 <a class="sourceLine" id="cb1-3" title="3">  <span class="fu">enable:</span><span class="at"> </span><span class="ch">false</span></a>
 <a class="sourceLine" id="cb1-4" title="4"><span class="fu">image:</span></a>
 <a class="sourceLine" id="cb1-5" title="5">  <span class="fu">container:</span></a>
-<a class="sourceLine" id="cb1-6" title="6">    <span class="fu">name:</span><span class="at"> git-plantation-bin</span></a>
+<a class="sourceLine" id="cb1-6" title="6">    <span class="fu">name:</span><span class="at"> matsubara0507/whoami</span></a>
 <a class="sourceLine" id="cb1-7" title="7">    <span class="fu">base:</span><span class="at"> matsubara0507/ubuntu-for-haskell:git</span></a></code></pre></div>
 <p><code>docker</code> の方の設定は Docker Integration と呼ばれるもので，<code>repo</code> で設定したイメージのコンテナ内で stack のビルドをしてくれる(こいつがローカルの <code>.stack-work</code> を利用する)． <code>image</code> の方の設定が <code>stack image</code> の設定で，<code>base</code> が作成するイメージのベースイメージだ． やってることは実行ファイルを <code>.stack-work</code> からコピーしてくるだけで，ベースイメージが Docker Integration のイメージと同じ OS であればちゃんと動作する．</p>
 <h2 id="section"></h2>
@@ -121,7 +121,7 @@
 <a class="sourceLine" id="cb2-8" title="8"><span class="kw">ENV</span> PATH /root/.local/bin:$PATH</a>
 <a class="sourceLine" id="cb2-9" title="9"><span class="kw">WORKDIR</span> /root/work</a>
 <a class="sourceLine" id="cb2-10" title="10"><span class="kw">COPY</span> --from=bin /root/.local/bin /root/.local/bin</a></code></pre></div>
-<p>stack の Docker Integration は残ってるので <code>stack --docker build</code> とすることで Docker コンテナ内でのビルド自体は実行される(これによってローカルにキャッシュが作られる)． 一つ目のステージでは <code>stack install</code> により <code>.stack-work</code> 内の実行ファイルを <code>/root/.local/bin</code> にコピーし，二つ目のステージではさらにこれだけを最終的に作られるイメージにコピーしている． ちなみに，<code>/root/.local/bin</code> は stack が決めてるローカル実行ファイルを置くパスで，<code>stack path</code> で確認できる(OS によって違うはず)．</p>
+<p>stack の Docker Integration は残ってるので <code>stack --docker build</code> とすることで Docker コンテナ内でのビルド自体は実行される(これによってローカルにキャッシュが作られる)． 一つ目のステージでは <code>stack install</code> により <code>.stack-work</code> 内の実行ファイルを <code>/root/.local/bin</code> にコピーし，二つ目のステージではさらにこの実行ファイルだけを最終的に作られるイメージにコピーしている． ちなみに，<code>/root/.local/bin</code> は stack が決めてるローカル実行ファイルを置くパスで，<code>stack path</code> で確認できる(OS によって違うはず)．</p>
 <p>でもこれ一つ欠点があって． <code>docker build</code> するときに，肥大化しがちな <code>.stack-work</code> をいちいち上げる必要があるので，だんだん <code>docker build</code> の時間が長くなる(最近作ってたアプリケーションは4GBになってしまって…)． <code>.dockerignore</code> で無視できれば良いのだが，それだと <code>stack insatll</code> できない(<code>.stack-work</code> 内の実行ファイルのパスは resolver や GHC のバージョンなどで変わるので，これをイチイチ <code>.dockerignore</code> に書くのはめんどくさい)．</p>
 <h2 id="local-bin-path-オプション">local-bin-path オプション</h2>
 <p><code>docker build</code> する時は <code>.stack-work</code> を無視したい． じゃぁどうするか． 一つ目のステージでやっているのは既に出来上がった実行ファイルを <code>stack install</code> を使って分かりやすいパスに持ってきてるだけだ． そこで気づく，それを上書きするオプションがあるのではないかと． あった:</p>
