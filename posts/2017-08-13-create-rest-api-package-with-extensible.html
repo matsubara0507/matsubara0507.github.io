@@ -95,109 +95,109 @@
 <p>今のところ次の2ヶ所で使ってる．</p>
 <h3 id="api-のレスポンス-json">API のレスポンス JSON</h3>
 <p>ドキュメントに従って，こんな風に書ける．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">type</span> <span class="dt">IchibaItems</span> <span class="fu">=</span></a>
-<a class="sourceLine" id="cb1-2" title="2">  <span class="dt">Record</span> '[</a>
-<a class="sourceLine" id="cb1-3" title="3">    <span class="st">&quot;count&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Int</span>,</a>
-<a class="sourceLine" id="cb1-4" title="4">    <span class="st">&quot;page&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Int</span>,</a>
-<a class="sourceLine" id="cb1-5" title="5">    <span class="st">&quot;first&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Int</span>,</a>
-<a class="sourceLine" id="cb1-6" title="6">    <span class="st">&quot;last&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Int</span>,</a>
-<a class="sourceLine" id="cb1-7" title="7">    <span class="st">&quot;hits&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Int</span>,</a>
-<a class="sourceLine" id="cb1-8" title="8">    <span class="st">&quot;carrier&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Int</span>,</a>
-<a class="sourceLine" id="cb1-9" title="9">    <span class="st">&quot;pageCount&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Int</span>,</a>
-<a class="sourceLine" id="cb1-10" title="10">    <span class="st">&quot;Items&quot;</span> '<span class="fu">:&gt;</span> [<span class="dt">ItemWrap</span>],</a>
-<a class="sourceLine" id="cb1-11" title="11">    <span class="st">&quot;GenreInformation&quot;</span> '<span class="fu">:&gt;</span> [<span class="dt">GenreInformation</span>],</a>
-<a class="sourceLine" id="cb1-12" title="12">    <span class="st">&quot;TagInformation&quot;</span> '<span class="fu">:&gt;</span> [<span class="dt">TagGroupWrap</span>]</a>
-<a class="sourceLine" id="cb1-13" title="13">  ]</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">type</span> <span class="dt">IchibaItems</span> <span class="ot">=</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a>  <span class="dt">Record</span> '[</span>
+<span id="cb1-3"><a href="#cb1-3"></a>    <span class="st">&quot;count&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Int</span>,</span>
+<span id="cb1-4"><a href="#cb1-4"></a>    <span class="st">&quot;page&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Int</span>,</span>
+<span id="cb1-5"><a href="#cb1-5"></a>    <span class="st">&quot;first&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Int</span>,</span>
+<span id="cb1-6"><a href="#cb1-6"></a>    <span class="st">&quot;last&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Int</span>,</span>
+<span id="cb1-7"><a href="#cb1-7"></a>    <span class="st">&quot;hits&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Int</span>,</span>
+<span id="cb1-8"><a href="#cb1-8"></a>    <span class="st">&quot;carrier&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Int</span>,</span>
+<span id="cb1-9"><a href="#cb1-9"></a>    <span class="st">&quot;pageCount&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Int</span>,</span>
+<span id="cb1-10"><a href="#cb1-10"></a>    <span class="st">&quot;Items&quot;</span> '<span class="op">:&gt;</span> [<span class="dt">ItemWrap</span>],</span>
+<span id="cb1-11"><a href="#cb1-11"></a>    <span class="st">&quot;GenreInformation&quot;</span> '<span class="op">:&gt;</span> [<span class="dt">GenreInformation</span>],</span>
+<span id="cb1-12"><a href="#cb1-12"></a>    <span class="st">&quot;TagInformation&quot;</span> '<span class="op">:&gt;</span> [<span class="dt">TagGroupWrap</span>]</span>
+<span id="cb1-13"><a href="#cb1-13"></a>  ]</span></code></pre></div>
 <p><code>ItemWrap</code> 型とか，<code>GenreInformation</code> 型とかも同じように定義してある． で，これらを <a href="https://hackage.haskell.org/package/aeson"><code>aeson</code></a>パッケージの <a href="https://hackage.haskell.org/package/aeson-1.2.1.0/docs/Data-Aeson-Types.html#t:FromJSON"><code>FromJSON</code></a> 型クラスのインスタンスにする必要があるが，<code>extensible</code> の拡張可能レコードなら一括にできる！</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="kw">instance</span> <span class="dt">Forall</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">FromJSON</span>) xs <span class="ot">=&gt;</span> <span class="dt">FromJSON</span> (<span class="dt">Record</span> xs) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb2-2" title="2">  parseJSON <span class="fu">=</span> withObject <span class="st">&quot;Object&quot;</span> <span class="fu">$</span></a>
-<a class="sourceLine" id="cb2-3" title="3">    \v <span class="ot">-&gt;</span> hgenerateFor (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">FromJSON</span>)) <span class="fu">$</span></a>
-<a class="sourceLine" id="cb2-4" title="4">    \m <span class="ot">-&gt;</span> <span class="kw">let</span> k <span class="fu">=</span> symbolVal (proxyAssocKey m) <span class="kw">in</span></a>
-<a class="sourceLine" id="cb2-5" title="5">      <span class="kw">case</span> HM.lookup (fromString k) v <span class="kw">of</span></a>
-<a class="sourceLine" id="cb2-6" title="6">        <span class="dt">Just</span> a <span class="ot">-&gt;</span> <span class="dt">Field</span> <span class="fu">.</span> <span class="fu">return</span> <span class="fu">&lt;$&gt;</span> parseJSON a</a>
-<a class="sourceLine" id="cb2-7" title="7">        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="fu">fail</span> <span class="fu">$</span> <span class="st">&quot;Missing key: &quot;</span> <span class="ot">`mappend`</span> k</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">instance</span> <span class="dt">Forall</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">FromJSON</span>) xs <span class="ot">=&gt;</span> <span class="dt">FromJSON</span> (<span class="dt">Record</span> xs) <span class="kw">where</span></span>
+<span id="cb2-2"><a href="#cb2-2"></a>  parseJSON <span class="ot">=</span> withObject <span class="st">&quot;Object&quot;</span> <span class="op">$</span></span>
+<span id="cb2-3"><a href="#cb2-3"></a>    \v <span class="ot">-&gt;</span> hgenerateFor (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">FromJSON</span>)) <span class="op">$</span></span>
+<span id="cb2-4"><a href="#cb2-4"></a>    \m <span class="ot">-&gt;</span> <span class="kw">let</span> k <span class="ot">=</span> symbolVal (proxyAssocKey m) <span class="kw">in</span></span>
+<span id="cb2-5"><a href="#cb2-5"></a>      <span class="kw">case</span> HM.lookup (fromString k) v <span class="kw">of</span></span>
+<span id="cb2-6"><a href="#cb2-6"></a>        <span class="dt">Just</span> a <span class="ot">-&gt;</span> <span class="dt">Field</span> <span class="op">.</span> <span class="fu">return</span> <span class="op">&lt;$&gt;</span> parseJSON a</span>
+<span id="cb2-7"><a href="#cb2-7"></a>        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="fu">fail</span> <span class="op">$</span> <span class="st">&quot;Missing key: &quot;</span> <span class="ot">`mappend`</span> k</span></code></pre></div>
 <p>まぁこれは <a href="https://github.com/fumieval/extensible"><code>extensible</code> のリポジトリ</a>に<a href="https://github.com/fumieval/extensible/blob/3f601a087039bb5764c0fa8c5f4dcd5d907c412f/examples/aeson.hs">サンプル</a>として置いてあるんだけどね．</p>
 <h3 id="リクエストパラメータ">リクエストパラメータ</h3>
 <p>検索をしたいので，いろんなパラメータを渡せる仕様になってる…(つらい)． フィールドの名前も被りそうだし，これも拡張可能レコードにしてしまおう．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">type</span> <span class="dt">IchibaItemSearchParam</span> <span class="fu">=</span></a>
-<a class="sourceLine" id="cb3-2" title="2">  <span class="dt">Record</span> '[</a>
-<a class="sourceLine" id="cb3-3" title="3">    <span class="st">&quot;keyword&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Text</span>,</a>
-<a class="sourceLine" id="cb3-4" title="4">    <span class="st">&quot;shopCode&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Text</span>,</a>
-<a class="sourceLine" id="cb3-5" title="5">    <span class="st">&quot;itemCode&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Text</span>,</a>
-<a class="sourceLine" id="cb3-6" title="6">    <span class="st">&quot;genreId&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span>,</a>
-<a class="sourceLine" id="cb3-7" title="7">    <span class="st">&quot;tagId&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span>,</a>
-<a class="sourceLine" id="cb3-8" title="8">    <span class="st">&quot;hits&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span>,</a>
-<a class="sourceLine" id="cb3-9" title="9">    <span class="st">&quot;page&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span>,</a>
-<a class="sourceLine" id="cb3-10" title="10">    <span class="st">&quot;sort&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Text</span>,</a>
-<a class="sourceLine" id="cb3-11" title="11">    <span class="st">&quot;minPrice&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span>,</a>
-<a class="sourceLine" id="cb3-12" title="12">    <span class="st">&quot;maxPrice&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span>,</a>
-<a class="sourceLine" id="cb3-13" title="13">    <span class="st">&quot;availability&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</a>
-<a class="sourceLine" id="cb3-14" title="14">    <span class="st">&quot;field&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</a>
-<a class="sourceLine" id="cb3-15" title="15">    <span class="st">&quot;carrier&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</a>
-<a class="sourceLine" id="cb3-16" title="16">    <span class="st">&quot;imageFlag&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</a>
-<a class="sourceLine" id="cb3-17" title="17">    <span class="st">&quot;orFlag&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</a>
-<a class="sourceLine" id="cb3-18" title="18">    <span class="st">&quot;NGKeyword&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Text</span>,</a>
-<a class="sourceLine" id="cb3-19" title="19">    <span class="st">&quot;purchaseType&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span>,</a>
-<a class="sourceLine" id="cb3-20" title="20">    <span class="st">&quot;shipOverseasFlag&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</a>
-<a class="sourceLine" id="cb3-21" title="21">    <span class="st">&quot;shipOverseasArea&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Text</span>,</a>
-<a class="sourceLine" id="cb3-22" title="22">    <span class="st">&quot;asurakuFlag&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</a>
-<a class="sourceLine" id="cb3-23" title="23">    <span class="st">&quot;asurakuArea&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span>,</a>
-<a class="sourceLine" id="cb3-24" title="24">    <span class="st">&quot;pointRateFlag&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</a>
-<a class="sourceLine" id="cb3-25" title="25">    <span class="st">&quot;pointRate&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span>,</a>
-<a class="sourceLine" id="cb3-26" title="26">    <span class="st">&quot;postageFlag&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</a>
-<a class="sourceLine" id="cb3-27" title="27">    <span class="st">&quot;creditCardFlag&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</a>
-<a class="sourceLine" id="cb3-28" title="28">    <span class="st">&quot;giftFlag&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</a>
-<a class="sourceLine" id="cb3-29" title="29">    <span class="st">&quot;hasReviewFlag&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</a>
-<a class="sourceLine" id="cb3-30" title="30">    <span class="st">&quot;maxAffiliateRate&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Double</span>,</a>
-<a class="sourceLine" id="cb3-31" title="31">    <span class="st">&quot;minAffiliateRate&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Double</span>,</a>
-<a class="sourceLine" id="cb3-32" title="32">    <span class="st">&quot;hasMovieFlag&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</a>
-<a class="sourceLine" id="cb3-33" title="33">    <span class="st">&quot;pamphletFlag&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</a>
-<a class="sourceLine" id="cb3-34" title="34">    <span class="st">&quot;appointDeliveryDateFlag&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</a>
-<a class="sourceLine" id="cb3-35" title="35">    <span class="st">&quot;genreInformationFlag&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</a>
-<a class="sourceLine" id="cb3-36" title="36">    <span class="st">&quot;tagInformationFlag&quot;</span> '<span class="fu">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb3-37" title="37">  ]</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">type</span> <span class="dt">IchibaItemSearchParam</span> <span class="ot">=</span></span>
+<span id="cb3-2"><a href="#cb3-2"></a>  <span class="dt">Record</span> '[</span>
+<span id="cb3-3"><a href="#cb3-3"></a>    <span class="st">&quot;keyword&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Text</span>,</span>
+<span id="cb3-4"><a href="#cb3-4"></a>    <span class="st">&quot;shopCode&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Text</span>,</span>
+<span id="cb3-5"><a href="#cb3-5"></a>    <span class="st">&quot;itemCode&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Text</span>,</span>
+<span id="cb3-6"><a href="#cb3-6"></a>    <span class="st">&quot;genreId&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span>,</span>
+<span id="cb3-7"><a href="#cb3-7"></a>    <span class="st">&quot;tagId&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span>,</span>
+<span id="cb3-8"><a href="#cb3-8"></a>    <span class="st">&quot;hits&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span>,</span>
+<span id="cb3-9"><a href="#cb3-9"></a>    <span class="st">&quot;page&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span>,</span>
+<span id="cb3-10"><a href="#cb3-10"></a>    <span class="st">&quot;sort&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Text</span>,</span>
+<span id="cb3-11"><a href="#cb3-11"></a>    <span class="st">&quot;minPrice&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span>,</span>
+<span id="cb3-12"><a href="#cb3-12"></a>    <span class="st">&quot;maxPrice&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span>,</span>
+<span id="cb3-13"><a href="#cb3-13"></a>    <span class="st">&quot;availability&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</span>
+<span id="cb3-14"><a href="#cb3-14"></a>    <span class="st">&quot;field&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</span>
+<span id="cb3-15"><a href="#cb3-15"></a>    <span class="st">&quot;carrier&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</span>
+<span id="cb3-16"><a href="#cb3-16"></a>    <span class="st">&quot;imageFlag&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</span>
+<span id="cb3-17"><a href="#cb3-17"></a>    <span class="st">&quot;orFlag&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</span>
+<span id="cb3-18"><a href="#cb3-18"></a>    <span class="st">&quot;NGKeyword&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Text</span>,</span>
+<span id="cb3-19"><a href="#cb3-19"></a>    <span class="st">&quot;purchaseType&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span>,</span>
+<span id="cb3-20"><a href="#cb3-20"></a>    <span class="st">&quot;shipOverseasFlag&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</span>
+<span id="cb3-21"><a href="#cb3-21"></a>    <span class="st">&quot;shipOverseasArea&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Text</span>,</span>
+<span id="cb3-22"><a href="#cb3-22"></a>    <span class="st">&quot;asurakuFlag&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</span>
+<span id="cb3-23"><a href="#cb3-23"></a>    <span class="st">&quot;asurakuArea&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span>,</span>
+<span id="cb3-24"><a href="#cb3-24"></a>    <span class="st">&quot;pointRateFlag&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</span>
+<span id="cb3-25"><a href="#cb3-25"></a>    <span class="st">&quot;pointRate&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span>,</span>
+<span id="cb3-26"><a href="#cb3-26"></a>    <span class="st">&quot;postageFlag&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</span>
+<span id="cb3-27"><a href="#cb3-27"></a>    <span class="st">&quot;creditCardFlag&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</span>
+<span id="cb3-28"><a href="#cb3-28"></a>    <span class="st">&quot;giftFlag&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</span>
+<span id="cb3-29"><a href="#cb3-29"></a>    <span class="st">&quot;hasReviewFlag&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</span>
+<span id="cb3-30"><a href="#cb3-30"></a>    <span class="st">&quot;maxAffiliateRate&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Double</span>,</span>
+<span id="cb3-31"><a href="#cb3-31"></a>    <span class="st">&quot;minAffiliateRate&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Double</span>,</span>
+<span id="cb3-32"><a href="#cb3-32"></a>    <span class="st">&quot;hasMovieFlag&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</span>
+<span id="cb3-33"><a href="#cb3-33"></a>    <span class="st">&quot;pamphletFlag&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</span>
+<span id="cb3-34"><a href="#cb3-34"></a>    <span class="st">&quot;appointDeliveryDateFlag&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</span>
+<span id="cb3-35"><a href="#cb3-35"></a>    <span class="st">&quot;genreInformationFlag&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>,</span>
+<span id="cb3-36"><a href="#cb3-36"></a>    <span class="st">&quot;tagInformationFlag&quot;</span> '<span class="op">:&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span></span>
+<span id="cb3-37"><a href="#cb3-37"></a>  ]</span></code></pre></div>
 <p>(ほぼなくても良いので <code>Maybe</code> 型になってる)</p>
 <p><a href="https://hackage.haskell.org/package/req"><code>req</code></a> パッケージでリクエストパラメータにするには次のように <a href="https://hackage.haskell.org/package/base-4.10.0.0/docs/Data-Monoid.html#t:Monoid"><code>Monoid</code></a> 型クラスで合成していく．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1">param <span class="fu">=</span> <span class="st">&quot;price&quot;</span> <span class="fu">=:</span> (<span class="dv">24</span><span class="ot"> ::</span> <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb4-2" title="2">     <span class="fu">&lt;&gt;</span> <span class="st">&quot;mmember&quot;</span> <span class="fu">=:</span> (<span class="st">&quot;hoge&quot;</span><span class="ot"> ::</span> <span class="dt">Text</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1"></a>param <span class="ot">=</span> <span class="st">&quot;price&quot;</span> <span class="op">=:</span> (<span class="dv">24</span><span class="ot"> ::</span> <span class="dt">Int</span>)</span>
+<span id="cb4-2"><a href="#cb4-2"></a>     <span class="op">&lt;&gt;</span> <span class="st">&quot;mmember&quot;</span> <span class="op">=:</span> (<span class="st">&quot;hoge&quot;</span><span class="ot"> ::</span> <span class="dt">Text</span>)</span></code></pre></div>
 <p>この数を書くのはだるいよね… そこで <code>extensible</code> ですよ！</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">class</span> <span class="dt">ToParam</span> a <span class="kw">where</span></a>
-<a class="sourceLine" id="cb5-2" title="2"><span class="ot">  toParam ::</span> (<span class="dt">QueryParam</span> param, <span class="dt">Monoid</span> param) <span class="ot">=&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> param</a>
-<a class="sourceLine" id="cb5-3" title="3"></a>
-<a class="sourceLine" id="cb5-4" title="4"><span class="kw">instance</span> <span class="dt">ToParam</span> <span class="dt">Int</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb5-5" title="5">  toParam <span class="fu">=</span> (<span class="fu">=:</span>)</a>
-<a class="sourceLine" id="cb5-6" title="6"></a>
-<a class="sourceLine" id="cb5-7" title="7"><span class="kw">instance</span> <span class="dt">ToParam</span> a <span class="ot">=&gt;</span> <span class="dt">ToParam</span> (<span class="dt">Maybe</span> a) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb5-8" title="8">  toParam <span class="fu">=</span> <span class="fu">maybe</span> <span class="fu">mempty</span> <span class="fu">.</span> toParam</a>
-<a class="sourceLine" id="cb5-9" title="9"></a>
-<a class="sourceLine" id="cb5-10" title="10"><span class="kw">instance</span> <span class="dt">ToParam</span> a <span class="ot">=&gt;</span> <span class="dt">ToParam</span> (<span class="dt">Identity</span> a) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb5-11" title="11">  toParam name <span class="fu">=</span> toParam name <span class="fu">.</span> runIdentity</a>
-<a class="sourceLine" id="cb5-12" title="12"></a>
-<a class="sourceLine" id="cb5-13" title="13"><span class="kw">class</span> <span class="dt">ToParams</span> a <span class="kw">where</span></a>
-<a class="sourceLine" id="cb5-14" title="14"><span class="ot">  toParams ::</span> (<span class="dt">QueryParam</span> param, <span class="dt">Monoid</span> param) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> param</a>
-<a class="sourceLine" id="cb5-15" title="15"></a>
-<a class="sourceLine" id="cb5-16" title="16"><span class="kw">instance</span> <span class="dt">Forall</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">ToParam</span>) xs <span class="ot">=&gt;</span> <span class="dt">ToParams</span> (<span class="dt">Record</span> xs) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb5-17" title="17">  toParams <span class="fu">=</span> <span class="fu">flip</span> appEndo <span class="fu">mempty</span> <span class="fu">.</span> hfoldMap getConst' <span class="fu">.</span> hzipWith</a>
-<a class="sourceLine" id="cb5-18" title="18">    (\(<span class="dt">Comp</span> <span class="dt">Dict</span>) <span class="ot">-&gt;</span> <span class="dt">Const'</span> <span class="fu">.</span> <span class="dt">Endo</span> <span class="fu">.</span> (<span class="fu">&lt;&gt;</span>) <span class="fu">.</span></a>
-<a class="sourceLine" id="cb5-19" title="19">      liftA2 toParam (fromString <span class="fu">.</span> symbolVal <span class="fu">.</span> proxyAssocKey) getField)</a>
-<a class="sourceLine" id="cb5-20" title="20">    (<span class="ot">library ::</span> <span class="dt">Comp</span> <span class="dt">Dict</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">ToParam</span>) <span class="fu">:*</span> xs)</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">class</span> <span class="dt">ToParam</span> a <span class="kw">where</span></span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="ot">  toParam ::</span> (<span class="dt">QueryParam</span> param, <span class="dt">Monoid</span> param) <span class="ot">=&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> param</span>
+<span id="cb5-3"><a href="#cb5-3"></a></span>
+<span id="cb5-4"><a href="#cb5-4"></a><span class="kw">instance</span> <span class="dt">ToParam</span> <span class="dt">Int</span> <span class="kw">where</span></span>
+<span id="cb5-5"><a href="#cb5-5"></a>  toParam <span class="ot">=</span> (<span class="op">=:</span>)</span>
+<span id="cb5-6"><a href="#cb5-6"></a></span>
+<span id="cb5-7"><a href="#cb5-7"></a><span class="kw">instance</span> <span class="dt">ToParam</span> a <span class="ot">=&gt;</span> <span class="dt">ToParam</span> (<span class="dt">Maybe</span> a) <span class="kw">where</span></span>
+<span id="cb5-8"><a href="#cb5-8"></a>  toParam <span class="ot">=</span> <span class="fu">maybe</span> <span class="fu">mempty</span> <span class="op">.</span> toParam</span>
+<span id="cb5-9"><a href="#cb5-9"></a></span>
+<span id="cb5-10"><a href="#cb5-10"></a><span class="kw">instance</span> <span class="dt">ToParam</span> a <span class="ot">=&gt;</span> <span class="dt">ToParam</span> (<span class="dt">Identity</span> a) <span class="kw">where</span></span>
+<span id="cb5-11"><a href="#cb5-11"></a>  toParam name <span class="ot">=</span> toParam name <span class="op">.</span> runIdentity</span>
+<span id="cb5-12"><a href="#cb5-12"></a></span>
+<span id="cb5-13"><a href="#cb5-13"></a><span class="kw">class</span> <span class="dt">ToParams</span> a <span class="kw">where</span></span>
+<span id="cb5-14"><a href="#cb5-14"></a><span class="ot">  toParams ::</span> (<span class="dt">QueryParam</span> param, <span class="dt">Monoid</span> param) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> param</span>
+<span id="cb5-15"><a href="#cb5-15"></a></span>
+<span id="cb5-16"><a href="#cb5-16"></a><span class="kw">instance</span> <span class="dt">Forall</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">ToParam</span>) xs <span class="ot">=&gt;</span> <span class="dt">ToParams</span> (<span class="dt">Record</span> xs) <span class="kw">where</span></span>
+<span id="cb5-17"><a href="#cb5-17"></a>  toParams <span class="ot">=</span> <span class="fu">flip</span> appEndo <span class="fu">mempty</span> <span class="op">.</span> hfoldMap getConst' <span class="op">.</span> hzipWith</span>
+<span id="cb5-18"><a href="#cb5-18"></a>    (\(<span class="dt">Comp</span> <span class="dt">Dict</span>) <span class="ot">-&gt;</span> <span class="dt">Const'</span> <span class="op">.</span> <span class="dt">Endo</span> <span class="op">.</span> (<span class="op">&lt;&gt;</span>) <span class="op">.</span></span>
+<span id="cb5-19"><a href="#cb5-19"></a>      liftA2 toParam (fromString <span class="op">.</span> symbolVal <span class="op">.</span> proxyAssocKey) getField)</span>
+<span id="cb5-20"><a href="#cb5-20"></a>    (<span class="ot">library ::</span> <span class="dt">Comp</span> <span class="dt">Dict</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">ToParam</span>) <span class="op">:*</span> xs)</span></code></pre></div>
 <p><code>ToParam</code> 型クラスは <code>chatwork</code> パッケージのときにも定義した． もちろん，<code>Text</code> 型や <code>Bool</code> 型のインスタンスも定義してある． 前と違うのは <code>Identity</code> 型のインスタンス． <code>Forall (KeyValue KnownSymbol ToParam) xs</code> 型クラスは，<code>xs</code> が<a href="http://hackage.haskell.org/package/extensible-0.4.3/docs/Data-Extensible-Field.html#t:Record">普通の拡張可能レコード</a>の場合は <code>Member xs x =&gt; ToParam (Identity (AssocValue x))</code> であることを保証するため定義した(<code>Identity</code> 以外のモナドにしようと思えばできるけど)．</p>
 <p>これで <code>toParams</code> を呼ぶだけで，<code>req</code> でのリクエストパラメータとして使える(やったぁ)．</p>
 <h3 id="default-型クラス"><code>Default</code> 型クラス</h3>
 <p>リクエストパラメータのフィールドはこんなにあるけど，基本使わない… なので，デフォルトな値があって，レコード構文みたいに書き換えるのが良くある手法な気がする．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1">param <span class="fu">=</span> defaultParam { keyword <span class="fu">=</span> <span class="st">&quot;Rakuten&quot;</span> }</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1"></a>param <span class="ot">=</span> defaultParam { keyword <span class="ot">=</span> <span class="st">&quot;Rakuten&quot;</span> }</span></code></pre></div>
 <p>しかし，このデフォルトの値を定義するのもだるい！ なので，拡張可能レコードを <a href="http://hackage.haskell.org/package/data-default-class"><code>data-default-class</code></a> パッケージの <a href="http://hackage.haskell.org/package/data-default-class-0.1.2.0/docs/Data-Default-Class.html#t:Default"><code>Default</code></a> 型クラスのインスタンスにしてしまおう！</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">instance</span> <span class="dt">Default</span> a <span class="ot">=&gt;</span> <span class="dt">Default</span> (<span class="dt">Identity</span> a) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb7-2" title="2">  def <span class="fu">=</span> <span class="dt">Identity</span> def</a>
-<a class="sourceLine" id="cb7-3" title="3"></a>
-<a class="sourceLine" id="cb7-4" title="4"><span class="kw">instance</span> <span class="dt">Default</span> <span class="dt">Text</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb7-5" title="5">  def <span class="fu">=</span> <span class="fu">mempty</span></a>
-<a class="sourceLine" id="cb7-6" title="6"></a>
-<a class="sourceLine" id="cb7-7" title="7"><span class="kw">instance</span> <span class="dt">Forall</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">Default</span>) xs <span class="ot">=&gt;</span> <span class="dt">Default</span> (<span class="dt">Record</span> xs) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb7-8" title="8">  def <span class="fu">=</span> runIdentity <span class="fu">$</span> hgenerateFor</a>
-<a class="sourceLine" id="cb7-9" title="9">    (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">Default</span>)) (<span class="fu">const</span> <span class="fu">$</span> <span class="fu">pure</span> (<span class="dt">Field</span> def))</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">instance</span> <span class="dt">Default</span> a <span class="ot">=&gt;</span> <span class="dt">Default</span> (<span class="dt">Identity</span> a) <span class="kw">where</span></span>
+<span id="cb7-2"><a href="#cb7-2"></a>  def <span class="ot">=</span> <span class="dt">Identity</span> def</span>
+<span id="cb7-3"><a href="#cb7-3"></a></span>
+<span id="cb7-4"><a href="#cb7-4"></a><span class="kw">instance</span> <span class="dt">Default</span> <span class="dt">Text</span> <span class="kw">where</span></span>
+<span id="cb7-5"><a href="#cb7-5"></a>  def <span class="ot">=</span> <span class="fu">mempty</span></span>
+<span id="cb7-6"><a href="#cb7-6"></a></span>
+<span id="cb7-7"><a href="#cb7-7"></a><span class="kw">instance</span> <span class="dt">Forall</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">Default</span>) xs <span class="ot">=&gt;</span> <span class="dt">Default</span> (<span class="dt">Record</span> xs) <span class="kw">where</span></span>
+<span id="cb7-8"><a href="#cb7-8"></a>  def <span class="ot">=</span> runIdentity <span class="op">$</span> hgenerateFor</span>
+<span id="cb7-9"><a href="#cb7-9"></a>    (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">Default</span>)) (<span class="fu">const</span> <span class="op">$</span> <span class="fu">pure</span> (<span class="dt">Field</span> def))</span></code></pre></div>
 <p>簡単ですね． これで，<a href="https://hackage.haskell.org/package/lens"><code>lens</code></a> のセッターを使って簡単に書き換えれるようになった．</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1">param <span class="fu">=</span> def <span class="fu">&amp;</span> <span class="fu">#</span>keyword <span class="fu">.~</span> <span class="st">&quot;Rakuten&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1"></a>param <span class="ot">=</span> def <span class="op">&amp;</span> <span class="op">#</span>keyword <span class="op">.~</span> <span class="st">&quot;Rakuten&quot;</span></span></code></pre></div>
 <h2 id="気になるところ">気になるところ</h2>
 <p>Haskell の型クラスのインスタンスのスコープって制限するのは難しい． なので，拡張可能レコード全般という，こうも広範囲に影響しそうなインスタンスをバシバシ定義してもいいのかなぁという気持ちはある．</p>
 <p>(だれもこのパッケージを使わないだろうけど)</p>

@@ -125,334 +125,334 @@
 <p>今回の主目的ではないが，このプログラムは extensible の拡張可能レコードを用いた optparse-applicative のサンプルコードにもなっていると思う．</p>
 <h3 id="記事の型を考える">記事の型を考える</h3>
 <p>最低限必要なのは，記事のタイトルと URL である． 他に，記事の著者と記事が投稿されたカレンダー・日付があった方が，あとで列挙するときに映えるだろう． ということで，以下の型を考えた．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="ot">{-# LANGUAGE DataKinds         #-}</span></a>
-<a class="sourceLine" id="cb1-2" title="2"><span class="ot">{-# LANGUAGE TypeOperators     #-}</span></a>
-<a class="sourceLine" id="cb1-3" title="3"></a>
-<a class="sourceLine" id="cb1-4" title="4"><span class="kw">import</span> <span class="dt">Data.Extensible</span></a>
-<a class="sourceLine" id="cb1-5" title="5"><span class="kw">import</span> <span class="dt">Data.Text</span> (<span class="dt">Text</span>)</a>
-<a class="sourceLine" id="cb1-6" title="6"></a>
-<a class="sourceLine" id="cb1-7" title="7"><span class="kw">type</span> <span class="dt">Post</span> <span class="fu">=</span> <span class="dt">Record</span></a>
-<a class="sourceLine" id="cb1-8" title="8">   '[ <span class="st">&quot;title&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb1-9" title="9">    , <span class="st">&quot;auther&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb1-10" title="10">    , <span class="st">&quot;url&quot;</span> <span class="fu">&gt;:</span> <span class="dt">URL</span></a>
-<a class="sourceLine" id="cb1-11" title="11">    , <span class="st">&quot;date&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Date</span></a>
-<a class="sourceLine" id="cb1-12" title="12">    , <span class="st">&quot;calendar&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Calendar</span></a>
-<a class="sourceLine" id="cb1-13" title="13">    , <span class="st">&quot;category&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb1-14" title="14">    ]</a>
-<a class="sourceLine" id="cb1-15" title="15"></a>
-<a class="sourceLine" id="cb1-16" title="16"><span class="kw">type</span> <span class="dt">URL</span> <span class="fu">=</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb1-17" title="17"><span class="kw">type</span> <span class="dt">Date</span> <span class="fu">=</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb1-18" title="18"></a>
-<a class="sourceLine" id="cb1-19" title="19"><span class="kw">type</span> <span class="dt">Calendar</span> <span class="fu">=</span> <span class="dt">Record</span></a>
-<a class="sourceLine" id="cb1-20" title="20">   '[ <span class="st">&quot;title&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb1-21" title="21">    , <span class="st">&quot;url&quot;</span> <span class="fu">&gt;:</span> <span class="dt">URL</span></a>
-<a class="sourceLine" id="cb1-22" title="22">    ]</a></code></pre></div>
-<p><code>&quot;category&quot;</code> は後の(手作業による)分類で用いる． extensible による拡張可能レコードな型だが，何となく読めるだろう(分からなかったググって)．</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1"></a><span class="ot">{-# LANGUAGE DataKinds         #-}</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="ot">{-# LANGUAGE TypeOperators     #-}</span></span>
+<span id="cb1-3"><a href="#cb1-3"></a></span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="kw">import</span> <span class="dt">Data.Extensible</span></span>
+<span id="cb1-5"><a href="#cb1-5"></a><span class="kw">import</span> <span class="dt">Data.Text</span> (<span class="dt">Text</span>)</span>
+<span id="cb1-6"><a href="#cb1-6"></a></span>
+<span id="cb1-7"><a href="#cb1-7"></a><span class="kw">type</span> <span class="dt">Post</span> <span class="ot">=</span> <span class="dt">Record</span></span>
+<span id="cb1-8"><a href="#cb1-8"></a>   '[ <span class="st">&quot;title&quot;</span> <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb1-9"><a href="#cb1-9"></a>    , <span class="st">&quot;auther&quot;</span> <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb1-10"><a href="#cb1-10"></a>    , <span class="st">&quot;url&quot;</span> <span class="op">&gt;:</span> <span class="dt">URL</span></span>
+<span id="cb1-11"><a href="#cb1-11"></a>    , <span class="st">&quot;date&quot;</span> <span class="op">&gt;:</span> <span class="dt">Date</span></span>
+<span id="cb1-12"><a href="#cb1-12"></a>    , <span class="st">&quot;calendar&quot;</span> <span class="op">&gt;:</span> <span class="dt">Calendar</span></span>
+<span id="cb1-13"><a href="#cb1-13"></a>    , <span class="st">&quot;category&quot;</span> <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb1-14"><a href="#cb1-14"></a>    ]</span>
+<span id="cb1-15"><a href="#cb1-15"></a></span>
+<span id="cb1-16"><a href="#cb1-16"></a><span class="kw">type</span> <span class="dt">URL</span> <span class="ot">=</span> <span class="dt">Text</span></span>
+<span id="cb1-17"><a href="#cb1-17"></a><span class="kw">type</span> <span class="dt">Date</span> <span class="ot">=</span> <span class="dt">Text</span></span>
+<span id="cb1-18"><a href="#cb1-18"></a></span>
+<span id="cb1-19"><a href="#cb1-19"></a><span class="kw">type</span> <span class="dt">Calendar</span> <span class="ot">=</span> <span class="dt">Record</span></span>
+<span id="cb1-20"><a href="#cb1-20"></a>   '[ <span class="st">&quot;title&quot;</span> <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb1-21"><a href="#cb1-21"></a>    , <span class="st">&quot;url&quot;</span> <span class="op">&gt;:</span> <span class="dt">URL</span></span>
+<span id="cb1-22"><a href="#cb1-22"></a>    ]</span></code></pre></div>
+<p><code>"category"</code> は後の(手作業による)分類で用いる． extensible による拡張可能レコードな型だが，何となく読めるだろう(分からなかったググって)．</p>
 <h2 id="section-1"></h2>
 <p>インターフェースを揃えるために，<code>Qiita</code> や <code>ADVENTAR</code> って感じの型から 記事のリスト <code>[Post]</code> を返す型クラスを定義しておく(正直あんまり意味はない)．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="kw">class</span> <span class="dt">ToPosts</span> a <span class="kw">where</span></a>
-<a class="sourceLine" id="cb2-2" title="2"><span class="ot">  getPosts ::</span> a <span class="ot">-&gt;</span> <span class="dt">IO</span> [<span class="dt">Post</span>]</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">class</span> <span class="dt">ToPosts</span> a <span class="kw">where</span></span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="ot">  getPosts ::</span> a <span class="ot">-&gt;</span> <span class="dt">IO</span> [<span class="dt">Post</span>]</span></code></pre></div>
 <p>順にインスタンスを定義していく．</p>
 <h3 id="adventar">ADVENTAR</h3>
 <p><a href="../posts/2017-12-02-re-adventar-slack-bot-part1.html">ADVENTAR は昔集めた</a>ので簡単だ．</p>
 <h4 id="カレンダーの記事を集める">カレンダーの記事を集める</h4>
 <p>まずは，カレンダーの URL を与えたら記事のリストを返す関数を書く．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Text.IO</span> <span class="kw">as</span> <span class="dt">TIO</span></a>
-<a class="sourceLine" id="cb3-2" title="2"><span class="kw">import</span> <span class="dt">Shelly</span> (shelly, sleep)</a>
-<a class="sourceLine" id="cb3-3" title="3"><span class="kw">import</span> <span class="dt">Test.WebDriver</span> (<span class="dt">WDConfig</span>)</a>
-<a class="sourceLine" id="cb3-4" title="4"><span class="kw">import</span> <span class="dt">Text.HTML.Scalpel.Core</span></a>
-<a class="sourceLine" id="cb3-5" title="5"></a>
-<a class="sourceLine" id="cb3-6" title="6"><span class="kw">data</span> <span class="dt">Adventar</span> <span class="fu">=</span> <span class="dt">Adventar</span> <span class="dt">URL</span> <span class="dt">WDConfig</span></a>
-<a class="sourceLine" id="cb3-7" title="7"></a>
-<a class="sourceLine" id="cb3-8" title="8"><span class="kw">instance</span> <span class="dt">ToPosts</span> <span class="dt">Adventar</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb3-9" title="9">  getPosts (<span class="dt">Adventar</span> url conf) <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-10" title="10">    html <span class="ot">&lt;-</span> fetchHtmlWith conf url</a>
-<a class="sourceLine" id="cb3-11" title="11">  <span class="kw">let</span></a>
-<a class="sourceLine" id="cb3-12" title="12">    posts <span class="fu">=</span> fromMaybe [] <span class="fu">$</span> scrapeHtml postsScraper html</a>
-<a class="sourceLine" id="cb3-13" title="13">  TIO.putStrLn <span class="fu">$</span> <span class="st">&quot;get posts on &quot;</span> <span class="ot">`mappend`</span> url</a>
-<a class="sourceLine" id="cb3-14" title="14">  shelly <span class="fu">$</span> sleep <span class="dv">1</span></a>
-<a class="sourceLine" id="cb3-15" title="15">  <span class="fu">return</span> posts</a>
-<a class="sourceLine" id="cb3-16" title="16"></a>
-<a class="sourceLine" id="cb3-17" title="17"><span class="ot">scrapeHtml ::</span> <span class="dt">Scraper</span> <span class="dt">Html</span> a <span class="ot">-&gt;</span> <span class="dt">Html</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</a>
-<a class="sourceLine" id="cb3-18" title="18">scrapeHtml <span class="fu">=</span> <span class="fu">flip</span> scrapeStringLike</a>
-<a class="sourceLine" id="cb3-19" title="19"></a>
-<a class="sourceLine" id="cb3-20" title="20"><span class="kw">type</span> <span class="dt">Html</span> <span class="fu">=</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb3-21" title="21"></a>
-<a class="sourceLine" id="cb3-22" title="22"><span class="ot">fetchHtmlWith ::</span> <span class="dt">WDConfig</span> <span class="ot">-&gt;</span> <span class="dt">URL</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Html</span></a>
-<a class="sourceLine" id="cb3-23" title="23">fetchHtmlWith <span class="fu">=</span> <span class="fu">undefined</span></a>
-<a class="sourceLine" id="cb3-24" title="24"></a>
-<a class="sourceLine" id="cb3-25" title="25"><span class="ot">postsScraper ::</span> <span class="dt">Scraper</span> <span class="dt">Html</span> [<span class="dt">Post</span>]</a>
-<a class="sourceLine" id="cb3-26" title="26">postsScraper <span class="fu">=</span> <span class="fu">undefined</span></a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Text.IO</span> <span class="kw">as</span> <span class="dt">TIO</span></span>
+<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">import</span> <span class="dt">Shelly</span> (shelly, sleep)</span>
+<span id="cb3-3"><a href="#cb3-3"></a><span class="kw">import</span> <span class="dt">Test.WebDriver</span> (<span class="dt">WDConfig</span>)</span>
+<span id="cb3-4"><a href="#cb3-4"></a><span class="kw">import</span> <span class="dt">Text.HTML.Scalpel.Core</span></span>
+<span id="cb3-5"><a href="#cb3-5"></a></span>
+<span id="cb3-6"><a href="#cb3-6"></a><span class="kw">data</span> <span class="dt">Adventar</span> <span class="ot">=</span> <span class="dt">Adventar</span> <span class="dt">URL</span> <span class="dt">WDConfig</span></span>
+<span id="cb3-7"><a href="#cb3-7"></a></span>
+<span id="cb3-8"><a href="#cb3-8"></a><span class="kw">instance</span> <span class="dt">ToPosts</span> <span class="dt">Adventar</span> <span class="kw">where</span></span>
+<span id="cb3-9"><a href="#cb3-9"></a>  getPosts (<span class="dt">Adventar</span> url conf) <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb3-10"><a href="#cb3-10"></a>    html <span class="ot">&lt;-</span> fetchHtmlWith conf url</span>
+<span id="cb3-11"><a href="#cb3-11"></a>  <span class="kw">let</span></span>
+<span id="cb3-12"><a href="#cb3-12"></a>    posts <span class="ot">=</span> fromMaybe [] <span class="op">$</span> scrapeHtml postsScraper html</span>
+<span id="cb3-13"><a href="#cb3-13"></a>  TIO.putStrLn <span class="op">$</span> <span class="st">&quot;get posts on &quot;</span> <span class="ot">`mappend`</span> url</span>
+<span id="cb3-14"><a href="#cb3-14"></a>  shelly <span class="op">$</span> sleep <span class="dv">1</span></span>
+<span id="cb3-15"><a href="#cb3-15"></a>  <span class="fu">return</span> posts</span>
+<span id="cb3-16"><a href="#cb3-16"></a></span>
+<span id="cb3-17"><a href="#cb3-17"></a><span class="ot">scrapeHtml ::</span> <span class="dt">Scraper</span> <span class="dt">Html</span> a <span class="ot">-&gt;</span> <span class="dt">Html</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</span>
+<span id="cb3-18"><a href="#cb3-18"></a>scrapeHtml <span class="ot">=</span> <span class="fu">flip</span> scrapeStringLike</span>
+<span id="cb3-19"><a href="#cb3-19"></a></span>
+<span id="cb3-20"><a href="#cb3-20"></a><span class="kw">type</span> <span class="dt">Html</span> <span class="ot">=</span> <span class="dt">Text</span></span>
+<span id="cb3-21"><a href="#cb3-21"></a></span>
+<span id="cb3-22"><a href="#cb3-22"></a><span class="ot">fetchHtmlWith ::</span> <span class="dt">WDConfig</span> <span class="ot">-&gt;</span> <span class="dt">URL</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Html</span></span>
+<span id="cb3-23"><a href="#cb3-23"></a>fetchHtmlWith <span class="ot">=</span> <span class="fu">undefined</span></span>
+<span id="cb3-24"><a href="#cb3-24"></a></span>
+<span id="cb3-25"><a href="#cb3-25"></a><span class="ot">postsScraper ::</span> <span class="dt">Scraper</span> <span class="dt">Html</span> [<span class="dt">Post</span>]</span>
+<span id="cb3-26"><a href="#cb3-26"></a>postsScraper <span class="ot">=</span> <span class="fu">undefined</span></span></code></pre></div>
 <p>ADVENTAR のカレンダーのページは React 製(?)かなんからしく，静的な HTML からでは記事を参照することが出来ない そのために，Selenium などのヘッドレスブラウザを使ってアクセスする． <code>WDConfig</code> は Haskell から Selenium などを操作するための Web Driver の設定値の型である．</p>
 <p><code>shelly $ sleep 1</code> はDOS攻撃にならないように，ここで処理を1秒止めるために書いている．</p>
 <h2 id="section-2"></h2>
 <p><code>fetchHtmlWith</code> と <code>postsScraper</code> はこんな感じ．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="ot">fetchHtmlWith ::</span> <span class="dt">WDConfig</span> <span class="ot">-&gt;</span> <span class="dt">URL</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Html</span></a>
-<a class="sourceLine" id="cb4-2" title="2">fetchHtmlWith config url <span class="fu">=</span> runSession config <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb4-3" title="3">  openPage (unpack url)</a>
-<a class="sourceLine" id="cb4-4" title="4">  html <span class="ot">&lt;-</span> getSource</a>
-<a class="sourceLine" id="cb4-5" title="5">  closeSession</a>
-<a class="sourceLine" id="cb4-6" title="6">  <span class="fu">return</span> html</a></code></pre></div>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">import</span> <span class="dt">Data.Default</span> (def)</a>
-<a class="sourceLine" id="cb5-2" title="2"></a>
-<a class="sourceLine" id="cb5-3" title="3"><span class="ot">postsScraper ::</span> <span class="dt">Scraper</span> <span class="dt">Html</span> [<span class="dt">Post</span>]</a>
-<a class="sourceLine" id="cb5-4" title="4">postsScraper <span class="fu">=</span></a>
-<a class="sourceLine" id="cb5-5" title="5">  chroots (<span class="st">&quot;table&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;mod-entryList&quot;</span>] <span class="fu">//</span> <span class="st">&quot;tr&quot;</span>) entryScraper</a>
-<a class="sourceLine" id="cb5-6" title="6"></a>
-<a class="sourceLine" id="cb5-7" title="7"><span class="ot">entryScraper ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> <span class="dt">Post</span></a>
-<a class="sourceLine" id="cb5-8" title="8">entryScraper <span class="fu">=</span> hsequence</a>
-<a class="sourceLine" id="cb5-9" title="9">    <span class="fu">$</span> <span class="fu">#</span>title    <span class="fu">&lt;@=&gt;</span> titleScraper</a>
-<a class="sourceLine" id="cb5-10" title="10">   <span class="fu">&lt;:</span> <span class="fu">#</span>auther   <span class="fu">&lt;@=&gt;</span> autherScraper</a>
-<a class="sourceLine" id="cb5-11" title="11">   <span class="fu">&lt;:</span> <span class="fu">#</span>url      <span class="fu">&lt;@=&gt;</span> urlScraper</a>
-<a class="sourceLine" id="cb5-12" title="12">   <span class="fu">&lt;:</span> <span class="fu">#</span>date     <span class="fu">&lt;@=&gt;</span> dateScraper</a>
-<a class="sourceLine" id="cb5-13" title="13">   <span class="fu">&lt;:</span> <span class="fu">#</span>calendar <span class="fu">&lt;@=&gt;</span> <span class="fu">pure</span> def</a>
-<a class="sourceLine" id="cb5-14" title="14">   <span class="fu">&lt;:</span> <span class="fu">#</span>category <span class="fu">&lt;@=&gt;</span> <span class="fu">pure</span> <span class="st">&quot;&quot;</span></a>
-<a class="sourceLine" id="cb5-15" title="15">   <span class="fu">&lt;:</span> nil</a>
-<a class="sourceLine" id="cb5-16" title="16"></a>
-<a class="sourceLine" id="cb5-17" title="17"><span class="ot">autherScraper ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb5-18" title="18">autherScraper <span class="fu">=</span> text <span class="fu">$</span> <span class="st">&quot;td&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;mod-entryList-user&quot;</span>] <span class="fu">//</span> <span class="st">&quot;span&quot;</span></a>
-<a class="sourceLine" id="cb5-19" title="19"></a>
-<a class="sourceLine" id="cb5-20" title="20"><span class="fu">...</span></a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1"></a><span class="ot">fetchHtmlWith ::</span> <span class="dt">WDConfig</span> <span class="ot">-&gt;</span> <span class="dt">URL</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Html</span></span>
+<span id="cb4-2"><a href="#cb4-2"></a>fetchHtmlWith config url <span class="ot">=</span> runSession config <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb4-3"><a href="#cb4-3"></a>  openPage (unpack url)</span>
+<span id="cb4-4"><a href="#cb4-4"></a>  html <span class="ot">&lt;-</span> getSource</span>
+<span id="cb4-5"><a href="#cb4-5"></a>  closeSession</span>
+<span id="cb4-6"><a href="#cb4-6"></a>  <span class="fu">return</span> html</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">import</span> <span class="dt">Data.Default</span> (def)</span>
+<span id="cb5-2"><a href="#cb5-2"></a></span>
+<span id="cb5-3"><a href="#cb5-3"></a><span class="ot">postsScraper ::</span> <span class="dt">Scraper</span> <span class="dt">Html</span> [<span class="dt">Post</span>]</span>
+<span id="cb5-4"><a href="#cb5-4"></a>postsScraper <span class="ot">=</span></span>
+<span id="cb5-5"><a href="#cb5-5"></a>  chroots (<span class="st">&quot;table&quot;</span> <span class="op">@:</span> [hasClass <span class="st">&quot;mod-entryList&quot;</span>] <span class="op">//</span> <span class="st">&quot;tr&quot;</span>) entryScraper</span>
+<span id="cb5-6"><a href="#cb5-6"></a></span>
+<span id="cb5-7"><a href="#cb5-7"></a><span class="ot">entryScraper ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> <span class="dt">Post</span></span>
+<span id="cb5-8"><a href="#cb5-8"></a>entryScraper <span class="ot">=</span> hsequence</span>
+<span id="cb5-9"><a href="#cb5-9"></a>    <span class="op">$</span> <span class="op">#</span>title    <span class="op">&lt;@=&gt;</span> titleScraper</span>
+<span id="cb5-10"><a href="#cb5-10"></a>   <span class="op">&lt;:</span> <span class="op">#</span>auther   <span class="op">&lt;@=&gt;</span> autherScraper</span>
+<span id="cb5-11"><a href="#cb5-11"></a>   <span class="op">&lt;:</span> <span class="op">#</span>url      <span class="op">&lt;@=&gt;</span> urlScraper</span>
+<span id="cb5-12"><a href="#cb5-12"></a>   <span class="op">&lt;:</span> <span class="op">#</span>date     <span class="op">&lt;@=&gt;</span> dateScraper</span>
+<span id="cb5-13"><a href="#cb5-13"></a>   <span class="op">&lt;:</span> <span class="op">#</span>calendar <span class="op">&lt;@=&gt;</span> <span class="fu">pure</span> def</span>
+<span id="cb5-14"><a href="#cb5-14"></a>   <span class="op">&lt;:</span> <span class="op">#</span>category <span class="op">&lt;@=&gt;</span> <span class="fu">pure</span> <span class="st">&quot;&quot;</span></span>
+<span id="cb5-15"><a href="#cb5-15"></a>   <span class="op">&lt;:</span> nil</span>
+<span id="cb5-16"><a href="#cb5-16"></a></span>
+<span id="cb5-17"><a href="#cb5-17"></a><span class="ot">autherScraper ::</span> <span class="dt">Scraper</span> <span class="dt">Text</span> <span class="dt">Text</span></span>
+<span id="cb5-18"><a href="#cb5-18"></a>autherScraper <span class="ot">=</span> text <span class="op">$</span> <span class="st">&quot;td&quot;</span> <span class="op">@:</span> [hasClass <span class="st">&quot;mod-entryList-user&quot;</span>] <span class="op">//</span> <span class="st">&quot;span&quot;</span></span>
+<span id="cb5-19"><a href="#cb5-19"></a></span>
+<span id="cb5-20"><a href="#cb5-20"></a><span class="op">...</span></span></code></pre></div>
 <p><code>xxxScraper</code> を全部書いてると長くなるので割愛(<a href="https://github.com/matsubara0507/haskell-advent-calendar/blob/f6d6a097c08e741239f576693e3d6b2b7ae21a29/src/AdventCalendar/Adventar/Scraper.hs">ココ</a>に全部ある)．</p>
 <h4 id="脱線-拡張可能レコードの-etc..">脱線 : 拡張可能レコードの etc..</h4>
 <p><a href="https://hackage.haskell.org/package/extensible-0.4.7/docs/Data-Extensible-Field.html#v:-60--64--61--62-"><code>(&lt;@=&gt;)</code></a> 演算子は拡張可能レコードの値を設定する演算子 <a href="https://hackage.haskell.org/package/extensible-0.4.7/docs/Data-Extensible-Field.html#v:-64--61-"><code>(@=)</code></a> のモナディック版(正確には <code>Functor</code>)というイメージだ． <strong>かなり</strong> 直感的に型を書くと次のようになる．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="ot">(@=) ::</span> k <span class="ot">-&gt;</span> v <span class="ot">-&gt;</span> (k <span class="fu">:&gt;</span> v)</a>
-<a class="sourceLine" id="cb6-2" title="2"><span class="ot">(&lt;@=&gt;) ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> k <span class="ot">-&gt;</span> f v <span class="ot">-&gt;</span> f (k <span class="fu">:&gt;</span> v)</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1"></a><span class="ot">(@=) ::</span> k <span class="ot">-&gt;</span> v <span class="ot">-&gt;</span> (k <span class="op">:&gt;</span> v)</span>
+<span id="cb6-2"><a href="#cb6-2"></a><span class="ot">(&lt;@=&gt;) ::</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> k <span class="ot">-&gt;</span> f v <span class="ot">-&gt;</span> f (k <span class="op">:&gt;</span> v)</span></code></pre></div>
 <p>拡張可能レコードはフィールド名とフィールドの値の型レベル辞書みたいなモノであり，<code>k :&gt; v</code> が辞書のイチ要素というイメージだ． <a href="https://hackage.haskell.org/package/extensible-0.4.7/docs/Data-Extensible-Product.html#v:-60-:"><code>(&lt;:)</code></a> で <code>[kv1, kv2, ... kvn]</code> のような辞書を構築する(<a href="https://hackage.haskell.org/package/extensible-0.4.7/docs/Data-Extensible-Product.html#v:nil"><code>nil</code></a> が空リスト)．</p>
 <p><a href="https://hackage.haskell.org/package/extensible-0.4.7/docs/Data-Extensible-Product.html#v:hsequence"><code>hsequence</code></a> 関数で <code>[f (k1 :&gt; v1), ..., f (kn :&gt; vn)] -&gt; f [(k1 :&gt; v1), ... (kn :&gt; vn)]</code> という型の変換をしているイメージだ(あくまでイメージね)．</p>
 <h2 id="section-3"></h2>
 <p><code>def</code> は <a href="https://hackage.haskell.org/package/data-default">data-default</a> パッケージの値で，<a href="https://hackage.haskell.org/package/data-default-0.7.1.1/docs/Data-Default.html#t:Default"><code>Default</code></a> 型クラスのインスタンスにしないと使えない． 拡張可能レコードのインスタンス化の説明はめんどくさいので割愛する． <a href="https://github.com/matsubara0507/haskell-advent-calendar/blob/f6d6a097c08e741239f576693e3d6b2b7ae21a29/src/Data/Extensible/Instance/Default.hs">ココ</a>に書いてあるので参照してください．</p>
 <h4 id="カレンダーを加える">カレンダーを加える</h4>
-<p>このままだとカレンダーが <code>def</code> のまま(URL もカレンダー名も <code>&quot;&quot;</code>)なので，スクレイピングしたカレンダーの情報を加えよう．</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">import</span> <span class="dt">Control.Lens</span> (set)</a>
-<a class="sourceLine" id="cb7-2" title="2"><span class="kw">import</span> <span class="dt">Data.Text</span> (strip)</a>
-<a class="sourceLine" id="cb7-3" title="3"></a>
-<a class="sourceLine" id="cb7-4" title="4">getPosts (<span class="dt">Adventar</span> url conf) <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb7-5" title="5">  html <span class="ot">&lt;-</span> fetchHtmlWith conf url</a>
-<a class="sourceLine" id="cb7-6" title="6">  <span class="kw">let</span></a>
-<a class="sourceLine" id="cb7-7" title="7">    posts <span class="fu">=</span> fromMaybe [] <span class="fu">$</span> scrapeHtml postsScraper html</a>
-<a class="sourceLine" id="cb7-8" title="8">    calendar</a>
-<a class="sourceLine" id="cb7-9" title="9">        <span class="fu">=</span> <span class="fu">#</span>title <span class="fu">@=</span> fromMaybe <span class="st">&quot;&quot;</span> (scrapeHtml headerTitleScraper html)</a>
-<a class="sourceLine" id="cb7-10" title="10">       <span class="fu">&lt;:</span> <span class="fu">#</span>url   <span class="fu">@=</span> url</a>
-<a class="sourceLine" id="cb7-11" title="11">       <span class="fu">&lt;:</span> emptyRecord</a>
-<a class="sourceLine" id="cb7-12" title="12">  TIO.putStrLn <span class="fu">$</span> <span class="st">&quot;get posts on &quot;</span> <span class="ot">`mappend`</span> url</a>
-<a class="sourceLine" id="cb7-13" title="13">  shelly <span class="fu">$</span> sleep <span class="dv">1</span></a>
-<a class="sourceLine" id="cb7-14" title="14">  <span class="fu">return</span> <span class="fu">$</span> <span class="fu">fmap</span> (set <span class="fu">#</span>calendar calendar) posts</a>
-<a class="sourceLine" id="cb7-15" title="15"></a>
-<a class="sourceLine" id="cb7-16" title="16"><span class="ot">headerTitleScraper ::</span> <span class="dt">Scraper</span> <span class="dt">Html</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb7-17" title="17">headerTitleScraper <span class="fu">=</span> strip <span class="fu">&lt;$&gt;</span> text (<span class="st">&quot;head&quot;</span> <span class="fu">//</span> <span class="st">&quot;title&quot;</span>)</a></code></pre></div>
+<p>このままだとカレンダーが <code>def</code> のまま(URL もカレンダー名も <code>""</code>)なので，スクレイピングしたカレンダーの情報を加えよう．</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">import</span> <span class="dt">Control.Lens</span> (set)</span>
+<span id="cb7-2"><a href="#cb7-2"></a><span class="kw">import</span> <span class="dt">Data.Text</span> (strip)</span>
+<span id="cb7-3"><a href="#cb7-3"></a></span>
+<span id="cb7-4"><a href="#cb7-4"></a>getPosts (<span class="dt">Adventar</span> url conf) <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb7-5"><a href="#cb7-5"></a>  html <span class="ot">&lt;-</span> fetchHtmlWith conf url</span>
+<span id="cb7-6"><a href="#cb7-6"></a>  <span class="kw">let</span></span>
+<span id="cb7-7"><a href="#cb7-7"></a>    posts <span class="ot">=</span> fromMaybe [] <span class="op">$</span> scrapeHtml postsScraper html</span>
+<span id="cb7-8"><a href="#cb7-8"></a>    calendar</span>
+<span id="cb7-9"><a href="#cb7-9"></a>        <span class="ot">=</span> <span class="op">#</span>title <span class="op">@=</span> fromMaybe <span class="st">&quot;&quot;</span> (scrapeHtml headerTitleScraper html)</span>
+<span id="cb7-10"><a href="#cb7-10"></a>       <span class="op">&lt;:</span> <span class="op">#</span>url   <span class="op">@=</span> url</span>
+<span id="cb7-11"><a href="#cb7-11"></a>       <span class="op">&lt;:</span> emptyRecord</span>
+<span id="cb7-12"><a href="#cb7-12"></a>  TIO.putStrLn <span class="op">$</span> <span class="st">&quot;get posts on &quot;</span> <span class="ot">`mappend`</span> url</span>
+<span id="cb7-13"><a href="#cb7-13"></a>  shelly <span class="op">$</span> sleep <span class="dv">1</span></span>
+<span id="cb7-14"><a href="#cb7-14"></a>  <span class="fu">return</span> <span class="op">$</span> <span class="fu">fmap</span> (set <span class="op">#</span>calendar calendar) posts</span>
+<span id="cb7-15"><a href="#cb7-15"></a></span>
+<span id="cb7-16"><a href="#cb7-16"></a><span class="ot">headerTitleScraper ::</span> <span class="dt">Scraper</span> <span class="dt">Html</span> <span class="dt">Text</span></span>
+<span id="cb7-17"><a href="#cb7-17"></a>headerTitleScraper <span class="ot">=</span> strip <span class="op">&lt;$&gt;</span> text (<span class="st">&quot;head&quot;</span> <span class="op">//</span> <span class="st">&quot;title&quot;</span>)</span></code></pre></div>
 <p><code>strip</code> は文字列の前後の空白などを排除してくれる．</p>
 <h4 id="カレンダーを集める">カレンダーを集める</h4>
 <p>カレンダーから記事を集めるだとまだ半分． カレンダー自体を集めないと全ての記事を確認できない．</p>
-<p>ADVENTAR の場合は，<code>&quot;https://adventar.org/calendars?year=2017</code> という URL で任意の年のカレンダーの一覧を取得できる． この URL からカレンダーの URL のリストを返す関数を定義する．</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="ot">getUrls ::</span> <span class="dt">URL</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> [<span class="dt">URL</span>]</a>
-<a class="sourceLine" id="cb8-2" title="2">getUrls url <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb8-3" title="3">  html <span class="ot">&lt;-</span> fetchHtml url</a>
-<a class="sourceLine" id="cb8-4" title="4">  <span class="fu">return</span> <span class="fu">$</span> fromMaybe [] (scrapeHtml calendarUrlsScraper html)</a>
-<a class="sourceLine" id="cb8-5" title="5"></a>
-<a class="sourceLine" id="cb8-6" title="6"><span class="ot">fetchHtml ::</span> <span class="dt">URL</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Html</span></a>
-<a class="sourceLine" id="cb8-7" title="7">fetchHtml url <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb8-8" title="8">  response <span class="ot">&lt;-</span> get <span class="fu">$</span> unpack url</a>
-<a class="sourceLine" id="cb8-9" title="9">  <span class="fu">return</span> <span class="fu">$</span> fromMaybe <span class="st">&quot;&quot;</span> (decodeConvertText <span class="fu">.</span> <span class="dt">UTF8</span> <span class="fu">$</span> response <span class="fu">^.</span> responseBody)</a>
-<a class="sourceLine" id="cb8-10" title="10"></a>
-<a class="sourceLine" id="cb8-11" title="11"><span class="ot">calendarUrlsScraper ::</span> <span class="dt">Scraper</span> <span class="dt">Html</span> [<span class="dt">URL</span>]</a>
-<a class="sourceLine" id="cb8-12" title="12">calendarUrlsScraper <span class="fu">=</span></a>
-<a class="sourceLine" id="cb8-13" title="13">  chroots (<span class="st">&quot;div&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;mod-calendarList&quot;</span>] <span class="fu">//</span> <span class="st">&quot;ul&quot;</span> <span class="fu">//</span> <span class="st">&quot;li&quot;</span>) <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb8-14" title="14">    url <span class="ot">&lt;-</span> attr <span class="st">&quot;href&quot;</span> <span class="fu">$</span></a>
-<a class="sourceLine" id="cb8-15" title="15">      (<span class="st">&quot;div&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;mod-calendarList-title&quot;</span>]) <span class="fu">//</span> <span class="st">&quot;a&quot;</span></a>
-<a class="sourceLine" id="cb8-16" title="16">    <span class="fu">return</span> <span class="fu">$</span> append <span class="st">&quot;http://adventar.org&quot;</span> url</a></code></pre></div>
+<p>ADVENTAR の場合は，<code>"https://adventar.org/calendars?year=2017</code> という URL で任意の年のカレンダーの一覧を取得できる． この URL からカレンダーの URL のリストを返す関数を定義する．</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1"></a><span class="ot">getUrls ::</span> <span class="dt">URL</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> [<span class="dt">URL</span>]</span>
+<span id="cb8-2"><a href="#cb8-2"></a>getUrls url <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb8-3"><a href="#cb8-3"></a>  html <span class="ot">&lt;-</span> fetchHtml url</span>
+<span id="cb8-4"><a href="#cb8-4"></a>  <span class="fu">return</span> <span class="op">$</span> fromMaybe [] (scrapeHtml calendarUrlsScraper html)</span>
+<span id="cb8-5"><a href="#cb8-5"></a></span>
+<span id="cb8-6"><a href="#cb8-6"></a><span class="ot">fetchHtml ::</span> <span class="dt">URL</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Html</span></span>
+<span id="cb8-7"><a href="#cb8-7"></a>fetchHtml url <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb8-8"><a href="#cb8-8"></a>  response <span class="ot">&lt;-</span> get <span class="op">$</span> unpack url</span>
+<span id="cb8-9"><a href="#cb8-9"></a>  <span class="fu">return</span> <span class="op">$</span> fromMaybe <span class="st">&quot;&quot;</span> (decodeConvertText <span class="op">.</span> <span class="dt">UTF8</span> <span class="op">$</span> response <span class="op">^.</span> responseBody)</span>
+<span id="cb8-10"><a href="#cb8-10"></a></span>
+<span id="cb8-11"><a href="#cb8-11"></a><span class="ot">calendarUrlsScraper ::</span> <span class="dt">Scraper</span> <span class="dt">Html</span> [<span class="dt">URL</span>]</span>
+<span id="cb8-12"><a href="#cb8-12"></a>calendarUrlsScraper <span class="ot">=</span></span>
+<span id="cb8-13"><a href="#cb8-13"></a>  chroots (<span class="st">&quot;div&quot;</span> <span class="op">@:</span> [hasClass <span class="st">&quot;mod-calendarList&quot;</span>] <span class="op">//</span> <span class="st">&quot;ul&quot;</span> <span class="op">//</span> <span class="st">&quot;li&quot;</span>) <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb8-14"><a href="#cb8-14"></a>    url <span class="ot">&lt;-</span> attr <span class="st">&quot;href&quot;</span> <span class="op">$</span></span>
+<span id="cb8-15"><a href="#cb8-15"></a>      (<span class="st">&quot;div&quot;</span> <span class="op">@:</span> [hasClass <span class="st">&quot;mod-calendarList-title&quot;</span>]) <span class="op">//</span> <span class="st">&quot;a&quot;</span></span>
+<span id="cb8-16"><a href="#cb8-16"></a>    <span class="fu">return</span> <span class="op">$</span> append <span class="st">&quot;http://adventar.org&quot;</span> url</span></code></pre></div>
 <p>こっちは静的な HTML で動作するのでヘッドレスブラウザは使わない． ただ単に HTML の文字列さへ手に入ればいいので，扱うのが簡単な wreq を今回は使った． <code>get</code> という関数に URL を適用するだけで，HTML (型は <code>ByteString</code>) を返してくれる．</p>
-<h5 id="vs.文字コード">vs. 文字コード</h5>
+<h5 id="vs.-文字コード">vs. 文字コード</h5>
 <p><code>ByteString</code> から <code>Text</code> への変換はかなりめんどくさい． というのも，文字コード回りで簡単に例外を投げるからだ．</p>
 <p>例えば，記事のリンク先が PDF のようなバイナリファイルだと UTF-8 の <code>Text</code> に変換できなくて例外を投げてくる． もちろん，カレンダーの URL を集める場合は，そんな心配は無いんだけど，Qiita のところで困る…</p>
 <h2 id="section-4"></h2>
 <p>ちゃんとやるなら例外に合わせて処理を分けるべきだが，めんどくさいので例外を返す場合は <code>Nothing</code> が返ってくる <a href="https://hackage.haskell.org/package/text-conversions">text-conversions</a> パッケージを文字列変換に用いた．</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="fu">&gt;&gt;</span> decodeConvertText (<span class="dt">UTF8</span> (<span class="st">&quot;hello&quot;</span><span class="ot"> ::</span> <span class="dt">ByteString</span>))<span class="ot"> ::</span> <span class="dt">Maybe</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb9-2" title="2"><span class="dt">Just</span> <span class="st">&quot;hello&quot;</span></a>
-<a class="sourceLine" id="cb9-3" title="3"><span class="fu">&gt;&gt;</span> decodeConvertText (<span class="dt">UTF8</span> (<span class="st">&quot;\xc3\x28&quot;</span><span class="ot"> ::</span> <span class="dt">ByteString</span>))<span class="ot"> ::</span> <span class="dt">Maybe</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb9-4" title="4"><span class="dt">Nothing</span></a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1"></a><span class="op">&gt;&gt;</span> decodeConvertText (<span class="dt">UTF8</span> (<span class="st">&quot;hello&quot;</span><span class="ot"> ::</span> <span class="dt">ByteString</span>))<span class="ot"> ::</span> <span class="dt">Maybe</span> <span class="dt">Text</span></span>
+<span id="cb9-2"><a href="#cb9-2"></a><span class="dt">Just</span> <span class="st">&quot;hello&quot;</span></span>
+<span id="cb9-3"><a href="#cb9-3"></a><span class="op">&gt;&gt;</span> decodeConvertText (<span class="dt">UTF8</span> (<span class="st">&quot;\xc3\x28&quot;</span><span class="ot"> ::</span> <span class="dt">ByteString</span>))<span class="ot"> ::</span> <span class="dt">Maybe</span> <span class="dt">Text</span></span>
+<span id="cb9-4"><a href="#cb9-4"></a><span class="dt">Nothing</span></span></code></pre></div>
 <h4 id="インスタンスの更新">インスタンスの更新</h4>
 <p><code>getUrls</code> を使ってインスタンスを書き換える．</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">instance</span> <span class="dt">ToPosts</span> <span class="dt">Adventar</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb10-2" title="2">  getPosts (<span class="dt">Adventar</span> url conf) <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb10-3" title="3">    urls <span class="ot">&lt;-</span> getUrls url</a>
-<a class="sourceLine" id="cb10-4" title="4">    <span class="fu">mconcat</span> <span class="fu">&lt;$&gt;</span> <span class="fu">mapM</span> (getPosts' conf) urls</a>
-<a class="sourceLine" id="cb10-5" title="5"></a>
-<a class="sourceLine" id="cb10-6" title="6"><span class="ot">getPosts' ::</span> <span class="dt">WDConfig</span> <span class="ot">-&gt;</span> <span class="dt">URL</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> [<span class="dt">Post</span>]</a>
-<a class="sourceLine" id="cb10-7" title="7">getPosts' conf url <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb10-8" title="8">  <span class="fu">...</span></a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">instance</span> <span class="dt">ToPosts</span> <span class="dt">Adventar</span> <span class="kw">where</span></span>
+<span id="cb10-2"><a href="#cb10-2"></a>  getPosts (<span class="dt">Adventar</span> url conf) <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb10-3"><a href="#cb10-3"></a>    urls <span class="ot">&lt;-</span> getUrls url</span>
+<span id="cb10-4"><a href="#cb10-4"></a>    <span class="fu">mconcat</span> <span class="op">&lt;$&gt;</span> <span class="fu">mapM</span> (getPosts' conf) urls</span>
+<span id="cb10-5"><a href="#cb10-5"></a></span>
+<span id="cb10-6"><a href="#cb10-6"></a><span class="ot">getPosts' ::</span> <span class="dt">WDConfig</span> <span class="ot">-&gt;</span> <span class="dt">URL</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> [<span class="dt">Post</span>]</span>
+<span id="cb10-7"><a href="#cb10-7"></a>getPosts' conf url <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb10-8"><a href="#cb10-8"></a>  <span class="op">...</span></span></code></pre></div>
 <p><code>getPosts'</code> は，もともとの <code>getPosts</code> 関数と同じ実装である． 扱うのが楽になるように，スマートコンストラクタを定義しておく．</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="ot">adventar ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">WDConfig</span> <span class="ot">-&gt;</span> <span class="dt">Adventar</span></a>
-<a class="sourceLine" id="cb11-2" title="2">adventar year <span class="fu">=</span></a>
-<a class="sourceLine" id="cb11-3" title="3">  <span class="dt">Adventar</span> <span class="fu">$</span> <span class="st">&quot;https://adventar.org/calendars?year=&quot;</span> <span class="ot">`mappend`</span> year</a>
-<a class="sourceLine" id="cb11-4" title="4"></a>
-<a class="sourceLine" id="cb11-5" title="5"><span class="ot">mkDriver ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">WDConfig</span></a>
-<a class="sourceLine" id="cb11-6" title="6">mkDriver host port <span class="fu">=</span> useBrowser chrome <span class="fu">$</span></a>
-<a class="sourceLine" id="cb11-7" title="7">  defaultConfig { wdHost <span class="fu">=</span> T.unpack host, wdPort <span class="fu">=</span> port }</a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1"></a><span class="ot">adventar ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">WDConfig</span> <span class="ot">-&gt;</span> <span class="dt">Adventar</span></span>
+<span id="cb11-2"><a href="#cb11-2"></a>adventar year <span class="ot">=</span></span>
+<span id="cb11-3"><a href="#cb11-3"></a>  <span class="dt">Adventar</span> <span class="op">$</span> <span class="st">&quot;https://adventar.org/calendars?year=&quot;</span> <span class="ot">`mappend`</span> year</span>
+<span id="cb11-4"><a href="#cb11-4"></a></span>
+<span id="cb11-5"><a href="#cb11-5"></a><span class="ot">mkDriver ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">WDConfig</span></span>
+<span id="cb11-6"><a href="#cb11-6"></a>mkDriver host port <span class="ot">=</span> useBrowser chrome <span class="op">$</span></span>
+<span id="cb11-7"><a href="#cb11-7"></a>  defaultConfig { wdHost <span class="ot">=</span> T.unpack host, wdPort <span class="ot">=</span> port }</span></code></pre></div>
 <h4 id="haskell-の記事か否か">Haskell の記事か否か</h4>
 <p>分類はカレンダーか記事のタイトルに「Haskell」という単語か含まれるか否かで判断する． 雑だけど，自然言語処理とか良く分からないので勘弁して．</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="ot">isHaskellPost ::</span> <span class="dt">Post</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb12-2" title="2">isHaskellPost post <span class="fu">=</span> <span class="fu">any</span> (<span class="st">&quot;Haskell&quot;</span> <span class="ot">`isInfixOf`</span>)</a>
-<a class="sourceLine" id="cb12-3" title="3">  [ post <span class="fu">^.</span> <span class="fu">#</span>title</a>
-<a class="sourceLine" id="cb12-4" title="4">  , post <span class="fu">^.</span> <span class="fu">#</span>calendar <span class="fu">^.</span> <span class="fu">#</span>title</a>
-<a class="sourceLine" id="cb12-5" title="5">  ]</a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1"></a><span class="ot">isHaskellPost ::</span> <span class="dt">Post</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span></span>
+<span id="cb12-2"><a href="#cb12-2"></a>isHaskellPost post <span class="ot">=</span> <span class="fu">any</span> (<span class="st">&quot;Haskell&quot;</span> <span class="ot">`isInfixOf`</span>)</span>
+<span id="cb12-3"><a href="#cb12-3"></a>  [ post <span class="op">^.</span> <span class="op">#</span>title</span>
+<span id="cb12-4"><a href="#cb12-4"></a>  , post <span class="op">^.</span> <span class="op">#</span>calendar <span class="op">^.</span> <span class="op">#</span>title</span>
+<span id="cb12-5"><a href="#cb12-5"></a>  ]</span></code></pre></div>
 <p>この関数を使って <code>filter</code> すれば良い．</p>
 <h4 id="実行">実行</h4>
 <p>Selenium を <code>localhost:4444</code> として何らかの方法で起動しておく．</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="fu">$</span> stack ghci</a>
-<a class="sourceLine" id="cb13-2" title="2"><span class="fu">&gt;&gt;</span> <span class="fu">:</span>set <span class="fu">-</span><span class="dt">XOverloadedStrings</span></a>
-<a class="sourceLine" id="cb13-3" title="3"><span class="fu">&gt;&gt;</span> <span class="fu">fmap</span> (<span class="fu">filter</span> isHaskellPost) <span class="fu">.</span> getPosts <span class="fu">$</span> adventar <span class="st">&quot;2017&quot;</span> (mkDriver <span class="st">&quot;localhost&quot;</span> <span class="dv">4444</span>)</a>
-<a class="sourceLine" id="cb13-4" title="4">get posts on http<span class="fu">://</span>adventar<span class="fu">.</span>org<span class="fu">/</span><span class="dv">1111</span></a>
-<a class="sourceLine" id="cb13-5" title="5"><span class="fu">...</span></a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1"></a><span class="op">$</span> stack ghci</span>
+<span id="cb13-2"><a href="#cb13-2"></a><span class="op">&gt;&gt;</span> <span class="op">:</span>set <span class="op">-</span><span class="dt">XOverloadedStrings</span></span>
+<span id="cb13-3"><a href="#cb13-3"></a><span class="op">&gt;&gt;</span> <span class="fu">fmap</span> (<span class="fu">filter</span> isHaskellPost) <span class="op">.</span> getPosts <span class="op">$</span> adventar <span class="st">&quot;2017&quot;</span> (mkDriver <span class="st">&quot;localhost&quot;</span> <span class="dv">4444</span>)</span>
+<span id="cb13-4"><a href="#cb13-4"></a>get posts on http<span class="op">://</span>adventar<span class="op">.</span>org<span class="op">/</span><span class="dv">1111</span></span>
+<span id="cb13-5"><a href="#cb13-5"></a><span class="op">...</span></span></code></pre></div>
 <p>すっごい時間かかるよ(笑)</p>
 <h3 id="qiita">Qiita</h3>
 <p>やることは基本同じなのでサクッと．</p>
 <h4 id="カレンダーの-url-を集める">カレンダーの URL を集める</h4>
 <p>Qiita の場合，カレンダーの一覧は複数ページに分かれている(URL は <code>https://qiita.com/advent-calendar/2017/calendars?page=1</code> って感じ)． 無限リストで試しにカレンダーの一覧を取得し，ひとつも取得できなければ止めるようにする．</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="ot">getUrls ::</span> <span class="dt">URL</span> <span class="ot">-&gt;</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">IO</span> [<span class="dt">URL</span>]</a>
-<a class="sourceLine" id="cb14-2" title="2">getUrls _ [] <span class="fu">=</span> <span class="fu">pure</span> []</a>
-<a class="sourceLine" id="cb14-3" title="3">getUrls url (n<span class="fu">:</span>ns) <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb14-4" title="4">  result <span class="ot">&lt;-</span> func n</a>
-<a class="sourceLine" id="cb14-5" title="5">  <span class="kw">case</span> result <span class="kw">of</span></a>
-<a class="sourceLine" id="cb14-6" title="6">    [] <span class="ot">-&gt;</span> <span class="fu">pure</span> result</a>
-<a class="sourceLine" id="cb14-7" title="7">    _  <span class="ot">-&gt;</span> <span class="fu">mappend</span> result <span class="fu">&lt;$&gt;</span> getUrls url ns</a>
-<a class="sourceLine" id="cb14-8" title="8">  <span class="kw">where</span></a>
-<a class="sourceLine" id="cb14-9" title="9">    func <span class="fu">index</span> <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb14-10" title="10">      html <span class="ot">&lt;-</span> fetchHtml <span class="fu">$</span> calendarsUrl url <span class="fu">index</span></a>
-<a class="sourceLine" id="cb14-11" title="11">      shelly <span class="fu">$</span> sleep <span class="dv">1</span></a>
-<a class="sourceLine" id="cb14-12" title="12">      <span class="fu">return</span> <span class="fu">$</span> fromMaybe [] (scrapeHtml calendarUrlsScraper html)</a>
-<a class="sourceLine" id="cb14-13" title="13"></a>
-<a class="sourceLine" id="cb14-14" title="14"><span class="ot">calendarsUrl ::</span> <span class="dt">URL</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">URL</span></a>
-<a class="sourceLine" id="cb14-15" title="15">calendarsUrl url <span class="fu">index</span> <span class="fu">=</span> <span class="fu">mconcat</span> [url, <span class="st">&quot;?page=&quot;</span>, <span class="fu">pack</span> <span class="fu">$</span> <span class="fu">show</span> <span class="fu">index</span>]</a>
-<a class="sourceLine" id="cb14-16" title="16"></a>
-<a class="sourceLine" id="cb14-17" title="17"><span class="ot">calendarUrlsScraper ::</span> <span class="dt">Scraper</span> <span class="dt">Html</span> [<span class="dt">URL</span>]</a>
-<a class="sourceLine" id="cb14-18" title="18">calendarUrlsScraper <span class="fu">=</span></a>
-<a class="sourceLine" id="cb14-19" title="19">  chroots (<span class="st">&quot;table&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;adventCalendarList&quot;</span>] <span class="fu">//</span> <span class="st">&quot;tbody&quot;</span> <span class="fu">//</span> <span class="st">&quot;tr&quot;</span>) <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb14-20" title="20">    url <span class="ot">&lt;-</span> attr <span class="st">&quot;href&quot;</span> <span class="fu">$</span></a>
-<a class="sourceLine" id="cb14-21" title="21">      (<span class="st">&quot;td&quot;</span> <span class="fu">@:</span> [hasClass <span class="st">&quot;adventCalendarList_calendarTitle&quot;</span>]) <span class="fu">//</span> <span class="st">&quot;a&quot;</span></a>
-<a class="sourceLine" id="cb14-22" title="22">    <span class="fu">return</span> <span class="fu">$</span> append <span class="st">&quot;http://qiita.com&quot;</span> url</a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1"></a><span class="ot">getUrls ::</span> <span class="dt">URL</span> <span class="ot">-&gt;</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> <span class="dt">IO</span> [<span class="dt">URL</span>]</span>
+<span id="cb14-2"><a href="#cb14-2"></a>getUrls _ [] <span class="ot">=</span> <span class="fu">pure</span> []</span>
+<span id="cb14-3"><a href="#cb14-3"></a>getUrls url (n<span class="op">:</span>ns) <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb14-4"><a href="#cb14-4"></a>  result <span class="ot">&lt;-</span> func n</span>
+<span id="cb14-5"><a href="#cb14-5"></a>  <span class="kw">case</span> result <span class="kw">of</span></span>
+<span id="cb14-6"><a href="#cb14-6"></a>    [] <span class="ot">-&gt;</span> <span class="fu">pure</span> result</span>
+<span id="cb14-7"><a href="#cb14-7"></a>    _  <span class="ot">-&gt;</span> <span class="fu">mappend</span> result <span class="op">&lt;$&gt;</span> getUrls url ns</span>
+<span id="cb14-8"><a href="#cb14-8"></a>  <span class="kw">where</span></span>
+<span id="cb14-9"><a href="#cb14-9"></a>    func <span class="fu">index</span> <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb14-10"><a href="#cb14-10"></a>      html <span class="ot">&lt;-</span> fetchHtml <span class="op">$</span> calendarsUrl url <span class="fu">index</span></span>
+<span id="cb14-11"><a href="#cb14-11"></a>      shelly <span class="op">$</span> sleep <span class="dv">1</span></span>
+<span id="cb14-12"><a href="#cb14-12"></a>      <span class="fu">return</span> <span class="op">$</span> fromMaybe [] (scrapeHtml calendarUrlsScraper html)</span>
+<span id="cb14-13"><a href="#cb14-13"></a></span>
+<span id="cb14-14"><a href="#cb14-14"></a><span class="ot">calendarsUrl ::</span> <span class="dt">URL</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">URL</span></span>
+<span id="cb14-15"><a href="#cb14-15"></a>calendarsUrl url <span class="fu">index</span> <span class="ot">=</span> <span class="fu">mconcat</span> [url, <span class="st">&quot;?page=&quot;</span>, <span class="fu">pack</span> <span class="op">$</span> <span class="fu">show</span> <span class="fu">index</span>]</span>
+<span id="cb14-16"><a href="#cb14-16"></a></span>
+<span id="cb14-17"><a href="#cb14-17"></a><span class="ot">calendarUrlsScraper ::</span> <span class="dt">Scraper</span> <span class="dt">Html</span> [<span class="dt">URL</span>]</span>
+<span id="cb14-18"><a href="#cb14-18"></a>calendarUrlsScraper <span class="ot">=</span></span>
+<span id="cb14-19"><a href="#cb14-19"></a>  chroots (<span class="st">&quot;table&quot;</span> <span class="op">@:</span> [hasClass <span class="st">&quot;adventCalendarList&quot;</span>] <span class="op">//</span> <span class="st">&quot;tbody&quot;</span> <span class="op">//</span> <span class="st">&quot;tr&quot;</span>) <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb14-20"><a href="#cb14-20"></a>    url <span class="ot">&lt;-</span> attr <span class="st">&quot;href&quot;</span> <span class="op">$</span></span>
+<span id="cb14-21"><a href="#cb14-21"></a>      (<span class="st">&quot;td&quot;</span> <span class="op">@:</span> [hasClass <span class="st">&quot;adventCalendarList_calendarTitle&quot;</span>]) <span class="op">//</span> <span class="st">&quot;a&quot;</span></span>
+<span id="cb14-22"><a href="#cb14-22"></a>    <span class="fu">return</span> <span class="op">$</span> append <span class="st">&quot;http://qiita.com&quot;</span> url</span></code></pre></div>
 <p>なんかもっといい方法ありそう．</p>
 <h4 id="カレンダーを集める-1">カレンダーを集める</h4>
 <p>インスタンスを定義しよう．</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" title="1"><span class="kw">newtype</span> <span class="dt">Qiita</span> <span class="fu">=</span> <span class="dt">Qiita</span> <span class="dt">URL</span></a>
-<a class="sourceLine" id="cb15-2" title="2"></a>
-<a class="sourceLine" id="cb15-3" title="3"><span class="kw">instance</span> <span class="dt">ToPosts</span> <span class="dt">Qiita</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb15-4" title="4">  getPosts (<span class="dt">Qiita</span> url) <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb15-5" title="5">    urls <span class="ot">&lt;-</span> getUrls url [<span class="dv">1</span><span class="fu">..</span><span class="dv">1</span>]</a>
-<a class="sourceLine" id="cb15-6" title="6">    <span class="fu">mconcat</span> <span class="fu">&lt;$&gt;</span> <span class="fu">mapM</span> getPosts' urls</a>
-<a class="sourceLine" id="cb15-7" title="7"></a>
-<a class="sourceLine" id="cb15-8" title="8"><span class="ot">getPosts' ::</span> <span class="dt">URL</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> [<span class="dt">Post</span>]</a>
-<a class="sourceLine" id="cb15-9" title="9">getPosts' url <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb15-10" title="10">  html <span class="ot">&lt;-</span> fetchHtml url</a>
-<a class="sourceLine" id="cb15-11" title="11">  <span class="kw">let</span></a>
-<a class="sourceLine" id="cb15-12" title="12">    posts <span class="fu">=</span> fromMaybe [] <span class="fu">$</span> scrapeHtml postsScraper html</a>
-<a class="sourceLine" id="cb15-13" title="13">    calendar</a>
-<a class="sourceLine" id="cb15-14" title="14">        <span class="fu">=</span> <span class="fu">#</span>title <span class="fu">@=</span> fromMaybe <span class="st">&quot;&quot;</span> (scrapeHtml headerTitleScraper html)</a>
-<a class="sourceLine" id="cb15-15" title="15">       <span class="fu">&lt;:</span> <span class="fu">#</span>url   <span class="fu">@=</span> url</a>
-<a class="sourceLine" id="cb15-16" title="16">       <span class="fu">&lt;:</span> emptyRecord</a>
-<a class="sourceLine" id="cb15-17" title="17">  TIO.putStrLn <span class="fu">$</span> <span class="st">&quot;get posts on &quot;</span> <span class="ot">`mappend`</span> url</a>
-<a class="sourceLine" id="cb15-18" title="18">  shelly <span class="fu">$</span> sleep <span class="dv">1</span></a>
-<a class="sourceLine" id="cb15-19" title="19">  <span class="fu">return</span> <span class="fu">$</span> <span class="fu">fmap</span> (set <span class="fu">#</span>calendar calendar) posts</a>
-<a class="sourceLine" id="cb15-20" title="20"></a>
-<a class="sourceLine" id="cb15-21" title="21"><span class="ot">postsScraper ::</span> <span class="dt">Scraper</span> <span class="dt">Html</span> [<span class="dt">Post</span>]</a>
-<a class="sourceLine" id="cb15-22" title="22">postsScraper <span class="fu">=</span> <span class="fu">...</span></a></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb15-1"><a href="#cb15-1"></a><span class="kw">newtype</span> <span class="dt">Qiita</span> <span class="ot">=</span> <span class="dt">Qiita</span> <span class="dt">URL</span></span>
+<span id="cb15-2"><a href="#cb15-2"></a></span>
+<span id="cb15-3"><a href="#cb15-3"></a><span class="kw">instance</span> <span class="dt">ToPosts</span> <span class="dt">Qiita</span> <span class="kw">where</span></span>
+<span id="cb15-4"><a href="#cb15-4"></a>  getPosts (<span class="dt">Qiita</span> url) <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb15-5"><a href="#cb15-5"></a>    urls <span class="ot">&lt;-</span> getUrls url [<span class="dv">1</span><span class="op">..</span><span class="dv">1</span>]</span>
+<span id="cb15-6"><a href="#cb15-6"></a>    <span class="fu">mconcat</span> <span class="op">&lt;$&gt;</span> <span class="fu">mapM</span> getPosts' urls</span>
+<span id="cb15-7"><a href="#cb15-7"></a></span>
+<span id="cb15-8"><a href="#cb15-8"></a><span class="ot">getPosts' ::</span> <span class="dt">URL</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> [<span class="dt">Post</span>]</span>
+<span id="cb15-9"><a href="#cb15-9"></a>getPosts' url <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb15-10"><a href="#cb15-10"></a>  html <span class="ot">&lt;-</span> fetchHtml url</span>
+<span id="cb15-11"><a href="#cb15-11"></a>  <span class="kw">let</span></span>
+<span id="cb15-12"><a href="#cb15-12"></a>    posts <span class="ot">=</span> fromMaybe [] <span class="op">$</span> scrapeHtml postsScraper html</span>
+<span id="cb15-13"><a href="#cb15-13"></a>    calendar</span>
+<span id="cb15-14"><a href="#cb15-14"></a>        <span class="ot">=</span> <span class="op">#</span>title <span class="op">@=</span> fromMaybe <span class="st">&quot;&quot;</span> (scrapeHtml headerTitleScraper html)</span>
+<span id="cb15-15"><a href="#cb15-15"></a>       <span class="op">&lt;:</span> <span class="op">#</span>url   <span class="op">@=</span> url</span>
+<span id="cb15-16"><a href="#cb15-16"></a>       <span class="op">&lt;:</span> emptyRecord</span>
+<span id="cb15-17"><a href="#cb15-17"></a>  TIO.putStrLn <span class="op">$</span> <span class="st">&quot;get posts on &quot;</span> <span class="ot">`mappend`</span> url</span>
+<span id="cb15-18"><a href="#cb15-18"></a>  shelly <span class="op">$</span> sleep <span class="dv">1</span></span>
+<span id="cb15-19"><a href="#cb15-19"></a>  <span class="fu">return</span> <span class="op">$</span> <span class="fu">fmap</span> (set <span class="op">#</span>calendar calendar) posts</span>
+<span id="cb15-20"><a href="#cb15-20"></a></span>
+<span id="cb15-21"><a href="#cb15-21"></a><span class="ot">postsScraper ::</span> <span class="dt">Scraper</span> <span class="dt">Html</span> [<span class="dt">Post</span>]</span>
+<span id="cb15-22"><a href="#cb15-22"></a>postsScraper <span class="ot">=</span> <span class="op">...</span></span></code></pre></div>
 <p>長いのでスクレイパーは割愛(<a href="https://github.com/matsubara0507/haskell-advent-calendar/blob/f6d6a097c08e741239f576693e3d6b2b7ae21a29/src/AdventCalendar/Qiita/Scraper.hs">ココ</a>にある)． <code>fetchHtml</code> 関数は ADVENTAR のと同じ．</p>
 <h4 id="記事のタイトルを取得">記事のタイトルを取得</h4>
 <p>ADVENTAR と違い，Qiita のカレンダーには各記事のタイトルが書いてない． さすがに「なんか書く」で Haskell 記事か否かを判断するのもなぁと思い，どーーーー考えても時間がかかるけど，記事をひとつひとつスクレイピングしてタイトルを取ってくることにした．</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" title="1"><span class="ot">getPosts' ::</span> <span class="dt">URL</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> [<span class="dt">Post</span>]</a>
-<a class="sourceLine" id="cb16-2" title="2">getPosts' url <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb16-3" title="3">  <span class="fu">...</span></a>
-<a class="sourceLine" id="cb16-4" title="4">  TIO.putStrLn <span class="fu">$</span> <span class="st">&quot;get posts on &quot;</span> <span class="ot">`mappend`</span> url</a>
-<a class="sourceLine" id="cb16-5" title="5">  shelly <span class="fu">$</span> sleep <span class="dv">1</span></a>
-<a class="sourceLine" id="cb16-6" title="6">  <span class="fu">mapM</span> updatePostTitle' <span class="fu">$</span> set <span class="fu">#</span>calendar calendar <span class="fu">&lt;$&gt;</span> posts</a>
-<a class="sourceLine" id="cb16-7" title="7"></a>
-<a class="sourceLine" id="cb16-8" title="8"><span class="ot">updatePostTitle ::</span> <span class="dt">Post</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Post</span></a>
-<a class="sourceLine" id="cb16-9" title="9">updatePostTitle post <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb16-10" title="10">html <span class="ot">&lt;-</span> fetchHtml' <span class="fu">$</span> post <span class="fu">^.</span> <span class="fu">#</span>url</a>
-<a class="sourceLine" id="cb16-11" title="11"><span class="kw">let</span></a>
-<a class="sourceLine" id="cb16-12" title="12">  title <span class="fu">=</span> fromMaybe (post <span class="fu">^.</span> <span class="fu">#</span>title) <span class="fu">$</span> scrapeHtml headerTitleScraper html</a>
-<a class="sourceLine" id="cb16-13" title="13"><span class="fu">return</span> <span class="fu">$</span> post <span class="fu">&amp;</span> <span class="fu">#</span>title <span class="fu">.~</span> title</a>
-<a class="sourceLine" id="cb16-14" title="14"></a>
-<a class="sourceLine" id="cb16-15" title="15"><span class="ot">updatePostTitle' ::</span> <span class="dt">Post</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Post</span></a>
-<a class="sourceLine" id="cb16-16" title="16">updatePostTitle' post <span class="fu">=</span> shelly (sleep <span class="dv">1</span>) <span class="fu">&gt;&gt;</span> updatePostTitle post</a></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb16-1"><a href="#cb16-1"></a><span class="ot">getPosts' ::</span> <span class="dt">URL</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> [<span class="dt">Post</span>]</span>
+<span id="cb16-2"><a href="#cb16-2"></a>getPosts' url <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb16-3"><a href="#cb16-3"></a>  <span class="op">...</span></span>
+<span id="cb16-4"><a href="#cb16-4"></a>  TIO.putStrLn <span class="op">$</span> <span class="st">&quot;get posts on &quot;</span> <span class="ot">`mappend`</span> url</span>
+<span id="cb16-5"><a href="#cb16-5"></a>  shelly <span class="op">$</span> sleep <span class="dv">1</span></span>
+<span id="cb16-6"><a href="#cb16-6"></a>  <span class="fu">mapM</span> updatePostTitle' <span class="op">$</span> set <span class="op">#</span>calendar calendar <span class="op">&lt;$&gt;</span> posts</span>
+<span id="cb16-7"><a href="#cb16-7"></a></span>
+<span id="cb16-8"><a href="#cb16-8"></a><span class="ot">updatePostTitle ::</span> <span class="dt">Post</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Post</span></span>
+<span id="cb16-9"><a href="#cb16-9"></a>updatePostTitle post <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb16-10"><a href="#cb16-10"></a>html <span class="ot">&lt;-</span> fetchHtml' <span class="op">$</span> post <span class="op">^.</span> <span class="op">#</span>url</span>
+<span id="cb16-11"><a href="#cb16-11"></a><span class="kw">let</span></span>
+<span id="cb16-12"><a href="#cb16-12"></a>  title <span class="ot">=</span> fromMaybe (post <span class="op">^.</span> <span class="op">#</span>title) <span class="op">$</span> scrapeHtml headerTitleScraper html</span>
+<span id="cb16-13"><a href="#cb16-13"></a><span class="fu">return</span> <span class="op">$</span> post <span class="op">&amp;</span> <span class="op">#</span>title <span class="op">.~</span> title</span>
+<span id="cb16-14"><a href="#cb16-14"></a></span>
+<span id="cb16-15"><a href="#cb16-15"></a><span class="ot">updatePostTitle' ::</span> <span class="dt">Post</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Post</span></span>
+<span id="cb16-16"><a href="#cb16-16"></a>updatePostTitle' post <span class="ot">=</span> shelly (sleep <span class="dv">1</span>) <span class="op">&gt;&gt;</span> updatePostTitle post</span></code></pre></div>
 <p><code>updatePostTitle'</code> 関数で(1秒だけスリープしつつ)タイトルをスクレイピングして更新している．</p>
 <h4 id="実行してみる">実行してみる</h4>
 <p>スマートコンストラクタを作って．</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" title="1"><span class="ot">qiita ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Qiita</span></a>
-<a class="sourceLine" id="cb17-2" title="2">qiita year <span class="fu">=</span></a>
-<a class="sourceLine" id="cb17-3" title="3">  <span class="dt">Qiita</span> <span class="fu">$</span> <span class="fu">mconcat</span> [<span class="st">&quot;https://qiita.com/advent-calendar/&quot;</span>, year, <span class="st">&quot;/calendars&quot;</span>]</a></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb17-1"><a href="#cb17-1"></a><span class="ot">qiita ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Qiita</span></span>
+<span id="cb17-2"><a href="#cb17-2"></a>qiita year <span class="ot">=</span></span>
+<span id="cb17-3"><a href="#cb17-3"></a>  <span class="dt">Qiita</span> <span class="op">$</span> <span class="fu">mconcat</span> [<span class="st">&quot;https://qiita.com/advent-calendar/&quot;</span>, year, <span class="st">&quot;/calendars&quot;</span>]</span></code></pre></div>
 <p>実行してみる．</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb18-1" title="1"><span class="fu">$</span> stack ghci</a>
-<a class="sourceLine" id="cb18-2" title="2"><span class="fu">&gt;&gt;</span> <span class="fu">:</span>set <span class="fu">-</span><span class="dt">XOverloadedStrings</span></a>
-<a class="sourceLine" id="cb18-3" title="3"><span class="fu">&gt;&gt;</span> <span class="fu">fmap</span> (<span class="fu">filter</span> isHaskellPost) <span class="fu">.</span> getPosts <span class="fu">$</span> qiita <span class="st">&quot;2017&quot;</span></a>
-<a class="sourceLine" id="cb18-4" title="4"><span class="fu">...</span></a></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb18-1"><a href="#cb18-1"></a><span class="op">$</span> stack ghci</span>
+<span id="cb18-2"><a href="#cb18-2"></a><span class="op">&gt;&gt;</span> <span class="op">:</span>set <span class="op">-</span><span class="dt">XOverloadedStrings</span></span>
+<span id="cb18-3"><a href="#cb18-3"></a><span class="op">&gt;&gt;</span> <span class="fu">fmap</span> (<span class="fu">filter</span> isHaskellPost) <span class="op">.</span> getPosts <span class="op">$</span> qiita <span class="st">&quot;2017&quot;</span></span>
+<span id="cb18-4"><a href="#cb18-4"></a><span class="op">...</span></span></code></pre></div>
 <p>悲しいことに，鬼のように時間がかかるのに…メモリダンプします… まぁわかってたけどね！</p>
 <h3 id="ストリーミング">ストリーミング</h3>
 <p>こういうパフォーマンス的なことは自分は詳しくない． しかしこういうのはたぶん，要らないデータ(<code>filter</code> して捨てるデータ)をいつ迄も保持してるのが悪いので(たぶん)，ストリーミングパッケージを使って効率よくリソース管理してもらおう．</p>
 <p>今回は Conduit を使う． 最初は Pipes を使ってみたけど，よくわからなくてやめた．</p>
 <h2 id="section-5"></h2>
 <p>まずはインターフェースの型クラスを書き換える．</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb19-1" title="1"><span class="kw">import</span> <span class="dt">Conduit</span> (<span class="dt">Source</span>)</a>
-<a class="sourceLine" id="cb19-2" title="2"></a>
-<a class="sourceLine" id="cb19-3" title="3"><span class="kw">class</span> <span class="dt">ToPosts</span> a <span class="kw">where</span></a>
-<a class="sourceLine" id="cb19-4" title="4"><span class="ot">  getPosts ::</span> a <span class="ot">-&gt;</span> <span class="dt">Source</span> <span class="dt">IO</span> <span class="dt">Post</span></a></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb19-1"><a href="#cb19-1"></a><span class="kw">import</span> <span class="dt">Conduit</span> (<span class="dt">Source</span>)</span>
+<span id="cb19-2"><a href="#cb19-2"></a></span>
+<span id="cb19-3"><a href="#cb19-3"></a><span class="kw">class</span> <span class="dt">ToPosts</span> a <span class="kw">where</span></span>
+<span id="cb19-4"><a href="#cb19-4"></a><span class="ot">  getPosts ::</span> a <span class="ot">-&gt;</span> <span class="dt">Source</span> <span class="dt">IO</span> <span class="dt">Post</span></span></code></pre></div>
 <p>あとはそれぞれのインスタンスを書き換えるだけ．</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb20-1" title="1"><span class="kw">instance</span> <span class="dt">ToPosts</span> <span class="dt">Adventar</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb20-2" title="2">  getPosts (<span class="dt">Adventar</span> url conf) <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb20-3" title="3">    urls <span class="ot">&lt;-</span> lift <span class="fu">$</span> getUrls url</a>
-<a class="sourceLine" id="cb20-4" title="4">    yieldMany urls <span class="fu">=$=</span> concatMapMC (getPosts' conf)</a></code></pre></div>
-<div class="sourceCode" id="cb21"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb21-1" title="1"><span class="kw">instance</span> <span class="dt">ToPosts</span> <span class="dt">Qiita</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb21-2" title="2">  getPosts (<span class="dt">Qiita</span> url) <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb21-3" title="3">    urls <span class="ot">&lt;-</span> lift <span class="fu">$</span> getUrls url [<span class="dv">1</span><span class="fu">..</span>]</a>
-<a class="sourceLine" id="cb21-4" title="4">    yieldMany urls <span class="fu">=$=</span> concatMapMC getPosts'</a></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb20-1"><a href="#cb20-1"></a><span class="kw">instance</span> <span class="dt">ToPosts</span> <span class="dt">Adventar</span> <span class="kw">where</span></span>
+<span id="cb20-2"><a href="#cb20-2"></a>  getPosts (<span class="dt">Adventar</span> url conf) <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb20-3"><a href="#cb20-3"></a>    urls <span class="ot">&lt;-</span> lift <span class="op">$</span> getUrls url</span>
+<span id="cb20-4"><a href="#cb20-4"></a>    yieldMany urls <span class="op">=$=</span> concatMapMC (getPosts' conf)</span></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb21-1"><a href="#cb21-1"></a><span class="kw">instance</span> <span class="dt">ToPosts</span> <span class="dt">Qiita</span> <span class="kw">where</span></span>
+<span id="cb21-2"><a href="#cb21-2"></a>  getPosts (<span class="dt">Qiita</span> url) <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb21-3"><a href="#cb21-3"></a>    urls <span class="ot">&lt;-</span> lift <span class="op">$</span> getUrls url [<span class="dv">1</span><span class="op">..</span>]</span>
+<span id="cb21-4"><a href="#cb21-4"></a>    yieldMany urls <span class="op">=$=</span> concatMapMC getPosts'</span></code></pre></div>
 <p>使うときは以下のようにすればよい．</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb22-1" title="1"><span class="fu">$</span> stack ghci</a>
-<a class="sourceLine" id="cb22-2" title="2"><span class="fu">&gt;&gt;</span> <span class="fu">:</span>set <span class="fu">-</span><span class="dt">XOverloadedStrings</span></a>
-<a class="sourceLine" id="cb22-3" title="3"><span class="fu">&gt;&gt;</span> <span class="kw">import</span> <span class="dt">Conduit</span> (($$), (=$=), sinkList)</a>
-<a class="sourceLine" id="cb22-4" title="4"><span class="fu">&gt;&gt;</span> getPosts (qiita <span class="st">&quot;2017&quot;</span>) <span class="fu">$=</span> filterC isHaskellPost <span class="fu">$$</span> sinkList</a></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb22-1"><a href="#cb22-1"></a><span class="op">$</span> stack ghci</span>
+<span id="cb22-2"><a href="#cb22-2"></a><span class="op">&gt;&gt;</span> <span class="op">:</span>set <span class="op">-</span><span class="dt">XOverloadedStrings</span></span>
+<span id="cb22-3"><a href="#cb22-3"></a><span class="op">&gt;&gt;</span> <span class="kw">import</span> <span class="dt">Conduit</span> (($$), (=$=), sinkList)</span>
+<span id="cb22-4"><a href="#cb22-4"></a><span class="op">&gt;&gt;</span> getPosts (qiita <span class="st">&quot;2017&quot;</span>) <span class="op">$=</span> filterC isHaskellPost <span class="op">$$</span> sinkList</span></code></pre></div>
 <h3 id="json-に書き出す">JSON に書き出す</h3>
 <p>前にやったものをそのままコピペした．</p>
-<div class="sourceCode" id="cb23"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb23-1" title="1"><span class="kw">import</span> <span class="dt">Data.Aeson.Encode.Pretty</span> (encodePrettyToTextBuilder)</a>
-<a class="sourceLine" id="cb23-2" title="2"><span class="kw">import</span> <span class="dt">Data.Text</span> (<span class="dt">Text</span>, unpack)</a>
-<a class="sourceLine" id="cb23-3" title="3"><span class="kw">import</span> <span class="dt">Data.Text.Lazy.Builder</span> (toLazyText)</a>
-<a class="sourceLine" id="cb23-4" title="4"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Text.Lazy.IO</span> <span class="kw">as</span> <span class="dt">LT</span></a>
-<a class="sourceLine" id="cb23-5" title="5"></a>
-<a class="sourceLine" id="cb23-6" title="6"><span class="ot">writeJson ::</span> <span class="dt">ToJSON</span> a <span class="ot">=&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb23-7" title="7">writeJson jsonPath <span class="fu">=</span></a>
-<a class="sourceLine" id="cb23-8" title="8">  <span class="dt">LT</span><span class="fu">.writeFile</span> (unpack jsonPath) <span class="fu">.</span> toLazyText <span class="fu">.</span> encodePrettyToTextBuilder</a></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb23-1"><a href="#cb23-1"></a><span class="kw">import</span> <span class="dt">Data.Aeson.Encode.Pretty</span> (encodePrettyToTextBuilder)</span>
+<span id="cb23-2"><a href="#cb23-2"></a><span class="kw">import</span> <span class="dt">Data.Text</span> (<span class="dt">Text</span>, unpack)</span>
+<span id="cb23-3"><a href="#cb23-3"></a><span class="kw">import</span> <span class="dt">Data.Text.Lazy.Builder</span> (toLazyText)</span>
+<span id="cb23-4"><a href="#cb23-4"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Text.Lazy.IO</span> <span class="kw">as</span> <span class="dt">LT</span></span>
+<span id="cb23-5"><a href="#cb23-5"></a></span>
+<span id="cb23-6"><a href="#cb23-6"></a><span class="ot">writeJson ::</span> <span class="dt">ToJSON</span> a <span class="ot">=&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</span>
+<span id="cb23-7"><a href="#cb23-7"></a>writeJson jsonPath <span class="ot">=</span></span>
+<span id="cb23-8"><a href="#cb23-8"></a>  <span class="dt">LT</span><span class="op">.</span><span class="fu">writeFile</span> (unpack jsonPath) <span class="op">.</span> toLazyText <span class="op">.</span> encodePrettyToTextBuilder</span></code></pre></div>
 <p>拡張可能レコードの <code>ToJSON</code> のインスタンス化の部分は割愛(<a href="https://github.com/matsubara0507/haskell-advent-calendar/blob/f6d6a097c08e741239f576693e3d6b2b7ae21a29/src/Data/Extensible/Instance/Aeson.hs">ココ</a>にある)．</p>
 <h3 id="コマンド化">コマンド化</h3>
 <p>CLI のオプション(引数)のパースには optparse-applicative パッケージを使う． スクレイピングには，次のようなオプションの型を考える．</p>
-<div class="sourceCode" id="cb24"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb24-1" title="1"><span class="kw">data</span> <span class="dt">Cmd</span></a>
-<a class="sourceLine" id="cb24-2" title="2">  <span class="fu">=</span> <span class="dt">Fetch</span> <span class="dt">FetchOptions</span></a>
-<a class="sourceLine" id="cb24-3" title="3"></a>
-<a class="sourceLine" id="cb24-4" title="4"><span class="kw">type</span> <span class="dt">FetchOptions</span> <span class="fu">=</span> <span class="dt">Record</span></a>
-<a class="sourceLine" id="cb24-5" title="5">   '[ <span class="st">&quot;year&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb24-6" title="6">    , <span class="st">&quot;qiita&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb24-7" title="7">    , <span class="st">&quot;adventar&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb24-8" title="8">    , <span class="st">&quot;wdHost&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb24-9" title="9">    , <span class="st">&quot;wdPort&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb24-10" title="10">    , <span class="st">&quot;output&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb24-11" title="11">    ]</a></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb24-1"><a href="#cb24-1"></a><span class="kw">data</span> <span class="dt">Cmd</span></span>
+<span id="cb24-2"><a href="#cb24-2"></a>  <span class="ot">=</span> <span class="dt">Fetch</span> <span class="dt">FetchOptions</span></span>
+<span id="cb24-3"><a href="#cb24-3"></a></span>
+<span id="cb24-4"><a href="#cb24-4"></a><span class="kw">type</span> <span class="dt">FetchOptions</span> <span class="ot">=</span> <span class="dt">Record</span></span>
+<span id="cb24-5"><a href="#cb24-5"></a>   '[ <span class="st">&quot;year&quot;</span> <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb24-6"><a href="#cb24-6"></a>    , <span class="st">&quot;qiita&quot;</span> <span class="op">&gt;:</span> <span class="dt">Bool</span></span>
+<span id="cb24-7"><a href="#cb24-7"></a>    , <span class="st">&quot;adventar&quot;</span> <span class="op">&gt;:</span> <span class="dt">Bool</span></span>
+<span id="cb24-8"><a href="#cb24-8"></a>    , <span class="st">&quot;wdHost&quot;</span> <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb24-9"><a href="#cb24-9"></a>    , <span class="st">&quot;wdPort&quot;</span> <span class="op">&gt;:</span> <span class="dt">Int</span></span>
+<span id="cb24-10"><a href="#cb24-10"></a>    , <span class="st">&quot;output&quot;</span> <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb24-11"><a href="#cb24-11"></a>    ]</span></code></pre></div>
 <p><code>year</code> はスクレイピングして欲しい年． <code>qiita</code> や <code>adventar</code> は <code>--qiita</code> って感じのフラグで，フラグが真のものだけ集めてくる(両方偽の場合は，両方真と同じく両方集める)． <code>wdHost</code> と <code>wdPort</code> はヘッドレスブラウザへのオプションで，指定が無ければ <code>localhost:4444</code> をデフォルト値にする． <code>output</code> は <code>-o hoge.json</code> みたいに出力先のファイルを指定する．</p>
 <h2 id="section-6"></h2>
 <p>例の如く，拡張可能レコードなので，<code>(&lt;@=&gt;)</code> 演算子を使ってパーサーを組み立てていく．</p>
-<div class="sourceCode" id="cb25"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb25-1" title="1"><span class="ot">cmdParser ::</span> <span class="dt">Parser</span> <span class="dt">Cmd</span></a>
-<a class="sourceLine" id="cb25-2" title="2">cmdParser <span class="fu">=</span> subparser <span class="fu">$</span></a>
-<a class="sourceLine" id="cb25-3" title="3">     command <span class="st">&quot;fetch&quot;</span></a>
-<a class="sourceLine" id="cb25-4" title="4">       (<span class="dt">Fetch</span> <span class="fu">&lt;$&gt;</span> fetchOptsParser <span class="ot">`withInfo`</span> <span class="st">&quot;fetch posts on advent calendar to json file.&quot;</span>)</a>
-<a class="sourceLine" id="cb25-5" title="5">  <span class="fu">&lt;&gt;</span> metavar <span class="st">&quot;( fetch )&quot;</span></a>
-<a class="sourceLine" id="cb25-6" title="6">  <span class="fu">&lt;&gt;</span> help <span class="st">&quot;choice subcommand&quot;</span></a>
-<a class="sourceLine" id="cb25-7" title="7"></a>
-<a class="sourceLine" id="cb25-8" title="8"><span class="ot">fetchOptsParser ::</span> <span class="dt">Parser</span> <span class="dt">FetchOptions</span></a>
-<a class="sourceLine" id="cb25-9" title="9">fetchOptsParser <span class="fu">=</span> hsequence</a>
-<a class="sourceLine" id="cb25-10" title="10">    <span class="fu">$</span> <span class="fu">#</span>year     <span class="fu">&lt;@=&gt;</span> yearParser</a>
-<a class="sourceLine" id="cb25-11" title="11">   <span class="fu">&lt;:</span> <span class="fu">#</span>qiita    <span class="fu">&lt;@=&gt;</span> qiitaFlagParser</a>
-<a class="sourceLine" id="cb25-12" title="12">   <span class="fu">&lt;:</span> <span class="fu">#</span>adventar <span class="fu">&lt;@=&gt;</span> adventarFlagParser</a>
-<a class="sourceLine" id="cb25-13" title="13">   <span class="fu">&lt;:</span> <span class="fu">#</span>wdHost   <span class="fu">&lt;@=&gt;</span> wdHostParser</a>
-<a class="sourceLine" id="cb25-14" title="14">   <span class="fu">&lt;:</span> <span class="fu">#</span>wdPort   <span class="fu">&lt;@=&gt;</span> wdPortParser</a>
-<a class="sourceLine" id="cb25-15" title="15">   <span class="fu">&lt;:</span> <span class="fu">#</span>output   <span class="fu">&lt;@=&gt;</span> outputParser</a>
-<a class="sourceLine" id="cb25-16" title="16">   <span class="fu">&lt;:</span> nil</a></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb25-1"><a href="#cb25-1"></a><span class="ot">cmdParser ::</span> <span class="dt">Parser</span> <span class="dt">Cmd</span></span>
+<span id="cb25-2"><a href="#cb25-2"></a>cmdParser <span class="ot">=</span> subparser <span class="op">$</span></span>
+<span id="cb25-3"><a href="#cb25-3"></a>     command <span class="st">&quot;fetch&quot;</span></span>
+<span id="cb25-4"><a href="#cb25-4"></a>       (<span class="dt">Fetch</span> <span class="op">&lt;$&gt;</span> fetchOptsParser <span class="ot">`withInfo`</span> <span class="st">&quot;fetch posts on advent calendar to json file.&quot;</span>)</span>
+<span id="cb25-5"><a href="#cb25-5"></a>  <span class="op">&lt;&gt;</span> metavar <span class="st">&quot;( fetch )&quot;</span></span>
+<span id="cb25-6"><a href="#cb25-6"></a>  <span class="op">&lt;&gt;</span> help <span class="st">&quot;choice subcommand&quot;</span></span>
+<span id="cb25-7"><a href="#cb25-7"></a></span>
+<span id="cb25-8"><a href="#cb25-8"></a><span class="ot">fetchOptsParser ::</span> <span class="dt">Parser</span> <span class="dt">FetchOptions</span></span>
+<span id="cb25-9"><a href="#cb25-9"></a>fetchOptsParser <span class="ot">=</span> hsequence</span>
+<span id="cb25-10"><a href="#cb25-10"></a>    <span class="op">$</span> <span class="op">#</span>year     <span class="op">&lt;@=&gt;</span> yearParser</span>
+<span id="cb25-11"><a href="#cb25-11"></a>   <span class="op">&lt;:</span> <span class="op">#</span>qiita    <span class="op">&lt;@=&gt;</span> qiitaFlagParser</span>
+<span id="cb25-12"><a href="#cb25-12"></a>   <span class="op">&lt;:</span> <span class="op">#</span>adventar <span class="op">&lt;@=&gt;</span> adventarFlagParser</span>
+<span id="cb25-13"><a href="#cb25-13"></a>   <span class="op">&lt;:</span> <span class="op">#</span>wdHost   <span class="op">&lt;@=&gt;</span> wdHostParser</span>
+<span id="cb25-14"><a href="#cb25-14"></a>   <span class="op">&lt;:</span> <span class="op">#</span>wdPort   <span class="op">&lt;@=&gt;</span> wdPortParser</span>
+<span id="cb25-15"><a href="#cb25-15"></a>   <span class="op">&lt;:</span> <span class="op">#</span>output   <span class="op">&lt;@=&gt;</span> outputParser</span>
+<span id="cb25-16"><a href="#cb25-16"></a>   <span class="op">&lt;:</span> nil</span></code></pre></div>
 <p>細かいやつは割愛(<a href="https://github.com/matsubara0507/haskell-advent-calendar/blob/f6d6a097c08e741239f576693e3d6b2b7ae21a29/app/Options.hs">ココ</a>を見て)．</p>
 <h2 id="section-7"></h2>
 <p><code>main</code> 関数も長いので割愛(<a href="https://github.com/matsubara0507/haskell-advent-calendar/blob/f6d6a097c08e741239f576693e3d6b2b7ae21a29/app/Main.hs">ココ</a>を見て)．</p>
@@ -463,46 +463,46 @@
 <p>最後にマークダウンへ変換する部分を書く． 次のようなサブコマンドを追加する想定だ．</p>
 <pre><code>$ stack exec -- advent-calendar markdown &quot;./out/qiita.json&quot; &quot;./out/adventar.json&quot; -o &quot;./out/posts.md&quot;</code></pre>
 <p>そのために次のような型とパーサーを定義した．</p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb28-1" title="1"><span class="kw">data</span> <span class="dt">Cmd</span></a>
-<a class="sourceLine" id="cb28-2" title="2">  <span class="fu">=</span> <span class="dt">Fetch</span> <span class="dt">FetchOptions</span></a>
-<a class="sourceLine" id="cb28-3" title="3">  <span class="fu">|</span> <span class="dt">Markdown</span> <span class="dt">MarkdownOptions</span></a>
-<a class="sourceLine" id="cb28-4" title="4"></a>
-<a class="sourceLine" id="cb28-5" title="5"><span class="kw">type</span> <span class="dt">MarkdownOptions</span> <span class="fu">=</span> <span class="dt">Record</span></a>
-<a class="sourceLine" id="cb28-6" title="6">   '[ <span class="st">&quot;inputs&quot;</span> <span class="fu">&gt;:</span> [<span class="dt">Text</span>]</a>
-<a class="sourceLine" id="cb28-7" title="7">    , <span class="st">&quot;output&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Maybe</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb28-8" title="8">    , <span class="st">&quot;noCategory&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb28-9" title="9">    ]</a>
-<a class="sourceLine" id="cb28-10" title="10"></a>
-<a class="sourceLine" id="cb28-11" title="11"><span class="ot">cmdParser ::</span> <span class="dt">Parser</span> <span class="dt">Cmd</span></a>
-<a class="sourceLine" id="cb28-12" title="12">cmdParser <span class="fu">=</span> subparser <span class="fu">$</span></a>
-<a class="sourceLine" id="cb28-13" title="13">     command <span class="st">&quot;fetch&quot;</span></a>
-<a class="sourceLine" id="cb28-14" title="14">       (<span class="dt">Fetch</span> <span class="fu">&lt;$&gt;</span> fetchOptsParser <span class="ot">`withInfo`</span> <span class="st">&quot;fetch posts on advent calendar to json file.&quot;</span>)</a>
-<a class="sourceLine" id="cb28-15" title="15">  <span class="fu">&lt;&gt;</span> command <span class="st">&quot;markdown&quot;</span></a>
-<a class="sourceLine" id="cb28-16" title="16">       (<span class="dt">Markdown</span> <span class="fu">&lt;$&gt;</span> mdOptsParser <span class="ot">`withInfo`</span> <span class="st">&quot;convert markdown from posts json file.&quot;</span>)</a>
-<a class="sourceLine" id="cb28-17" title="17">  <span class="fu">&lt;&gt;</span> metavar <span class="st">&quot;( fetch | markdown )&quot;</span></a>
-<a class="sourceLine" id="cb28-18" title="18">  <span class="fu">&lt;&gt;</span> help <span class="st">&quot;choice subcommand&quot;</span></a>
-<a class="sourceLine" id="cb28-19" title="19"></a>
-<a class="sourceLine" id="cb28-20" title="20"><span class="ot">mdOptsParser ::</span> <span class="dt">Parser</span> <span class="dt">MarkdownOptions</span></a>
-<a class="sourceLine" id="cb28-21" title="21">mdOptsParser <span class="fu">=</span> hsequence</a>
-<a class="sourceLine" id="cb28-22" title="22">    <span class="fu">$</span> <span class="fu">#</span>inputs     <span class="fu">&lt;@=&gt;</span> inputsParser</a>
-<a class="sourceLine" id="cb28-23" title="23">   <span class="fu">&lt;:</span> <span class="fu">#</span>output     <span class="fu">&lt;@=&gt;</span> outputParser'</a>
-<a class="sourceLine" id="cb28-24" title="24">   <span class="fu">&lt;:</span> <span class="fu">#</span>noCategory <span class="fu">&lt;@=&gt;</span> noCategoryParser</a>
-<a class="sourceLine" id="cb28-25" title="25">   <span class="fu">&lt;:</span> nil</a>
-<a class="sourceLine" id="cb28-26" title="26"></a>
-<a class="sourceLine" id="cb28-27" title="27"><span class="ot">inputsParser ::</span> <span class="dt">Parser</span> [<span class="dt">Text</span>]</a>
-<a class="sourceLine" id="cb28-28" title="28">inputsParser <span class="fu">=</span> some <span class="fu">$</span></a>
-<a class="sourceLine" id="cb28-29" title="29">  textArgument (metavar <span class="st">&quot;inputs&quot;</span> <span class="fu">&lt;&gt;</span> help <span class="st">&quot;Input json file paths&quot;</span>)</a></code></pre></div>
-<p><code>some</code> を使うことで，ひとつ以上の入力ファイルのパスを与える部分(<code>markdown &quot;./out/qiita.json&quot; &quot;./out/adventar.json&quot;</code>)のパーサーを簡単に書ける．</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb28-1"><a href="#cb28-1"></a><span class="kw">data</span> <span class="dt">Cmd</span></span>
+<span id="cb28-2"><a href="#cb28-2"></a>  <span class="ot">=</span> <span class="dt">Fetch</span> <span class="dt">FetchOptions</span></span>
+<span id="cb28-3"><a href="#cb28-3"></a>  <span class="op">|</span> <span class="dt">Markdown</span> <span class="dt">MarkdownOptions</span></span>
+<span id="cb28-4"><a href="#cb28-4"></a></span>
+<span id="cb28-5"><a href="#cb28-5"></a><span class="kw">type</span> <span class="dt">MarkdownOptions</span> <span class="ot">=</span> <span class="dt">Record</span></span>
+<span id="cb28-6"><a href="#cb28-6"></a>   '[ <span class="st">&quot;inputs&quot;</span> <span class="op">&gt;:</span> [<span class="dt">Text</span>]</span>
+<span id="cb28-7"><a href="#cb28-7"></a>    , <span class="st">&quot;output&quot;</span> <span class="op">&gt;:</span> <span class="dt">Maybe</span> <span class="dt">Text</span></span>
+<span id="cb28-8"><a href="#cb28-8"></a>    , <span class="st">&quot;noCategory&quot;</span> <span class="op">&gt;:</span> <span class="dt">Bool</span></span>
+<span id="cb28-9"><a href="#cb28-9"></a>    ]</span>
+<span id="cb28-10"><a href="#cb28-10"></a></span>
+<span id="cb28-11"><a href="#cb28-11"></a><span class="ot">cmdParser ::</span> <span class="dt">Parser</span> <span class="dt">Cmd</span></span>
+<span id="cb28-12"><a href="#cb28-12"></a>cmdParser <span class="ot">=</span> subparser <span class="op">$</span></span>
+<span id="cb28-13"><a href="#cb28-13"></a>     command <span class="st">&quot;fetch&quot;</span></span>
+<span id="cb28-14"><a href="#cb28-14"></a>       (<span class="dt">Fetch</span> <span class="op">&lt;$&gt;</span> fetchOptsParser <span class="ot">`withInfo`</span> <span class="st">&quot;fetch posts on advent calendar to json file.&quot;</span>)</span>
+<span id="cb28-15"><a href="#cb28-15"></a>  <span class="op">&lt;&gt;</span> command <span class="st">&quot;markdown&quot;</span></span>
+<span id="cb28-16"><a href="#cb28-16"></a>       (<span class="dt">Markdown</span> <span class="op">&lt;$&gt;</span> mdOptsParser <span class="ot">`withInfo`</span> <span class="st">&quot;convert markdown from posts json file.&quot;</span>)</span>
+<span id="cb28-17"><a href="#cb28-17"></a>  <span class="op">&lt;&gt;</span> metavar <span class="st">&quot;( fetch | markdown )&quot;</span></span>
+<span id="cb28-18"><a href="#cb28-18"></a>  <span class="op">&lt;&gt;</span> help <span class="st">&quot;choice subcommand&quot;</span></span>
+<span id="cb28-19"><a href="#cb28-19"></a></span>
+<span id="cb28-20"><a href="#cb28-20"></a><span class="ot">mdOptsParser ::</span> <span class="dt">Parser</span> <span class="dt">MarkdownOptions</span></span>
+<span id="cb28-21"><a href="#cb28-21"></a>mdOptsParser <span class="ot">=</span> hsequence</span>
+<span id="cb28-22"><a href="#cb28-22"></a>    <span class="op">$</span> <span class="op">#</span>inputs     <span class="op">&lt;@=&gt;</span> inputsParser</span>
+<span id="cb28-23"><a href="#cb28-23"></a>   <span class="op">&lt;:</span> <span class="op">#</span>output     <span class="op">&lt;@=&gt;</span> outputParser'</span>
+<span id="cb28-24"><a href="#cb28-24"></a>   <span class="op">&lt;:</span> <span class="op">#</span>noCategory <span class="op">&lt;@=&gt;</span> noCategoryParser</span>
+<span id="cb28-25"><a href="#cb28-25"></a>   <span class="op">&lt;:</span> nil</span>
+<span id="cb28-26"><a href="#cb28-26"></a></span>
+<span id="cb28-27"><a href="#cb28-27"></a><span class="ot">inputsParser ::</span> <span class="dt">Parser</span> [<span class="dt">Text</span>]</span>
+<span id="cb28-28"><a href="#cb28-28"></a>inputsParser <span class="ot">=</span> some <span class="op">$</span></span>
+<span id="cb28-29"><a href="#cb28-29"></a>  textArgument (metavar <span class="st">&quot;inputs&quot;</span> <span class="op">&lt;&gt;</span> help <span class="st">&quot;Input json file paths&quot;</span>)</span></code></pre></div>
+<p><code>some</code> を使うことで，ひとつ以上の入力ファイルのパスを与える部分(<code>markdown "./out/qiita.json" "./out/adventar.json"</code>)のパーサーを簡単に書ける．</p>
 <h2 id="section-8"></h2>
 <p>マークダウンへの変換部分はこんな感じ．</p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb29-1" title="1"><span class="ot">toMarkdown ::</span> <span class="dt">Post</span> <span class="ot">-&gt;</span> [<span class="dt">Text</span>]</a>
-<a class="sourceLine" id="cb29-2" title="2">toMarkdown post <span class="fu">=</span> <span class="fu">mconcat</span> <span class="fu">&lt;$&gt;</span></a>
-<a class="sourceLine" id="cb29-3" title="3">  [ [ <span class="st">&quot;**[&quot;</span>, post <span class="fu">^.</span> <span class="fu">#</span>title, <span class="st">&quot;](&quot;</span>, post <span class="fu">^.</span> <span class="fu">#</span>url, <span class="st">&quot;)**  &quot;</span> ]</a>
-<a class="sourceLine" id="cb29-4" title="4">  , [ <span class="st">&quot; by &quot;</span>, post <span class="fu">^.</span> <span class="fu">#</span>auther</a>
-<a class="sourceLine" id="cb29-5" title="5">    , <span class="st">&quot; on [&quot;</span>, post <span class="fu">^.</span> <span class="fu">#</span>calendar <span class="fu">^.</span> <span class="fu">#</span>title, <span class="st">&quot;](&quot;</span>, post <span class="fu">^.</span> <span class="fu">#</span>calendar <span class="fu">^.</span> <span class="fu">#</span>url, <span class="st">&quot;) &quot;</span></a>
-<a class="sourceLine" id="cb29-6" title="6">    , post <span class="fu">^.</span> <span class="fu">#</span>date</a>
-<a class="sourceLine" id="cb29-7" title="7">    ]</a>
-<a class="sourceLine" id="cb29-8" title="8">  ]</a></code></pre></div>
+<div class="sourceCode" id="cb29"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb29-1"><a href="#cb29-1"></a><span class="ot">toMarkdown ::</span> <span class="dt">Post</span> <span class="ot">-&gt;</span> [<span class="dt">Text</span>]</span>
+<span id="cb29-2"><a href="#cb29-2"></a>toMarkdown post <span class="ot">=</span> <span class="fu">mconcat</span> <span class="op">&lt;$&gt;</span></span>
+<span id="cb29-3"><a href="#cb29-3"></a>  [ [ <span class="st">&quot;**[&quot;</span>, post <span class="op">^.</span> <span class="op">#</span>title, <span class="st">&quot;](&quot;</span>, post <span class="op">^.</span> <span class="op">#</span>url, <span class="st">&quot;)**  &quot;</span> ]</span>
+<span id="cb29-4"><a href="#cb29-4"></a>  , [ <span class="st">&quot; by &quot;</span>, post <span class="op">^.</span> <span class="op">#</span>auther</span>
+<span id="cb29-5"><a href="#cb29-5"></a>    , <span class="st">&quot; on [&quot;</span>, post <span class="op">^.</span> <span class="op">#</span>calendar <span class="op">^.</span> <span class="op">#</span>title, <span class="st">&quot;](&quot;</span>, post <span class="op">^.</span> <span class="op">#</span>calendar <span class="op">^.</span> <span class="op">#</span>url, <span class="st">&quot;) &quot;</span></span>
+<span id="cb29-6"><a href="#cb29-6"></a>    , post <span class="op">^.</span> <span class="op">#</span>date</span>
+<span id="cb29-7"><a href="#cb29-7"></a>    ]</span>
+<span id="cb29-8"><a href="#cb29-8"></a>  ]</span></code></pre></div>
 <p>この関数の結果 <code>[Text]</code> を <code>unlines</code> してファイルに書き出せばよい． ちなみに，Haskell-jp のブログは，末尾に空白2つで改行となり，空行で HTML にも空行が入るようになっている．</p>
 <h4 id="出力結果">出力結果</h4>
 <p>は <a href="https://github.com/haskell-jp/blog/blob/02a2b1c68cd75a15d72eedd3148fc803c103a0b7/preprocessed-site/posts/2017/advent-calendar-2017.md#%E3%83%9D%E3%82%A8%E3%83%A0">Haskell-jp ブログのソースコード</a>(もちろん前半部分は手書き)を見ればいいと思うよ．</p>

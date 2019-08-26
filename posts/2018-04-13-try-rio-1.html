@@ -217,35 +217,35 @@ ViewPatterns</code></pre>
 </ul>
 <h4 id="大域変数">大域変数</h4>
 <p><code>env</code> 回りについて． <code>Has</code> スタイル(パターン)というのがあって，それ自体はこの<a href="https://hackernoon.com/the-has-type-class-pattern-ca12adab70ae">ページ</a>が参考になるのかな？ <code>env</code> から何らかの値を参照する場合には</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="ot">myFunction ::</span> <span class="dt">RIO</span> <span class="dt">Config</span> <span class="dt">Foo</span></a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1"></a><span class="ot">myFunction ::</span> <span class="dt">RIO</span> <span class="dt">Config</span> <span class="dt">Foo</span></span></code></pre></div>
 <p>のような関数は <strong>やめて</strong> ，次のように書くのを推奨している．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="kw">class</span> <span class="dt">HasConfig</span> env <span class="kw">where</span></a>
-<a class="sourceLine" id="cb4-2" title="2"><span class="ot">  configL ::</span> <span class="dt">Lens'</span> env <span class="dt">Config</span> <span class="co">-- more on this in a moment</span></a>
-<a class="sourceLine" id="cb4-3" title="3"></a>
-<a class="sourceLine" id="cb4-4" title="4"><span class="ot">myFunction ::</span> <span class="dt">HasConfig</span> env <span class="ot">=&gt;</span> <span class="dt">RIO</span> env <span class="dt">Foo</span></a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">class</span> <span class="dt">HasConfig</span> env <span class="kw">where</span></span>
+<span id="cb4-2"><a href="#cb4-2"></a><span class="ot">  configL ::</span> <span class="dt">Lens'</span> env <span class="dt">Config</span> <span class="co">-- more on this in a moment</span></span>
+<span id="cb4-3"><a href="#cb4-3"></a></span>
+<span id="cb4-4"><a href="#cb4-4"></a><span class="ot">myFunction ::</span> <span class="dt">HasConfig</span> env <span class="ot">=&gt;</span> <span class="dt">RIO</span> env <span class="dt">Foo</span></span></code></pre></div>
 <p>ここで，<code>env</code> は次のようなレコードを想定しており</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">data</span> <span class="dt">Env</span> <span class="fu">=</span> <span class="dt">Env</span> {<span class="ot"> envConfig ::</span> <span class="fu">!</span><span class="dt">Config</span> }</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">data</span> <span class="dt">Env</span> <span class="ot">=</span> <span class="dt">Env</span> {<span class="ot"> envConfig ::</span> <span class="op">!</span><span class="dt">Config</span> }</span></code></pre></div>
 <p>こうすることで，<code>env</code> に複数の大域変数を持たせても，うまく機能させることが出来る． また，次のように <code>Env</code> と <code>Config</code> それぞれでインスタンスを定義することで，それぞれで利用できる．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">instance</span> <span class="dt">HasConfig</span> <span class="dt">Config</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb6-2" title="2">  configL <span class="fu">=</span> <span class="fu">id</span></a>
-<a class="sourceLine" id="cb6-3" title="3"></a>
-<a class="sourceLine" id="cb6-4" title="4"><span class="kw">instance</span> <span class="dt">HasConfig</span> <span class="dt">Env</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb6-5" title="5">  configL <span class="fu">=</span> lens envConfig (\x y <span class="ot">-&gt;</span> x { envConfig <span class="fu">=</span> y })</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">instance</span> <span class="dt">HasConfig</span> <span class="dt">Config</span> <span class="kw">where</span></span>
+<span id="cb6-2"><a href="#cb6-2"></a>  configL <span class="ot">=</span> <span class="fu">id</span></span>
+<span id="cb6-3"><a href="#cb6-3"></a></span>
+<span id="cb6-4"><a href="#cb6-4"></a><span class="kw">instance</span> <span class="dt">HasConfig</span> <span class="dt">Env</span> <span class="kw">where</span></span>
+<span id="cb6-5"><a href="#cb6-5"></a>  configL <span class="ot">=</span> lens envConfig (\x y <span class="ot">-&gt;</span> x { envConfig <span class="ot">=</span> y })</span></code></pre></div>
 <h4 id="ロガー">ロガー</h4>
 <p>ロガーも同様に <code>Has</code> スタイルを推奨している． <code>env</code> にログを出力するための関数(<a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO.html#t:LogFunc"><code>LogFunc</code></a> 型のもの)を持たせる．</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">data</span> <span class="dt">Env</span> <span class="fu">=</span> <span class="dt">Env</span> {<span class="ot"> envLogFunc ::</span> <span class="fu">!</span><span class="dt">LogFunc</span>,<span class="ot"> envConfig ::</span> <span class="fu">!</span><span class="dt">Config</span> }</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">data</span> <span class="dt">Env</span> <span class="ot">=</span> <span class="dt">Env</span> {<span class="ot"> envLogFunc ::</span> <span class="op">!</span><span class="dt">LogFunc</span>,<span class="ot"> envConfig ::</span> <span class="op">!</span><span class="dt">Config</span> }</span></code></pre></div>
 <p>これの <code>Has</code> スタイル型クラスは <code>RIO</code> モジュールに<a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO.html#t:HasLogFunc">定義してある</a>．</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">instance</span> <span class="dt">HasLogFunc</span> <span class="dt">Env</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb8-2" title="2">  logFuncL <span class="fu">=</span> lens envLogFunc (\x y <span class="ot">-&gt;</span> x { envLogFunc <span class="fu">=</span> y })</a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">instance</span> <span class="dt">HasLogFunc</span> <span class="dt">Env</span> <span class="kw">where</span></span>
+<span id="cb8-2"><a href="#cb8-2"></a>  logFuncL <span class="ot">=</span> lens envLogFunc (\x y <span class="ot">-&gt;</span> x { envLogFunc <span class="ot">=</span> y })</span></code></pre></div>
 <p><code>LogFunc</code> 型の値を渡すには <a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO.html#v:withLogFunc"><code>withLogFunc</code></a> 関数を用いるようだ(<a href="https://hackage.haskell.org/package/rio-0.1.0.0/docs/RIO.html#v:mkLogFunc"><code>mkLogFunc</code></a> 関数もあるがアドバンスドと書いてある．)．</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb9-2" title="2">main <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb9-3" title="3">  envConfig <span class="ot">&lt;-</span> getConfig</a>
-<a class="sourceLine" id="cb9-4" title="4">  logOpts <span class="ot">&lt;-</span> logOptionsHandle stdout <span class="dt">False</span></a>
-<a class="sourceLine" id="cb9-5" title="5">  withLogFunc logOpts <span class="fu">$</span> \envLogFunc <span class="ot">-&gt;</span> runRIO <span class="dt">Env</span>{<span class="fu">..</span>} action</a>
-<a class="sourceLine" id="cb9-6" title="6"></a>
-<a class="sourceLine" id="cb9-7" title="7"><span class="ot">action ::</span> <span class="dt">RIO</span> <span class="dt">Env</span> ()</a>
-<a class="sourceLine" id="cb9-8" title="8">action <span class="fu">=</span> <span class="fu">...</span></a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
+<span id="cb9-2"><a href="#cb9-2"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb9-3"><a href="#cb9-3"></a>  envConfig <span class="ot">&lt;-</span> getConfig</span>
+<span id="cb9-4"><a href="#cb9-4"></a>  logOpts <span class="ot">&lt;-</span> logOptionsHandle stdout <span class="dt">False</span></span>
+<span id="cb9-5"><a href="#cb9-5"></a>  withLogFunc logOpts <span class="op">$</span> \envLogFunc <span class="ot">-&gt;</span> runRIO <span class="dt">Env</span>{<span class="op">..</span>} action</span>
+<span id="cb9-6"><a href="#cb9-6"></a></span>
+<span id="cb9-7"><a href="#cb9-7"></a><span class="ot">action ::</span> <span class="dt">RIO</span> <span class="dt">Env</span> ()</span>
+<span id="cb9-8"><a href="#cb9-8"></a>action <span class="ot">=</span> <span class="op">...</span></span></code></pre></div>
 <h4 id="例外">例外</h4>
 <p>例外をどのように表現すべきかは結構議論されており，今のところの基本的アイデアは以下の通り．</p>
 <ul>
@@ -262,19 +262,19 @@ ViewPatterns</code></pre>
 <li>全てのリソース割り当ては <code>bracket</code> や <code>finally</code> のような関数で行う</li>
 </ul>
 <p>以下のようにして，アプリ専用の例外を定義し使用することが推奨されている．</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">data</span> <span class="dt">AppExceptions</span></a>
-<a class="sourceLine" id="cb10-2" title="2">  <span class="fu">=</span> <span class="dt">NetworkChangeError</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb10-3" title="3">  <span class="fu">|</span> <span class="dt">FilePathError</span> <span class="dt">FilePath</span></a>
-<a class="sourceLine" id="cb10-4" title="4">  <span class="fu">|</span> <span class="dt">ImpossibleError</span></a>
-<a class="sourceLine" id="cb10-5" title="5">  <span class="kw">deriving</span> (<span class="dt">Typeable</span>)</a>
-<a class="sourceLine" id="cb10-6" title="6"></a>
-<a class="sourceLine" id="cb10-7" title="7"><span class="kw">instance</span> <span class="dt">Exception</span> <span class="dt">AppExceptions</span></a>
-<a class="sourceLine" id="cb10-8" title="8"></a>
-<a class="sourceLine" id="cb10-9" title="9"><span class="kw">instance</span> <span class="dt">Show</span> <span class="dt">AppExceptions</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb10-10" title="10">  <span class="fu">show</span> <span class="fu">=</span> \<span class="kw">case</span></a>
-<a class="sourceLine" id="cb10-11" title="11">    <span class="dt">NetworkChangeError</span> err <span class="ot">-&gt;</span> <span class="st">&quot;network error: &quot;</span> <span class="fu">&lt;&gt;</span> (unpack err)</a>
-<a class="sourceLine" id="cb10-12" title="12">    <span class="dt">FilePathError</span> fp <span class="ot">-&gt;</span> <span class="st">&quot;error accessing filepath at: &quot;</span> <span class="fu">&lt;&gt;</span> fp</a>
-<a class="sourceLine" id="cb10-13" title="13">    <span class="dt">ImpossibleError</span> <span class="ot">-&gt;</span> <span class="st">&quot;this codepath should never have been executed. Please report a bug.&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">data</span> <span class="dt">AppExceptions</span></span>
+<span id="cb10-2"><a href="#cb10-2"></a>  <span class="ot">=</span> <span class="dt">NetworkChangeError</span> <span class="dt">Text</span></span>
+<span id="cb10-3"><a href="#cb10-3"></a>  <span class="op">|</span> <span class="dt">FilePathError</span> <span class="dt">FilePath</span></span>
+<span id="cb10-4"><a href="#cb10-4"></a>  <span class="op">|</span> <span class="dt">ImpossibleError</span></span>
+<span id="cb10-5"><a href="#cb10-5"></a>  <span class="kw">deriving</span> (<span class="dt">Typeable</span>)</span>
+<span id="cb10-6"><a href="#cb10-6"></a></span>
+<span id="cb10-7"><a href="#cb10-7"></a><span class="kw">instance</span> <span class="dt">Exception</span> <span class="dt">AppExceptions</span></span>
+<span id="cb10-8"><a href="#cb10-8"></a></span>
+<span id="cb10-9"><a href="#cb10-9"></a><span class="kw">instance</span> <span class="dt">Show</span> <span class="dt">AppExceptions</span> <span class="kw">where</span></span>
+<span id="cb10-10"><a href="#cb10-10"></a>  <span class="fu">show</span> <span class="ot">=</span> \<span class="kw">case</span></span>
+<span id="cb10-11"><a href="#cb10-11"></a>    <span class="dt">NetworkChangeError</span> err <span class="ot">-&gt;</span> <span class="st">&quot;network error: &quot;</span> <span class="op">&lt;&gt;</span> (unpack err)</span>
+<span id="cb10-12"><a href="#cb10-12"></a>    <span class="dt">FilePathError</span> fp <span class="ot">-&gt;</span> <span class="st">&quot;error accessing filepath at: &quot;</span> <span class="op">&lt;&gt;</span> fp</span>
+<span id="cb10-13"><a href="#cb10-13"></a>    <span class="dt">ImpossibleError</span> <span class="ot">-&gt;</span> <span class="st">&quot;this codepath should never have been executed. Please report a bug.&quot;</span></span></code></pre></div>
 <p>ちなみに，<code>Exception</code> 型クラス(というか <a href="https://hackage.haskell.org/package/base-4.11.0.0/docs/Control-Exception-Base.html#t:SomeException"><code>SomeException</code></a> 型)は，いわゆる存在型を利用して具体型(<code>AppExceptions</code> とか)を隠蔽している．</p>
 <h2 id="section-1"></h2>
 <p>疑問なところは，投げた例外を <code>catch</code> してからディスパッチして良いのだろうか？ 実行時例外じゃなくて大域脱出をしたいだけなんだけどな． ちょっとイマイチ使い方が分からない．</p>

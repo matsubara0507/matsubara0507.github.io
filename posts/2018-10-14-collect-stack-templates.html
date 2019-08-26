@@ -102,30 +102,30 @@
 <p>どちらも，よくCLIを作るときの書き方をテンプレートとして起こしたもの． 普段は <a href="http://hackage.haskell.org/package/rio">rio</a> と <a href="http://hackage.haskell.org/package/extensible">extensible</a> を使っているので，単純に optparse-applicative などを使ったテンプレートという訳でもない．</p>
 <h3 id="テストする">テストする</h3>
 <p>できれば，テンプレートを <code>stack new</code> して <code>stack build</code> した時点ではコンパイルを通ってほしい． ということで <code>stack new</code> して <code>stack build</code> を試してくれるテストを <a href="https://github.com/matsubara0507/stack-templates/blob/7abc95184241c2df9f81ec1a45f9a662a98db05a/.travis.yml">TravisCI</a> に書いた．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb2-1" title="1"><span class="fu">matrix:</span></a>
-<a class="sourceLine" id="cb2-2" title="2">  <span class="fu">include:</span></a>
-<a class="sourceLine" id="cb2-3" title="3">  <span class="kw">-</span> <span class="fu">env:</span><span class="at"> TEMPLATE=&quot;get-opt-cli&quot; ARGS=&quot;--resolver lts-12&quot;</span></a>
-<a class="sourceLine" id="cb2-4" title="4">    <span class="fu">compiler:</span><span class="at"> </span><span class="st">&quot;: #stack 8.4.3&quot;</span></a>
-<a class="sourceLine" id="cb2-5" title="5">    <span class="fu">addons:</span><span class="at"> </span><span class="kw">{</span><span class="fu">apt:</span><span class="at"> </span><span class="kw">{</span><span class="fu">packages:</span><span class="at"> </span><span class="kw">[</span>libgmp-dev<span class="kw">]}}</span></a>
-<a class="sourceLine" id="cb2-6" title="6">  <span class="kw">-</span> <span class="fu">env:</span><span class="at"> TEMPLATE=&quot;optparse-applicative-cli&quot; ARGS=&quot;--resolver lts-12&quot;</span></a>
-<a class="sourceLine" id="cb2-7" title="7">    <span class="fu">compiler:</span><span class="at"> </span><span class="st">&quot;: #stack 8.4.3&quot;</span></a>
-<a class="sourceLine" id="cb2-8" title="8">    <span class="fu">addons:</span><span class="at"> </span><span class="kw">{</span><span class="fu">apt:</span><span class="at"> </span><span class="kw">{</span><span class="fu">packages:</span><span class="at"> </span><span class="kw">[</span>libgmp-dev<span class="kw">]}}</span></a>
-<a class="sourceLine" id="cb2-9" title="9"></a>
-<a class="sourceLine" id="cb2-10" title="10"><span class="fu">before_install:</span></a>
-<a class="sourceLine" id="cb2-11" title="11"><span class="co"># install stack</span></a>
-<a class="sourceLine" id="cb2-12" title="12"></a>
-<a class="sourceLine" id="cb2-13" title="13"><span class="fu">install:</span></a>
-<a class="sourceLine" id="cb2-14" title="14"><span class="kw">-</span> stack new sample <span class="st">&quot;./$TEMPLATE&quot;</span></a>
-<a class="sourceLine" id="cb2-15" title="15"><span class="kw">- </span><span class="st">|</span></a>
-<a class="sourceLine" id="cb2-16" title="16">  set -ex</a>
-<a class="sourceLine" id="cb2-17" title="17">  cd sample</a>
-<a class="sourceLine" id="cb2-18" title="18">  stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies</a>
-<a class="sourceLine" id="cb2-19" title="19">  set +ex</a>
-<a class="sourceLine" id="cb2-20" title="20"><span class="fu">script:</span></a>
-<a class="sourceLine" id="cb2-21" title="21"><span class="kw">- </span><span class="st">|</span></a>
-<a class="sourceLine" id="cb2-22" title="22">  set -ex</a>
-<a class="sourceLine" id="cb2-23" title="23">  stack --no-terminal $ARGS test --bench --no-run-benchmarks --no-haddock-deps</a>
-<a class="sourceLine" id="cb2-24" title="24">  set +ex</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">matrix</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="at">  </span><span class="fu">include</span><span class="kw">:</span></span>
+<span id="cb2-3"><a href="#cb2-3"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">env</span><span class="kw">:</span><span class="at"> TEMPLATE=&quot;get-opt-cli&quot; ARGS=&quot;--resolver lts-12&quot;</span></span>
+<span id="cb2-4"><a href="#cb2-4"></a><span class="at">    </span><span class="fu">compiler</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;: #stack 8.4.3&quot;</span></span>
+<span id="cb2-5"><a href="#cb2-5"></a><span class="at">    </span><span class="fu">addons</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">apt</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">packages</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">libgmp-dev</span><span class="kw">]}}</span></span>
+<span id="cb2-6"><a href="#cb2-6"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">env</span><span class="kw">:</span><span class="at"> TEMPLATE=&quot;optparse-applicative-cli&quot; ARGS=&quot;--resolver lts-12&quot;</span></span>
+<span id="cb2-7"><a href="#cb2-7"></a><span class="at">    </span><span class="fu">compiler</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;: #stack 8.4.3&quot;</span></span>
+<span id="cb2-8"><a href="#cb2-8"></a><span class="at">    </span><span class="fu">addons</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">apt</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">packages</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">libgmp-dev</span><span class="kw">]}}</span></span>
+<span id="cb2-9"><a href="#cb2-9"></a></span>
+<span id="cb2-10"><a href="#cb2-10"></a><span class="fu">before_install</span><span class="kw">:</span></span>
+<span id="cb2-11"><a href="#cb2-11"></a><span class="co"># install stack</span></span>
+<span id="cb2-12"><a href="#cb2-12"></a></span>
+<span id="cb2-13"><a href="#cb2-13"></a><span class="fu">install</span><span class="kw">:</span></span>
+<span id="cb2-14"><a href="#cb2-14"></a><span class="kw">-</span><span class="at"> stack new sample &quot;./$TEMPLATE&quot;</span></span>
+<span id="cb2-15"><a href="#cb2-15"></a><span class="kw">- </span><span class="ch">|</span></span>
+<span id="cb2-16"><a href="#cb2-16"></a>  set -ex</span>
+<span id="cb2-17"><a href="#cb2-17"></a>  cd sample</span>
+<span id="cb2-18"><a href="#cb2-18"></a>  stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies</span>
+<span id="cb2-19"><a href="#cb2-19"></a>  set +ex</span>
+<span id="cb2-20"><a href="#cb2-20"></a><span class="fu">script</span><span class="kw">:</span></span>
+<span id="cb2-21"><a href="#cb2-21"></a><span class="kw">- </span><span class="ch">|</span></span>
+<span id="cb2-22"><a href="#cb2-22"></a>  set -ex</span>
+<span id="cb2-23"><a href="#cb2-23"></a>  stack --no-terminal $ARGS test --bench --no-run-benchmarks --no-haddock-deps</span>
+<span id="cb2-24"><a href="#cb2-24"></a>  set +ex</span></code></pre></div>
 <p><a href="https://github.com/commercialhaskell/stack-templates/blob/879f95dc44b24201bc64fcf8f4b9e2192c23dad4/test-templates.hs">commercialhaskell/stack-templates でもテストは書いてある</a>がぼくのはすごいシンプルだ．</p>
 <h2 id="stack-templates-を集める">stack-templates を集める</h2>
 <p>さて，これだけでは完全に e-bigmoon さんの劣化記事だ． なので，stack-templates を GitHub から集めてくる CLI ツールを作ることにした．</p>
@@ -139,11 +139,11 @@
 <h3 id="graphql">GraphQL</h3>
 <p>ちょうどこの前に，友人から「GraphQL はいいぞ，API をなんども叩く必要がない．」と紹介されたので試してみた．</p>
 <p>GitHub の API では <code>api.github.com/graphql</code> というエンドポイントに対し，POST メソッドでクエリを送信する．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><a class="sourceLine" id="cb3-1" title="1">$ <span class="ex">curl</span> \</a>
-<a class="sourceLine" id="cb3-2" title="2">  -H <span class="st">&quot;Authorization: bearer token&quot;</span> \</a>
-<a class="sourceLine" id="cb3-3" title="3">  -X POST \</a>
-<a class="sourceLine" id="cb3-4" title="4">  -d <span class="st">&quot;{ </span><span class="dt">\&quot;</span><span class="st">query</span><span class="dt">\&quot;</span><span class="st">: </span><span class="dt">\&quot;</span><span class="st"> ... </span><span class="dt">\&quot;</span><span class="st"> }&quot;</span> \</a>
-<a class="sourceLine" id="cb3-5" title="5">  https://api.github.com/graphql</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1"></a>$ <span class="ex">curl</span> \</span>
+<span id="cb3-2"><a href="#cb3-2"></a>  -H <span class="st">&quot;Authorization: bearer token&quot;</span> \</span>
+<span id="cb3-3"><a href="#cb3-3"></a>  -X POST \</span>
+<span id="cb3-4"><a href="#cb3-4"></a>  -d <span class="st">&quot;{ </span><span class="dt">\&quot;</span><span class="st">query</span><span class="dt">\&quot;</span><span class="st">: </span><span class="dt">\&quot;</span><span class="st"> ... </span><span class="dt">\&quot;</span><span class="st"> }&quot;</span> \</span>
+<span id="cb3-5"><a href="#cb3-5"></a>  https://api.github.com/graphql</span></code></pre></div>
 <p><code>...</code> のところにクエリを記述する． クエリは簡単な DSL のようになっており，クエリによってどんな形の JSON が返ってくるか(型のようなもの)やどんな値が返ってくるかが決まる． 例えば <code>stack-template in:name</code> 検索してヒットしたリポジトリの名前だけを取得してみよう． その場合は次のようなクエリを書く．</p>
 <pre><code>query{
   search(query: &quot;stack-template in:name&quot;, type: REPOSITORY, first: 2) {
@@ -153,7 +153,7 @@
     }
   }
 }</code></pre>
-<p><code>first</code> は検索にヒットした最初の2つを返すという意味． 上限は 100 で，<code>first</code> ないしは逆の意味の <code>last</code> のどちらかは指定をする必要がある(そういうエラーが返ってくる)． <code>repositoryCount</code> は検索でヒットしたリポジトリの総数で，<code>edges</code> のところはリポジトリの <code>nameWithOwner</code> を返すように指定している． このように <code>{}</code> の中ではカンマ区切りで，返す JSON の形を指定できる． 具体的に何が指定できるかは <a href="https://developer.github.com/v4/query/">GitHub API v4 のドキュメント</a>を見ると良い． 試しに curl で叩いてみる(クエリ内の <code>&quot;</code> をエスケープすることを忘れずに):</p>
+<p><code>first</code> は検索にヒットした最初の2つを返すという意味． 上限は 100 で，<code>first</code> ないしは逆の意味の <code>last</code> のどちらかは指定をする必要がある(そういうエラーが返ってくる)． <code>repositoryCount</code> は検索でヒットしたリポジトリの総数で，<code>edges</code> のところはリポジトリの <code>nameWithOwner</code> を返すように指定している． このように <code>{}</code> の中ではカンマ区切りで，返す JSON の形を指定できる． 具体的に何が指定できるかは <a href="https://developer.github.com/v4/query/">GitHub API v4 のドキュメント</a>を見ると良い． 試しに curl で叩いてみる(クエリ内の <code>"</code> をエスケープすることを忘れずに):</p>
 <pre><code>$ curl -H &quot;Authorization: bearer XXX&quot; -X POST -d &quot;{ \&quot;query\&quot;: \&quot; ... \&quot; }&quot; https://api.github.com/graphql
 {&quot;data&quot;:{&quot;search&quot;:{&quot;repositoryCount&quot;:76,&quot;edges&quot;:[{&quot;node&quot;:{&quot;nameWithOwner&quot;:&quot;Azure/AzureStack-QuickStart-Templates&quot;}},{&quot;node&quot;:{&quot;nameWithOwner&quot;:&quot;commercialhaskell/stack-templates&quot;}}]}}}</code></pre>
 <p>Connection とか Fields とかの用語については自分もよくわかってないので自分で調べてください． 今のところ，雰囲気で使ってる(笑)</p>

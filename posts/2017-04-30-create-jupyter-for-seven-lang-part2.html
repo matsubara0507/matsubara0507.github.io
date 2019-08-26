@@ -117,19 +117,19 @@
 <p>で，Io・Prolog と同じように simple kernel を書くことにした．</p>
 <p><img src="../assets/create-jupyter-for-seven-lang/ierlang_notebook.jpg" /></p>
 <p>変な数字が入る… 原因は簡単で，simple kernel を書くときに使っている，<code>replwrap</code> というライブラリが，プロンプトの区切り文字を単純にしか区切らないから． つまり</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">def</span> _start_erlang(<span class="va">self</span>):</a>
-<a class="sourceLine" id="cb1-2" title="2">    sig <span class="op">=</span> signal.signal(signal.SIGINT, signal.SIG_DFL)</a>
-<a class="sourceLine" id="cb1-3" title="3">    <span class="cf">try</span>:</a>
-<a class="sourceLine" id="cb1-4" title="4">        <span class="va">self</span>.erlangwrapper <span class="op">=</span> replwrap.REPLWrapper(<span class="st">&quot;erl&quot;</span>, <span class="st">&quot;&gt; &quot;</span>, <span class="va">None</span>)</a>
-<a class="sourceLine" id="cb1-5" title="5">    <span class="cf">finally</span>:</a>
-<a class="sourceLine" id="cb1-6" title="6">        signal.signal(signal.SIGINT, sig)</a></code></pre></div>
-<p>で，プロンプトの区切り文字を <code>&quot;&gt; &quot;</code> で指定してるのだが，erl は</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">def</span> _start_erlang(<span class="va">self</span>):</span>
+<span id="cb1-2"><a href="#cb1-2"></a>    sig <span class="op">=</span> signal.signal(signal.SIGINT, signal.SIG_DFL)</span>
+<span id="cb1-3"><a href="#cb1-3"></a>    <span class="cf">try</span>:</span>
+<span id="cb1-4"><a href="#cb1-4"></a>        <span class="va">self</span>.erlangwrapper <span class="op">=</span> replwrap.REPLWrapper(<span class="st">&quot;erl&quot;</span>, <span class="st">&quot;&gt; &quot;</span>, <span class="va">None</span>)</span>
+<span id="cb1-5"><a href="#cb1-5"></a>    <span class="cf">finally</span>:</span>
+<span id="cb1-6"><a href="#cb1-6"></a>        signal.signal(signal.SIGINT, sig)</span></code></pre></div>
+<p>で，プロンプトの区切り文字を <code>"&gt; "</code> で指定してるのだが，erl は</p>
 <pre><code>1&gt; 1+1.
 2
 2&gt; 2+3.
 5
 3&gt;</code></pre>
-<p>となり，<code>&quot;&gt; &quot;</code> よりも前に行番号みたいのが入る． これはやっかいで，動的に変化するプロンプトの文字を区切れるかが分からない(方法はあるかも)．</p>
+<p>となり，<code>"&gt; "</code> よりも前に行番号みたいのが入る． これはやっかいで，動的に変化するプロンプトの文字を区切れるかが分からない(方法はあるかも)．</p>
 <p>いろいろ考えたが，これ以上弄ってたら終わらないので，諦めた． ちくしょう．</p>
 <h3 id="scala-がおや">Scala がおや？</h3>
 <p>さぁ合体しようと思ったら，急に変なエラーが出てきた． <code>apt-get update</code> が通らない．</p>

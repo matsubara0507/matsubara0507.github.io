@@ -102,165 +102,165 @@
 <h2 id="多相バリアントの基本">多相バリアントの基本</h2>
 <p>多相バリアントとは，名前の通り，多相的なバリアントである． バリアントは前述したとおり，直和型と基本的に同じ．</p>
 <p>例えば，普通の直和型として次のようなものがあったとする．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">data</span> <span class="dt">Card</span> <span class="fu">=</span> <span class="dt">Joker</span> <span class="fu">|</span> <span class="dt">Number</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb1-2" title="2"><span class="kw">data</span> <span class="dt">InData</span> <span class="fu">=</span> <span class="dt">Str</span> <span class="dt">String</span> <span class="fu">|</span> <span class="dt">Number</span> <span class="dt">Int</span></a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">data</span> <span class="dt">Card</span> <span class="ot">=</span> <span class="dt">Joker</span> <span class="op">|</span> <span class="dt">Number</span> <span class="dt">Int</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">data</span> <span class="dt">InData</span> <span class="ot">=</span> <span class="dt">Str</span> <span class="dt">String</span> <span class="op">|</span> <span class="dt">Number</span> <span class="dt">Int</span></span></code></pre></div>
 <p>「最初の型はジョーカーと数字札があるトランプの型，次の型は何かファイルからデータを読み込む時に文字列と数字のデータを統一的に扱うための型」だそうです(<a href="http://osiire.hatenablog.com/entry/20090510/1241957550">多相バリアントを使いこなそう(1)</a> より)． どちらの型にも <code>Number Int</code> という部分があるので次のような関数を両方に適用できそうな気がする．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1">getNumber (<span class="dt">Number</span> n) <span class="fu">=</span> <span class="dt">Just</span> n</a>
-<a class="sourceLine" id="cb2-2" title="2">getNumber _ <span class="fu">=</span> <span class="dt">Nothing</span></a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1"></a>getNumber (<span class="dt">Number</span> n) <span class="ot">=</span> <span class="dt">Just</span> n</span>
+<span id="cb2-2"><a href="#cb2-2"></a>getNumber _ <span class="ot">=</span> <span class="dt">Nothing</span></span></code></pre></div>
 <p>もちろん，そんなことはできない(そもそも，Haskell の値コンストラクタは名前空間を共有してしまうので同時に利用はできないのだが…)． そこで多相バリアントを用いれば，このような関数を実装することが出来るようになる．</p>
 <h3 id="多相バリアントを定義">多相バリアントを定義</h3>
 <p><code>extensible</code> パッケージを使って多相バリアント(拡張可能バリアント)を定義すると次のようになる(<code>DataKinds</code> と <code>TypeOperators</code> 言語拡張が必要)．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">type</span> <span class="dt">Card</span> <span class="fu">=</span> <span class="dt">Variant</span> '[ <span class="st">&quot;joker&quot;</span> <span class="fu">&gt;:</span> (), <span class="st">&quot;number&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Int</span> ]</a>
-<a class="sourceLine" id="cb3-2" title="2"><span class="kw">type</span> <span class="dt">InData</span> <span class="fu">=</span> <span class="dt">Variant</span> '[ <span class="st">&quot;str&quot;</span> <span class="fu">&gt;:</span> <span class="dt">String</span>, <span class="st">&quot;number&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Int</span> ]</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">type</span> <span class="dt">Card</span> <span class="ot">=</span> <span class="dt">Variant</span> '[ <span class="st">&quot;joker&quot;</span> <span class="op">&gt;:</span> (), <span class="st">&quot;number&quot;</span> <span class="op">&gt;:</span> <span class="dt">Int</span> ]</span>
+<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">type</span> <span class="dt">InData</span> <span class="ot">=</span> <span class="dt">Variant</span> '[ <span class="st">&quot;str&quot;</span> <span class="op">&gt;:</span> <span class="dt">String</span>, <span class="st">&quot;number&quot;</span> <span class="op">&gt;:</span> <span class="dt">Int</span> ]</span></code></pre></div>
 <p>とくに細かい説明はしないが，なんとなく意味が読み取れるだろう． <code>getNumber</code> 関数の実装は難しいので後回しにするとして，<code>getNumber</code> 関数の型は <code>extensible</code> パッケージの <a href="https://hackage.haskell.org/package/extensible-0.4.8/docs/Data-Extensible-Inclusion.html#t:-8838-"><code>⊆</code></a> 型クラスを用いて次のように書ける(意味は見た通り)．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="ot">{-# LANGUAGE FlexibleContexts #-}</span></a>
-<a class="sourceLine" id="cb4-2" title="2"></a>
-<a class="sourceLine" id="cb4-3" title="3"><span class="ot">getNumber ::</span> ('[<span class="st">&quot;number&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Int</span>] ⊆ xs) <span class="ot">=&gt;</span> <span class="dt">Variant</span> xs <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb4-4" title="4">getNumber <span class="fu">=</span> <span class="fu">undefined</span></a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1"></a><span class="ot">{-# LANGUAGE FlexibleContexts #-}</span></span>
+<span id="cb4-2"><a href="#cb4-2"></a></span>
+<span id="cb4-3"><a href="#cb4-3"></a><span class="ot">getNumber ::</span> ('[<span class="st">&quot;number&quot;</span> <span class="op">&gt;:</span> <span class="dt">Int</span>] ⊆ xs) <span class="ot">=&gt;</span> <span class="dt">Variant</span> xs <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span></span>
+<span id="cb4-4"><a href="#cb4-4"></a>getNumber <span class="ot">=</span> <span class="fu">undefined</span></span></code></pre></div>
 <p>GHCi で試してみる．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="fu">&gt;&gt;</span> <span class="fu">:</span>t getNumber (<span class="fu">undefined</span><span class="ot"> ::</span> <span class="dt">Card</span>)</a>
-<a class="sourceLine" id="cb5-2" title="2">getNumber (<span class="fu">undefined</span><span class="ot"> ::</span> <span class="dt">Card</span>)<span class="ot"> ::</span> <span class="dt">Maybe</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb5-3" title="3"><span class="fu">&gt;&gt;</span> <span class="fu">:</span>t getNumber (<span class="fu">undefined</span><span class="ot"> ::</span> <span class="dt">InData</span>)</a>
-<a class="sourceLine" id="cb5-4" title="4">getNumber (<span class="fu">undefined</span><span class="ot"> ::</span> <span class="dt">InData</span>)<span class="ot"> ::</span> <span class="dt">Maybe</span> <span class="dt">Int</span></a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1"></a><span class="op">&gt;&gt;</span> <span class="op">:</span>t getNumber (<span class="fu">undefined</span><span class="ot"> ::</span> <span class="dt">Card</span>)</span>
+<span id="cb5-2"><a href="#cb5-2"></a>getNumber (<span class="fu">undefined</span><span class="ot"> ::</span> <span class="dt">Card</span>)<span class="ot"> ::</span> <span class="dt">Maybe</span> <span class="dt">Int</span></span>
+<span id="cb5-3"><a href="#cb5-3"></a><span class="op">&gt;&gt;</span> <span class="op">:</span>t getNumber (<span class="fu">undefined</span><span class="ot"> ::</span> <span class="dt">InData</span>)</span>
+<span id="cb5-4"><a href="#cb5-4"></a>getNumber (<span class="fu">undefined</span><span class="ot"> ::</span> <span class="dt">InData</span>)<span class="ot"> ::</span> <span class="dt">Maybe</span> <span class="dt">Int</span></span></code></pre></div>
 <p>確かに動作する．</p>
 <h2 id="包含関係">包含関係</h2>
 <p>さて，<code>getNumber</code> 関数をどのように実装するかだが，その前に多相バリアントの包含関係を議論しておく(この議論は<a href="http://osiire.hatenablog.com/entry/20090514/1242235108">多相バリアントを使いこなそう(3)</a>に対応する)．</p>
 <p>次のような簡単なバリアント型を考える．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">type</span> <span class="dt">Hoge</span> <span class="fu">=</span> <span class="dt">Variant</span> <span class="dt">HogeFields</span></a>
-<a class="sourceLine" id="cb6-2" title="2"><span class="kw">type</span> <span class="dt">HogeFields</span> <span class="fu">=</span></a>
-<a class="sourceLine" id="cb6-3" title="3">  '[ <span class="st">&quot;hoge&quot;</span> <span class="fu">&gt;:</span> ()</a>
-<a class="sourceLine" id="cb6-4" title="4">   , <span class="st">&quot;fuga&quot;</span> <span class="fu">&gt;:</span> ()</a>
-<a class="sourceLine" id="cb6-5" title="5">   ]</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">type</span> <span class="dt">Hoge</span> <span class="ot">=</span> <span class="dt">Variant</span> <span class="dt">HogeFields</span></span>
+<span id="cb6-2"><a href="#cb6-2"></a><span class="kw">type</span> <span class="dt">HogeFields</span> <span class="ot">=</span></span>
+<span id="cb6-3"><a href="#cb6-3"></a>  '[ <span class="st">&quot;hoge&quot;</span> <span class="op">&gt;:</span> ()</span>
+<span id="cb6-4"><a href="#cb6-4"></a>   , <span class="st">&quot;fuga&quot;</span> <span class="op">&gt;:</span> ()</span>
+<span id="cb6-5"><a href="#cb6-5"></a>   ]</span></code></pre></div>
 <p>このバリアント型に対し，<code>⊆</code> を用いて多相的な関数は2種類考えれる．</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="ot">toInt1 ::</span> (<span class="dt">HogeFields</span> ⊆ xs) <span class="ot">=&gt;</span> <span class="dt">Variant</span> xs <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb7-2" title="2">toInt1 <span class="fu">=</span> <span class="fu">undefined</span></a>
-<a class="sourceLine" id="cb7-3" title="3"></a>
-<a class="sourceLine" id="cb7-4" title="4"><span class="ot">toInt2 ::</span> (xs ⊆ <span class="dt">HogeFields</span>) <span class="ot">=&gt;</span> <span class="dt">Variant</span> xs <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb7-5" title="5">toInt2 <span class="fu">=</span> <span class="fu">undefined</span></a></code></pre></div>
-<p><code>toInt1</code> は <code>&quot;hoge&quot; &gt;: ()</code> と <code>&quot;fuga&quot; &gt;: ()</code> を要素に持つバリアント型全てが利用できる関数である(さっきの <code>getNumber</code> と同じ)． <code>toInt2</code> は <code>&quot;hoge&quot; &gt;: ()</code> か <code>&quot;fuga&quot; &gt;: ()</code> のどれかを要素に持つ(それ以外は持ってはいけない)バリアント型全てに利用できる関数である． 試しに，次の3つのバリアント型の値を定義し，GHCi で試してみよう．</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="ot">hoge1 ::</span> <span class="dt">Hoge</span></a>
-<a class="sourceLine" id="cb8-2" title="2">hoge1 <span class="fu">=</span> embedAssoc <span class="fu">$</span> <span class="fu">#</span>hoge <span class="fu">@=</span> ()</a>
-<a class="sourceLine" id="cb8-3" title="3"></a>
-<a class="sourceLine" id="cb8-4" title="4"><span class="ot">hoge2 ::</span> <span class="dt">Variant</span> (<span class="st">&quot;piyo&quot;</span> <span class="fu">&gt;:</span> () '<span class="fu">:</span> <span class="dt">HogeFields</span>)</a>
-<a class="sourceLine" id="cb8-5" title="5">hoge2 <span class="fu">=</span> embedAssoc <span class="fu">$</span> <span class="fu">#</span>piyo <span class="fu">@=</span> ()</a>
-<a class="sourceLine" id="cb8-6" title="6"></a>
-<a class="sourceLine" id="cb8-7" title="7"><span class="ot">hoge3 ::</span> <span class="dt">Variant</span> '[<span class="st">&quot;hoge&quot;</span> <span class="fu">&gt;:</span> ()]</a>
-<a class="sourceLine" id="cb8-8" title="8">hoge3 <span class="fu">=</span> embedAssoc <span class="fu">$</span> <span class="fu">#</span>hoge <span class="fu">@=</span> ()</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1"></a><span class="ot">toInt1 ::</span> (<span class="dt">HogeFields</span> ⊆ xs) <span class="ot">=&gt;</span> <span class="dt">Variant</span> xs <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb7-2"><a href="#cb7-2"></a>toInt1 <span class="ot">=</span> <span class="fu">undefined</span></span>
+<span id="cb7-3"><a href="#cb7-3"></a></span>
+<span id="cb7-4"><a href="#cb7-4"></a><span class="ot">toInt2 ::</span> (xs ⊆ <span class="dt">HogeFields</span>) <span class="ot">=&gt;</span> <span class="dt">Variant</span> xs <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb7-5"><a href="#cb7-5"></a>toInt2 <span class="ot">=</span> <span class="fu">undefined</span></span></code></pre></div>
+<p><code>toInt1</code> は <code>"hoge" &gt;: ()</code> と <code>"fuga" &gt;: ()</code> を要素に持つバリアント型全てが利用できる関数である(さっきの <code>getNumber</code> と同じ)． <code>toInt2</code> は <code>"hoge" &gt;: ()</code> か <code>"fuga" &gt;: ()</code> のどれかを要素に持つ(それ以外は持ってはいけない)バリアント型全てに利用できる関数である． 試しに，次の3つのバリアント型の値を定義し，GHCi で試してみよう．</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1"></a><span class="ot">hoge1 ::</span> <span class="dt">Hoge</span></span>
+<span id="cb8-2"><a href="#cb8-2"></a>hoge1 <span class="ot">=</span> embedAssoc <span class="op">$</span> <span class="op">#</span>hoge <span class="op">@=</span> ()</span>
+<span id="cb8-3"><a href="#cb8-3"></a></span>
+<span id="cb8-4"><a href="#cb8-4"></a><span class="ot">hoge2 ::</span> <span class="dt">Variant</span> (<span class="st">&quot;piyo&quot;</span> <span class="op">&gt;:</span> () '<span class="op">:</span> <span class="dt">HogeFields</span>)</span>
+<span id="cb8-5"><a href="#cb8-5"></a>hoge2 <span class="ot">=</span> embedAssoc <span class="op">$</span> <span class="op">#</span>piyo <span class="op">@=</span> ()</span>
+<span id="cb8-6"><a href="#cb8-6"></a></span>
+<span id="cb8-7"><a href="#cb8-7"></a><span class="ot">hoge3 ::</span> <span class="dt">Variant</span> '[<span class="st">&quot;hoge&quot;</span> <span class="op">&gt;:</span> ()]</span>
+<span id="cb8-8"><a href="#cb8-8"></a>hoge3 <span class="ot">=</span> embedAssoc <span class="op">$</span> <span class="op">#</span>hoge <span class="op">@=</span> ()</span></code></pre></div>
 <p>見てわかるように(？)，<code>hoge3 ⊆ hoge1 ⊆ hoge2</code> である(厳密にはバリアントの要素の集合で成り立つ関係だが)．</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="fu">&gt;&gt;</span> <span class="fu">:</span>t toInt1 hoge1</a>
-<a class="sourceLine" id="cb9-2" title="2">toInt1<span class="ot"> hoge1 ::</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb9-3" title="3"><span class="fu">&gt;&gt;</span> <span class="fu">:</span>t toInt1 hoge2</a>
-<a class="sourceLine" id="cb9-4" title="4">toInt1<span class="ot"> hoge2 ::</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb9-5" title="5"><span class="fu">&gt;&gt;</span> <span class="fu">:</span>t toInt1 hoge3</a>
-<a class="sourceLine" id="cb9-6" title="6"></a>
-<a class="sourceLine" id="cb9-7" title="7"><span class="fu">&lt;</span>interactive<span class="fu">&gt;:</span><span class="dv">1</span><span class="fu">:</span><span class="dv">1</span><span class="fu">:</span> <span class="fu">error:</span></a>
-<a class="sourceLine" id="cb9-8" title="8">    <span class="fu">?</span> <span class="dt">Couldn't</span> match <span class="kw">type</span> ‘<span class="dt">'Missing</span> (<span class="st">&quot;fuga&quot;</span> '<span class="fu">:&gt;</span> ())’</a>
-<a class="sourceLine" id="cb9-9" title="9">                     with ‘<span class="dt">'Expecting</span> pos0’</a>
-<a class="sourceLine" id="cb9-10" title="10">        arising from a use <span class="kw">of</span> ‘toInt1’</a>
-<a class="sourceLine" id="cb9-11" title="11">    <span class="fu">?</span> <span class="dt">In</span> the expression<span class="fu">:</span> toInt1 hoge3</a>
-<a class="sourceLine" id="cb9-12" title="12"><span class="fu">&gt;&gt;</span> <span class="fu">:</span>t toInt2 hoge1</a>
-<a class="sourceLine" id="cb9-13" title="13">toInt2<span class="ot"> hoge1 ::</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb9-14" title="14"><span class="fu">&gt;&gt;</span> <span class="fu">:</span>t toInt2 hoge2</a>
-<a class="sourceLine" id="cb9-15" title="15"></a>
-<a class="sourceLine" id="cb9-16" title="16"><span class="fu">&lt;</span>interactive<span class="fu">&gt;:</span><span class="dv">1</span><span class="fu">:</span><span class="dv">1</span><span class="fu">:</span> <span class="fu">error:</span></a>
-<a class="sourceLine" id="cb9-17" title="17">    <span class="fu">?</span> <span class="dt">Couldn't</span> match <span class="kw">type</span> ‘<span class="dt">'Missing</span> (<span class="st">&quot;piyo&quot;</span> '<span class="fu">:&gt;</span> ())’</a>
-<a class="sourceLine" id="cb9-18" title="18">                     with ‘<span class="dt">'Expecting</span> pos0’</a>
-<a class="sourceLine" id="cb9-19" title="19">        arising from a use <span class="kw">of</span> ‘toInt2’</a>
-<a class="sourceLine" id="cb9-20" title="20">    <span class="fu">?</span> <span class="dt">In</span> the expression<span class="fu">:</span> toInt2 hoge2</a>
-<a class="sourceLine" id="cb9-21" title="21"><span class="fu">&gt;&gt;</span> <span class="fu">:</span>t toInt2 hoge3</a>
-<a class="sourceLine" id="cb9-22" title="22">toInt2<span class="ot"> hoge3 ::</span> <span class="dt">Int</span></a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1"></a><span class="op">&gt;&gt;</span> <span class="op">:</span>t toInt1 hoge1</span>
+<span id="cb9-2"><a href="#cb9-2"></a>toInt1<span class="ot"> hoge1 ::</span> <span class="dt">Int</span></span>
+<span id="cb9-3"><a href="#cb9-3"></a><span class="op">&gt;&gt;</span> <span class="op">:</span>t toInt1 hoge2</span>
+<span id="cb9-4"><a href="#cb9-4"></a>toInt1<span class="ot"> hoge2 ::</span> <span class="dt">Int</span></span>
+<span id="cb9-5"><a href="#cb9-5"></a><span class="op">&gt;&gt;</span> <span class="op">:</span>t toInt1 hoge3</span>
+<span id="cb9-6"><a href="#cb9-6"></a></span>
+<span id="cb9-7"><a href="#cb9-7"></a><span class="op">&lt;</span>interactive<span class="op">&gt;:</span><span class="dv">1</span><span class="op">:</span><span class="dv">1</span><span class="op">:</span> <span class="fu">error</span><span class="op">:</span></span>
+<span id="cb9-8"><a href="#cb9-8"></a>    <span class="op">?</span> <span class="dt">Couldn't</span> match <span class="kw">type</span> ‘<span class="dt">'Missing</span> (<span class="st">&quot;fuga&quot;</span> '<span class="op">:&gt;</span> ())’</span>
+<span id="cb9-9"><a href="#cb9-9"></a>                     with ‘<span class="dt">'Expecting</span> pos0’</span>
+<span id="cb9-10"><a href="#cb9-10"></a>        arising from a use <span class="kw">of</span> ‘toInt1’</span>
+<span id="cb9-11"><a href="#cb9-11"></a>    <span class="op">?</span> <span class="dt">In</span> the expression<span class="op">:</span> toInt1 hoge3</span>
+<span id="cb9-12"><a href="#cb9-12"></a><span class="op">&gt;&gt;</span> <span class="op">:</span>t toInt2 hoge1</span>
+<span id="cb9-13"><a href="#cb9-13"></a>toInt2<span class="ot"> hoge1 ::</span> <span class="dt">Int</span></span>
+<span id="cb9-14"><a href="#cb9-14"></a><span class="op">&gt;&gt;</span> <span class="op">:</span>t toInt2 hoge2</span>
+<span id="cb9-15"><a href="#cb9-15"></a></span>
+<span id="cb9-16"><a href="#cb9-16"></a><span class="op">&lt;</span>interactive<span class="op">&gt;:</span><span class="dv">1</span><span class="op">:</span><span class="dv">1</span><span class="op">:</span> <span class="fu">error</span><span class="op">:</span></span>
+<span id="cb9-17"><a href="#cb9-17"></a>    <span class="op">?</span> <span class="dt">Couldn't</span> match <span class="kw">type</span> ‘<span class="dt">'Missing</span> (<span class="st">&quot;piyo&quot;</span> '<span class="op">:&gt;</span> ())’</span>
+<span id="cb9-18"><a href="#cb9-18"></a>                     with ‘<span class="dt">'Expecting</span> pos0’</span>
+<span id="cb9-19"><a href="#cb9-19"></a>        arising from a use <span class="kw">of</span> ‘toInt2’</span>
+<span id="cb9-20"><a href="#cb9-20"></a>    <span class="op">?</span> <span class="dt">In</span> the expression<span class="op">:</span> toInt2 hoge2</span>
+<span id="cb9-21"><a href="#cb9-21"></a><span class="op">&gt;&gt;</span> <span class="op">:</span>t toInt2 hoge3</span>
+<span id="cb9-22"><a href="#cb9-22"></a>toInt2<span class="ot"> hoge3 ::</span> <span class="dt">Int</span></span></code></pre></div>
 <p>確かに，<code>toInt1</code> は <code>hoge1</code> と <code>hoge2</code> に適用でき，<code>toInt2</code> は <code>hoge1</code> と <code>hoge3</code> に適用できている．</p>
 <h2 id="section-2"></h2>
 <p>さて，<code>toInt1</code> と <code>toInt2</code> の実装を与えてみる． 実は簡単なのは後者 <code>toInt2</code> だ．</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="ot">{-# LANGUAGE OverloadedLabels #-}</span></a>
-<a class="sourceLine" id="cb10-2" title="2"></a>
-<a class="sourceLine" id="cb10-3" title="3"><span class="ot">toInt2 ::</span> (xs ⊆ <span class="dt">HogeFields</span>) <span class="ot">=&gt;</span> <span class="dt">Variant</span> xs <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb10-4" title="4">toInt2 <span class="fu">=</span> <span class="fu">flip</span> matchField (spread<span class="ot"> xs ::</span> <span class="dt">Hoge</span>)</a>
-<a class="sourceLine" id="cb10-5" title="5">    <span class="fu">$</span> <span class="fu">#</span>hoge <span class="fu">@=</span> (<span class="fu">const</span> <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb10-6" title="6">   <span class="fu">&lt;:</span> <span class="fu">#</span>fuga <span class="fu">@=</span> (<span class="fu">const</span> <span class="dv">2</span>)</a>
-<a class="sourceLine" id="cb10-7" title="7">   <span class="fu">&lt;:</span> nil</a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1"></a><span class="ot">{-# LANGUAGE OverloadedLabels #-}</span></span>
+<span id="cb10-2"><a href="#cb10-2"></a></span>
+<span id="cb10-3"><a href="#cb10-3"></a><span class="ot">toInt2 ::</span> (xs ⊆ <span class="dt">HogeFields</span>) <span class="ot">=&gt;</span> <span class="dt">Variant</span> xs <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb10-4"><a href="#cb10-4"></a>toInt2 <span class="ot">=</span> <span class="fu">flip</span> matchField (spread<span class="ot"> xs ::</span> <span class="dt">Hoge</span>)</span>
+<span id="cb10-5"><a href="#cb10-5"></a>    <span class="op">$</span> <span class="op">#</span>hoge <span class="op">@=</span> (<span class="fu">const</span> <span class="dv">1</span>)</span>
+<span id="cb10-6"><a href="#cb10-6"></a>   <span class="op">&lt;:</span> <span class="op">#</span>fuga <span class="op">@=</span> (<span class="fu">const</span> <span class="dv">2</span>)</span>
+<span id="cb10-7"><a href="#cb10-7"></a>   <span class="op">&lt;:</span> nil</span></code></pre></div>
 <p>(<a href="https://matsubara0507.github.io/posts/2017-11-28-fun-of-extensible-1.html">昔の記事</a>でも紹介した) <a href="https://hackage.haskell.org/package/extensible-0.4.8/docs/Data-Extensible-Inclusion.html#v:spread"><code>spread</code></a> 関数を用いることで <strong>バリアント型を拡張できる</strong> (<a href="https://hackage.haskell.org/package/extensible-0.4.8/docs/Data-Extensible-Field.html#v:matchField"><code>matchField</code></a> 関数の使い方についてはこの<a href="https://matsubara0507.github.io/posts/2018-01-31-fun-of-extensible-2.html">記事</a>を参照して)．</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="ot">shrink ::</span> (xs ⊆ ys) <span class="ot">=&gt;</span> <span class="dt">Record</span> ys <span class="ot">-&gt;</span> <span class="dt">Record</span> xs</a>
-<a class="sourceLine" id="cb11-2" title="2"><span class="ot">spread ::</span> (xs ⊆ ys) <span class="ot">=&gt;</span> <span class="dt">Variant</span> xs <span class="ot">-&gt;</span> <span class="dt">Variant</span> ys</a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1"></a><span class="ot">shrink ::</span> (xs ⊆ ys) <span class="ot">=&gt;</span> <span class="dt">Record</span> ys <span class="ot">-&gt;</span> <span class="dt">Record</span> xs</span>
+<span id="cb11-2"><a href="#cb11-2"></a><span class="ot">spread ::</span> (xs ⊆ ys) <span class="ot">=&gt;</span> <span class="dt">Variant</span> xs <span class="ot">-&gt;</span> <span class="dt">Variant</span> ys</span></code></pre></div>
 <p><del>拡縮する関数 <code>spread</code> や <code>shrink</code> は強力なのだが，多相的すぎて前後の型が分からないとエラーになる(気がする(パッケージの作者じゃないので細かいことはよくわからん))ので，型注釈 (<code>spread xs :: Hoge</code> の部分)を与える必要がある．</del></p>
 <p>(2018.04.13 追記) <code>spread</code> や <code>shrink</code> の代わりに <code>shrinkAssoc</code> や <code>spreadAssoc</code> を使えば値が多相でもうまく扱えるとのコトを<a href="https://www.reddit.com/r/haskell_jp/comments/86rx9b/多相バリアントを使いこなそう_with_haskell/dwaq3cw/">作者様よりコメント</a>いただいた． 感謝．</p>
 <h3 id="必殺-coinclusion">必殺 Coinclusion</h3>
 <p>前者が難しいのは，<code>spread</code> や <code>shrink</code> とは逆の振る舞いを要求するからだ． そのために(この前作者から教えてもらった隠し技(別に隠してない)) <a href="https://hackage.haskell.org/package/extensible-0.4.8/docs/Data-Extensible-Nullable.html"><code>Nullable</code></a> を使う！ <code>Nullable</code> を使うとバリアントやレコードの全ての要素を簡単に <code>Maybe</code> でラップできる(なんかいいテーマがあったら，そのうち解説する)． さらに <code>Nullable</code> を用いることで，Coinclusion を定義できる！</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="ot">wrench ::</span> (<span class="dt">Generate</span> ys, xs ⊆ ys) <span class="ot">=&gt;</span> (h <span class="fu">:*</span> xs) <span class="ot">-&gt;</span> <span class="dt">Nullable</span> h <span class="fu">:*</span> ys</a>
-<a class="sourceLine" id="cb12-2" title="2"><span class="ot">retrench ::</span> (<span class="dt">Generate</span> ys, xs ⊆ ys) <span class="ot">=&gt;</span> (h <span class="fu">:|</span> ys) <span class="ot">-&gt;</span> <span class="dt">Nullable</span> ((<span class="fu">:|</span>) h) xs</a></code></pre></div>
-<p><code>wrench</code> や <code>retrench</code> は <code>shrink</code> と <code>spread</code> の逆向きの変換になっているのが分かるだろうか？ 逆向きにしたせいで足りない部分は <code>Nullable</code> によって <code>Nothing</code> となる． 例えば <code>Variant (&quot;piyo&quot; &gt;: () ': HogeFields)</code> から <code>Hoge</code> に縮小する場合は，<code>embedAssoc (#piyo @= ())</code> が <code>Nothing</code> となり，他が <code>Just</code> でラップされる．</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1"></a><span class="ot">wrench ::</span> (<span class="dt">Generate</span> ys, xs ⊆ ys) <span class="ot">=&gt;</span> (h <span class="op">:*</span> xs) <span class="ot">-&gt;</span> <span class="dt">Nullable</span> h <span class="op">:*</span> ys</span>
+<span id="cb12-2"><a href="#cb12-2"></a><span class="ot">retrench ::</span> (<span class="dt">Generate</span> ys, xs ⊆ ys) <span class="ot">=&gt;</span> (h <span class="op">:|</span> ys) <span class="ot">-&gt;</span> <span class="dt">Nullable</span> ((<span class="op">:|</span>) h) xs</span></code></pre></div>
+<p><code>wrench</code> や <code>retrench</code> は <code>shrink</code> と <code>spread</code> の逆向きの変換になっているのが分かるだろうか？ 逆向きにしたせいで足りない部分は <code>Nullable</code> によって <code>Nothing</code> となる． 例えば <code>Variant ("piyo" &gt;: () ': HogeFields)</code> から <code>Hoge</code> に縮小する場合は，<code>embedAssoc (#piyo @= ())</code> が <code>Nothing</code> となり，他が <code>Just</code> でラップされる．</p>
 <h2 id="section-3"></h2>
 <p>Coinclusion を用いて <code>toInt2</code> 関数を実装してみると次のようになる．</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="ot">{-# LANGUAGE PolyKinds           #-}</span></a>
-<a class="sourceLine" id="cb13-2" title="2"><span class="ot">{-# LANGUAGE RankNTypes          #-}</span></a>
-<a class="sourceLine" id="cb13-3" title="3"><span class="ot">{-# LANGUAGE ScopedTypeVariables #-}</span></a>
-<a class="sourceLine" id="cb13-4" title="4"></a>
-<a class="sourceLine" id="cb13-5" title="5"><span class="ot">toInt1 ::</span> (<span class="dt">Generate</span> xs, <span class="dt">HogeFields</span> ⊆ xs) <span class="ot">=&gt;</span> <span class="dt">Variant</span> xs <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb13-6" title="6">toInt1 <span class="fu">=</span> matchFieldWithDefault <span class="dv">0</span></a>
-<a class="sourceLine" id="cb13-7" title="7">    <span class="fu">$</span> <span class="fu">#</span>hoge <span class="fu">@=</span> (<span class="fu">const</span> <span class="dv">1</span><span class="ot"> ::</span> () <span class="ot">-&gt;</span> <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb13-8" title="8">   <span class="fu">&lt;:</span> <span class="fu">#</span>fuga <span class="fu">@=</span> (<span class="fu">const</span> <span class="dv">2</span><span class="ot"> ::</span> () <span class="ot">-&gt;</span> <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb13-9" title="9">   <span class="fu">&lt;:</span> nil</a>
-<a class="sourceLine" id="cb13-10" title="10"></a>
-<a class="sourceLine" id="cb13-11" title="11"><span class="ot">matchFieldWithDefault ::</span> <span class="kw">forall</span> xs ys h r <span class="fu">.</span></a>
-<a class="sourceLine" id="cb13-12" title="12">  (<span class="dt">Generate</span> ys, xs ⊆ ys) <span class="ot">=&gt;</span> r <span class="ot">-&gt;</span> <span class="dt">RecordOf</span> (<span class="dt">Match</span> h r) xs <span class="ot">-&gt;</span> <span class="dt">VariantOf</span> h ys <span class="ot">-&gt;</span> r</a>
-<a class="sourceLine" id="cb13-13" title="13">matchFieldWithDefault defaultValue pat <span class="fu">=</span></a>
-<a class="sourceLine" id="cb13-14" title="14">  fromMaybe defaultValue <span class="fu">.</span> matchFieldWithMaybe pat</a>
-<a class="sourceLine" id="cb13-15" title="15"></a>
-<a class="sourceLine" id="cb13-16" title="16"><span class="ot">matchFieldWithMaybe ::</span> <span class="kw">forall</span> xs ys h r <span class="fu">.</span></a>
-<a class="sourceLine" id="cb13-17" title="17">  (<span class="dt">Generate</span> ys, xs ⊆ ys) <span class="ot">=&gt;</span> <span class="dt">RecordOf</span> (<span class="dt">Match</span> h r) xs <span class="ot">-&gt;</span> <span class="dt">VariantOf</span> h ys <span class="ot">-&gt;</span> <span class="dt">Maybe</span> r</a>
-<a class="sourceLine" id="cb13-18" title="18">matchFieldWithMaybe pat <span class="fu">=</span> matchWith func (wrench pat)</a>
-<a class="sourceLine" id="cb13-19" title="19">  <span class="kw">where</span></a>
-<a class="sourceLine" id="cb13-20" title="20"><span class="ot">    func ::</span> <span class="kw">forall</span> x <span class="fu">.</span> <span class="dt">Nullable</span> (<span class="dt">Field</span> (<span class="dt">Match</span> h r)) x <span class="ot">-&gt;</span> <span class="dt">Field</span> h x <span class="ot">-&gt;</span> <span class="dt">Maybe</span> r</a>
-<a class="sourceLine" id="cb13-21" title="21">    func fx gx <span class="fu">=</span> (\x <span class="ot">-&gt;</span> runMatch (getField x) <span class="fu">$</span> getField gx) <span class="fu">&lt;$&gt;</span> getNullable fx</a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1"></a><span class="ot">{-# LANGUAGE PolyKinds           #-}</span></span>
+<span id="cb13-2"><a href="#cb13-2"></a><span class="ot">{-# LANGUAGE RankNTypes          #-}</span></span>
+<span id="cb13-3"><a href="#cb13-3"></a><span class="ot">{-# LANGUAGE ScopedTypeVariables #-}</span></span>
+<span id="cb13-4"><a href="#cb13-4"></a></span>
+<span id="cb13-5"><a href="#cb13-5"></a><span class="ot">toInt1 ::</span> (<span class="dt">Generate</span> xs, <span class="dt">HogeFields</span> ⊆ xs) <span class="ot">=&gt;</span> <span class="dt">Variant</span> xs <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb13-6"><a href="#cb13-6"></a>toInt1 <span class="ot">=</span> matchFieldWithDefault <span class="dv">0</span></span>
+<span id="cb13-7"><a href="#cb13-7"></a>    <span class="op">$</span> <span class="op">#</span>hoge <span class="op">@=</span> (<span class="fu">const</span> <span class="dv">1</span><span class="ot"> ::</span> () <span class="ot">-&gt;</span> <span class="dt">Int</span>)</span>
+<span id="cb13-8"><a href="#cb13-8"></a>   <span class="op">&lt;:</span> <span class="op">#</span>fuga <span class="op">@=</span> (<span class="fu">const</span> <span class="dv">2</span><span class="ot"> ::</span> () <span class="ot">-&gt;</span> <span class="dt">Int</span>)</span>
+<span id="cb13-9"><a href="#cb13-9"></a>   <span class="op">&lt;:</span> nil</span>
+<span id="cb13-10"><a href="#cb13-10"></a></span>
+<span id="cb13-11"><a href="#cb13-11"></a><span class="ot">matchFieldWithDefault ::</span> <span class="kw">forall</span> xs ys h r <span class="op">.</span></span>
+<span id="cb13-12"><a href="#cb13-12"></a>  (<span class="dt">Generate</span> ys, xs ⊆ ys) <span class="ot">=&gt;</span> r <span class="ot">-&gt;</span> <span class="dt">RecordOf</span> (<span class="dt">Match</span> h r) xs <span class="ot">-&gt;</span> <span class="dt">VariantOf</span> h ys <span class="ot">-&gt;</span> r</span>
+<span id="cb13-13"><a href="#cb13-13"></a>matchFieldWithDefault defaultValue pat <span class="ot">=</span></span>
+<span id="cb13-14"><a href="#cb13-14"></a>  fromMaybe defaultValue <span class="op">.</span> matchFieldWithMaybe pat</span>
+<span id="cb13-15"><a href="#cb13-15"></a></span>
+<span id="cb13-16"><a href="#cb13-16"></a><span class="ot">matchFieldWithMaybe ::</span> <span class="kw">forall</span> xs ys h r <span class="op">.</span></span>
+<span id="cb13-17"><a href="#cb13-17"></a>  (<span class="dt">Generate</span> ys, xs ⊆ ys) <span class="ot">=&gt;</span> <span class="dt">RecordOf</span> (<span class="dt">Match</span> h r) xs <span class="ot">-&gt;</span> <span class="dt">VariantOf</span> h ys <span class="ot">-&gt;</span> <span class="dt">Maybe</span> r</span>
+<span id="cb13-18"><a href="#cb13-18"></a>matchFieldWithMaybe pat <span class="ot">=</span> matchWith func (wrench pat)</span>
+<span id="cb13-19"><a href="#cb13-19"></a>  <span class="kw">where</span></span>
+<span id="cb13-20"><a href="#cb13-20"></a><span class="ot">    func ::</span> <span class="kw">forall</span> x <span class="op">.</span> <span class="dt">Nullable</span> (<span class="dt">Field</span> (<span class="dt">Match</span> h r)) x <span class="ot">-&gt;</span> <span class="dt">Field</span> h x <span class="ot">-&gt;</span> <span class="dt">Maybe</span> r</span>
+<span id="cb13-21"><a href="#cb13-21"></a>    func fx gx <span class="ot">=</span> (\x <span class="ot">-&gt;</span> runMatch (getField x) <span class="op">$</span> getField gx) <span class="op">&lt;$&gt;</span> getNullable fx</span></code></pre></div>
 <p>めんどくさいので細かい解説はしない(そもそももっといい方法があるかもしれない)． この <code>matchFieldWithMaybe</code> を用いれば <code>getNumber</code> も簡単に実装できるだろう．</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="ot">getNumber ::</span> (<span class="dt">Generate</span> xs, '[<span class="st">&quot;number&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Int</span>] ⊆ xs) <span class="ot">=&gt;</span> <span class="dt">Variant</span> xs <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb14-2" title="2">getNumber <span class="fu">=</span> matchFieldWithMaybe <span class="fu">$</span> <span class="fu">#</span>number <span class="fu">@=</span> <span class="fu">id</span> <span class="fu">&lt;:</span> nil</a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1"></a><span class="ot">getNumber ::</span> (<span class="dt">Generate</span> xs, '[<span class="st">&quot;number&quot;</span> <span class="op">&gt;:</span> <span class="dt">Int</span>] ⊆ xs) <span class="ot">=&gt;</span> <span class="dt">Variant</span> xs <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span></span>
+<span id="cb14-2"><a href="#cb14-2"></a>getNumber <span class="ot">=</span> matchFieldWithMaybe <span class="op">$</span> <span class="op">#</span>number <span class="op">@=</span> <span class="fu">id</span> <span class="op">&lt;:</span> nil</span></code></pre></div>
 <h2 id="例-イベントを拡張する">例 : イベントを拡張する</h2>
 <p>ここからは「多相バリアントを使いこなそう」で取り上げられてた例を Haskell で示そう． ひとつ目は次のふたつのイベント型を考える．</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" title="1"><span class="kw">type</span> <span class="dt">KeyboardEvent</span> <span class="fu">=</span> <span class="dt">Variant</span> <span class="dt">KeyboardEventFields</span></a>
-<a class="sourceLine" id="cb15-2" title="2"><span class="kw">type</span> <span class="dt">KeyboardEventFields</span> <span class="fu">=</span></a>
-<a class="sourceLine" id="cb15-3" title="3">  '[ <span class="st">&quot;keyPress&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Char</span></a>
-<a class="sourceLine" id="cb15-4" title="4">   , <span class="st">&quot;keyRelease&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Char</span></a>
-<a class="sourceLine" id="cb15-5" title="5">   ]</a>
-<a class="sourceLine" id="cb15-6" title="6"></a>
-<a class="sourceLine" id="cb15-7" title="7"><span class="kw">type</span> <span class="dt">MouseEvent</span> <span class="fu">=</span> <span class="dt">Variant</span> <span class="dt">MouseEventFields</span></a>
-<a class="sourceLine" id="cb15-8" title="8"><span class="kw">type</span> <span class="dt">MouseEventFields</span> <span class="fu">=</span></a>
-<a class="sourceLine" id="cb15-9" title="9">  '[ <span class="st">&quot;mousePress&quot;</span> <span class="fu">&gt;:</span> (<span class="dt">Int</span>, <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb15-10" title="10">   , <span class="st">&quot;mouseRelease&quot;</span> <span class="fu">&gt;:</span> (<span class="dt">Int</span>, <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb15-11" title="11">   , <span class="st">&quot;click&quot;</span> <span class="fu">&gt;:</span> (<span class="dt">Int</span>, <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb15-12" title="12">   ]</a></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb15-1"><a href="#cb15-1"></a><span class="kw">type</span> <span class="dt">KeyboardEvent</span> <span class="ot">=</span> <span class="dt">Variant</span> <span class="dt">KeyboardEventFields</span></span>
+<span id="cb15-2"><a href="#cb15-2"></a><span class="kw">type</span> <span class="dt">KeyboardEventFields</span> <span class="ot">=</span></span>
+<span id="cb15-3"><a href="#cb15-3"></a>  '[ <span class="st">&quot;keyPress&quot;</span> <span class="op">&gt;:</span> <span class="dt">Char</span></span>
+<span id="cb15-4"><a href="#cb15-4"></a>   , <span class="st">&quot;keyRelease&quot;</span> <span class="op">&gt;:</span> <span class="dt">Char</span></span>
+<span id="cb15-5"><a href="#cb15-5"></a>   ]</span>
+<span id="cb15-6"><a href="#cb15-6"></a></span>
+<span id="cb15-7"><a href="#cb15-7"></a><span class="kw">type</span> <span class="dt">MouseEvent</span> <span class="ot">=</span> <span class="dt">Variant</span> <span class="dt">MouseEventFields</span></span>
+<span id="cb15-8"><a href="#cb15-8"></a><span class="kw">type</span> <span class="dt">MouseEventFields</span> <span class="ot">=</span></span>
+<span id="cb15-9"><a href="#cb15-9"></a>  '[ <span class="st">&quot;mousePress&quot;</span> <span class="op">&gt;:</span> (<span class="dt">Int</span>, <span class="dt">Int</span>)</span>
+<span id="cb15-10"><a href="#cb15-10"></a>   , <span class="st">&quot;mouseRelease&quot;</span> <span class="op">&gt;:</span> (<span class="dt">Int</span>, <span class="dt">Int</span>)</span>
+<span id="cb15-11"><a href="#cb15-11"></a>   , <span class="st">&quot;click&quot;</span> <span class="op">&gt;:</span> (<span class="dt">Int</span>, <span class="dt">Int</span>)</span>
+<span id="cb15-12"><a href="#cb15-12"></a>   ]</span></code></pre></div>
 <p>さて，これらの両方の型許容する型 <code>Event</code> を作りたい． 普通の直和型を用いて次のように書くことが出来る．</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" title="1"><span class="kw">data</span> <span class="dt">Event</span> <span class="fu">=</span> <span class="dt">Key</span> <span class="dt">KeyboardEvent</span> <span class="fu">|</span> <span class="dt">Mouse</span> <span class="dt">MouseEvent</span></a></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb16-1"><a href="#cb16-1"></a><span class="kw">data</span> <span class="dt">Event</span> <span class="ot">=</span> <span class="dt">Key</span> <span class="dt">KeyboardEvent</span> <span class="op">|</span> <span class="dt">Mouse</span> <span class="dt">MouseEvent</span></span></code></pre></div>
 <p>もちろん，これでは元のふたつの型をうまく再利用できていない． 既に何度か登場している型レベルリストの連結 <a href="https://hackage.haskell.org/package/extensible-0.4.8/docs/Data-Extensible-Product.html#t:-43--43-"><code>++</code></a> を使って次のように書くこともできる．</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" title="1"><span class="kw">type</span> <span class="dt">Event</span> <span class="fu">=</span> <span class="dt">Variant</span> (<span class="dt">KeyboardEventFields</span> <span class="fu">++</span> <span class="dt">MouseEventFields</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb17-1"><a href="#cb17-1"></a><span class="kw">type</span> <span class="dt">Event</span> <span class="ot">=</span> <span class="dt">Variant</span> (<span class="dt">KeyboardEventFields</span> <span class="op">++</span> <span class="dt">MouseEventFields</span>)</span></code></pre></div>
 <p>こうすると，<code>Event</code> 型と <code>KeyboardEvent</code> 型・<code>MouseEvent</code> 型には包含関係ができ，前述した <code>Hoge</code> 型で示した方法により各々で関数を共有することが出来る． 例えば次の <code>getCharFromEvent</code> 関数は <code>KeyboardEvent</code> 型と <code>Event</code> 型の両方で利用できる．</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb18-1" title="1"><span class="ot">getCharFromEvent ::</span></a>
-<a class="sourceLine" id="cb18-2" title="2">  (<span class="dt">Generate</span> xs, <span class="dt">KeyboardEventFields</span> ⊆ xs) <span class="ot">=&gt;</span> <span class="dt">Variant</span> xs <span class="ot">-&gt;</span> <span class="dt">Char</span></a>
-<a class="sourceLine" id="cb18-3" title="3">getCharFromEvent <span class="fu">=</span> matchFieldWithDefault (<span class="fu">error</span> <span class="st">&quot;not a key&quot;</span>)</a>
-<a class="sourceLine" id="cb18-4" title="4">    <span class="fu">$</span> <span class="fu">#</span>keyPress   <span class="fu">@=</span> <span class="fu">id</span></a>
-<a class="sourceLine" id="cb18-5" title="5">   <span class="fu">&lt;:</span> <span class="fu">#</span>keyRelease <span class="fu">@=</span> <span class="fu">id</span></a>
-<a class="sourceLine" id="cb18-6" title="6">   <span class="fu">&lt;:</span> nil</a></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb18-1"><a href="#cb18-1"></a><span class="ot">getCharFromEvent ::</span></span>
+<span id="cb18-2"><a href="#cb18-2"></a>  (<span class="dt">Generate</span> xs, <span class="dt">KeyboardEventFields</span> ⊆ xs) <span class="ot">=&gt;</span> <span class="dt">Variant</span> xs <span class="ot">-&gt;</span> <span class="dt">Char</span></span>
+<span id="cb18-3"><a href="#cb18-3"></a>getCharFromEvent <span class="ot">=</span> matchFieldWithDefault (<span class="fu">error</span> <span class="st">&quot;not a key&quot;</span>)</span>
+<span id="cb18-4"><a href="#cb18-4"></a>    <span class="op">$</span> <span class="op">#</span>keyPress   <span class="op">@=</span> <span class="fu">id</span></span>
+<span id="cb18-5"><a href="#cb18-5"></a>   <span class="op">&lt;:</span> <span class="op">#</span>keyRelease <span class="op">@=</span> <span class="fu">id</span></span>
+<span id="cb18-6"><a href="#cb18-6"></a>   <span class="op">&lt;:</span> nil</span></code></pre></div>
 <h2 id="例-トランプで-expression-problem">例 : トランプで Expression Problem</h2>
 <p>Expression Problem が何なのかは各位ググってもらうとして，「多相バリアントを使いこなそう」の最後で紹介されていた，多相バリアントによる Expression Problem の解法を Haskell でもやってみる．</p>
 <p>次のような型と関数があったとする．</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb19-1" title="1"><span class="kw">type</span> <span class="dt">Card</span> <span class="fu">=</span> <span class="dt">Variant</span> <span class="dt">CardFields</span></a>
-<a class="sourceLine" id="cb19-2" title="2"><span class="kw">type</span> <span class="dt">CardFields</span> <span class="fu">=</span></a>
-<a class="sourceLine" id="cb19-3" title="3">  '[ <span class="st">&quot;number&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb19-4" title="4">   , <span class="st">&quot;jack&quot;</span>   <span class="fu">&gt;:</span> ()</a>
-<a class="sourceLine" id="cb19-5" title="5">   , <span class="st">&quot;queen&quot;</span>  <span class="fu">&gt;:</span> ()</a>
-<a class="sourceLine" id="cb19-6" title="6">   , <span class="st">&quot;king&quot;</span>   <span class="fu">&gt;:</span> ()</a>
-<a class="sourceLine" id="cb19-7" title="7">   ]</a>
-<a class="sourceLine" id="cb19-8" title="8"></a>
-<a class="sourceLine" id="cb19-9" title="9"><span class="ot">cardNum ::</span> <span class="dt">Card</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb19-10" title="10">cardNum <span class="fu">=</span> matchField cardNumPattern</a>
-<a class="sourceLine" id="cb19-11" title="11"></a>
-<a class="sourceLine" id="cb19-12" title="12"><span class="ot">cardNumPattern ::</span> <span class="dt">RecordOf</span> (<span class="dt">Match</span> <span class="dt">Identity</span> <span class="dt">Int</span>) <span class="dt">CardFields</span></a>
-<a class="sourceLine" id="cb19-13" title="13">cardNumPattern</a>
-<a class="sourceLine" id="cb19-14" title="14">    <span class="fu">=</span> <span class="fu">#</span>number <span class="fu">@=</span> <span class="fu">id</span></a>
-<a class="sourceLine" id="cb19-15" title="15">   <span class="fu">&lt;:</span> <span class="fu">#</span>jack   <span class="fu">@=</span> <span class="fu">const</span> <span class="dv">11</span></a>
-<a class="sourceLine" id="cb19-16" title="16">   <span class="fu">&lt;:</span> <span class="fu">#</span>queen  <span class="fu">@=</span> <span class="fu">const</span> <span class="dv">12</span></a>
-<a class="sourceLine" id="cb19-17" title="17">   <span class="fu">&lt;:</span> <span class="fu">#</span>king   <span class="fu">@=</span> <span class="fu">const</span> <span class="dv">13</span></a>
-<a class="sourceLine" id="cb19-18" title="18">   <span class="fu">&lt;:</span> nil</a></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb19-1"><a href="#cb19-1"></a><span class="kw">type</span> <span class="dt">Card</span> <span class="ot">=</span> <span class="dt">Variant</span> <span class="dt">CardFields</span></span>
+<span id="cb19-2"><a href="#cb19-2"></a><span class="kw">type</span> <span class="dt">CardFields</span> <span class="ot">=</span></span>
+<span id="cb19-3"><a href="#cb19-3"></a>  '[ <span class="st">&quot;number&quot;</span> <span class="op">&gt;:</span> <span class="dt">Int</span></span>
+<span id="cb19-4"><a href="#cb19-4"></a>   , <span class="st">&quot;jack&quot;</span>   <span class="op">&gt;:</span> ()</span>
+<span id="cb19-5"><a href="#cb19-5"></a>   , <span class="st">&quot;queen&quot;</span>  <span class="op">&gt;:</span> ()</span>
+<span id="cb19-6"><a href="#cb19-6"></a>   , <span class="st">&quot;king&quot;</span>   <span class="op">&gt;:</span> ()</span>
+<span id="cb19-7"><a href="#cb19-7"></a>   ]</span>
+<span id="cb19-8"><a href="#cb19-8"></a></span>
+<span id="cb19-9"><a href="#cb19-9"></a><span class="ot">cardNum ::</span> <span class="dt">Card</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb19-10"><a href="#cb19-10"></a>cardNum <span class="ot">=</span> matchField cardNumPattern</span>
+<span id="cb19-11"><a href="#cb19-11"></a></span>
+<span id="cb19-12"><a href="#cb19-12"></a><span class="ot">cardNumPattern ::</span> <span class="dt">RecordOf</span> (<span class="dt">Match</span> <span class="dt">Identity</span> <span class="dt">Int</span>) <span class="dt">CardFields</span></span>
+<span id="cb19-13"><a href="#cb19-13"></a>cardNumPattern</span>
+<span id="cb19-14"><a href="#cb19-14"></a>    <span class="ot">=</span> <span class="op">#</span>number <span class="op">@=</span> <span class="fu">id</span></span>
+<span id="cb19-15"><a href="#cb19-15"></a>   <span class="op">&lt;:</span> <span class="op">#</span>jack   <span class="op">@=</span> <span class="fu">const</span> <span class="dv">11</span></span>
+<span id="cb19-16"><a href="#cb19-16"></a>   <span class="op">&lt;:</span> <span class="op">#</span>queen  <span class="op">@=</span> <span class="fu">const</span> <span class="dv">12</span></span>
+<span id="cb19-17"><a href="#cb19-17"></a>   <span class="op">&lt;:</span> <span class="op">#</span>king   <span class="op">@=</span> <span class="fu">const</span> <span class="dv">13</span></span>
+<span id="cb19-18"><a href="#cb19-18"></a>   <span class="op">&lt;:</span> nil</span></code></pre></div>
 <p>(<code>cardNumPattern</code> を切り出しているのがあからさまに恣意的だが…)これに以下のことは可能だろうか？</p>
 <ol type="1">
 <li>静的で安全に(キャストせず)</li>
@@ -270,26 +270,26 @@
 <li>新しい場合分け構造を定義する</li>
 </ol>
 <p>最後の「構造」というのは今回は置いておいて(OCaml ではモジュールとして定義してたが，Haskell でモジュールに切り分けるにはファイルを切り分ける必要があるので…めんどい…)，1-4を考えてみよう． <code>Card</code> 型やその関数を拡張したものとして，次のような <code>CardExt</code> 型とその関数を定義した．</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb20-1" title="1"><span class="kw">type</span> <span class="dt">CardExt</span> <span class="fu">=</span> <span class="dt">Variant</span> <span class="dt">CardExtFields</span></a>
-<a class="sourceLine" id="cb20-2" title="2"><span class="kw">type</span> <span class="dt">CardExtFields</span> <span class="fu">=</span> <span class="dt">CardFields</span> <span class="fu">++</span> '[<span class="st">&quot;joker&quot;</span> <span class="fu">&gt;:</span> ()]</a>
-<a class="sourceLine" id="cb20-3" title="3"></a>
-<a class="sourceLine" id="cb20-4" title="4"><span class="ot">cardExtNum ::</span> <span class="dt">CardExt</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb20-5" title="5">cardExtNum <span class="fu">=</span></a>
-<a class="sourceLine" id="cb20-6" title="6">  matchField <span class="fu">$</span> shrink (<span class="fu">#</span>joker <span class="fu">@=</span> (<span class="fu">const</span> <span class="dv">0</span><span class="ot"> ::</span> () <span class="ot">-&gt;</span> <span class="dt">Int</span>) <span class="fu">&lt;:</span> cardNumPattern)</a>
-<a class="sourceLine" id="cb20-7" title="7"></a>
-<a class="sourceLine" id="cb20-8" title="8"><span class="ot">nextCardExt ::</span> <span class="dt">CardExt</span> <span class="ot">-&gt;</span> <span class="dt">CardExt</span></a>
-<a class="sourceLine" id="cb20-9" title="9">nextCardExt <span class="fu">=</span> matchField</a>
-<a class="sourceLine" id="cb20-10" title="10">    <span class="fu">$</span> <span class="fu">#</span>number <span class="fu">@=</span> (\n <span class="ot">-&gt;</span> <span class="kw">if</span> n <span class="fu">&lt;</span> <span class="dv">10</span> <span class="kw">then</span> embedAssoc <span class="fu">$</span> <span class="fu">#</span>number <span class="fu">@=</span> n <span class="fu">+</span> <span class="dv">1</span> <span class="kw">else</span> embedAssoc <span class="fu">$</span> <span class="fu">#</span>jack <span class="fu">@=</span> ())</a>
-<a class="sourceLine" id="cb20-11" title="11">   <span class="fu">&lt;:</span> <span class="fu">#</span>jack   <span class="fu">@=</span> <span class="fu">const</span> (embedAssoc <span class="fu">$</span> <span class="fu">#</span>queen  <span class="fu">@=</span> ())</a>
-<a class="sourceLine" id="cb20-12" title="12">   <span class="fu">&lt;:</span> <span class="fu">#</span>queen  <span class="fu">@=</span> <span class="fu">const</span> (embedAssoc <span class="fu">$</span> <span class="fu">#</span>king   <span class="fu">@=</span> ())</a>
-<a class="sourceLine" id="cb20-13" title="13">   <span class="fu">&lt;:</span> <span class="fu">#</span>king   <span class="fu">@=</span> <span class="fu">const</span> (embedAssoc <span class="fu">$</span> <span class="fu">#</span>joker  <span class="fu">@=</span> ())</a>
-<a class="sourceLine" id="cb20-14" title="14">   <span class="fu">&lt;:</span> <span class="fu">#</span>joker  <span class="fu">@=</span> <span class="fu">const</span> (embedAssoc <span class="fu">$</span> <span class="fu">#</span>number <span class="fu">@=</span> <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb20-15" title="15">   <span class="fu">&lt;:</span> nil</a></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb20-1"><a href="#cb20-1"></a><span class="kw">type</span> <span class="dt">CardExt</span> <span class="ot">=</span> <span class="dt">Variant</span> <span class="dt">CardExtFields</span></span>
+<span id="cb20-2"><a href="#cb20-2"></a><span class="kw">type</span> <span class="dt">CardExtFields</span> <span class="ot">=</span> <span class="dt">CardFields</span> <span class="op">++</span> '[<span class="st">&quot;joker&quot;</span> <span class="op">&gt;:</span> ()]</span>
+<span id="cb20-3"><a href="#cb20-3"></a></span>
+<span id="cb20-4"><a href="#cb20-4"></a><span class="ot">cardExtNum ::</span> <span class="dt">CardExt</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb20-5"><a href="#cb20-5"></a>cardExtNum <span class="ot">=</span></span>
+<span id="cb20-6"><a href="#cb20-6"></a>  matchField <span class="op">$</span> shrink (<span class="op">#</span>joker <span class="op">@=</span> (<span class="fu">const</span> <span class="dv">0</span><span class="ot"> ::</span> () <span class="ot">-&gt;</span> <span class="dt">Int</span>) <span class="op">&lt;:</span> cardNumPattern)</span>
+<span id="cb20-7"><a href="#cb20-7"></a></span>
+<span id="cb20-8"><a href="#cb20-8"></a><span class="ot">nextCardExt ::</span> <span class="dt">CardExt</span> <span class="ot">-&gt;</span> <span class="dt">CardExt</span></span>
+<span id="cb20-9"><a href="#cb20-9"></a>nextCardExt <span class="ot">=</span> matchField</span>
+<span id="cb20-10"><a href="#cb20-10"></a>    <span class="op">$</span> <span class="op">#</span>number <span class="op">@=</span> (\n <span class="ot">-&gt;</span> <span class="kw">if</span> n <span class="op">&lt;</span> <span class="dv">10</span> <span class="kw">then</span> embedAssoc <span class="op">$</span> <span class="op">#</span>number <span class="op">@=</span> n <span class="op">+</span> <span class="dv">1</span> <span class="kw">else</span> embedAssoc <span class="op">$</span> <span class="op">#</span>jack <span class="op">@=</span> ())</span>
+<span id="cb20-11"><a href="#cb20-11"></a>   <span class="op">&lt;:</span> <span class="op">#</span>jack   <span class="op">@=</span> <span class="fu">const</span> (embedAssoc <span class="op">$</span> <span class="op">#</span>queen  <span class="op">@=</span> ())</span>
+<span id="cb20-12"><a href="#cb20-12"></a>   <span class="op">&lt;:</span> <span class="op">#</span>queen  <span class="op">@=</span> <span class="fu">const</span> (embedAssoc <span class="op">$</span> <span class="op">#</span>king   <span class="op">@=</span> ())</span>
+<span id="cb20-13"><a href="#cb20-13"></a>   <span class="op">&lt;:</span> <span class="op">#</span>king   <span class="op">@=</span> <span class="fu">const</span> (embedAssoc <span class="op">$</span> <span class="op">#</span>joker  <span class="op">@=</span> ())</span>
+<span id="cb20-14"><a href="#cb20-14"></a>   <span class="op">&lt;:</span> <span class="op">#</span>joker  <span class="op">@=</span> <span class="fu">const</span> (embedAssoc <span class="op">$</span> <span class="op">#</span>number <span class="op">@=</span> <span class="dv">1</span>)</span>
+<span id="cb20-15"><a href="#cb20-15"></a>   <span class="op">&lt;:</span> nil</span></code></pre></div>
 <p>これで一応</p>
 <ol type="1">
 <li>静的で安全に(もちろん!)</li>
 <li>既存のコードを改造せず</li>
-<li><code>&quot;joker&quot; &gt;: ()</code> という新しい場合分けを加え</li>
+<li><code>"joker" &gt;: ()</code> という新しい場合分けを加え</li>
 <li><code>nextCardExt</code> という新しい操作(関数)を加える</li>
 </ol>
 <p>ことができた．</p>

@@ -119,9 +119,9 @@
 <p>Egison は江木さんという方が学生のころから作ってるパターンマッチ志向という独特のパラダイムを持つプログラミング言語だ． 全然関係ない話だが，今度<a href="https://connpass.com/event/102061/">ワークショップ</a>も行われる．</p>
 <h3 id="stackbuildersdotenv-hs">stackbuilders/dotenv-hs</h3>
 <p>唯一のまともな OSS な PR． <a href="http://hackage.haskell.org/package/dotenv">dotenv</a> という Haskell パッケージのリポジトリだ． 自分が作ってる <a href="https://github.com/matsubara0507/stack-tpls">CLI ツール</a>に使おうと思って README に書いてある通りに書いて見たら，動かなかったので，その修正 PR を出した．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="kw">import</span> <span class="dt">Configuration.Dotenv</span> (loadFile, defaultConfig)</a>
-<a class="sourceLine" id="cb2-2" title="2"></a>
-<a class="sourceLine" id="cb2-3" title="3">loadFile defaultConfig</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">import</span> <span class="dt">Configuration.Dotenv</span> (loadFile, defaultConfig)</span>
+<span id="cb2-2"><a href="#cb2-2"></a></span>
+<span id="cb2-3"><a href="#cb2-3"></a>loadFile defaultConfig</span></code></pre></div>
 <p>こう書くと <code>defaultConfig</code> が無いと怒られる．</p>
 <pre class="shell"><code>Main.hs:17:42: error:
     Module ‘Configuration.Dotenv’ does not export ‘defaultConfig’

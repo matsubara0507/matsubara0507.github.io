@@ -155,23 +155,23 @@ $ docker images | grep haskell
 haskell             latest              198e758a94f7        8 days ago          961.1 MB</code></pre>
 <p>Haskell の<a href="https://github.com/freebroccolo/docker-haskell/blob/5f1ae82bd27501322100b915c9ae6cc9f9aea129/8.0/Dockerfile">公式のDockerfile</a> を見ると，GHC を直接入れて，stack の global config yaml の <code>system-ghc</code> のオプションを <code>true</code> にしている． こうすることで，<code>stack ghc</code> や <code>stack ghci</code> などがカレントディレクトリに config yaml が無い場合に，インストール済みの GHC を使ってくれる．</p>
 <p>なるほど，こうしよう．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb4-1" title="1"><span class="kw">RUN</span> echo <span class="st">'deb http://ppa.launchpad.net/hvr/ghc/ubuntu trusty main'</span> &gt; /etc/apt/sources.list.d/ghc.list \</a>
-<a class="sourceLine" id="cb4-2" title="2">    &amp;&amp; apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F6F88286 \</a>
-<a class="sourceLine" id="cb4-3" title="3">    &amp;&amp; apt-get update &amp;&amp; apt-get install -y --no-install-recommends \</a>
-<a class="sourceLine" id="cb4-4" title="4">    ca-certificates \</a>
-<a class="sourceLine" id="cb4-5" title="5">    g++ \</a>
-<a class="sourceLine" id="cb4-6" title="6">    ghc-8.0.2 \</a>
-<a class="sourceLine" id="cb4-7" title="7">    libtinfo-dev \</a>
-<a class="sourceLine" id="cb4-8" title="8">    &amp;&amp; apt-get clean \</a>
-<a class="sourceLine" id="cb4-9" title="9">    &amp;&amp; rm -rf /var/lib/apt/lists/*</a>
-<a class="sourceLine" id="cb4-10" title="10"><span class="kw">RUN</span> apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 575159689BEFB442 \</a>
-<a class="sourceLine" id="cb4-11" title="11">    &amp;&amp; echo <span class="st">'deb http://download.fpcomplete.com/debian jessie main'</span> | tee /etc/apt/sources.list.d/fpco.list \</a>
-<a class="sourceLine" id="cb4-12" title="12">    &amp;&amp; apt-get update &amp;&amp; apt-get install -y --no-install-recommends \</a>
-<a class="sourceLine" id="cb4-13" title="13">    stack \</a>
-<a class="sourceLine" id="cb4-14" title="14">    &amp;&amp; apt-get clean \</a>
-<a class="sourceLine" id="cb4-15" title="15">    &amp;&amp; rm -rf /var/lib/apt/lists/*</a>
-<a class="sourceLine" id="cb4-16" title="16"><span class="kw">RUN</span> stack config set system-ghc --global true</a>
-<a class="sourceLine" id="cb4-17" title="17"><span class="kw">ENV</span> PATH /opt/ghc/8.0.2/bin:$PATH</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">RUN</span> echo <span class="st">'deb http://ppa.launchpad.net/hvr/ghc/ubuntu trusty main'</span> &gt; /etc/apt/sources.list.d/ghc.list \</span>
+<span id="cb4-2"><a href="#cb4-2"></a>    &amp;&amp; apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F6F88286 \</span>
+<span id="cb4-3"><a href="#cb4-3"></a>    &amp;&amp; apt-get update &amp;&amp; apt-get install -y --no-install-recommends \</span>
+<span id="cb4-4"><a href="#cb4-4"></a>    ca-certificates \</span>
+<span id="cb4-5"><a href="#cb4-5"></a>    g++ \</span>
+<span id="cb4-6"><a href="#cb4-6"></a>    ghc-8.0.2 \</span>
+<span id="cb4-7"><a href="#cb4-7"></a>    libtinfo-dev \</span>
+<span id="cb4-8"><a href="#cb4-8"></a>    &amp;&amp; apt-get clean \</span>
+<span id="cb4-9"><a href="#cb4-9"></a>    &amp;&amp; rm -rf /var/lib/apt/lists/*</span>
+<span id="cb4-10"><a href="#cb4-10"></a><span class="kw">RUN</span> apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 575159689BEFB442 \</span>
+<span id="cb4-11"><a href="#cb4-11"></a>    &amp;&amp; echo <span class="st">'deb http://download.fpcomplete.com/debian jessie main'</span> | tee /etc/apt/sources.list.d/fpco.list \</span>
+<span id="cb4-12"><a href="#cb4-12"></a>    &amp;&amp; apt-get update &amp;&amp; apt-get install -y --no-install-recommends \</span>
+<span id="cb4-13"><a href="#cb4-13"></a>    stack \</span>
+<span id="cb4-14"><a href="#cb4-14"></a>    &amp;&amp; apt-get clean \</span>
+<span id="cb4-15"><a href="#cb4-15"></a>    &amp;&amp; rm -rf /var/lib/apt/lists/*</span>
+<span id="cb4-16"><a href="#cb4-16"></a><span class="kw">RUN</span> stack config set system-ghc --global true</span>
+<span id="cb4-17"><a href="#cb4-17"></a><span class="kw">ENV</span> PATH /opt/ghc/8.0.2/bin:$PATH</span></code></pre></div>
 <p>stack の入れ方は元ので良さそう．</p>
 <h3 id="erlang">Erlang</h3>
 <p>イロイロ試した結果，<code>erlang-base-hipe</code> いらなそう． これをなくしたらだいぶ build が早くなった．</p>
@@ -182,18 +182,18 @@ erlang              slim                45d18161e949        8 days ago          
 <h3 id="io">Io</h3>
 <p>io をクローンして build した後にクローンしたのを削除するようにした． 一連のレイヤーでやらないと意味ないのでそうした．</p>
 <p>こんな感じ．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">RUN</span> git clone --branch 2015.11.11 --depth 1 https://github.com/stevedekorte/io.git ~/io \</a>
-<a class="sourceLine" id="cb6-2" title="2">    &amp;&amp; mkdir -p ~/io/build \</a>
-<a class="sourceLine" id="cb6-3" title="3">    &amp;&amp; cd ~/io/build \</a>
-<a class="sourceLine" id="cb6-4" title="4">    &amp;&amp; cmake .. \</a>
-<a class="sourceLine" id="cb6-5" title="5">    &amp;&amp; make install \</a>
-<a class="sourceLine" id="cb6-6" title="6">    &amp;&amp; rm -fr ~/io</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">RUN</span> git clone --branch 2015.11.11 --depth 1 https://github.com/stevedekorte/io.git ~/io \</span>
+<span id="cb6-2"><a href="#cb6-2"></a>    &amp;&amp; mkdir -p ~/io/build \</span>
+<span id="cb6-3"><a href="#cb6-3"></a>    &amp;&amp; cd ~/io/build \</span>
+<span id="cb6-4"><a href="#cb6-4"></a>    &amp;&amp; cmake .. \</span>
+<span id="cb6-5"><a href="#cb6-5"></a>    &amp;&amp; make install \</span>
+<span id="cb6-6"><a href="#cb6-6"></a>    &amp;&amp; rm -fr ~/io</span></code></pre></div>
 <h3 id="common">Common</h3>
 <p>なんか各言語を独立させたいので，Common の欄はやめた． 必要な箇所で必ず <code>apt-get install</code> するようにした． <code>--no-install-recommends</code> オプションを付ければ何度もインストールされないので問題ないはず．</p>
 <h2 id="修正">修正</h2>
 <h3 id="rbenv">rbenv</h3>
 <p>パスを通せてなかった． <code>ENV PATH $HOME/.rbenv/bin:$PATH</code> ではダメみたい． <code>$HOME</code> の部分がおかしかった． <code>/.rbenv/bin</code> となってた．</p>
-<p>しょうがないので <code>RUN echo 'export PATH=&quot;$HOME/.rbenv/bin:$PATH&quot;' &gt;&gt; ~/.bashrc</code> とすることにした．</p>
+<p>しょうがないので <code>RUN echo 'export PATH="$HOME/.rbenv/bin:$PATH"' &gt;&gt; ~/.bashrc</code> とすることにした．</p>
 <h2 id="できた">できた</h2>
 <p><a href="https://github.com/matsubara0507/seven-languages-in-seven-weeks/blob/4b1284d5fb5aba6c5cae10d2caa08b49eca2eb38/seven-lang-docker/Dockerfile">Dockerfile はこんな感じ</a>．</p>
 <p>サイズを見比べると</p>

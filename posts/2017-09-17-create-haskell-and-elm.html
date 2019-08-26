@@ -120,135 +120,135 @@
 <p>参考記事と違って ToDo の追加と削除もフロント側からできる． DBは使わず，ToDo リストは愚直にハッシュマップで保持してる(ここは参考記事でそうしてるからそうした)． なので，プログラムを落とせばデータは消える．</p>
 <h3 id="todo-の型を書く">ToDo の型を書く</h3>
 <p>というか参考記事からの基本的にコピペですね．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="ot">{-# LANGUAGE DataKinds     #-}</span></a>
-<a class="sourceLine" id="cb1-2" title="2"><span class="ot">{-# LANGUAGE DeriveGeneric #-}</span></a>
-<a class="sourceLine" id="cb1-3" title="3"><span class="ot">{-# LANGUAGE TypeOperators #-}</span></a>
-<a class="sourceLine" id="cb1-4" title="4"></a>
-<a class="sourceLine" id="cb1-5" title="5"><span class="kw">module</span> <span class="dt">Todo</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb1-6" title="6"></a>
-<a class="sourceLine" id="cb1-7" title="7"><span class="kw">import</span> <span class="dt">Data.Aeson</span> (<span class="dt">FromJSON</span>, <span class="dt">ToJSON</span>)</a>
-<a class="sourceLine" id="cb1-8" title="8"><span class="kw">import</span> <span class="dt">Data.Proxy</span> (<span class="dt">Proxy</span> (..))</a>
-<a class="sourceLine" id="cb1-9" title="9"><span class="kw">import</span> <span class="dt">Elm</span> (<span class="dt">ElmType</span>)</a>
-<a class="sourceLine" id="cb1-10" title="10"><span class="kw">import</span> <span class="dt">GHC.Generics</span> (<span class="dt">Generic</span>)</a>
-<a class="sourceLine" id="cb1-11" title="11"><span class="kw">import</span> <span class="dt">Servant.API</span></a>
-<a class="sourceLine" id="cb1-12" title="12"><span class="kw">import</span> <span class="dt">Web.Internal.FormUrlEncoded</span> (<span class="dt">FromForm</span>)</a>
-<a class="sourceLine" id="cb1-13" title="13"></a>
-<a class="sourceLine" id="cb1-14" title="14"><span class="kw">data</span> <span class="dt">Todo</span> <span class="fu">=</span> <span class="dt">Todo</span></a>
-<a class="sourceLine" id="cb1-15" title="15">  {<span class="ot"> todoId ::</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb1-16" title="16">  ,<span class="ot"> title  ::</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb1-17" title="17">  ,<span class="ot"> done   ::</span> <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb1-18" title="18">  } <span class="kw">deriving</span> (<span class="dt">Generic</span>, <span class="dt">Show</span>)</a>
-<a class="sourceLine" id="cb1-19" title="19"></a>
-<a class="sourceLine" id="cb1-20" title="20"><span class="kw">instance</span> <span class="dt">FromJSON</span> <span class="dt">Todo</span></a>
-<a class="sourceLine" id="cb1-21" title="21"><span class="kw">instance</span> <span class="dt">ToJSON</span> <span class="dt">Todo</span></a>
-<a class="sourceLine" id="cb1-22" title="22"><span class="kw">instance</span> <span class="dt">FromForm</span> <span class="dt">Todo</span> <span class="co">-- (1)</span></a>
-<a class="sourceLine" id="cb1-23" title="23"><span class="kw">instance</span> <span class="dt">ElmType</span> <span class="dt">Todo</span>  <span class="co">-- (2)</span></a>
-<a class="sourceLine" id="cb1-24" title="24"></a>
-<a class="sourceLine" id="cb1-25" title="25"><span class="kw">type</span> <span class="dt">CRUD</span> <span class="fu">=</span> <span class="st">&quot;todos&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> '[<span class="dt">JSON</span>] [<span class="dt">Todo</span>]</a>
-<a class="sourceLine" id="cb1-26" title="26">       <span class="fu">:&lt;|&gt;</span> <span class="st">&quot;todos&quot;</span> <span class="fu">:&gt;</span> <span class="dt">ReqBody</span> '[<span class="dt">JSON</span>, <span class="dt">FormUrlEncoded</span>] <span class="dt">Todo</span> <span class="fu">:&gt;</span> <span class="dt">Post</span> '[<span class="dt">JSON</span>] <span class="dt">Todo</span></a>
-<a class="sourceLine" id="cb1-27" title="27">       <span class="fu">:&lt;|&gt;</span> <span class="st">&quot;todos&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Capture</span> <span class="st">&quot;id&quot;</span> <span class="dt">Int</span> <span class="fu">:&gt;</span> <span class="dt">ReqBody</span> '[<span class="dt">JSON</span>, <span class="dt">FormUrlEncoded</span>] <span class="dt">Todo</span> <span class="fu">:&gt;</span> <span class="dt">Put</span> '[<span class="dt">JSON</span>] ()</a>
-<a class="sourceLine" id="cb1-28" title="28">       <span class="fu">:&lt;|&gt;</span> <span class="st">&quot;todos&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Capture</span> <span class="st">&quot;id&quot;</span> <span class="dt">Int</span> <span class="fu">:&gt;</span> <span class="dt">Delete</span> '[<span class="dt">JSON</span>] ()</a>
-<a class="sourceLine" id="cb1-29" title="29"></a>
-<a class="sourceLine" id="cb1-30" title="30"><span class="ot">crud ::</span> <span class="dt">Proxy</span> <span class="dt">CRUD</span></a>
-<a class="sourceLine" id="cb1-31" title="31">crud <span class="fu">=</span> <span class="dt">Proxy</span></a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1"></a><span class="ot">{-# LANGUAGE DataKinds     #-}</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="ot">{-# LANGUAGE DeriveGeneric #-}</span></span>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="ot">{-# LANGUAGE TypeOperators #-}</span></span>
+<span id="cb1-4"><a href="#cb1-4"></a></span>
+<span id="cb1-5"><a href="#cb1-5"></a><span class="kw">module</span> <span class="dt">Todo</span> <span class="kw">where</span></span>
+<span id="cb1-6"><a href="#cb1-6"></a></span>
+<span id="cb1-7"><a href="#cb1-7"></a><span class="kw">import</span> <span class="dt">Data.Aeson</span> (<span class="dt">FromJSON</span>, <span class="dt">ToJSON</span>)</span>
+<span id="cb1-8"><a href="#cb1-8"></a><span class="kw">import</span> <span class="dt">Data.Proxy</span> (<span class="dt">Proxy</span> (..))</span>
+<span id="cb1-9"><a href="#cb1-9"></a><span class="kw">import</span> <span class="dt">Elm</span> (<span class="dt">ElmType</span>)</span>
+<span id="cb1-10"><a href="#cb1-10"></a><span class="kw">import</span> <span class="dt">GHC.Generics</span> (<span class="dt">Generic</span>)</span>
+<span id="cb1-11"><a href="#cb1-11"></a><span class="kw">import</span> <span class="dt">Servant.API</span></span>
+<span id="cb1-12"><a href="#cb1-12"></a><span class="kw">import</span> <span class="dt">Web.Internal.FormUrlEncoded</span> (<span class="dt">FromForm</span>)</span>
+<span id="cb1-13"><a href="#cb1-13"></a></span>
+<span id="cb1-14"><a href="#cb1-14"></a><span class="kw">data</span> <span class="dt">Todo</span> <span class="ot">=</span> <span class="dt">Todo</span></span>
+<span id="cb1-15"><a href="#cb1-15"></a>  {<span class="ot"> todoId ::</span> <span class="dt">Int</span></span>
+<span id="cb1-16"><a href="#cb1-16"></a>  ,<span class="ot"> title  ::</span> <span class="dt">String</span></span>
+<span id="cb1-17"><a href="#cb1-17"></a>  ,<span class="ot"> done   ::</span> <span class="dt">Bool</span></span>
+<span id="cb1-18"><a href="#cb1-18"></a>  } <span class="kw">deriving</span> (<span class="dt">Generic</span>, <span class="dt">Show</span>)</span>
+<span id="cb1-19"><a href="#cb1-19"></a></span>
+<span id="cb1-20"><a href="#cb1-20"></a><span class="kw">instance</span> <span class="dt">FromJSON</span> <span class="dt">Todo</span></span>
+<span id="cb1-21"><a href="#cb1-21"></a><span class="kw">instance</span> <span class="dt">ToJSON</span> <span class="dt">Todo</span></span>
+<span id="cb1-22"><a href="#cb1-22"></a><span class="kw">instance</span> <span class="dt">FromForm</span> <span class="dt">Todo</span> <span class="co">-- (1)</span></span>
+<span id="cb1-23"><a href="#cb1-23"></a><span class="kw">instance</span> <span class="dt">ElmType</span> <span class="dt">Todo</span>  <span class="co">-- (2)</span></span>
+<span id="cb1-24"><a href="#cb1-24"></a></span>
+<span id="cb1-25"><a href="#cb1-25"></a><span class="kw">type</span> <span class="dt">CRUD</span> <span class="ot">=</span> <span class="st">&quot;todos&quot;</span> <span class="op">:&gt;</span> <span class="dt">Get</span> '[<span class="dt">JSON</span>] [<span class="dt">Todo</span>]</span>
+<span id="cb1-26"><a href="#cb1-26"></a>       <span class="op">:&lt;|&gt;</span> <span class="st">&quot;todos&quot;</span> <span class="op">:&gt;</span> <span class="dt">ReqBody</span> '[<span class="dt">JSON</span>, <span class="dt">FormUrlEncoded</span>] <span class="dt">Todo</span> <span class="op">:&gt;</span> <span class="dt">Post</span> '[<span class="dt">JSON</span>] <span class="dt">Todo</span></span>
+<span id="cb1-27"><a href="#cb1-27"></a>       <span class="op">:&lt;|&gt;</span> <span class="st">&quot;todos&quot;</span> <span class="op">:&gt;</span> <span class="dt">Capture</span> <span class="st">&quot;id&quot;</span> <span class="dt">Int</span> <span class="op">:&gt;</span> <span class="dt">ReqBody</span> '[<span class="dt">JSON</span>, <span class="dt">FormUrlEncoded</span>] <span class="dt">Todo</span> <span class="op">:&gt;</span> <span class="dt">Put</span> '[<span class="dt">JSON</span>] ()</span>
+<span id="cb1-28"><a href="#cb1-28"></a>       <span class="op">:&lt;|&gt;</span> <span class="st">&quot;todos&quot;</span> <span class="op">:&gt;</span> <span class="dt">Capture</span> <span class="st">&quot;id&quot;</span> <span class="dt">Int</span> <span class="op">:&gt;</span> <span class="dt">Delete</span> '[<span class="dt">JSON</span>] ()</span>
+<span id="cb1-29"><a href="#cb1-29"></a></span>
+<span id="cb1-30"><a href="#cb1-30"></a><span class="ot">crud ::</span> <span class="dt">Proxy</span> <span class="dt">CRUD</span></span>
+<span id="cb1-31"><a href="#cb1-31"></a>crud <span class="ot">=</span> <span class="dt">Proxy</span></span></code></pre></div>
 <p>変更点は2つ． ひとつは <a href="https://hackage.haskell.org/package/http-api-data-0.3.7.1/docs/Web-FormUrlEncoded.html#t:FromForm"><code>FromForm</code></a> 型クラスのインスタンスにしてる点((1)の行)． 参考記事では手作業で <code>FromFormUrlEncoded</code> 型クラスのインスタンスにしてるが，現在の <a href="https://hackage.haskell.org/package/http-api-data-0.3.7.1"><code>http-api-data</code></a> にはもうこの型クラスは無く，代わりに <code>FromForm</code> 型クラスを使うしかないようだ．</p>
 <p>もうひとつは，<a href="https://github.com/krisajenkins/elm-export/blob/94b939bb95ec4a86ae634e785ee93b66c3c1c7e6/src/Elm/Type.hs#L61"><code>ElmType</code></a> 型クラスのインスタンスにしてる点((2)の行)． お察しの通り，この型クラスのインスタンスにした型を Elm の型にすることが出来るようになる．</p>
 <p>どちらも <code>Generics</code> をサポートしてるので，簡単にインスタンス化できますね．</p>
 <h3 id="サーバーの-main-関数を書く">サーバーの <code>main</code> 関数を書く</h3>
 <p>こっちは完全にコピペです． 多少整形してあるのと，初期値 <code>initTodoList</code> を使ってるぐらい．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">{-# LANGUAGE DataKinds         #-}</span></a>
-<a class="sourceLine" id="cb2-2" title="2"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span></a>
-<a class="sourceLine" id="cb2-3" title="3"><span class="ot">{-# LANGUAGE TypeOperators     #-}</span></a>
-<a class="sourceLine" id="cb2-4" title="4"></a>
-<a class="sourceLine" id="cb2-5" title="5"><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb2-6" title="6"></a>
-<a class="sourceLine" id="cb2-7" title="7"><span class="kw">import</span> <span class="dt">Control.Arrow</span> (second)</a>
-<a class="sourceLine" id="cb2-8" title="8"><span class="kw">import</span> <span class="dt">Control.Concurrent.STM</span> (<span class="dt">TVar</span>, atomically, modifyTVar, newTVar, readTVar, writeTVar)</a>
-<a class="sourceLine" id="cb2-9" title="9"><span class="kw">import</span> <span class="dt">Control.Monad.IO.Class</span> (liftIO)</a>
-<a class="sourceLine" id="cb2-10" title="10"><span class="kw">import</span> <span class="dt">Data.Aeson</span></a>
-<a class="sourceLine" id="cb2-11" title="11"><span class="kw">import</span> <span class="dt">Data.IntMap</span> (<span class="dt">IntMap</span>)</a>
-<a class="sourceLine" id="cb2-12" title="12"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.IntMap</span> <span class="kw">as</span> <span class="dt">IntMap</span></a>
-<a class="sourceLine" id="cb2-13" title="13"><span class="kw">import</span> <span class="dt">Data.Proxy</span> (<span class="dt">Proxy</span> (..))</a>
-<a class="sourceLine" id="cb2-14" title="14"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Network.Wai.Handler.Warp</span>  <span class="kw">as</span> <span class="dt">Warp</span></a>
-<a class="sourceLine" id="cb2-15" title="15"><span class="kw">import</span> <span class="dt">Servant.API</span> ((:&lt;|&gt;) (..), (:&gt;), <span class="dt">Get</span>, <span class="dt">Raw</span>)</a>
-<a class="sourceLine" id="cb2-16" title="16"><span class="kw">import</span> <span class="dt">Servant.EDE</span> (<span class="dt">HTML</span>, loadTemplates)</a>
-<a class="sourceLine" id="cb2-17" title="17"><span class="kw">import</span> <span class="dt">Servant.Server</span> (<span class="dt">Server</span>, serve)</a>
-<a class="sourceLine" id="cb2-18" title="18"><span class="kw">import</span> <span class="dt">Servant.Utils.StaticFiles</span> (serveDirectoryFileServer)</a>
-<a class="sourceLine" id="cb2-19" title="19"><span class="kw">import</span> <span class="dt">Todo</span> (<span class="dt">Todo</span> (..))</a>
-<a class="sourceLine" id="cb2-20" title="20"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Todo</span></a>
-<a class="sourceLine" id="cb2-21" title="21"></a>
-<a class="sourceLine" id="cb2-22" title="22"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb2-23" title="23">main <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb2-24" title="24">  db <span class="ot">&lt;-</span> atomically <span class="fu">$</span> newTVar (<span class="fu">length</span> initTodoList, IntMap.fromList initTodoList)</a>
-<a class="sourceLine" id="cb2-25" title="25">  _ <span class="ot">&lt;-</span> loadTemplates api [] <span class="st">&quot;.&quot;</span></a>
-<a class="sourceLine" id="cb2-26" title="26">  <span class="fu">putStrLn</span> <span class="st">&quot;Listening on port 8080&quot;</span></a>
-<a class="sourceLine" id="cb2-27" title="27">  Warp.run <span class="dv">8080</span> <span class="fu">$</span> serve api (server db)</a>
-<a class="sourceLine" id="cb2-28" title="28"></a>
-<a class="sourceLine" id="cb2-29" title="29"><span class="kw">type</span> <span class="dt">API</span> <span class="fu">=</span> <span class="dt">Get</span> '[<span class="dt">HTML</span> <span class="st">&quot;index.html&quot;</span>] <span class="dt">Object</span></a>
-<a class="sourceLine" id="cb2-30" title="30">      <span class="fu">:&lt;|&gt;</span> <span class="st">&quot;static&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Raw</span></a>
-<a class="sourceLine" id="cb2-31" title="31">      <span class="fu">:&lt;|&gt;</span> <span class="dt">Todo.CRUD</span></a>
-<a class="sourceLine" id="cb2-32" title="32"></a>
-<a class="sourceLine" id="cb2-33" title="33"><span class="ot">api ::</span> <span class="dt">Proxy</span> <span class="dt">API</span></a>
-<a class="sourceLine" id="cb2-34" title="34">api <span class="fu">=</span> <span class="dt">Proxy</span></a>
-<a class="sourceLine" id="cb2-35" title="35"></a>
-<a class="sourceLine" id="cb2-36" title="36"><span class="ot">server ::</span> <span class="dt">TVar</span> (<span class="dt">Int</span>, <span class="dt">IntMap</span> <span class="dt">Todo</span>) <span class="ot">-&gt;</span> <span class="dt">Server</span> <span class="dt">API</span></a>
-<a class="sourceLine" id="cb2-37" title="37">server db <span class="fu">=</span> <span class="fu">index</span></a>
-<a class="sourceLine" id="cb2-38" title="38">       <span class="fu">:&lt;|&gt;</span> serveDirectoryFileServer <span class="st">&quot;static&quot;</span></a>
-<a class="sourceLine" id="cb2-39" title="39">       <span class="fu">:&lt;|&gt;</span> getTodos</a>
-<a class="sourceLine" id="cb2-40" title="40">       <span class="fu">:&lt;|&gt;</span> postTodo</a>
-<a class="sourceLine" id="cb2-41" title="41">       <span class="fu">:&lt;|&gt;</span> putTodoId</a>
-<a class="sourceLine" id="cb2-42" title="42">       <span class="fu">:&lt;|&gt;</span> deleteTodoId</a>
-<a class="sourceLine" id="cb2-43" title="43">  <span class="kw">where</span></a>
-<a class="sourceLine" id="cb2-44" title="44">    <span class="fu">index</span> <span class="fu">=</span> <span class="fu">pure</span> <span class="fu">mempty</span></a>
-<a class="sourceLine" id="cb2-45" title="45">    getTodos <span class="fu">=</span> liftIO <span class="fu">$</span> IntMap.elems <span class="fu">.</span> <span class="fu">snd</span> <span class="fu">&lt;$&gt;</span> atomically (readTVar db)</a>
-<a class="sourceLine" id="cb2-46" title="46">    postTodo todo <span class="fu">=</span> liftIO <span class="fu">.</span> atomically <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb2-47" title="47">      (maxId, m) <span class="ot">&lt;-</span> readTVar db</a>
-<a class="sourceLine" id="cb2-48" title="48">      <span class="kw">let</span></a>
-<a class="sourceLine" id="cb2-49" title="49">        newId <span class="fu">=</span> maxId <span class="fu">+</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb2-50" title="50">        newTodo <span class="fu">=</span> todo { todoId <span class="fu">=</span> newId }</a>
-<a class="sourceLine" id="cb2-51" title="51">      writeTVar db (newId, IntMap.insert newId newTodo m)</a>
-<a class="sourceLine" id="cb2-52" title="52">      <span class="fu">pure</span> newTodo</a>
-<a class="sourceLine" id="cb2-53" title="53">    putTodoId tid todo <span class="fu">=</span></a>
-<a class="sourceLine" id="cb2-54" title="54">      liftIO <span class="fu">.</span> atomically <span class="fu">.</span> modifyTVar db <span class="fu">.</span> second <span class="fu">$</span> IntMap.insert tid todo</a>
-<a class="sourceLine" id="cb2-55" title="55">    deleteTodoId tid   <span class="fu">=</span></a>
-<a class="sourceLine" id="cb2-56" title="56">      liftIO <span class="fu">.</span> atomically <span class="fu">.</span> modifyTVar db <span class="fu">.</span> second <span class="fu">$</span> IntMap.delete tid</a>
-<a class="sourceLine" id="cb2-57" title="57"></a>
-<a class="sourceLine" id="cb2-58" title="58"><span class="ot">initTodoList ::</span> [(<span class="dt">Int</span>, <span class="dt">Todo</span>)]</a>
-<a class="sourceLine" id="cb2-59" title="59">initTodoList <span class="fu">=</span></a>
-<a class="sourceLine" id="cb2-60" title="60">  [ (<span class="dv">1</span>, <span class="dt">Todo</span> <span class="dv">1</span> <span class="st">&quot;アドベントカレンダーを書く&quot;</span> <span class="dt">True</span>)</a>
-<a class="sourceLine" id="cb2-61" title="61">  , (<span class="dv">2</span>, <span class="dt">Todo</span> <span class="dv">2</span> <span class="st">&quot;Haskellで仕事する&quot;</span> <span class="dt">False</span>)</a>
-<a class="sourceLine" id="cb2-62" title="62">  , (<span class="dv">3</span>, <span class="dt">Todo</span> <span class="dv">3</span> <span class="st">&quot;寝る&quot;</span> <span class="dt">False</span>)</a>
-<a class="sourceLine" id="cb2-63" title="63">  ]</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1"></a><span class="ot">{-# LANGUAGE DataKinds         #-}</span></span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span></span>
+<span id="cb2-3"><a href="#cb2-3"></a><span class="ot">{-# LANGUAGE TypeOperators     #-}</span></span>
+<span id="cb2-4"><a href="#cb2-4"></a></span>
+<span id="cb2-5"><a href="#cb2-5"></a><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span></span>
+<span id="cb2-6"><a href="#cb2-6"></a></span>
+<span id="cb2-7"><a href="#cb2-7"></a><span class="kw">import</span> <span class="dt">Control.Arrow</span> (second)</span>
+<span id="cb2-8"><a href="#cb2-8"></a><span class="kw">import</span> <span class="dt">Control.Concurrent.STM</span> (<span class="dt">TVar</span>, atomically, modifyTVar, newTVar, readTVar, writeTVar)</span>
+<span id="cb2-9"><a href="#cb2-9"></a><span class="kw">import</span> <span class="dt">Control.Monad.IO.Class</span> (liftIO)</span>
+<span id="cb2-10"><a href="#cb2-10"></a><span class="kw">import</span> <span class="dt">Data.Aeson</span></span>
+<span id="cb2-11"><a href="#cb2-11"></a><span class="kw">import</span> <span class="dt">Data.IntMap</span> (<span class="dt">IntMap</span>)</span>
+<span id="cb2-12"><a href="#cb2-12"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.IntMap</span> <span class="kw">as</span> <span class="dt">IntMap</span></span>
+<span id="cb2-13"><a href="#cb2-13"></a><span class="kw">import</span> <span class="dt">Data.Proxy</span> (<span class="dt">Proxy</span> (..))</span>
+<span id="cb2-14"><a href="#cb2-14"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Network.Wai.Handler.Warp</span>  <span class="kw">as</span> <span class="dt">Warp</span></span>
+<span id="cb2-15"><a href="#cb2-15"></a><span class="kw">import</span> <span class="dt">Servant.API</span> ((:&lt;|&gt;) (..), (:&gt;), <span class="dt">Get</span>, <span class="dt">Raw</span>)</span>
+<span id="cb2-16"><a href="#cb2-16"></a><span class="kw">import</span> <span class="dt">Servant.EDE</span> (<span class="dt">HTML</span>, loadTemplates)</span>
+<span id="cb2-17"><a href="#cb2-17"></a><span class="kw">import</span> <span class="dt">Servant.Server</span> (<span class="dt">Server</span>, serve)</span>
+<span id="cb2-18"><a href="#cb2-18"></a><span class="kw">import</span> <span class="dt">Servant.Utils.StaticFiles</span> (serveDirectoryFileServer)</span>
+<span id="cb2-19"><a href="#cb2-19"></a><span class="kw">import</span> <span class="dt">Todo</span> (<span class="dt">Todo</span> (..))</span>
+<span id="cb2-20"><a href="#cb2-20"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Todo</span></span>
+<span id="cb2-21"><a href="#cb2-21"></a></span>
+<span id="cb2-22"><a href="#cb2-22"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
+<span id="cb2-23"><a href="#cb2-23"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb2-24"><a href="#cb2-24"></a>  db <span class="ot">&lt;-</span> atomically <span class="op">$</span> newTVar (<span class="fu">length</span> initTodoList, IntMap.fromList initTodoList)</span>
+<span id="cb2-25"><a href="#cb2-25"></a>  _ <span class="ot">&lt;-</span> loadTemplates api [] <span class="st">&quot;.&quot;</span></span>
+<span id="cb2-26"><a href="#cb2-26"></a>  <span class="fu">putStrLn</span> <span class="st">&quot;Listening on port 8080&quot;</span></span>
+<span id="cb2-27"><a href="#cb2-27"></a>  Warp.run <span class="dv">8080</span> <span class="op">$</span> serve api (server db)</span>
+<span id="cb2-28"><a href="#cb2-28"></a></span>
+<span id="cb2-29"><a href="#cb2-29"></a><span class="kw">type</span> <span class="dt">API</span> <span class="ot">=</span> <span class="dt">Get</span> '[<span class="dt">HTML</span> <span class="st">&quot;index.html&quot;</span>] <span class="dt">Object</span></span>
+<span id="cb2-30"><a href="#cb2-30"></a>      <span class="op">:&lt;|&gt;</span> <span class="st">&quot;static&quot;</span> <span class="op">:&gt;</span> <span class="dt">Raw</span></span>
+<span id="cb2-31"><a href="#cb2-31"></a>      <span class="op">:&lt;|&gt;</span> <span class="dt">Todo.CRUD</span></span>
+<span id="cb2-32"><a href="#cb2-32"></a></span>
+<span id="cb2-33"><a href="#cb2-33"></a><span class="ot">api ::</span> <span class="dt">Proxy</span> <span class="dt">API</span></span>
+<span id="cb2-34"><a href="#cb2-34"></a>api <span class="ot">=</span> <span class="dt">Proxy</span></span>
+<span id="cb2-35"><a href="#cb2-35"></a></span>
+<span id="cb2-36"><a href="#cb2-36"></a><span class="ot">server ::</span> <span class="dt">TVar</span> (<span class="dt">Int</span>, <span class="dt">IntMap</span> <span class="dt">Todo</span>) <span class="ot">-&gt;</span> <span class="dt">Server</span> <span class="dt">API</span></span>
+<span id="cb2-37"><a href="#cb2-37"></a>server db <span class="ot">=</span> <span class="fu">index</span></span>
+<span id="cb2-38"><a href="#cb2-38"></a>       <span class="op">:&lt;|&gt;</span> serveDirectoryFileServer <span class="st">&quot;static&quot;</span></span>
+<span id="cb2-39"><a href="#cb2-39"></a>       <span class="op">:&lt;|&gt;</span> getTodos</span>
+<span id="cb2-40"><a href="#cb2-40"></a>       <span class="op">:&lt;|&gt;</span> postTodo</span>
+<span id="cb2-41"><a href="#cb2-41"></a>       <span class="op">:&lt;|&gt;</span> putTodoId</span>
+<span id="cb2-42"><a href="#cb2-42"></a>       <span class="op">:&lt;|&gt;</span> deleteTodoId</span>
+<span id="cb2-43"><a href="#cb2-43"></a>  <span class="kw">where</span></span>
+<span id="cb2-44"><a href="#cb2-44"></a>    <span class="fu">index</span> <span class="ot">=</span> <span class="fu">pure</span> <span class="fu">mempty</span></span>
+<span id="cb2-45"><a href="#cb2-45"></a>    getTodos <span class="ot">=</span> liftIO <span class="op">$</span> IntMap.elems <span class="op">.</span> <span class="fu">snd</span> <span class="op">&lt;$&gt;</span> atomically (readTVar db)</span>
+<span id="cb2-46"><a href="#cb2-46"></a>    postTodo todo <span class="ot">=</span> liftIO <span class="op">.</span> atomically <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb2-47"><a href="#cb2-47"></a>      (maxId, m) <span class="ot">&lt;-</span> readTVar db</span>
+<span id="cb2-48"><a href="#cb2-48"></a>      <span class="kw">let</span></span>
+<span id="cb2-49"><a href="#cb2-49"></a>        newId <span class="ot">=</span> maxId <span class="op">+</span> <span class="dv">1</span></span>
+<span id="cb2-50"><a href="#cb2-50"></a>        newTodo <span class="ot">=</span> todo { todoId <span class="ot">=</span> newId }</span>
+<span id="cb2-51"><a href="#cb2-51"></a>      writeTVar db (newId, IntMap.insert newId newTodo m)</span>
+<span id="cb2-52"><a href="#cb2-52"></a>      <span class="fu">pure</span> newTodo</span>
+<span id="cb2-53"><a href="#cb2-53"></a>    putTodoId tid todo <span class="ot">=</span></span>
+<span id="cb2-54"><a href="#cb2-54"></a>      liftIO <span class="op">.</span> atomically <span class="op">.</span> modifyTVar db <span class="op">.</span> second <span class="op">$</span> IntMap.insert tid todo</span>
+<span id="cb2-55"><a href="#cb2-55"></a>    deleteTodoId tid   <span class="ot">=</span></span>
+<span id="cb2-56"><a href="#cb2-56"></a>      liftIO <span class="op">.</span> atomically <span class="op">.</span> modifyTVar db <span class="op">.</span> second <span class="op">$</span> IntMap.delete tid</span>
+<span id="cb2-57"><a href="#cb2-57"></a></span>
+<span id="cb2-58"><a href="#cb2-58"></a><span class="ot">initTodoList ::</span> [(<span class="dt">Int</span>, <span class="dt">Todo</span>)]</span>
+<span id="cb2-59"><a href="#cb2-59"></a>initTodoList <span class="ot">=</span></span>
+<span id="cb2-60"><a href="#cb2-60"></a>  [ (<span class="dv">1</span>, <span class="dt">Todo</span> <span class="dv">1</span> <span class="st">&quot;アドベントカレンダーを書く&quot;</span> <span class="dt">True</span>)</span>
+<span id="cb2-61"><a href="#cb2-61"></a>  , (<span class="dv">2</span>, <span class="dt">Todo</span> <span class="dv">2</span> <span class="st">&quot;Haskellで仕事する&quot;</span> <span class="dt">False</span>)</span>
+<span id="cb2-62"><a href="#cb2-62"></a>  , (<span class="dv">3</span>, <span class="dt">Todo</span> <span class="dv">3</span> <span class="st">&quot;寝る&quot;</span> <span class="dt">False</span>)</span>
+<span id="cb2-63"><a href="#cb2-63"></a>  ]</span></code></pre></div>
 <h3 id="elm-コードジェネレーターの-main-関数を書く">Elm コードジェネレーターの <code>main</code> 関数を書く</h3>
 <p>こっちは <code>servant-elm</code> の<a href="https://github.com/mattjbray/servant-elm/blob/4e27dcc8c135a3c2ced3f6d2de74133532dcd743/examples/books/generate.hs">サンプルコード</a>を参考にした．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span></a>
-<a class="sourceLine" id="cb3-2" title="2"></a>
-<a class="sourceLine" id="cb3-3" title="3"><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb3-4" title="4"></a>
-<a class="sourceLine" id="cb3-5" title="5"><span class="kw">import</span> <span class="dt">Data.Proxy</span>  (<span class="dt">Proxy</span> (..))</a>
-<a class="sourceLine" id="cb3-6" title="6"><span class="kw">import</span> <span class="dt">Elm</span></a>
-<a class="sourceLine" id="cb3-7" title="7"><span class="kw">import</span> <span class="dt">Servant.Elm</span></a>
-<a class="sourceLine" id="cb3-8" title="8"><span class="kw">import</span> <span class="dt">Shelly</span> (run_, shelly)</a>
-<a class="sourceLine" id="cb3-9" title="9"><span class="kw">import</span> <span class="dt">Todo</span> (<span class="dt">CRUD</span>, <span class="dt">Todo</span>)</a>
-<a class="sourceLine" id="cb3-10" title="10"></a>
-<a class="sourceLine" id="cb3-11" title="11"><span class="ot">elmOpts ::</span> <span class="dt">ElmOptions</span></a>
-<a class="sourceLine" id="cb3-12" title="12">elmOpts <span class="fu">=</span></a>
-<a class="sourceLine" id="cb3-13" title="13">  defElmOptions</a>
-<a class="sourceLine" id="cb3-14" title="14">    { urlPrefix <span class="fu">=</span> <span class="dt">Static</span> <span class="st">&quot;http://localhost:8080&quot;</span> }</a>
-<a class="sourceLine" id="cb3-15" title="15"></a>
-<a class="sourceLine" id="cb3-16" title="16"><span class="ot">spec ::</span> <span class="dt">Spec</span></a>
-<a class="sourceLine" id="cb3-17" title="17">spec <span class="fu">=</span> <span class="dt">Spec</span> [<span class="st">&quot;Generated&quot;</span>, <span class="st">&quot;TodoAPI&quot;</span>]</a>
-<a class="sourceLine" id="cb3-18" title="18">            (defElmImports</a>
-<a class="sourceLine" id="cb3-19" title="19">             <span class="fu">:</span> toElmTypeSource    (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">Todo</span>)</a>
-<a class="sourceLine" id="cb3-20" title="20">             <span class="fu">:</span> toElmDecoderSource (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">Todo</span>)</a>
-<a class="sourceLine" id="cb3-21" title="21">             <span class="fu">:</span> toElmEncoderSource (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">Todo</span>)</a>
-<a class="sourceLine" id="cb3-22" title="22">             <span class="fu">:</span> generateElmForAPIWith elmOpts  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">CRUD</span>))</a>
-<a class="sourceLine" id="cb3-23" title="23"></a>
-<a class="sourceLine" id="cb3-24" title="24"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb3-25" title="25">main <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-26" title="26">  specsToDir [spec] <span class="st">&quot;elm-src&quot;</span></a>
-<a class="sourceLine" id="cb3-27" title="27">  shelly <span class="fu">$</span></a>
-<a class="sourceLine" id="cb3-28" title="28">    run_ <span class="st">&quot;elm-make&quot;</span> [<span class="st">&quot;elm-src/Main.elm&quot;</span>, <span class="st">&quot;--output=static/main.js&quot;</span>]</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1"></a><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span></span>
+<span id="cb3-2"><a href="#cb3-2"></a></span>
+<span id="cb3-3"><a href="#cb3-3"></a><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span></span>
+<span id="cb3-4"><a href="#cb3-4"></a></span>
+<span id="cb3-5"><a href="#cb3-5"></a><span class="kw">import</span> <span class="dt">Data.Proxy</span>  (<span class="dt">Proxy</span> (..))</span>
+<span id="cb3-6"><a href="#cb3-6"></a><span class="kw">import</span> <span class="dt">Elm</span></span>
+<span id="cb3-7"><a href="#cb3-7"></a><span class="kw">import</span> <span class="dt">Servant.Elm</span></span>
+<span id="cb3-8"><a href="#cb3-8"></a><span class="kw">import</span> <span class="dt">Shelly</span> (run_, shelly)</span>
+<span id="cb3-9"><a href="#cb3-9"></a><span class="kw">import</span> <span class="dt">Todo</span> (<span class="dt">CRUD</span>, <span class="dt">Todo</span>)</span>
+<span id="cb3-10"><a href="#cb3-10"></a></span>
+<span id="cb3-11"><a href="#cb3-11"></a><span class="ot">elmOpts ::</span> <span class="dt">ElmOptions</span></span>
+<span id="cb3-12"><a href="#cb3-12"></a>elmOpts <span class="ot">=</span></span>
+<span id="cb3-13"><a href="#cb3-13"></a>  defElmOptions</span>
+<span id="cb3-14"><a href="#cb3-14"></a>    { urlPrefix <span class="ot">=</span> <span class="dt">Static</span> <span class="st">&quot;http://localhost:8080&quot;</span> }</span>
+<span id="cb3-15"><a href="#cb3-15"></a></span>
+<span id="cb3-16"><a href="#cb3-16"></a><span class="ot">spec ::</span> <span class="dt">Spec</span></span>
+<span id="cb3-17"><a href="#cb3-17"></a>spec <span class="ot">=</span> <span class="dt">Spec</span> [<span class="st">&quot;Generated&quot;</span>, <span class="st">&quot;TodoAPI&quot;</span>]</span>
+<span id="cb3-18"><a href="#cb3-18"></a>            (defElmImports</span>
+<span id="cb3-19"><a href="#cb3-19"></a>             <span class="op">:</span> toElmTypeSource    (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">Todo</span>)</span>
+<span id="cb3-20"><a href="#cb3-20"></a>             <span class="op">:</span> toElmDecoderSource (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">Todo</span>)</span>
+<span id="cb3-21"><a href="#cb3-21"></a>             <span class="op">:</span> toElmEncoderSource (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">Todo</span>)</span>
+<span id="cb3-22"><a href="#cb3-22"></a>             <span class="op">:</span> generateElmForAPIWith elmOpts  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">CRUD</span>))</span>
+<span id="cb3-23"><a href="#cb3-23"></a></span>
+<span id="cb3-24"><a href="#cb3-24"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
+<span id="cb3-25"><a href="#cb3-25"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb3-26"><a href="#cb3-26"></a>  specsToDir [spec] <span class="st">&quot;elm-src&quot;</span></span>
+<span id="cb3-27"><a href="#cb3-27"></a>  shelly <span class="op">$</span></span>
+<span id="cb3-28"><a href="#cb3-28"></a>    run_ <span class="st">&quot;elm-make&quot;</span> [<span class="st">&quot;elm-src/Main.elm&quot;</span>, <span class="st">&quot;--output=static/main.js&quot;</span>]</span></code></pre></div>
 <p>違うのは一番最後に <a href="https://hackage.haskell.org/package/shelly"><code>shelly</code></a> (shell コードを実行するためのパッケージ)を使って，Elm のビルドも行っている点．</p>
 <p>できれば，<code>stack build</code> で Elm コードの生成とビルドもやりたかった． なので，この <code>main</code> 関数をテストとして Cabal ファイル(正確には <a href="https://github.com/matsubara0507/haskell-and-elm/blob/97354ff7ad8cba37baead2393ea744dc2f3fa931/package.yaml">package.json</a>) に書いた．</p>
 <pre class="cabal"><code>test-suite generate
@@ -276,112 +276,112 @@
 <p>一番最初に <code>elm package install</code> して Elm の依存パッケージをインストールする． 後は <code>stack build --test</code> とすると，Haskell のビルド，Elm コードの生成，Elm のビルドの順に実行してくれる． 後は，<code>stack exec server</code> とすることで，<code>localhost:8080</code> にWebアプリがたつ．</p>
 <h2 id="おまけ">おまけ</h2>
 <p>Elm 側で <code>todo.todoId</code> で <code>Todo</code> 型のフィールドにアクセスしなければいけないの悲しいよね． Elm は Haskell のレコード型と違って，フィールドの get 関数がグローバルのネームスペースを侵さないので，平気で <code>id</code> とかいうフィールド名を付けることが出来る．</p>
-<pre class="elm"><code>type alias Todo =
-    { id : Int
-    , title : String
-    , done : Bool
-    }</code></pre>
+<div class="sourceCode" id="cb5"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Todo</span> <span class="op">=</span></span>
+<span id="cb5-2"><a href="#cb5-2"></a>    { <span class="fu">id</span> : <span class="dt">Int</span></span>
+<span id="cb5-3"><a href="#cb5-3"></a>    <span class="op">,</span> <span class="fu">title</span> : <span class="dt">String</span></span>
+<span id="cb5-4"><a href="#cb5-4"></a>    <span class="op">,</span> <span class="fu">done</span> : <span class="dt">Bool</span></span>
+<span id="cb5-5"><a href="#cb5-5"></a>    }</span></code></pre></div>
 <p>Haskell でそんなことしたら〇されてしまう…</p>
 <p>そこで <strong>拡張可能レコード</strong> ですよ！！</p>
 <p>なのでココからは頑張って <code>Todo</code> 型を拡張可能レコードに変更してみる！ (本音はココからが本題)</p>
 <h3 id="todo-型"><code>Todo</code> 型</h3>
 <p>こうなる</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">type</span> <span class="dt">Todo</span> <span class="fu">=</span> <span class="dt">Record</span></a>
-<a class="sourceLine" id="cb6-2" title="2">  '[ <span class="st">&quot;id&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb6-3" title="3">   , <span class="st">&quot;title&quot;</span> <span class="fu">&gt;:</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb6-4" title="4">   , <span class="st">&quot;done&quot;</span> <span class="fu">&gt;:</span> <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb6-5" title="5">   ]</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">type</span> <span class="dt">Todo</span> <span class="ot">=</span> <span class="dt">Record</span></span>
+<span id="cb6-2"><a href="#cb6-2"></a>  '[ <span class="st">&quot;id&quot;</span> <span class="op">&gt;:</span> <span class="dt">Int</span></span>
+<span id="cb6-3"><a href="#cb6-3"></a>   , <span class="st">&quot;title&quot;</span> <span class="op">&gt;:</span> <span class="dt">String</span></span>
+<span id="cb6-4"><a href="#cb6-4"></a>   , <span class="st">&quot;done&quot;</span> <span class="op">&gt;:</span> <span class="dt">Bool</span></span>
+<span id="cb6-5"><a href="#cb6-5"></a>   ]</span></code></pre></div>
 <h3 id="各型クラスのインスタンス">各型クラスのインスタンス</h3>
 <p>拡張可能レコードは拡張可能レコード全体をひとつの型としてインスタンスを定義する．</p>
 <p><code>FromJSON</code> 型クラスと <code>ToJSON</code> 型クラスのインスタンス定義は <code>fumieval/extensible</code> リポジトリに<a href="https://github.com/fumieval/extensible/blob/57ee2f5babfc2007a16568c0769d29e914ffb794/examples/aeson.hs">例</a>としてあるので，それをコピペした．</p>
 <p><code>FromForm</code> 型クラスは <code>FromJSON</code> 型クラスを参考に次のように定義した．</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">instance</span> <span class="dt">Forall</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">FromHttpApiData</span>) xs <span class="ot">=&gt;</span> <span class="dt">FromForm</span> (<span class="dt">Record</span> xs) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb7-2" title="2">  fromForm f <span class="fu">=</span> hgenerateFor (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">FromHttpApiData</span>))</a>
-<a class="sourceLine" id="cb7-3" title="3">    <span class="fu">$</span> \m <span class="ot">-&gt;</span> <span class="kw">let</span> k <span class="fu">=</span> symbolVal (proxyAssocKey m) <span class="kw">in</span> <span class="dt">Field</span> <span class="fu">&lt;$&gt;</span> parseUnique (fromString k) f</a>
-<a class="sourceLine" id="cb7-4" title="4"></a>
-<a class="sourceLine" id="cb7-5" title="5"><span class="kw">instance</span> <span class="dt">FromHttpApiData</span> a <span class="ot">=&gt;</span> <span class="dt">FromHttpApiData</span> (<span class="dt">Identity</span> a) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb7-6" title="6">  parseUrlPiece <span class="fu">=</span> <span class="fu">fmap</span> <span class="dt">Identity</span> <span class="fu">.</span> parseUrlPiece</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">instance</span> <span class="dt">Forall</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">FromHttpApiData</span>) xs <span class="ot">=&gt;</span> <span class="dt">FromForm</span> (<span class="dt">Record</span> xs) <span class="kw">where</span></span>
+<span id="cb7-2"><a href="#cb7-2"></a>  fromForm f <span class="ot">=</span> hgenerateFor (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">FromHttpApiData</span>))</span>
+<span id="cb7-3"><a href="#cb7-3"></a>    <span class="op">$</span> \m <span class="ot">-&gt;</span> <span class="kw">let</span> k <span class="ot">=</span> symbolVal (proxyAssocKey m) <span class="kw">in</span> <span class="dt">Field</span> <span class="op">&lt;$&gt;</span> parseUnique (fromString k) f</span>
+<span id="cb7-4"><a href="#cb7-4"></a></span>
+<span id="cb7-5"><a href="#cb7-5"></a><span class="kw">instance</span> <span class="dt">FromHttpApiData</span> a <span class="ot">=&gt;</span> <span class="dt">FromHttpApiData</span> (<span class="dt">Identity</span> a) <span class="kw">where</span></span>
+<span id="cb7-6"><a href="#cb7-6"></a>  parseUrlPiece <span class="ot">=</span> <span class="fu">fmap</span> <span class="dt">Identity</span> <span class="op">.</span> parseUrlPiece</span></code></pre></div>
 <h3 id="拡張可能レコードと-elmtype-型クラス">拡張可能レコードと <code>ElmType</code> 型クラス</h3>
 <p>問題は <code>ElmType</code> 型クラス． <code>ElmType</code> 型クラスは次のようになっている。</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">class</span> <span class="dt">ElmType</span> a <span class="kw">where</span></a>
-<a class="sourceLine" id="cb8-2" title="2"><span class="ot">  toElmType ::</span> a <span class="ot">-&gt;</span> <span class="dt">ElmDatatype</span></a>
-<a class="sourceLine" id="cb8-3" title="3"></a>
-<a class="sourceLine" id="cb8-4" title="4"><span class="kw">data</span> <span class="dt">ElmDatatype</span></a>
-<a class="sourceLine" id="cb8-5" title="5">  <span class="fu">=</span> <span class="dt">ElmDatatype</span> <span class="dt">Text</span> <span class="dt">ElmConstructor</span></a>
-<a class="sourceLine" id="cb8-6" title="6">  <span class="fu">|</span> <span class="dt">ElmPrimitive</span> <span class="dt">ElmPrimitive</span></a>
-<a class="sourceLine" id="cb8-7" title="7">  <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</a>
-<a class="sourceLine" id="cb8-8" title="8"></a>
-<a class="sourceLine" id="cb8-9" title="9"><span class="kw">data</span> <span class="dt">ElmConstructor</span></a>
-<a class="sourceLine" id="cb8-10" title="10">  <span class="fu">=</span> <span class="dt">NamedConstructor</span> <span class="dt">Text</span> <span class="dt">ElmValue</span></a>
-<a class="sourceLine" id="cb8-11" title="11">  <span class="fu">|</span> <span class="dt">RecordConstructor</span> <span class="dt">Text</span> <span class="dt">ElmValue</span></a>
-<a class="sourceLine" id="cb8-12" title="12">  <span class="fu">|</span> <span class="dt">MultipleConstructors</span> [<span class="dt">ElmConstructor</span>]</a>
-<a class="sourceLine" id="cb8-13" title="13">  <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</a>
-<a class="sourceLine" id="cb8-14" title="14"></a>
-<a class="sourceLine" id="cb8-15" title="15"><span class="kw">data</span> <span class="dt">ElmValue</span></a>
-<a class="sourceLine" id="cb8-16" title="16">  <span class="fu">=</span> <span class="dt">ElmRef</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb8-17" title="17">  <span class="fu">|</span> <span class="dt">ElmEmpty</span></a>
-<a class="sourceLine" id="cb8-18" title="18">  <span class="fu">|</span> <span class="dt">ElmPrimitiveRef</span> <span class="dt">ElmPrimitive</span></a>
-<a class="sourceLine" id="cb8-19" title="19">  <span class="fu">|</span> <span class="dt">Values</span> <span class="dt">ElmValue</span> <span class="dt">ElmValue</span></a>
-<a class="sourceLine" id="cb8-20" title="20">  <span class="fu">|</span> <span class="dt">ElmField</span> <span class="dt">Text</span> <span class="dt">ElmValue</span></a>
-<a class="sourceLine" id="cb8-21" title="21">  <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">class</span> <span class="dt">ElmType</span> a <span class="kw">where</span></span>
+<span id="cb8-2"><a href="#cb8-2"></a><span class="ot">  toElmType ::</span> a <span class="ot">-&gt;</span> <span class="dt">ElmDatatype</span></span>
+<span id="cb8-3"><a href="#cb8-3"></a></span>
+<span id="cb8-4"><a href="#cb8-4"></a><span class="kw">data</span> <span class="dt">ElmDatatype</span></span>
+<span id="cb8-5"><a href="#cb8-5"></a>  <span class="ot">=</span> <span class="dt">ElmDatatype</span> <span class="dt">Text</span> <span class="dt">ElmConstructor</span></span>
+<span id="cb8-6"><a href="#cb8-6"></a>  <span class="op">|</span> <span class="dt">ElmPrimitive</span> <span class="dt">ElmPrimitive</span></span>
+<span id="cb8-7"><a href="#cb8-7"></a>  <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</span>
+<span id="cb8-8"><a href="#cb8-8"></a></span>
+<span id="cb8-9"><a href="#cb8-9"></a><span class="kw">data</span> <span class="dt">ElmConstructor</span></span>
+<span id="cb8-10"><a href="#cb8-10"></a>  <span class="ot">=</span> <span class="dt">NamedConstructor</span> <span class="dt">Text</span> <span class="dt">ElmValue</span></span>
+<span id="cb8-11"><a href="#cb8-11"></a>  <span class="op">|</span> <span class="dt">RecordConstructor</span> <span class="dt">Text</span> <span class="dt">ElmValue</span></span>
+<span id="cb8-12"><a href="#cb8-12"></a>  <span class="op">|</span> <span class="dt">MultipleConstructors</span> [<span class="dt">ElmConstructor</span>]</span>
+<span id="cb8-13"><a href="#cb8-13"></a>  <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</span>
+<span id="cb8-14"><a href="#cb8-14"></a></span>
+<span id="cb8-15"><a href="#cb8-15"></a><span class="kw">data</span> <span class="dt">ElmValue</span></span>
+<span id="cb8-16"><a href="#cb8-16"></a>  <span class="ot">=</span> <span class="dt">ElmRef</span> <span class="dt">Text</span></span>
+<span id="cb8-17"><a href="#cb8-17"></a>  <span class="op">|</span> <span class="dt">ElmEmpty</span></span>
+<span id="cb8-18"><a href="#cb8-18"></a>  <span class="op">|</span> <span class="dt">ElmPrimitiveRef</span> <span class="dt">ElmPrimitive</span></span>
+<span id="cb8-19"><a href="#cb8-19"></a>  <span class="op">|</span> <span class="dt">Values</span> <span class="dt">ElmValue</span> <span class="dt">ElmValue</span></span>
+<span id="cb8-20"><a href="#cb8-20"></a>  <span class="op">|</span> <span class="dt">ElmField</span> <span class="dt">Text</span> <span class="dt">ElmValue</span></span>
+<span id="cb8-21"><a href="#cb8-21"></a>  <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</span></code></pre></div>
 <p><code>ElmDatatype</code> 型の <code>ElmPrimitive</code> 値コンストラクタは名前の通り，<code>Int</code> や <code>String</code> のような Elm のプリミティブ型を表現し，<code>ElmDatatype</code> 値コンストラクタはユーザー定義型を表現している． <code>ElmDatatype</code> 値コンストラクタの一引数目(<code>Text</code>)は型名である． つまり， <strong>型名のが決まっていない型の定義ができない</strong> のである．</p>
 <p>何を当たり前のことを…と思うかもしれないが，拡張可能レコードのインスタンスの定義のときには名前がまだ無い… この時点で定義できるのは，<code>ElmValue</code> 型までだ． なので，<code>ElmValue</code> 型に変換する型クラスを定義しよう．</p>
 <h2 id="section-3"></h2>
 <p>ちなみに，レコード型は次のような <code>ElmDatatype</code> 型になる．</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="fu">&gt;&gt;</span> <span class="fu">:</span>set <span class="fu">-</span><span class="dt">XDeriveGeneric</span> <span class="fu">-</span><span class="dt">XDeriveAnyClass</span></a>
-<a class="sourceLine" id="cb9-2" title="2"><span class="fu">&gt;&gt;</span> <span class="kw">data</span> <span class="dt">Hoge</span> <span class="fu">=</span> <span class="dt">Hoge</span> {<span class="ot"> xxx ::</span> <span class="dt">Int</span>,<span class="ot"> yyy ::</span> <span class="dt">String</span> } <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Generic</span>, <span class="dt">ElmType</span>)</a>
-<a class="sourceLine" id="cb9-3" title="3"><span class="fu">&gt;&gt;</span> toElmType (<span class="fu">undefined</span><span class="ot"> ::</span> <span class="dt">Hoge</span>)</a>
-<a class="sourceLine" id="cb9-4" title="4"><span class="dt">ElmDatatype</span> <span class="st">&quot;Hoge&quot;</span> (<span class="dt">RecordConstructor</span> <span class="st">&quot;Hoge&quot;</span> (<span class="dt">Values</span> (<span class="dt">ElmField</span> <span class="st">&quot;xxx&quot;</span> (<span class="dt">ElmPrimitiveRef</span> <span class="dt">EInt</span>)) (<span class="dt">ElmField</span> <span class="st">&quot;yyy&quot;</span> (<span class="dt">ElmPrimitiveRef</span> (<span class="dt">EList</span> (<span class="dt">ElmPrimitive</span> <span class="dt">EChar</span>))))))</a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1"></a><span class="op">&gt;&gt;</span> <span class="op">:</span>set <span class="op">-</span><span class="dt">XDeriveGeneric</span> <span class="op">-</span><span class="dt">XDeriveAnyClass</span></span>
+<span id="cb9-2"><a href="#cb9-2"></a><span class="op">&gt;&gt;</span> <span class="kw">data</span> <span class="dt">Hoge</span> <span class="ot">=</span> <span class="dt">Hoge</span> {<span class="ot"> xxx ::</span> <span class="dt">Int</span>,<span class="ot"> yyy ::</span> <span class="dt">String</span> } <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Generic</span>, <span class="dt">ElmType</span>)</span>
+<span id="cb9-3"><a href="#cb9-3"></a><span class="op">&gt;&gt;</span> toElmType (<span class="fu">undefined</span><span class="ot"> ::</span> <span class="dt">Hoge</span>)</span>
+<span id="cb9-4"><a href="#cb9-4"></a><span class="dt">ElmDatatype</span> <span class="st">&quot;Hoge&quot;</span> (<span class="dt">RecordConstructor</span> <span class="st">&quot;Hoge&quot;</span> (<span class="dt">Values</span> (<span class="dt">ElmField</span> <span class="st">&quot;xxx&quot;</span> (<span class="dt">ElmPrimitiveRef</span> <span class="dt">EInt</span>)) (<span class="dt">ElmField</span> <span class="st">&quot;yyy&quot;</span> (<span class="dt">ElmPrimitiveRef</span> (<span class="dt">EList</span> (<span class="dt">ElmPrimitive</span> <span class="dt">EChar</span>))))))</span></code></pre></div>
 <h3 id="toelmvalue-型クラス"><code>ToElmValue</code> 型クラス</h3>
 <p>なんて雑な名前だろうか．</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">class</span> <span class="dt">ToElmValue</span> a <span class="kw">where</span></a>
-<a class="sourceLine" id="cb10-2" title="2"><span class="ot">  toElmValue ::</span> a <span class="ot">-&gt;</span> <span class="dt">ElmValue</span></a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">class</span> <span class="dt">ToElmValue</span> a <span class="kw">where</span></span>
+<span id="cb10-2"><a href="#cb10-2"></a><span class="ot">  toElmValue ::</span> a <span class="ot">-&gt;</span> <span class="dt">ElmValue</span></span></code></pre></div>
 <p>拡張可能レコードのインスタンスを，<code>ToJSON</code> 型クラスを参考に定義する．</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="kw">instance</span> <span class="dt">Forall</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">ElmType</span>) xs <span class="ot">=&gt;</span> <span class="dt">ToElmValue</span> (<span class="dt">Record</span> xs) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb11-2" title="2">  toElmValue rec <span class="fu">=</span> hfoldMap getConst'</a>
-<a class="sourceLine" id="cb11-3" title="3">    <span class="fu">$</span> hzipWith (\(<span class="dt">Comp</span> <span class="dt">Dict</span>) v <span class="ot">-&gt;</span> <span class="dt">Const'</span></a>
-<a class="sourceLine" id="cb11-4" title="4">        <span class="fu">$</span> <span class="dt">ElmField</span> (fromString <span class="fu">.</span> symbolVal <span class="fu">$</span> proxyAssocKey v) (elmTypeToElmValue <span class="fu">.</span> toElmType <span class="fu">$</span> getField v))</a>
-<a class="sourceLine" id="cb11-5" title="5">      (<span class="ot">library ::</span> <span class="dt">Comp</span> <span class="dt">Dict</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">ElmType</span>) <span class="fu">:*</span> xs) rec</a>
-<a class="sourceLine" id="cb11-6" title="6"></a>
-<a class="sourceLine" id="cb11-7" title="7"><span class="kw">instance</span> <span class="dt">ElmType</span> a <span class="ot">=&gt;</span> <span class="dt">ElmType</span> (<span class="dt">Identity</span> a) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb11-8" title="8">  toElmType (<span class="dt">Identity</span> a) <span class="fu">=</span> toElmType a</a>
-<a class="sourceLine" id="cb11-9" title="9"></a>
-<a class="sourceLine" id="cb11-10" title="10"><span class="ot">elmTypeToElmValue ::</span> <span class="dt">ElmDatatype</span> <span class="ot">-&gt;</span> <span class="dt">ElmValue</span></a>
-<a class="sourceLine" id="cb11-11" title="11">elmTypeToElmValue (<span class="dt">ElmDatatype</span> name _) <span class="fu">=</span> <span class="dt">ElmRef</span> name</a>
-<a class="sourceLine" id="cb11-12" title="12">elmTypeToElmValue (<span class="dt">ElmPrimitive</span> prim)  <span class="fu">=</span> <span class="dt">ElmPrimitiveRef</span> prim</a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1"></a><span class="kw">instance</span> <span class="dt">Forall</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">ElmType</span>) xs <span class="ot">=&gt;</span> <span class="dt">ToElmValue</span> (<span class="dt">Record</span> xs) <span class="kw">where</span></span>
+<span id="cb11-2"><a href="#cb11-2"></a>  toElmValue rec <span class="ot">=</span> hfoldMap getConst'</span>
+<span id="cb11-3"><a href="#cb11-3"></a>    <span class="op">$</span> hzipWith (\(<span class="dt">Comp</span> <span class="dt">Dict</span>) v <span class="ot">-&gt;</span> <span class="dt">Const'</span></span>
+<span id="cb11-4"><a href="#cb11-4"></a>        <span class="op">$</span> <span class="dt">ElmField</span> (fromString <span class="op">.</span> symbolVal <span class="op">$</span> proxyAssocKey v) (elmTypeToElmValue <span class="op">.</span> toElmType <span class="op">$</span> getField v))</span>
+<span id="cb11-5"><a href="#cb11-5"></a>      (<span class="ot">library ::</span> <span class="dt">Comp</span> <span class="dt">Dict</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">ElmType</span>) <span class="op">:*</span> xs) rec</span>
+<span id="cb11-6"><a href="#cb11-6"></a></span>
+<span id="cb11-7"><a href="#cb11-7"></a><span class="kw">instance</span> <span class="dt">ElmType</span> a <span class="ot">=&gt;</span> <span class="dt">ElmType</span> (<span class="dt">Identity</span> a) <span class="kw">where</span></span>
+<span id="cb11-8"><a href="#cb11-8"></a>  toElmType (<span class="dt">Identity</span> a) <span class="ot">=</span> toElmType a</span>
+<span id="cb11-9"><a href="#cb11-9"></a></span>
+<span id="cb11-10"><a href="#cb11-10"></a><span class="ot">elmTypeToElmValue ::</span> <span class="dt">ElmDatatype</span> <span class="ot">-&gt;</span> <span class="dt">ElmValue</span></span>
+<span id="cb11-11"><a href="#cb11-11"></a>elmTypeToElmValue (<span class="dt">ElmDatatype</span> name _) <span class="ot">=</span> <span class="dt">ElmRef</span> name</span>
+<span id="cb11-12"><a href="#cb11-12"></a>elmTypeToElmValue (<span class="dt">ElmPrimitive</span> prim)  <span class="ot">=</span> <span class="dt">ElmPrimitiveRef</span> prim</span></code></pre></div>
 <p>そしてこれを用いて <code>ElmType</code> 型クラスの <code>Todo</code> 型のインスタンスを定義する．</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="ot">{-# LANGUAGE TypeSynonymInstances #-}</span></a>
-<a class="sourceLine" id="cb12-2" title="2"></a>
-<a class="sourceLine" id="cb12-3" title="3"><span class="kw">instance</span> <span class="dt">ElmType</span> <span class="dt">Todo</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb12-4" title="4">  toElmType <span class="fu">=</span> toElmRecordType <span class="st">&quot;Todo&quot;</span></a>
-<a class="sourceLine" id="cb12-5" title="5"></a>
-<a class="sourceLine" id="cb12-6" title="6"><span class="ot">toElmRecordType ::</span> <span class="dt">ToElmValue</span> a <span class="ot">=&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">ElmDatatype</span></a>
-<a class="sourceLine" id="cb12-7" title="7">toElmRecordType name <span class="fu">=</span> <span class="dt">ElmDatatype</span> name <span class="fu">.</span> <span class="dt">RecordConstructor</span> name <span class="fu">.</span> toElmValue</a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1"></a><span class="ot">{-# LANGUAGE TypeSynonymInstances #-}</span></span>
+<span id="cb12-2"><a href="#cb12-2"></a></span>
+<span id="cb12-3"><a href="#cb12-3"></a><span class="kw">instance</span> <span class="dt">ElmType</span> <span class="dt">Todo</span> <span class="kw">where</span></span>
+<span id="cb12-4"><a href="#cb12-4"></a>  toElmType <span class="ot">=</span> toElmRecordType <span class="st">&quot;Todo&quot;</span></span>
+<span id="cb12-5"><a href="#cb12-5"></a></span>
+<span id="cb12-6"><a href="#cb12-6"></a><span class="ot">toElmRecordType ::</span> <span class="dt">ToElmValue</span> a <span class="ot">=&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">ElmDatatype</span></span>
+<span id="cb12-7"><a href="#cb12-7"></a>toElmRecordType name <span class="ot">=</span> <span class="dt">ElmDatatype</span> name <span class="op">.</span> <span class="dt">RecordConstructor</span> name <span class="op">.</span> toElmValue</span></code></pre></div>
 <p><code>TypeSynonymInstances</code> が嫌だったら，<code>newtype</code> でラップした型を定義すると良いでしょう．</p>
 <h2 id="section-4"></h2>
 <p>ちなみに，<code>newtype A = A (Record xs)</code> かつ <code>Record xs</code> が <code>ToElmValue</code> 型クラスのインスタンスなら必ず <code>ElmType</code> 型クラスのインスタンスにできるはずなので，そのようなインスタンスを定義しようとしたが，うまくいかなかった． Haskell-JP で <code>newtype</code> であることを保証する型クラスは無いかとか聞いて，そのおかげで <code>newtype</code> であることと，対応する型を取り出すことはできたのだが，型名を取り出すのにうまくいかなかった． またそのうち挑戦します．</p>
 <h3 id="最後の罠">最後の罠</h3>
 <p>これで意気揚々と Elm コード生成プログラムを実行したら実行時エラーになってしまった(ビルドは通る)． 原因は以下のせい．</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="fu">&gt;&gt;</span> toElmType (<span class="fu">undefined</span><span class="ot"> ::</span> <span class="dt">Todo</span>)</a>
-<a class="sourceLine" id="cb13-2" title="2"><span class="dt">ElmDatatype</span> <span class="st">&quot;Todo&quot;</span> (<span class="dt">RecordConstructor</span> <span class="st">&quot;Todo&quot;</span> <span class="fu">***</span> <span class="dt">Exception</span><span class="fu">:</span> Prelude.undefined</a>
-<a class="sourceLine" id="cb13-3" title="3"><span class="dt">CallStack</span> (from <span class="dt">HasCallStack</span>)<span class="fu">:</span></a>
-<a class="sourceLine" id="cb13-4" title="4">  <span class="fu">error</span>, called at libraries\base\<span class="dt">GHC</span>\Err.hs<span class="fu">:</span><span class="dv">79</span><span class="fu">:</span><span class="dv">14</span> <span class="kw">in</span> base<span class="fu">:</span><span class="dt">GHC.Err</span></a>
-<a class="sourceLine" id="cb13-5" title="5">  <span class="fu">undefined</span>, called at <span class="fu">&lt;</span>interactive<span class="fu">&gt;:</span><span class="dv">15</span><span class="fu">:</span><span class="dv">12</span> <span class="kw">in</span> interactive<span class="fu">:</span><span class="dt">Ghci1</span></a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1"></a><span class="op">&gt;&gt;</span> toElmType (<span class="fu">undefined</span><span class="ot"> ::</span> <span class="dt">Todo</span>)</span>
+<span id="cb13-2"><a href="#cb13-2"></a><span class="dt">ElmDatatype</span> <span class="st">&quot;Todo&quot;</span> (<span class="dt">RecordConstructor</span> <span class="st">&quot;Todo&quot;</span> <span class="op">***</span> <span class="dt">Exception</span><span class="op">:</span> Prelude.undefined</span>
+<span id="cb13-3"><a href="#cb13-3"></a><span class="dt">CallStack</span> (from <span class="dt">HasCallStack</span>)<span class="op">:</span></span>
+<span id="cb13-4"><a href="#cb13-4"></a>  <span class="fu">error</span>, called at libraries\base\<span class="dt">GHC</span>\Err.hs<span class="op">:</span><span class="dv">79</span><span class="op">:</span><span class="dv">14</span> <span class="kw">in</span> base<span class="op">:</span><span class="dt">GHC.Err</span></span>
+<span id="cb13-5"><a href="#cb13-5"></a>  <span class="fu">undefined</span>, called at <span class="op">&lt;</span>interactive<span class="op">&gt;:</span><span class="dv">15</span><span class="op">:</span><span class="dv">12</span> <span class="kw">in</span> interactive<span class="op">:</span><span class="dt">Ghci1</span></span></code></pre></div>
 <p>要するに，<code>undefined</code> や <code>Proxy</code> のような中身の無い状態では拡張可能レコードのインスタンスメソッドを実行できないのだ． そりゃ冷静に考えてみればそうだと言う感じだ(値から正確な型を読み取っているのだから)．</p>
 <p>なので，以下のような例の値を定義し．</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="ot">example ::</span> <span class="dt">Todo</span></a>
-<a class="sourceLine" id="cb14-2" title="2">example <span class="fu">=</span> <span class="fu">#</span>id <span class="fu">@=</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb14-3" title="3">       <span class="fu">&lt;:</span> <span class="fu">#</span>title <span class="fu">@=</span> <span class="st">&quot;hoge&quot;</span></a>
-<a class="sourceLine" id="cb14-4" title="4">       <span class="fu">&lt;:</span> <span class="fu">#</span>done <span class="fu">@=</span> <span class="dt">True</span></a>
-<a class="sourceLine" id="cb14-5" title="5">       <span class="fu">&lt;:</span> emptyRecord</a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1"></a><span class="ot">example ::</span> <span class="dt">Todo</span></span>
+<span id="cb14-2"><a href="#cb14-2"></a>example <span class="ot">=</span> <span class="op">#</span>id <span class="op">@=</span> <span class="dv">1</span></span>
+<span id="cb14-3"><a href="#cb14-3"></a>       <span class="op">&lt;:</span> <span class="op">#</span>title <span class="op">@=</span> <span class="st">&quot;hoge&quot;</span></span>
+<span id="cb14-4"><a href="#cb14-4"></a>       <span class="op">&lt;:</span> <span class="op">#</span>done <span class="op">@=</span> <span class="dt">True</span></span>
+<span id="cb14-5"><a href="#cb14-5"></a>       <span class="op">&lt;:</span> emptyRecord</span></code></pre></div>
 <p>生成プログラムのコードを次のように書き換える．</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" title="1"><span class="ot">spec ::</span> <span class="dt">Spec</span></a>
-<a class="sourceLine" id="cb15-2" title="2">spec <span class="fu">=</span> <span class="dt">Spec</span> [<span class="st">&quot;Generated&quot;</span>, <span class="st">&quot;TodoAPI&quot;</span>]</a>
-<a class="sourceLine" id="cb15-3" title="3">            (defElmImports</a>
-<a class="sourceLine" id="cb15-4" title="4">             <span class="fu">:</span> toElmTypeSource    example <span class="co">-- here</span></a>
-<a class="sourceLine" id="cb15-5" title="5">             <span class="fu">:</span> toElmDecoderSource example <span class="co">-- here</span></a>
-<a class="sourceLine" id="cb15-6" title="6">             <span class="fu">:</span> toElmEncoderSource example <span class="co">-- here</span></a>
-<a class="sourceLine" id="cb15-7" title="7">             <span class="fu">:</span> generateElmForAPIWith elmOpts  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">CRUD</span>))</a></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb15-1"><a href="#cb15-1"></a><span class="ot">spec ::</span> <span class="dt">Spec</span></span>
+<span id="cb15-2"><a href="#cb15-2"></a>spec <span class="ot">=</span> <span class="dt">Spec</span> [<span class="st">&quot;Generated&quot;</span>, <span class="st">&quot;TodoAPI&quot;</span>]</span>
+<span id="cb15-3"><a href="#cb15-3"></a>            (defElmImports</span>
+<span id="cb15-4"><a href="#cb15-4"></a>             <span class="op">:</span> toElmTypeSource    example <span class="co">-- here</span></span>
+<span id="cb15-5"><a href="#cb15-5"></a>             <span class="op">:</span> toElmDecoderSource example <span class="co">-- here</span></span>
+<span id="cb15-6"><a href="#cb15-6"></a>             <span class="op">:</span> toElmEncoderSource example <span class="co">-- here</span></span>
+<span id="cb15-7"><a href="#cb15-7"></a>             <span class="op">:</span> generateElmForAPIWith elmOpts  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">CRUD</span>))</span></code></pre></div>
 <p>これでうまく実行できるはず．</p>
 <h2 id="おしまい">おしまい</h2>
 <p>拡張可能レコード化するのに3日ぐらい悩んでしまった． この手の問題は難しいですねやっぱり．</p>

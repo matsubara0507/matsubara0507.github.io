@@ -90,60 +90,60 @@
 <iframe width="426" height="162" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/drone-slack-notify-log">
 </iframe>
 <p>色々調べてみたものの，同じビルド中の別のステップでのログを取得する方法がわからなかった… ので，最終手段として Drone API を使って引っ張ってくる方法をとった． ほぼほぼドキュメントは無いが，Drone API は <a href="https://github.com/drone/drone-go">drone/drone-go</a> を使うことで簡単に呼び出すことができる． ざっくりと次のような感じで呼び出している:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode go"><code class="sourceCode go"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">import</span> (</a>
-<a class="sourceLine" id="cb1-2" title="2">	<span class="st">&quot;context&quot;</span></a>
-<a class="sourceLine" id="cb1-3" title="3">	<span class="st">&quot;fmt&quot;</span></a>
-<a class="sourceLine" id="cb1-4" title="4"></a>
-<a class="sourceLine" id="cb1-5" title="5">	<span class="st">&quot;github.com/drone/drone-go/drone&quot;</span></a>
-<a class="sourceLine" id="cb1-6" title="6">	<span class="st">&quot;github.com/pkg/errors&quot;</span></a>
-<a class="sourceLine" id="cb1-7" title="7">	log <span class="st">&quot;github.com/sirupsen/logrus&quot;</span></a>
-<a class="sourceLine" id="cb1-8" title="8">	<span class="st">&quot;golang.org/x/oauth2&quot;</span></a>
-<a class="sourceLine" id="cb1-9" title="9">)</a>
-<a class="sourceLine" id="cb1-10" title="10"></a>
-<a class="sourceLine" id="cb1-11" title="11"><span class="kw">func</span> (p Plugin) Exec() <span class="dt">error</span> {</a>
-<a class="sourceLine" id="cb1-12" title="12">  config := <span class="bu">new</span>(oauth2.Config)</a>
-<a class="sourceLine" id="cb1-13" title="13">  client := drone.NewClient(</a>
-<a class="sourceLine" id="cb1-14" title="14">    p.Config.DroneHost,</a>
-<a class="sourceLine" id="cb1-15" title="15">    config.Client(</a>
-<a class="sourceLine" id="cb1-16" title="16">      context.Background(),</a>
-<a class="sourceLine" id="cb1-17" title="17">      &amp;oauth2.Token{</a>
-<a class="sourceLine" id="cb1-18" title="18">        AccessToken: p.Config.DroneToken,</a>
-<a class="sourceLine" id="cb1-19" title="19">      },</a>
-<a class="sourceLine" id="cb1-20" title="20">    ),</a>
-<a class="sourceLine" id="cb1-21" title="21">  )</a>
-<a class="sourceLine" id="cb1-22" title="22"></a>
-<a class="sourceLine" id="cb1-23" title="23">  logs, err := client.Logs(p.Repo.Owner, p.Repo.Name, p.Build.Number, p.Build.Stage, p.Config.StepNum)</a>
-<a class="sourceLine" id="cb1-24" title="24">  <span class="kw">if</span> err != <span class="ot">nil</span> {</a>
-<a class="sourceLine" id="cb1-25" title="25">    <span class="kw">return</span> errors.Wrapf(err, <span class="st">&quot;can't fetch drone logs: builds/%d/logs/%d/%d&quot;</span>, p.Build.Number, p.Build.Stage, p.Config.StepNum)</a>
-<a class="sourceLine" id="cb1-26" title="26">  }</a>
-<a class="sourceLine" id="cb1-27" title="27">  log.Infof(<span class="st">&quot;Success: fetch drone logs (lines num is %d)&quot;</span>, <span class="bu">len</span>(logs))</a>
-<a class="sourceLine" id="cb1-28" title="28"></a>
-<a class="sourceLine" id="cb1-29" title="29">  ...</a>
-<a class="sourceLine" id="cb1-30" title="30">}</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">import</span> (</span>
+<span id="cb1-2"><a href="#cb1-2"></a>	<span class="st">&quot;context&quot;</span></span>
+<span id="cb1-3"><a href="#cb1-3"></a>	<span class="st">&quot;fmt&quot;</span></span>
+<span id="cb1-4"><a href="#cb1-4"></a></span>
+<span id="cb1-5"><a href="#cb1-5"></a>	<span class="st">&quot;github.com/drone/drone-go/drone&quot;</span></span>
+<span id="cb1-6"><a href="#cb1-6"></a>	<span class="st">&quot;github.com/pkg/errors&quot;</span></span>
+<span id="cb1-7"><a href="#cb1-7"></a>	log <span class="st">&quot;github.com/sirupsen/logrus&quot;</span></span>
+<span id="cb1-8"><a href="#cb1-8"></a>	<span class="st">&quot;golang.org/x/oauth2&quot;</span></span>
+<span id="cb1-9"><a href="#cb1-9"></a>)</span>
+<span id="cb1-10"><a href="#cb1-10"></a></span>
+<span id="cb1-11"><a href="#cb1-11"></a><span class="kw">func</span> (p Plugin) Exec() <span class="dt">error</span> {</span>
+<span id="cb1-12"><a href="#cb1-12"></a>  config := <span class="bu">new</span>(oauth2.Config)</span>
+<span id="cb1-13"><a href="#cb1-13"></a>  client := drone.NewClient(</span>
+<span id="cb1-14"><a href="#cb1-14"></a>    p.Config.DroneHost,</span>
+<span id="cb1-15"><a href="#cb1-15"></a>    config.Client(</span>
+<span id="cb1-16"><a href="#cb1-16"></a>      context.Background(),</span>
+<span id="cb1-17"><a href="#cb1-17"></a>      &amp;oauth2.Token{</span>
+<span id="cb1-18"><a href="#cb1-18"></a>        AccessToken: p.Config.DroneToken,</span>
+<span id="cb1-19"><a href="#cb1-19"></a>      },</span>
+<span id="cb1-20"><a href="#cb1-20"></a>    ),</span>
+<span id="cb1-21"><a href="#cb1-21"></a>  )</span>
+<span id="cb1-22"><a href="#cb1-22"></a></span>
+<span id="cb1-23"><a href="#cb1-23"></a>  logs, err := client.Logs(p.Repo.Owner, p.Repo.Name, p.Build.Number, p.Build.Stage, p.Config.StepNum)</span>
+<span id="cb1-24"><a href="#cb1-24"></a>  <span class="kw">if</span> err != <span class="ot">nil</span> {</span>
+<span id="cb1-25"><a href="#cb1-25"></a>    <span class="kw">return</span> errors.Wrapf(err, <span class="st">&quot;can't fetch drone logs: builds/%d/logs/%d/%d&quot;</span>, p.Build.Number, p.Build.Stage, p.Config.StepNum)</span>
+<span id="cb1-26"><a href="#cb1-26"></a>  }</span>
+<span id="cb1-27"><a href="#cb1-27"></a>  log.Infof(<span class="st">&quot;Success: fetch drone logs (lines num is %d)&quot;</span>, <span class="bu">len</span>(logs))</span>
+<span id="cb1-28"><a href="#cb1-28"></a></span>
+<span id="cb1-29"><a href="#cb1-29"></a>  ...</span>
+<span id="cb1-30"><a href="#cb1-30"></a>}</span></code></pre></div>
 <p>で，実際の Plugin の使い方はこんな感じ:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb2-1" title="1"><span class="fu">steps:</span></a>
-<a class="sourceLine" id="cb2-2" title="2">  ...</a>
-<a class="sourceLine" id="cb2-3" title="3"><span class="kw">-</span> <span class="fu">name:</span><span class="at"> notify drone log to slack</span></a>
-<a class="sourceLine" id="cb2-4" title="4">  <span class="fu">image:</span><span class="at"> matsubara0507/slack-notify-log</span></a>
-<a class="sourceLine" id="cb2-5" title="5">  <span class="fu">settings:</span></a>
-<a class="sourceLine" id="cb2-6" title="6"><span class="fu">    template:</span> <span class="st">&gt;</span></a>
-<a class="sourceLine" id="cb2-7" title="7">      {{#success build.status}}</a>
-<a class="sourceLine" id="cb2-8" title="8">        {{repo.name}} is Success!</a>
-<a class="sourceLine" id="cb2-9" title="9">      {{else}}</a>
-<a class="sourceLine" id="cb2-10" title="10">        {{repo.name}} is Failure...</a>
-<a class="sourceLine" id="cb2-11" title="11">      {{/success}}</a>
-<a class="sourceLine" id="cb2-12" title="12">    <span class="fu">token:</span></a>
-<a class="sourceLine" id="cb2-13" title="13">      <span class="fu">from_secret:</span><span class="at"> slack_token</span></a>
-<a class="sourceLine" id="cb2-14" title="14">    <span class="fu">channel:</span><span class="at"> bot-test</span></a>
-<a class="sourceLine" id="cb2-15" title="15">    <span class="fu">step_number:</span><span class="at"> </span><span class="dv">2</span></a>
-<a class="sourceLine" id="cb2-16" title="16">    <span class="fu">drone_host:</span></a>
-<a class="sourceLine" id="cb2-17" title="17">      <span class="fu">from_secret:</span><span class="at"> drone_host</span></a>
-<a class="sourceLine" id="cb2-18" title="18">    <span class="fu">drone_token:</span></a>
-<a class="sourceLine" id="cb2-19" title="19">      <span class="fu">from_secret:</span><span class="at"> drone_token</span></a>
-<a class="sourceLine" id="cb2-20" title="20">  <span class="fu">when:</span></a>
-<a class="sourceLine" id="cb2-21" title="21">    <span class="fu">status:</span></a>
-<a class="sourceLine" id="cb2-22" title="22">    <span class="kw">-</span> success</a>
-<a class="sourceLine" id="cb2-23" title="23">    <span class="kw">-</span> failure</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="at">  ...</span></span>
+<span id="cb2-3"><a href="#cb2-3"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> notify drone log to slack</span></span>
+<span id="cb2-4"><a href="#cb2-4"></a><span class="at">  </span><span class="fu">image</span><span class="kw">:</span><span class="at"> matsubara0507/slack-notify-log</span></span>
+<span id="cb2-5"><a href="#cb2-5"></a><span class="at">  </span><span class="fu">settings</span><span class="kw">:</span></span>
+<span id="cb2-6"><a href="#cb2-6"></a><span class="fu">    template</span><span class="kw">: </span><span class="ch">&gt;</span></span>
+<span id="cb2-7"><a href="#cb2-7"></a>      {{#success build.status}}</span>
+<span id="cb2-8"><a href="#cb2-8"></a>        {{repo.name}} is Success!</span>
+<span id="cb2-9"><a href="#cb2-9"></a>      {{else}}</span>
+<span id="cb2-10"><a href="#cb2-10"></a>        {{repo.name}} is Failure...</span>
+<span id="cb2-11"><a href="#cb2-11"></a>      {{/success}}</span>
+<span id="cb2-12"><a href="#cb2-12"></a><span class="at">    </span><span class="fu">token</span><span class="kw">:</span></span>
+<span id="cb2-13"><a href="#cb2-13"></a><span class="at">      </span><span class="fu">from_secret</span><span class="kw">:</span><span class="at"> slack_token</span></span>
+<span id="cb2-14"><a href="#cb2-14"></a><span class="at">    </span><span class="fu">channel</span><span class="kw">:</span><span class="at"> bot-test</span></span>
+<span id="cb2-15"><a href="#cb2-15"></a><span class="at">    </span><span class="fu">step_number</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb2-16"><a href="#cb2-16"></a><span class="at">    </span><span class="fu">drone_host</span><span class="kw">:</span></span>
+<span id="cb2-17"><a href="#cb2-17"></a><span class="at">      </span><span class="fu">from_secret</span><span class="kw">:</span><span class="at"> drone_host</span></span>
+<span id="cb2-18"><a href="#cb2-18"></a><span class="at">    </span><span class="fu">drone_token</span><span class="kw">:</span></span>
+<span id="cb2-19"><a href="#cb2-19"></a><span class="at">      </span><span class="fu">from_secret</span><span class="kw">:</span><span class="at"> drone_token</span></span>
+<span id="cb2-20"><a href="#cb2-20"></a><span class="at">  </span><span class="fu">when</span><span class="kw">:</span></span>
+<span id="cb2-21"><a href="#cb2-21"></a><span class="at">    </span><span class="fu">status</span><span class="kw">:</span></span>
+<span id="cb2-22"><a href="#cb2-22"></a><span class="at">    </span><span class="kw">-</span><span class="at"> success</span></span>
+<span id="cb2-23"><a href="#cb2-23"></a><span class="at">    </span><span class="kw">-</span><span class="at"> failure</span></span></code></pre></div>
 <p>各 <code>settings</code> は:</p>
 <ul>
 <li><code>template</code> : スニペットのコメント</li>

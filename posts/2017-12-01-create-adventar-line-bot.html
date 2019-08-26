@@ -130,25 +130,25 @@
 <li><a href="https://cloud.google.com/nodejs/getting-started/using-cloud-datastore?hl=ja">Node.js で Cloud Datastore を使用する | Node.js | Google Cloud Platform</a></li>
 </ul>
 <p>Qiita の記事の <code>handleEvent</code> 関数を次のように書き換える．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">const</span> datastore <span class="op">=</span> <span class="at">require</span>(<span class="st">'@google-cloud/datastore'</span>)(<span class="op">{</span></a>
-<a class="sourceLine" id="cb1-2" title="2">  <span class="dt">projectId</span><span class="op">:</span> <span class="va">process</span>.<span class="va">env</span>.<span class="at">GCP_PROJECT</span></a>
-<a class="sourceLine" id="cb1-3" title="3"><span class="op">}</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb1-4" title="4"><span class="kw">const</span> kindName <span class="op">=</span> <span class="va">process</span>.<span class="va">env</span>.<span class="at">KIND_NAME</span><span class="op">;</span></a>
-<a class="sourceLine" id="cb1-5" title="5"></a>
-<a class="sourceLine" id="cb1-6" title="6"><span class="kw">function</span> <span class="at">handleEvent</span>(event) <span class="op">{</span></a>
-<a class="sourceLine" id="cb1-7" title="7">  <span class="cf">if</span> (<span class="va">event</span>.<span class="at">type</span> <span class="op">===</span> <span class="st">'follow'</span> <span class="op">&amp;&amp;</span> <span class="va">event</span>.<span class="va">source</span>.<span class="at">type</span> <span class="op">===</span> <span class="st">'user'</span>) <span class="op">{</span></a>
-<a class="sourceLine" id="cb1-8" title="8">    <span class="kw">const</span> entity <span class="op">=</span> <span class="op">{</span></a>
-<a class="sourceLine" id="cb1-9" title="9">      <span class="dt">key</span><span class="op">:</span> <span class="va">datastore</span>.<span class="at">key</span>([kindName<span class="op">,</span> kindName <span class="op">+</span> <span class="va">event</span>.<span class="va">source</span>.<span class="at">userId</span>])<span class="op">,</span></a>
-<a class="sourceLine" id="cb1-10" title="10">      <span class="dt">data</span><span class="op">:</span> <span class="op">{</span> <span class="dt">mid</span><span class="op">:</span> <span class="va">event</span>.<span class="va">source</span>.<span class="at">userId</span> <span class="op">}</span></a>
-<a class="sourceLine" id="cb1-11" title="11">    <span class="op">};</span></a>
-<a class="sourceLine" id="cb1-12" title="12">    <span class="cf">return</span> <span class="va">datastore</span>.<span class="at">upsert</span>(entity)<span class="op">;</span></a>
-<a class="sourceLine" id="cb1-13" title="13">  <span class="op">}</span> <span class="cf">else</span> <span class="cf">if</span> (<span class="va">event</span>.<span class="at">type</span> <span class="op">===</span> <span class="st">'unfollow'</span> <span class="op">&amp;&amp;</span> <span class="va">event</span>.<span class="va">source</span>.<span class="at">type</span> <span class="op">===</span> <span class="st">'user'</span>) <span class="op">{</span></a>
-<a class="sourceLine" id="cb1-14" title="14">    <span class="kw">const</span> key <span class="op">=</span> <span class="va">datastore</span>.<span class="at">key</span>([kindName<span class="op">,</span> kindName <span class="op">+</span> <span class="va">event</span>.<span class="va">source</span>.<span class="at">userId</span>])</a>
-<a class="sourceLine" id="cb1-15" title="15">    <span class="cf">return</span> <span class="va">datastore</span>.<span class="at">delete</span>(key)<span class="op">;</span></a>
-<a class="sourceLine" id="cb1-16" title="16">  <span class="op">}</span> <span class="cf">else</span> <span class="op">{</span></a>
-<a class="sourceLine" id="cb1-17" title="17">    <span class="cf">return</span> <span class="va">Promise</span>.<span class="at">resolve</span>(<span class="kw">null</span>)<span class="op">;</span></a>
-<a class="sourceLine" id="cb1-18" title="18">  <span class="op">}</span></a>
-<a class="sourceLine" id="cb1-19" title="19"><span class="op">}</span></a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">const</span> datastore <span class="op">=</span> <span class="at">require</span>(<span class="st">'@google-cloud/datastore'</span>)(<span class="op">{</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a>  <span class="dt">projectId</span><span class="op">:</span> <span class="va">process</span>.<span class="va">env</span>.<span class="at">GCP_PROJECT</span></span>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="op">}</span>)<span class="op">;</span></span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="kw">const</span> kindName <span class="op">=</span> <span class="va">process</span>.<span class="va">env</span>.<span class="at">KIND_NAME</span><span class="op">;</span></span>
+<span id="cb1-5"><a href="#cb1-5"></a></span>
+<span id="cb1-6"><a href="#cb1-6"></a><span class="kw">function</span> <span class="at">handleEvent</span>(event) <span class="op">{</span></span>
+<span id="cb1-7"><a href="#cb1-7"></a>  <span class="cf">if</span> (<span class="va">event</span>.<span class="at">type</span> <span class="op">===</span> <span class="st">'follow'</span> <span class="op">&amp;&amp;</span> <span class="va">event</span>.<span class="va">source</span>.<span class="at">type</span> <span class="op">===</span> <span class="st">'user'</span>) <span class="op">{</span></span>
+<span id="cb1-8"><a href="#cb1-8"></a>    <span class="kw">const</span> entity <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb1-9"><a href="#cb1-9"></a>      <span class="dt">key</span><span class="op">:</span> <span class="va">datastore</span>.<span class="at">key</span>([kindName<span class="op">,</span> kindName <span class="op">+</span> <span class="va">event</span>.<span class="va">source</span>.<span class="at">userId</span>])<span class="op">,</span></span>
+<span id="cb1-10"><a href="#cb1-10"></a>      <span class="dt">data</span><span class="op">:</span> <span class="op">{</span> <span class="dt">mid</span><span class="op">:</span> <span class="va">event</span>.<span class="va">source</span>.<span class="at">userId</span> <span class="op">}</span></span>
+<span id="cb1-11"><a href="#cb1-11"></a>    <span class="op">};</span></span>
+<span id="cb1-12"><a href="#cb1-12"></a>    <span class="cf">return</span> <span class="va">datastore</span>.<span class="at">upsert</span>(entity)<span class="op">;</span></span>
+<span id="cb1-13"><a href="#cb1-13"></a>  <span class="op">}</span> <span class="cf">else</span> <span class="cf">if</span> (<span class="va">event</span>.<span class="at">type</span> <span class="op">===</span> <span class="st">'unfollow'</span> <span class="op">&amp;&amp;</span> <span class="va">event</span>.<span class="va">source</span>.<span class="at">type</span> <span class="op">===</span> <span class="st">'user'</span>) <span class="op">{</span></span>
+<span id="cb1-14"><a href="#cb1-14"></a>    <span class="kw">const</span> key <span class="op">=</span> <span class="va">datastore</span>.<span class="at">key</span>([kindName<span class="op">,</span> kindName <span class="op">+</span> <span class="va">event</span>.<span class="va">source</span>.<span class="at">userId</span>])</span>
+<span id="cb1-15"><a href="#cb1-15"></a>    <span class="cf">return</span> <span class="va">datastore</span>.<span class="at">delete</span>(key)<span class="op">;</span></span>
+<span id="cb1-16"><a href="#cb1-16"></a>  <span class="op">}</span> <span class="cf">else</span> <span class="op">{</span></span>
+<span id="cb1-17"><a href="#cb1-17"></a>    <span class="cf">return</span> <span class="va">Promise</span>.<span class="at">resolve</span>(<span class="kw">null</span>)<span class="op">;</span></span>
+<span id="cb1-18"><a href="#cb1-18"></a>  <span class="op">}</span></span>
+<span id="cb1-19"><a href="#cb1-19"></a><span class="op">}</span></span></code></pre></div>
 <p>(たぶん) Datastore と同じアカウントの Cloud Functions なので細かい認証が要らない． ちなみに，<code>GCP_PROJECT</code> という環境変数は組み込みで定義されてるが，<code>KIND_NAME</code> というのは無いので <code>.env</code> に定義する．</p>
 <h3 id="スクレイピングで更新を確認">スクレイピングで更新を確認</h3>
 <p>React.js のような動的な DOM を生成するタイプは普通の HTTP リクエストでは静的な HTML は取得できない． なので Selenium のような Headless Browser を用いる． 今回は <a href="https://hackage.haskell.org/package/webdriver"><code>webdriver</code></a> という Haskell パッケージを用いて Haskell から Selenium を操作して動的な DOM を取得した．</p>
@@ -163,9 +163,9 @@
 <p>ちゃんと API のバージョンアップも追っていた． 流石中の人製(笑) いっそのこと<a href="https://developers.line.me/ja/docs/messaging-api/reference/">公式の一覧</a>にも書けばいいのに．</p>
 <h2 id="section-4"></h2>
 <p>今回は Push するだけで，webhook 用のサーバーを立てる必要が無いので，<a href="https://hackage.haskell.org/package/wai"><code>wai</code></a> や <a href="https://hackage.haskell.org/package/scotty"><code>scotty</code></a> は必要ない． こんな感じの関数を書くだけ，簡単ですね．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">pushMessage ::</span> <span class="dt">ChannelAccessToken</span> <span class="ot">-&gt;</span> <span class="dt">ID</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Either</span> <span class="dt">APIError</span> ())</a>
-<a class="sourceLine" id="cb2-2" title="2">pushMessage token mid message <span class="fu">=</span></a>
-<a class="sourceLine" id="cb2-3" title="3">  runAPI (<span class="fu">pure</span> token) <span class="fu">$</span> push mid [<span class="dt">Message</span> <span class="fu">$</span> <span class="dt">LINE.Text</span> message]</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1"></a><span class="ot">pushMessage ::</span> <span class="dt">ChannelAccessToken</span> <span class="ot">-&gt;</span> <span class="dt">ID</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Either</span> <span class="dt">APIError</span> ())</span>
+<span id="cb2-2"><a href="#cb2-2"></a>pushMessage token mid message <span class="ot">=</span></span>
+<span id="cb2-3"><a href="#cb2-3"></a>  runAPI (<span class="fu">pure</span> token) <span class="op">$</span> push mid [<span class="dt">Message</span> <span class="op">$</span> <span class="dt">LINE.Text</span> message]</span></code></pre></div>
 <h3 id="cloud-datastore-から-id-をとってくる">Cloud Datastore から ID をとってくる</h3>
 <p>鬼門その１ Haskell から GCP 系の操作をするには <a href="https://hackage.haskell.org/package/gogol"><code>gogol</code></a> というパッケージを使うのだが，<strong>高度に型レベルプログラミングになってて難しいにも拘わらずサンプルが少ない</strong> ので大変だった．</p>
 <p>高度とはいえ，イロイロと遊んでいるおかげで型レベルプログラミングには慣れてるから，分かれば普通に使えた． 寧ろよくこんなライブラリ作ったなって感想です(笑)</p>
@@ -179,44 +179,44 @@
 </ol>
 <p>まぁ今回は全部だったんだけどね((1) <code>runQueryRequest</code> には Query か GQLQuery のフィールドをセットしないといけない, (2) namespace と kind を間違えてた, (3) kind をタイポしてた)．</p>
 <p>結果，こんな感じの関数を書くだけ，簡単ですね(？)．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="ot">getMids ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> [<span class="dt">Text</span>]</a>
-<a class="sourceLine" id="cb3-2" title="2">getMids projectId kind <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb3-3" title="3">  env <span class="ot">&lt;-</span> newEnv <span class="fu">&lt;&amp;&gt;</span> envScopes <span class="fu">.~</span> datastoreScope</a>
-<a class="sourceLine" id="cb3-4" title="4">  <span class="kw">let</span></a>
-<a class="sourceLine" id="cb3-5" title="5">    request <span class="fu">=</span> runQueryRequest</a>
-<a class="sourceLine" id="cb3-6" title="6">      <span class="fu">&amp;</span> rqrPartitionId <span class="fu">?~</span> (partitionId <span class="fu">&amp;</span> piProjectId <span class="fu">?~</span> projectId)</a>
-<a class="sourceLine" id="cb3-7" title="7">      <span class="fu">&amp;</span> rqrGqlQuery <span class="fu">?~</span> (gqlQuery <span class="fu">&amp;</span> gqQueryString <span class="fu">?~</span> append <span class="st">&quot;SELECT * FROM &quot;</span> kind)</a>
-<a class="sourceLine" id="cb3-8" title="8">  response <span class="ot">&lt;-</span></a>
-<a class="sourceLine" id="cb3-9" title="9">    runResourceT <span class="fu">.</span> runGoogle env <span class="fu">$</span> send (projectsRunQuery request projectId)</a>
-<a class="sourceLine" id="cb3-10" title="10">  <span class="fu">return</span> <span class="fu">.</span> catMaybes <span class="fu">.</span> fromMaybe [] <span class="fu">$</span></a>
-<a class="sourceLine" id="cb3-11" title="11">    <span class="fu">fmap</span> getMid <span class="fu">.</span> view qrbEntityResults <span class="fu">&lt;$&gt;</span> response <span class="fu">^.</span> rBatch</a>
-<a class="sourceLine" id="cb3-12" title="12"></a>
-<a class="sourceLine" id="cb3-13" title="13"><span class="ot">getMid ::</span> <span class="dt">EntityResult</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Text</span></a>
-<a class="sourceLine" id="cb3-14" title="14">getMid result <span class="fu">=</span></a>
-<a class="sourceLine" id="cb3-15" title="15">  result <span class="fu">^.</span> erEntity <span class="fu">&gt;&gt;=</span> view eProperties</a>
-<a class="sourceLine" id="cb3-16" title="16">    <span class="fu">&lt;&amp;&gt;</span> view epAddtional <span class="fu">&gt;&gt;=</span> HM.lookup <span class="st">&quot;mid&quot;</span> <span class="fu">&gt;&gt;=</span> view vStringValue</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1"></a><span class="ot">getMids ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> [<span class="dt">Text</span>]</span>
+<span id="cb3-2"><a href="#cb3-2"></a>getMids projectId kind <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb3-3"><a href="#cb3-3"></a>  env <span class="ot">&lt;-</span> newEnv <span class="op">&lt;&amp;&gt;</span> envScopes <span class="op">.~</span> datastoreScope</span>
+<span id="cb3-4"><a href="#cb3-4"></a>  <span class="kw">let</span></span>
+<span id="cb3-5"><a href="#cb3-5"></a>    request <span class="ot">=</span> runQueryRequest</span>
+<span id="cb3-6"><a href="#cb3-6"></a>      <span class="op">&amp;</span> rqrPartitionId <span class="op">?~</span> (partitionId <span class="op">&amp;</span> piProjectId <span class="op">?~</span> projectId)</span>
+<span id="cb3-7"><a href="#cb3-7"></a>      <span class="op">&amp;</span> rqrGqlQuery <span class="op">?~</span> (gqlQuery <span class="op">&amp;</span> gqQueryString <span class="op">?~</span> append <span class="st">&quot;SELECT * FROM &quot;</span> kind)</span>
+<span id="cb3-8"><a href="#cb3-8"></a>  response <span class="ot">&lt;-</span></span>
+<span id="cb3-9"><a href="#cb3-9"></a>    runResourceT <span class="op">.</span> runGoogle env <span class="op">$</span> send (projectsRunQuery request projectId)</span>
+<span id="cb3-10"><a href="#cb3-10"></a>  <span class="fu">return</span> <span class="op">.</span> catMaybes <span class="op">.</span> fromMaybe [] <span class="op">$</span></span>
+<span id="cb3-11"><a href="#cb3-11"></a>    <span class="fu">fmap</span> getMid <span class="op">.</span> view qrbEntityResults <span class="op">&lt;$&gt;</span> response <span class="op">^.</span> rBatch</span>
+<span id="cb3-12"><a href="#cb3-12"></a></span>
+<span id="cb3-13"><a href="#cb3-13"></a><span class="ot">getMid ::</span> <span class="dt">EntityResult</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Text</span></span>
+<span id="cb3-14"><a href="#cb3-14"></a>getMid result <span class="ot">=</span></span>
+<span id="cb3-15"><a href="#cb3-15"></a>  result <span class="op">^.</span> erEntity <span class="op">&gt;&gt;=</span> view eProperties</span>
+<span id="cb3-16"><a href="#cb3-16"></a>    <span class="op">&lt;&amp;&gt;</span> view epAddtional <span class="op">&gt;&gt;=</span> HM.lookup <span class="st">&quot;mid&quot;</span> <span class="op">&gt;&gt;=</span> view vStringValue</span></code></pre></div>
 <h3 id="合わせる">合わせる</h3>
 <p>こんな感じ</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="ot">runBot ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Url</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> (<span class="dt">Text</span>, <span class="dt">Text</span>) <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb4-2" title="2">runBot jsonPath htmlUrl token (projectId, dsKind) <span class="fu">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb4-3" title="3">  oldCal <span class="ot">&lt;-</span> readEntryJson jsonPath</a>
-<a class="sourceLine" id="cb4-4" title="4">  newCal <span class="ot">&lt;-</span> adventarScraper <span class="fu">&lt;$&gt;</span> fetchHtml htmlUrl</a>
-<a class="sourceLine" id="cb4-5" title="5"></a>
-<a class="sourceLine" id="cb4-6" title="6">  <span class="kw">let</span></a>
-<a class="sourceLine" id="cb4-7" title="7">    messages <span class="fu">=</span> mkMessages oldCal newCal</a>
-<a class="sourceLine" id="cb4-8" title="8"></a>
-<a class="sourceLine" id="cb4-9" title="9">  unless (<span class="fu">null</span> messages) <span class="fu">$</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb4-10" title="10">    <span class="kw">let</span></a>
-<a class="sourceLine" id="cb4-11" title="11">      message <span class="fu">=</span> <span class="fu">unlines</span> <span class="fu">$</span> <span class="st">&quot;更新がありました！&quot;</span> <span class="fu">:</span> htmlUrl <span class="fu">:</span> messages</a>
-<a class="sourceLine" id="cb4-12" title="12">    mids <span class="ot">&lt;-</span> getMids projectId dsKind</a>
-<a class="sourceLine" id="cb4-13" title="13">    <span class="fu">mapM_</span> (\mid <span class="ot">-&gt;</span> pushMessage token mid message) mids</a>
-<a class="sourceLine" id="cb4-14" title="14">    updateEntryJson jsonPath newCal</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1"></a><span class="ot">runBot ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Url</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> (<span class="dt">Text</span>, <span class="dt">Text</span>) <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</span>
+<span id="cb4-2"><a href="#cb4-2"></a>runBot jsonPath htmlUrl token (projectId, dsKind) <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb4-3"><a href="#cb4-3"></a>  oldCal <span class="ot">&lt;-</span> readEntryJson jsonPath</span>
+<span id="cb4-4"><a href="#cb4-4"></a>  newCal <span class="ot">&lt;-</span> adventarScraper <span class="op">&lt;$&gt;</span> fetchHtml htmlUrl</span>
+<span id="cb4-5"><a href="#cb4-5"></a></span>
+<span id="cb4-6"><a href="#cb4-6"></a>  <span class="kw">let</span></span>
+<span id="cb4-7"><a href="#cb4-7"></a>    messages <span class="ot">=</span> mkMessages oldCal newCal</span>
+<span id="cb4-8"><a href="#cb4-8"></a></span>
+<span id="cb4-9"><a href="#cb4-9"></a>  unless (<span class="fu">null</span> messages) <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb4-10"><a href="#cb4-10"></a>    <span class="kw">let</span></span>
+<span id="cb4-11"><a href="#cb4-11"></a>      message <span class="ot">=</span> <span class="fu">unlines</span> <span class="op">$</span> <span class="st">&quot;更新がありました！&quot;</span> <span class="op">:</span> htmlUrl <span class="op">:</span> messages</span>
+<span id="cb4-12"><a href="#cb4-12"></a>    mids <span class="ot">&lt;-</span> getMids projectId dsKind</span>
+<span id="cb4-13"><a href="#cb4-13"></a>    <span class="fu">mapM_</span> (\mid <span class="ot">-&gt;</span> pushMessage token mid message) mids</span>
+<span id="cb4-14"><a href="#cb4-14"></a>    updateEntryJson jsonPath newCal</span></code></pre></div>
 <p>これを <code>main</code> 関数で呼び出す． ちなみに以下の関数は自分で定義してあるもので，どこかのライブラリの関数ではないよ(今回はこれらの関数に関する話は割愛している)．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="ot">readEntyJson ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Calendar</span></a>
-<a class="sourceLine" id="cb5-2" title="2"><span class="ot">updateEntryJson ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Calendar</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</a>
-<a class="sourceLine" id="cb5-3" title="3"><span class="ot">fetchHtml ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Url</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Html</span></a>
-<a class="sourceLine" id="cb5-4" title="4"><span class="ot">adventarScraper ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Calendar</span></a>
-<a class="sourceLine" id="cb5-5" title="5"><span class="ot">mkMessages ::</span> <span class="dt">Calendar</span> <span class="ot">-&gt;</span> <span class="dt">Calendar</span> <span class="ot">-&gt;</span> [<span class="dt">Text</span>]</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1"></a><span class="ot">readEntyJson ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Calendar</span></span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="ot">updateEntryJson ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Calendar</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</span>
+<span id="cb5-3"><a href="#cb5-3"></a><span class="ot">fetchHtml ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Url</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Html</span></span>
+<span id="cb5-4"><a href="#cb5-4"></a><span class="ot">adventarScraper ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Calendar</span></span>
+<span id="cb5-5"><a href="#cb5-5"></a><span class="ot">mkMessages ::</span> <span class="dt">Calendar</span> <span class="ot">-&gt;</span> <span class="dt">Calendar</span> <span class="ot">-&gt;</span> [<span class="dt">Text</span>]</span></code></pre></div>
 <h3 id="cron-で回す">cron で回す</h3>
 <p>鬼門その２ まぁこっちの鬼門は自分が cron を知らな過ぎただけなんですけどね．</p>
 <p>今回は実行用の f1-micro の GCE を Ubuntu16.04 で立てて，その中で cron を回すことにした． f1-micro の US レージョンひとつなら，<a href="https://cloud.google.com/free/?hl=ja">無料枠</a>らしいから，起動しっぱなしでも大丈夫だよね？？</p>
@@ -233,7 +233,7 @@ DATASTORE_KIND=&quot;AAAALine&quot;
 TIME=15
 
 0 * * * * (docker-compose -f /root/adventar-line-bot/docker-compose.yml run --rm bot ; docker-compose -f /root/adventar-line-bot/docker-compose.yml stop) &gt;&gt; /root/test.log 2&gt;&gt; /root/error.log</code></pre>
-<p><code>MAILTO=&quot;&quot;</code> しておかないと，メールを送信する用の何かが無くてエラーで落ちる． <code>PATH</code> もデフォルトだと全然ないので，とりあえず一般ユーザー時と同じだけ与えといた．</p>
+<p><code>MAILTO=""</code> しておかないと，メールを送信する用の何かが無くてエラーで落ちる． <code>PATH</code> もデフォルトだと全然ないので，とりあえず一般ユーザー時と同じだけ与えといた．</p>
 <p><code>docker-compose</code> の設定は<a href="https://github.com/matsubara0507/adventar-line-bot/blob/master/docker-compose.yml">コレ</a>を見てください． 今回は説明を割愛． ただ，<code>TIME</code> というのは，selenium のコンテナが起動し終わるまで bot の起動を待ってもらう時間を設定する環境変数． インスタンスが雑魚過ぎて，15秒も必要だった(普段は2~3秒とかでいい)</p>
 <h2 id="section-7"></h2>
 <p>cron の何がしんどかったかと言うと，エラーが出てこないこと． <code>2&gt;&gt; /root/error.log</code> とかして，自前でエラーメッセージをファイルに書き出しておかないと，そもそも動いているのかもよくわからない． 普段こういうことしないのでまぁまぁ困った．</p>

@@ -107,9 +107,9 @@
 <p>ちなみに，Stack はワークスペース内の <code>.stack-work</code> の中に中間結果などを含むビルド結果をバージョンやビルド環境ごとに保存する． そして，<code>--docker</code> オプションでビルドすることで，ローカルではなく Docker のコンテナ内でビルドをしたり，生成したプログラムを実行したりできる． しかも，コンテナ内でビルドした場合でもビルド結果をローカルの <code>.stack-work</code> に保存するのだ．</p>
 <h2 id="docker-イメージ内でビルド">Docker イメージ内でビルド</h2>
 <p>まず stack.yaml に次のような設定を追加する．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb1-1" title="1"><span class="fu">docker:</span></a>
-<a class="sourceLine" id="cb1-2" title="2">  <span class="fu">enable:</span><span class="at"> </span><span class="ch">false</span></a>
-<a class="sourceLine" id="cb1-3" title="3">  <span class="fu">repo:</span><span class="at"> </span><span class="st">&quot;fpco/stack-build&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">docker</span><span class="kw">:</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="at">  </span><span class="fu">enable</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="at">  </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;fpco/stack-build&quot;</span></span></code></pre></div>
 <p><code>enable: true</code> にすると，以降の <code>--docker</code> オプションを省けるが，逆に普通にローカルでビルドしたい場合は <code>--no-docker</code> オプションが必要になる． <code>repo</code> でビルドするイメージを指定する． [<code>fpco/stack-build</code> はこれだ]（https://hub.docker.com/r/fpco/stack-build/）． stack.yaml の <code>resolver</code> からイメージタグを自動的に選んでくれるはずだ．</p>
 <p>あとは次のコマンドでビルドできる．</p>
 <pre><code># repo で指定した docker image の pull
@@ -120,10 +120,10 @@ $ stack build --docker</code></pre>
 <p>他にも細かい設定がかけるが割愛（上述したドキュメントを参照してください）．</p>
 <h2 id="docker-イメージを作る">Docker イメージを作る</h2>
 <p>stack.yaml に次の設定を追加する．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb3-1" title="1"><span class="fu">image:</span></a>
-<a class="sourceLine" id="cb3-2" title="2">  <span class="fu">container:</span></a>
-<a class="sourceLine" id="cb3-3" title="3">    <span class="fu">name:</span><span class="at"> hoge</span></a>
-<a class="sourceLine" id="cb3-4" title="4">    <span class="fu">base:</span><span class="at"> fpco/ubuntu-with-libgmp</span></a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">image</span><span class="kw">:</span></span>
+<span id="cb3-2"><a href="#cb3-2"></a><span class="at">  </span><span class="fu">container</span><span class="kw">:</span></span>
+<span id="cb3-3"><a href="#cb3-3"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> hoge</span></span>
+<span id="cb3-4"><a href="#cb3-4"></a><span class="at">    </span><span class="fu">base</span><span class="kw">:</span><span class="at"> fpco/ubuntu-with-libgmp</span></span></code></pre></div>
 <p><code>image.container.name</code> は生成する Docker イメージの名前で，<code>image.container.base</code> は生成する Docker イメージに使うベースイメージだ． ベースイメージは <code>docker.repo</code> などで指定したイメージのOSとあってさえいれば良い（ちなみに <code>fpco/stack-build</code> は <code>ubuntu:16.04</code>）． やってくれることは簡単で， <code>stack build --docker</code> で作成した実行ファイルをベースイメージの <code>local/bin</code> などにコピーするだけだ． なので，もし静的リンクしていない場合はリンクが含まれるベースイメージを指定すると良い(<a href="https://hub.docker.com/r/fpco/ubuntu-with-libgmp/"><code>fpco/ubuntu-with-libgmp</code></a> はそのために使っている)．</p>
 <p>あとは次のコマンドでイメージの作成ができる．</p>
 <pre><code># repo で指定した docker image の pull
@@ -131,13 +131,13 @@ $ stack --docker image container</code></pre>
 <p><code>--docker</code> を指定しないとローカルでビルドした実行ファイルをコピーして，生成したイメージのコンテナで実行できなくなるので注意してください（もちろんローカルが ubuntu なら問題ないけど）． あと， stack によるイメージ作成方法では他に Dockerfile の <code>add</code> っぽいことと <code>entrypoints</code> っぽいことができるが，それ以上のことはできない． もっと複雑な設定をしたい場合は，生成したイメージをベースイメージにした Dockerfile を書いたり， Docker のマルチステージビルドを使って設定を上書きしたりするとと良いだろう．</p>
 <h2 id="travisci-docker-hub">TravisCI + Docker Hub</h2>
 <p>Docker Integration の欠点は Docker Hub の Automated build が使えない点だ． そこで，TravisCI を使って自動ビルドし，Docker Hub にプッシュするようにした． 次のような設定を travis.yml に書くと良いだろう．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">-</span> <span class="fu">stage:</span><span class="at"> push docker image</span></a>
-<a class="sourceLine" id="cb5-2" title="2">  <span class="fu">if:</span><span class="at"> branch = master</span></a>
-<a class="sourceLine" id="cb5-3" title="3">  <span class="fu">script:</span></a>
-<a class="sourceLine" id="cb5-4" title="4">   <span class="kw">-</span> stack docker pull</a>
-<a class="sourceLine" id="cb5-5" title="5">   <span class="kw">-</span> stack --docker image container</a>
-<a class="sourceLine" id="cb5-6" title="6">   <span class="kw">-</span> echo <span class="st">&quot;$DOCKER_PASSWORD&quot;</span> | docker login -u <span class="st">&quot;$DOCKER_USERNAME&quot;</span> --password-stdin</a>
-<a class="sourceLine" id="cb5-7" title="7">   <span class="kw">-</span> docker push $TRAVIS_REPO_SLUG</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">stage</span><span class="kw">:</span><span class="at"> push docker image</span></span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="at">  </span><span class="fu">if</span><span class="kw">:</span><span class="at"> branch = master</span></span>
+<span id="cb5-3"><a href="#cb5-3"></a><span class="at">  </span><span class="fu">script</span><span class="kw">:</span></span>
+<span id="cb5-4"><a href="#cb5-4"></a><span class="at">   </span><span class="kw">-</span><span class="at"> stack docker pull</span></span>
+<span id="cb5-5"><a href="#cb5-5"></a><span class="at">   </span><span class="kw">-</span><span class="at"> stack --docker image container</span></span>
+<span id="cb5-6"><a href="#cb5-6"></a><span class="at">   </span><span class="kw">-</span><span class="at"> echo &quot;$DOCKER_PASSWORD&quot; | docker login -u &quot;$DOCKER_USERNAME&quot; --password-stdin</span></span>
+<span id="cb5-7"><a href="#cb5-7"></a><span class="at">   </span><span class="kw">-</span><span class="at"> docker push $TRAVIS_REPO_SLUG</span></span></code></pre></div>
 <p>実は <code>stack --docker image container</code> でビルドまでしてくれる． Docker Hub には Token のようなものはないので <code>--password-stdin</code> とパイプを使って普通のパスワードでログインする． あとは <code>image.container.name</code> で指定する名前を <code>hoge</code> ではなく <code>user_name/repo_name</code> としておけば良い． もちろんこれは GitHub と Docker Hub のユーザ名が同じ場合にしか使えない． 違う場合は直接書いてね．</p>
 <h1 id="おしまい">おしまい</h1>
 <p>この方法なら実行ファイルしか入ってないイメージが出来上がるので軽いし， stack のビルド遅すぎて利用者側は厳しい問題も緩和するので最近のマイブームです．</p>
