@@ -155,7 +155,7 @@
 <span id="cb1-3"><a href="#cb1-3"></a></span>
 <span id="cb1-4"><a href="#cb1-4"></a>a = b;</span>
 <span id="cb1-5"><a href="#cb1-5"></a>a[<span class="dv">0</span>] = <span class="kw">new</span> <span class="fu">Parent</span>();</span></code></pre></div>
-<p>Java の配列は共変(covariant)なため，これはコンパイルエラーにはならない(共変性とは<a href="https://msdn.microsoft.com/ja-jp/library/dd799517">子型のオブジェクトを親型の変数に代入できるという性質</a>． しかし，<code>a[0] = new Parent();</code> で，<code>ArrayStoreException</code> という実行時エラーになる． この振る舞いはリスコフの置換原則を完全に破っている．</p>
+<p>Java の配列は共変(covariant)なため，これはコンパイルエラーにはならない(共変性とは<a href="https://docs.microsoft.com/ja-jp/dotnet/standard/generics/covariance-and-contravariance">子型のオブジェクトを親型の変数に代入できるという性質</a>． しかし，<code>a[0] = new Parent();</code> で，<code>ArrayStoreException</code> という実行時エラーになる． この振る舞いはリスコフの置換原則を完全に破っている．</p>
 <p>ジェネリクスは不変なため，上記のようなコードはコンパイルエラーになる． そのため，ジェネリクスが導入された JDK5 より前は <code>NullPointErexception</code> と同じぐらいよくある実行時エラーだったらしい．</p>
 <h2 id="section-3"></h2>
 <p>他には以下の内容の話があった(他にもあったかも)</p>
