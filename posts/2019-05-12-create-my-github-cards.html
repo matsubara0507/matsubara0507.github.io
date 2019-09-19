@@ -141,7 +141,7 @@
 <p>Elm で「生成した JSON ファイルを読み込む」というのは少し大変だった． Elm で初期値を与えるには <code>init</code> 関数の <code>Flag</code> というのを使う。<a href="https://qiita.com/jinjor/items/245959d2da710eda18fa#browserelement">このあたりが参考になる</a>．</p>
 <p>で，問題はどうやってローカルの JSON を読み込むか． <a href="https://github.com/matsubara0507/git-plantation/blob/8b0c44e6e6e20bd23998f7df5e0817fcf17fb6a8/src/Git/Plantation/API.hs#L47-L48">git-plantation では Haskell で埋め込んでいた</a>のだが，今回はサーバー側がないのでできない． ググったら出てきた:</p>
 <ul>
-<li><a href="https://codepen.io/KryptoniteDove/post/load-json-file-locally-using-pure-javascript">Load JSON file locally using pure Javascript by Rich on CodePen</a></li>
+<li><a href="https://gist.github.com/laurenancona/bd560948d71054e3d1477e43c4d48cb6">Access local JSON data with Javascript・GitHub Gist</a></li>
 </ul>
 <p>JS 詳しくないのでこれが良い方法なのかはわからないけど，これを参考にして次のような JS を書いて <code>index.html</code> から読み込むようにした:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb2-1"><a href="#cb2-1"></a><span class="st">&quot;use strict&quot;</span><span class="op">;</span></span>

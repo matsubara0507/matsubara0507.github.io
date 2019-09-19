@@ -140,7 +140,7 @@
 <span id="cb3-2"><a href="#cb3-2"></a><span class="ex">Unable</span> to parse cabal file for haddock-library-1.4.5: FromString <span class="st">&quot;This package requires at least Cabal version 2.0&quot;</span> Nothing</span></code></pre></div>
 <p>うーん，これはよくわからない． てっきり，<code>Cabal</code> を 2.0 以上にすればよいのかと思い，それに対応した <a href="https://github.com/commercialhaskell/stack/commit/1f2ddf113bffc53c5046498476bd89c6e12860c4"><code>stack-1.5.1</code></a> にあげればうまくいくのだと思ったのだが，うまくいかなかった． なので，問題が起きない <code>haddock-library-1.4.3</code> を使うことにした．</p>
 <h2 id="section"></h2>
-<p>ちなみに，<code>nightly-2017-08-10</code> を使うだけで以下のような同様のエラーが出たが，これは <code>stack-1.5.1</code> にするだけでうまくいった(haskell-jp で <a href="https://github.com/igrep">igrep</a> さんに<a href="https://haskell-jp.slackarchive.io/questions/page-15/ts-1502333357684352">教えてもらった</a>！感謝！！)．</p>
+<p>ちなみに，<code>nightly-2017-08-10</code> を使うだけで以下のような同様のエラーが出たが，これは <code>stack-1.5.1</code> にするだけでうまくいった(haskell-jp で <a href="https://github.com/igrep">igrep</a> さんに教えてもらった！感謝！！)．</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1"></a>$ <span class="ex">stack</span> build</span>
 <span id="cb4-2"><a href="#cb4-2"></a><span class="ex">Unable</span> to parse cabal file: FromString <span class="st">&quot;This package requires at least Cabal version 2.0&quot;</span> Nothing</span></code></pre></div>
 <h2 id="section-1"></h2>

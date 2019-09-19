@@ -98,7 +98,7 @@
 <li><a href="https://github.com/drone-plugins">drone-plugins - GitHub</a></li>
 </ul>
 <h2 id="docker-compose-する">docker-compose する</h2>
-<p>さて本題． ローカルで Drone サーバを <code>docker-compose up</code> して GitHub で利用する． GitHub で利用するには Drone を <a href="https://docs.drone.io/installation/github/multi-machine/#create-an-oauth-application">GitHub の OAuth App として登録する必要がある</a>． OAuth App にするにはパブリックな URL が必要なので，<a href="https://ngrok.com/">ngrok</a> を利用する:</p>
+<p>さて本題． ローカルで Drone サーバを <code>docker-compose up</code> して GitHub で利用する． GitHub で利用するには Drone を <a href="https://docs.drone.io/installation/providers/github/#step-1-preparation">GitHub の OAuth App として登録する必要がある</a>． OAuth App にするにはパブリックな URL が必要なので，<a href="https://ngrok.com/">ngrok</a> を利用する:</p>
 <pre><code>$ ngrok http 8000</code></pre>
 <p>これで仮に <code>abcdef.ngrok.io</code> と言うドメインを得たとする． 次のような OAuth App を登録する:</p>
 <p><img src="../assets/docker-compose-up-drone-1-0/oauth-app.jpg" /></p>
@@ -136,7 +136,7 @@
 <span id="cb2-31"><a href="#cb2-31"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_RPC_SERVER=http://drone-server</span></span>
 <span id="cb2-32"><a href="#cb2-32"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_RPC_SECRET=ZZZ</span></span>
 <span id="cb2-33"><a href="#cb2-33"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_RUNNER_CAPACITY=2</span></span></code></pre></div>
-<p><code>XXX</code> は GitHub OAuth App の Client ID を，<code>YYY</code> には Client Secret を記述する． <code>DRONE_RPC_SECRET</code> の <code>ZZZ</code> は server と agent で同じであればなんでも良いのだが，<a href="https://docs.drone.io/installation/github/multi-machine/#create-a-shared-secret">ここ</a>に <code>openssl rand -hex 16</code> で生成すると書いてあるので，それに従う． これであとは <code>docker-compose up</code> をすれば無事起動完了だ．</p>
+<p><code>XXX</code> は GitHub OAuth App の Client ID を，<code>YYY</code> には Client Secret を記述する． <code>DRONE_RPC_SECRET</code> の <code>ZZZ</code> は server と agent で同じであればなんでも良いのだが，<a href="https://docs.drone.io/installation/providers/github/#step-1-preparation">ここ</a>に <code>openssl rand -hex 16</code> で生成すると書いてあるので，それに従う． これであとは <code>docker-compose up</code> をすれば無事起動完了だ．</p>
 <pre><code>$ curl http://localhost:8000/version
 {&quot;source&quot;:&quot;https://github.com/drone/drone.git&quot;,&quot;version&quot;:&quot;latest&quot;,&quot;commit&quot;:&quot;ffe3ad2aa2a30d0ba4d848c1cd0f61238b73a21c&quot;}</code></pre>
 <h3 id="ちなみに">ちなみに</h3>

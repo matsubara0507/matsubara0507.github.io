@@ -139,7 +139,7 @@
 $ stack image container</code></pre>
 <p>とすればよい． <code>--ghc-options='-optl-static -optl-pthread'</code> は Haskell のアプリケーションを静的コンパイルするためのオプションだ．</p>
 <ul>
-<li><a href="https://www.ishiy.xyz/posts/2016-02-28-haskell-docker.html">stackとdockerでHaskellプログラムを静的リンクする - iLog</a></li>
+<li><del>stackとdockerでHaskellプログラムを静的リンクする - iLog</del> リンク切れ…</li>
 </ul>
 <p>何故静的コンパイルする必要があるかと言うと，これは所謂，(Docker で最近追加された)マルチステージビルドのようなことをしているからだ． Haskell の実行環境は非常に重く，数GBは普通にいく． しかし，この方法で生成される Docker イメージはビルドした実行ファイルをコピペしてるだけなので非常に軽い．</p>
 <p>これでビルドイメージがこちら．</p>
