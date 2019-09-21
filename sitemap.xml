@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
     <url>
+        <loc>https://matsubara0507.github.io/posts/2019-09-21-stack-build-image.html</loc>
+        <changefreq>never</changefreq>
+        <lastmod>2019-09-21</lastmod>
+        <priority>0.8</priority>
+    </url>
+
+    <url>
         <loc>https://matsubara0507.github.io/posts/2019-08-26-qr-code-reader-with-elm.html</loc>
         <changefreq>never</changefreq>
         <lastmod>2019-08-26</lastmod>
