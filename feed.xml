@@ -951,8 +951,9 @@ Hi matsubara0507!!</code></pre>
 <p>ちなみに，パターンマッチングがあれば基本的に <code>if</code> 文も <code>case</code> 文も要らない． どちらもパターンマッチングの糖衣構文として表現でき，現に Haskell ではそうなっている(たぶん)．</p>
 <h3 id="ruby-のパターンマッチング">Ruby のパターンマッチング</h3>
 <p>ちょこちょこ既に記事があるが，RubyKaigi 2019 でも作者からの発表があり参考になる:</p>
-<iframe class="embedly-embed" src="//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fspeakerdeck.com%2Fplayer%2Fa853a73bba9d48ae88860f7c9b068334&amp;url=https%3A%2F%2Fspeakerdeck.com%2Fk_tsj%2Fpattern-matching-new-feature-in-ruby-2-dot-7&amp;image=https%3A%2F%2Fspeakerd.s3.amazonaws.com%2Fpresentations%2Fa853a73bba9d48ae88860f7c9b068334%2Fslide_0.jpg%3F510667&amp;key=internal&amp;type=text%2Fhtml&amp;schema=speakerdeck" width="500" height="299" scrolling="no" frameborder="0" allow="autoplay; fullscreen" allowfullscreen="true">
-</iframe>
+<ul>
+<li><a href="https://speakerdeck.com/k_tsj/pattern-matching-new-feature-in-ruby-2-dot-7">Pattern matching - New feature in Ruby 2.7</a></li>
+</ul>
 <p>すでに <a href="https://www.youtube.com/watch?v=paBlgsqoKk8">YouTube で動画も公開された</a>． ちなみに，2012 ぐらいからずっと作っていたらしい．</p>
 <p>Elixir のピンパターン(<code>^var</code>)など，数多くのパターンマッチング機能がある(後発の利点ですね)． ただし，変数のスコープが個人的には思ってたのと違った:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb2-1"><a href="#cb2-1"></a>irb(main):<span class="dv">001</span>:<span class="dv">0</span>&gt; <span class="kw">case</span> [<span class="dv">1</span>, <span class="dv">2</span>]</span>
