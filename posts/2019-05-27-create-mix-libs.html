@@ -93,7 +93,7 @@
 </ul>
 <h2 id="mix-パッケージ">mix パッケージ</h2>
 <p>リポジトリはこれ:</p>
-<h5 id="section"><iframe width="426" height="183" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/mix.hs"></iframe></h5>
+<h5 id="section"><iframe width="320" height="184" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/mix.hs"></iframe></h5>
 <p>mix パッケージの目的は rio パッケージの <code>RIO env a</code> モナドの <code>env</code> の部分を extensible パッケージを用いて簡単に構築することであり，<code>env</code> をプラグインとして構築する． プラグインで構築という部分は <a href="https://hackage.haskell.org/package/tonatona">tonatona</a> から着想を得た(tonatona も rio のラッパーパッケージなはず)． 例えば，<code>rio</code> パッケージのロガーを利用して次のような簡易的なプログラムをかける:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span></span>
 <span id="cb1-2"><a href="#cb1-2"></a></span>

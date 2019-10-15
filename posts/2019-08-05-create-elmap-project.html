@@ -87,7 +87,7 @@
   <div class="post-content" itemprop="articleBody">
     <p>GUI 付きのツールを作成したい時、普段は Elm を使います． さらにバックエンドを付けるときは Haskell + Elm で実装し，Elm 側で呼び出す API クライアントは <a href="http://hackage.haskell.org/package/elm-export">elm-export</a> と <a href="http://hackage.haskell.org/package/servant-elm">servant-elm</a> というパッケージを使い，Haskell Servant の API 定義から自動生成させていました．</p>
 <p>elm-export は Elm 0.19 に追いつけてなかったので独自にフォークして運用し，また愛用している extensible パッケージにも独自で対応していました． しかし，servant-elm が Elm 0.19 に対応するために依存パッケージを elm-export から <a href="http://hackage.haskell.org/package/elm-bridge">elm-bridge</a> に変更したところ，独自で対応してた部分と色々都合が悪かったので，それらのクッションとなる薄いラッパーパッケージ群として elmap.hs プロジェクトを作成しました:</p>
-<h2 id="section"><iframe width="426" height="162" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/elmap.hs"></iframe></h2>
+<h2 id="section"><iframe width="320" height="184" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/elmap.hs"></iframe></h2>
 <p>この記事は elmap.hs を作る上で色々したことのメモ書きです．</p>
 <h2 id="なぜ-elm-bridgeservant-elm-ではダメか">なぜ elm-bridge/servant-elm ではダメか</h2>
 <p>を説明するためにまずは elm-bridge パッケージについて紹介する．</p>

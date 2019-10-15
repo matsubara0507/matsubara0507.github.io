@@ -87,7 +87,7 @@
   <div class="post-content" itemprop="articleBody">
     <p>とある事情で Drone CI のビルドログを Slack にスニペットとして通知したくなった． 公式の <a href="https://github.com/drone-plugins/drone-slack"><code>plugin/slack</code></a> では出来なそうだったので，Plugin を自作した，というお話．</p>
 <h2 id="作ったもの">作ったもの</h2>
-<iframe width="426" height="162" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/drone-slack-notify-log">
+<iframe width="320" height="163" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/drone-slack-notify-log">
 </iframe>
 <p>色々調べてみたものの，同じビルド中の別のステップでのログを取得する方法がわからなかった… ので，最終手段として Drone API を使って引っ張ってくる方法をとった． ほぼほぼドキュメントは無いが，Drone API は <a href="https://github.com/drone/drone-go">drone/drone-go</a> を使うことで簡単に呼び出すことができる． ざっくりと次のような感じで呼び出している:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">import</span> (</span>
