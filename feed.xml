@@ -8,8 +8,40 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2019-09-21T00:00:00Z</updated>
+    <updated>2019-10-31T00:00:00Z</updated>
     <entry>
+    <title>Hacktoberfest 2019 なので PR を4つ以上出してみた</title>
+    <link href="https://matsubara0507.github.io/posts/2019-10-31-join-hacktoberfest-2019.html" />
+    <id>https://matsubara0507.github.io/posts/2019-10-31-join-hacktoberfest-2019.html</id>
+    <published>2019-10-31T00:00:00Z</published>
+    <updated>2019-10-31T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
+    <p>毎年恒例，去年に引き続き Hacktoberfest に参加しました．</p>
+<p><img src="/assets/join-hacktoberfest-2019/status.jpg"></img></p>
+<p>すごい量になっているけど個人のリポジトリや参加してる Org アカウントにも PR を作ってやっていたのでこんな量になった. 実際に、自分の所属となんも関係のない PR は以下の4つ:</p>
+<ul>
+<li><a href="https://github.com/phadej/github/pull/407">Update EditRepo type by matsubara0507 · Pull Request #407 · phadej/github</a></li>
+<li><a href="https://github.com/drone/drone-go/pull/47">Change <code>RepoPatch.Counter</code> type to <code>int64</code> from <code>int</code> by matsubara0507 · Pull Request #47 · drone/drone-go</a></li>
+<li><a href="https://github.com/elm-jp/guide/pull/170">「型: 型を読む」の原文を追従して翻訳 by matsubara0507 · Pull Request #170 · elm-jp/guide</a></li>
+<li><a href="https://github.com/orangain/textlint-plugin-review/pull/16">Update textlint version to 11.4 by matsubara0507 · Pull Request #16 · orangain/textlint-plugin-review</a></li>
+</ul>
+<h2 id="phadejgithub">phadej/github</h2>
+<p>このリポジトリは Haskell の GitHub API クライアントライブラリだ． 愛用している． ただ，GitHub API の開発速度はそこそこ速く，機能が追いついてないことが多々あり，自分はよく<a href="https://github.com/matsubara0507/github/tree/myext">フォークして必要なものを雑に足したブランチ</a>を利用している． もっとマメに本家へ PR を出せば良いのだが，ついついサボってしまい… ということで，一つだけだが出してみた．</p>
+<p>この PR はリポジトリを編集する API に使うための PATCH 用のデータ型が古くなっており，僕が必要なフィールドが足りなかったので作った差分だ． ついでに，リポジトリ自体の型やリポジトリを作る型のフィールドも古くなっていることに気づいた． 僕は必要ではないし，めんどくさかったから最初はそのまま出したが，「直した方がいいですか？」と尋ねたら「ぜひ」と返ってきたので直した． ちょっと差分が大きくなってしまったのでコメントを書いているうちにマージされた笑</p>
+<h2 id="dronedrone-go">drone/drone-go</h2>
+<p>これは <a href="https://drone.io">Drone CI</a> という OSS の CI/CD プラットフォームの，本家が提供している Go 言語の API クライアントだ． 同様の <a href="https://github.com/matsubara0507/drone-haskell">Haskell 用 API クライアント</a>を整備していた(ドキュメントが少ないので Go の実装を参照している)ら型が間違っているような気がしたので PR にした．</p>
+<p>PR に拙い英語でコメントしている通り，<code>Counter</code> というフィールドは <code>Repo</code> 型では <code>int64</code> だが，<code>RepoPatch</code> では <code>int</code> だった． <a href="https://github.com/drone/drone/blob/0b4e5156ae1111463145e522e206eacb6d036960/handler/api/repos/update.go#L30-L40">API サーバー側の実装</a>を見てみると <code>int64</code> として扱っていたので <code>RepoPatch</code> 側を修正する PR を出した． 無事マージされるといいなぁ．</p>
+<h2 id="elm-jpguide">elm-jp/guide</h2>
+<p>これは <a href="https://guide.elm-lang.org/">Elm Guide</a> というサイトの翻訳リポジトリだ． 翻訳元は Elm の作者がメンテナンスしている，Elm のチュートリアルである． Elm-jp という日本ユーザーグループで翻訳をしている(僕も所属してるので無関係ではなかった)．</p>
+<p>最近，大量の本家との差分を <a href="https://github.com/negiboudu">negiboudu</a> 氏が取り込んでくれた． その結果，差分ができたので1ページだけ翻訳したという PR だ． ちなみに，まだまだあるので誰でも翻訳 PR お待ちしております．</p>
+<h2 id="orangaintextlint-plugin-review">orangain/textlint-plugin-review</h2>
+<p>これは文章用の linter ツール，textlint の <a href="https://github.com/kmuto/review">Re:VIEW</a> プラグインのリポジトリだ． Re:VIEW は技術書典用の頒布物作成の折に使っており，textlint で軽い静的検査をしている． 技術書典7のときに，このプラグインで「plugin-review が依存している textlint が古い」という警告が出ているので直した． そのときのものを PR にしただけだ．</p>
+<p>ちょっと差分がでかいし，長く更新がないのでマージされないような気がする しかし，まぁ同じような警告が気になった人が辿り着いて助けになればいいなぁぐらいの温度感．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>いろんなジャンルのリポジトリに PR が出せて満足． あとでTシャツの出さなきゃ．</p>
+  </div>]]></summary>
+</entry>
+<entry>
     <title>CI で Haskell Stack の Docker Integration するために</title>
     <link href="https://matsubara0507.github.io/posts/2019-09-21-stack-build-image.html" />
     <id>https://matsubara0507.github.io/posts/2019-09-21-stack-build-image.html</id>
@@ -1517,210 +1549,6 @@ server {
 <li><a href="https://github.com/drone/drone-go">drone/drone-go - GitHub</a>: Drone API の Go クライアント</li>
 </ul>
 <h1 id="おしまい">おしまい</h1>
-  </div>]]></summary>
-</entry>
-<entry>
-    <title>Re: Marp のすゝめ</title>
-    <link href="https://matsubara0507.github.io/posts/2019-02-04-re-recommend-marp.html" />
-    <id>https://matsubara0507.github.io/posts/2019-02-04-re-recommend-marp.html</id>
-    <published>2019-02-04T00:00:00Z</published>
-    <updated>2019-02-04T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
-    <p><strong>2019.4.6 Marp-core-0.6.0 での更新を反映した</strong></p>
-<h1 id="section"></h1>
-<p><a href="https://yhatt.github.io/marp/">Marp</a> というのは Markdown 記法で書けるスライド作成ツールです．</p>
-<ul>
-<li>Markdown 記法で手軽に書ける</li>
-<li>見た目が綺麗</li>
-<li>画像の拡縮が可能</li>
-</ul>
-<p>などの特徴から個人的にかなり重宝しています． その辺りは昔<a href="/posts/2016-12-14-recommend-marp.html">記事にしました</a>．</p>
-<p>しかし，現在 Marp は今後メンテナンスをしないという明言をし，新しくゼロから <a href="https://github.com/marp-team/marp">Marp Next</a> というのを作っているようです． そのあたりの話は作者の記事にすこーしずつ書いてあります:</p>
-<ul>
-<li><a href="https://yhatt.hatenablog.jp/entry/2017/02/27/markdown-it-incremental-dom_というプラグインを作ってます">markdown-it-incremental-dom というプラグインを作ってます - YHATT (わいはっと)</a></li>
-<li><a href="https://qiita.com/yhatt/items/874d5bfa919c32728403">Puppeteer &amp; Carlo を Markdown スライド作成 CLI ツール (Marp CLI) で活用する - Qiita</a></li>
-</ul>
-<p>時折，リポジトリをチェックして更新がないかを見ていたのですが，いよいよ Web UI まで出来上がっているので，現状のを試しに使ってみることにしました，というメモです．</p>
-<h1 id="section-1"></h1>
-<p>ちなみに，本記事での Marp Next のバージョンは <code>marp-cli-0.6</code> ぐらいを想定しています(現在開発が活発なので既に古くなっているかも)．</p>
-<h2 id="marp-next">Marp Next</h2>
-<p>新しい Marp の大きな目的は，よりメンテナブルな設計になることのようで，旧 Marp と異なり，機能ごとに個別の JS パッケージとなっている:</p>
-<table>
-<thead>
-<tr class="header">
-<th style="text-align: center;">リポジトリ</th>
-<th>備考</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td style="text-align: center;"><a href="https://github.com/marp-team/marp">marp-team/marp</a></td>
-<td>Marp 全体を取りまとめるリポジトリ</td>
-</tr>
-<tr class="even">
-<td style="text-align: center;"><a href="https://github.com/marp-team/marpit">Marpit</a></td>
-<td>Markdown からスライドの HTML へ変換する部分 (画像の拡縮などもココ)</td>
-</tr>
-<tr class="odd">
-<td style="text-align: center;"><a href="https://github.com/marp-team/marp-core">Marp Core</a></td>
-<td>Markdown 以外の拡張構文 (e.g. LaTeX, Emoji, Embed HTML)</td>
-</tr>
-<tr class="even">
-<td style="text-align: center;"><a href="https://github.com/marp-team/marp-cli">Marp CLI</a></td>
-<td>Marp の CLI ツール</td>
-</tr>
-<tr class="odd">
-<td style="text-align: center;"><a href="https://github.com/marp-team/marp-web">Marp Web</a></td>
-<td>Marp の Web UI (まだベータっぽい)</td>
-</tr>
-<tr class="even">
-<td style="text-align: center;">Marp Desktop</td>
-<td>Marp Web を Electron でラップして Desktop アプリにしたいらしい (まだ無い)</td>
-</tr>
-</tbody>
-</table>
-<p>(どうでも良いですが，モノリポにした方良かったと思う… Marpit で更新があると全てのリポジトリで PR を出して更新する必要があるので…)</p>
-<p>ちなみに，<a href="https://github.com/yhatt/marp/issues?q=is%3Aopen+is%3Aissue+label%3A%22Supports+in+Marp+Next%22">旧 Marp のリポジトリの Issue ラベルに <code>Marp Next</code> や <code>Supports in Marp Next</code> というのができている</a>． 旧 Marp の Issue には，かなり要望っぽい Issue がたくさんあり，その中でも Marp Next では対応する予定のものには <code>Support in Marp Next</code> を付けたようだ．</p>
-<h3 id="旧-marp-との非互換な機能">旧 Marp との非互換な機能</h3>
-<p>これらは旧 Marp ユーザーしか意味ないが，適当に書き連ねていおく:</p>
-<ol type="1">
-<li><code>==AAA==</code> というハイライト機能がない（辛い）</li>
-<li>打ち消し線記法 <code>~~AAA~~</code> もない</li>
-<li>画像の拡縮ルール (Marpit)
-<ul>
-<li>より<a href="https://marpit.marp.app/image-syntax">細かいルールができて</a>書きやすくなった</li>
-<li>しかし前のは記法は非互換</li>
-<li><code>center</code> がないので中央寄せができない</li>
-</ul></li>
-<li><code>&lt;!-- *template: xxx --&gt;</code> のようなそのページだけ機能追加 (Marpit)
-<ul>
-<li><code>&lt;!-- _class: xxx --&gt;</code> のように先頭にアンダースコア <code>_</code> を付けるスタイルになった</li>
-<li>ちなみに <code>&lt;!-- $theme: xxx --&gt;</code> はあるっぽい</li>
-</ul></li>
-<li>テーマの取り扱い (Marpit ??)
-<ul>
-<li><code>#</code> だけだと中央寄せなどになっていた機能がなくなった</li>
-<li>それらはテーマのイチ <code>class</code> となっている</li>
-<li>前の <code>template</code> も <code>class</code> なので組み合わせれない</li>
-<li>明示的に指定できるようになったのは嬉しい</li>
-<li>class を複数設定できるようになった！ (<a href="https://github.com/marp-team/marp-core/pull/69">marp-core-0.6.0~</a>)</li>
-</ul></li>
-<li>KaTeX のバージョンアップ (Marp Core)
-<ul>
-<li>0.6.0 =&gt; 0.10.0</li>
-<li>0.6.0 だと全然 LaTeX 記法をサポートしていないので<a href="https://katex.org/docs/supported.html">助かる</a></li>
-<li>まぁ僕はフォークしてバージョンをあげてたけど</li>
-</ul></li>
-<li>スライドのサイズ・縦横比 (Marpit)
-<ul>
-<li><a href="https://github.com/marp-team/marpit/blob/9ab8e153e66db3a55e8edf9fec1356dd60ddf9e6/docs/theme-css.md#slide-size">テーマごとになったぽい</a>？</li>
-<li><a href="https://marpit.marp.app/directives?id=tweak-theme-style"><code>style</code></a> で上書きすると変な余白ができる</li>
-<li>どっちにせよ前の <code>&lt;!-- size: 4:3 --&gt;</code> みたいなのはできないっぽい</li>
-</ul></li>
-</ol>
-<p>ちなみに，コードが全部 CoffeScript から TypeScript になってた．</p>
-<h2 id="cli-を試す">CLI を試す</h2>
-<p>リッチすぎてビビる</p>
-<ul>
-<li>README の通りで動いた (Mac, npx)
-<ul>
-<li><code>npx @marp-team/marp-cli slide.md</code></li>
-</ul></li>
-<li><a href="https://hub.docker.com/r/marpteam/marp-cli/">Docker もサポートされてる</a>
-<ul>
-<li>ただし一部機能に制限があるっぽい</li>
-</ul></li>
-<li>Markdown から HTML を生成する</li>
-<li><code>--pdf</code> オプションで PDF を生成する
-<ul>
-<li>ただし <strong><a href="https://github.com/marp-team/marp-cli/pull/10">セキュリティの関係</a>でデフォルトではローカルファイルの画像などを埋め込めない</strong></li>
-<li>そのためローカル画像を使うには <code>--allow-local-files</code> をつける</li>
-<li>日本語フォントも変になっている気がする</li>
-<li>日本語検索もダメっぽい</li>
-</ul></li>
-<li><code>--watch</code> オプションで Markdown の変更を検知し再生成する</li>
-<li><code>--server</code> オプションで <code>localhost:8080</code> で閲覧やPDFの生成ができる (watch もされます)</li>
-<li><code>--preview</code> でプレビューモード
-<ul>
-<li>待望の！！</li>
-<li>ブラウザの全画面モードを使ってるみたい</li>
-</ul></li>
-<li><code>--theme</code> でカスタムテーマを設定可能 (CSS)</li>
-<li>CLI のオプションを使わずに<a href="https://github.com/marp-team/marp-cli#configuration-file">設定ファイルでも設定可能</a>
-<ul>
-<li><code>package.json</code> <code>.marprc.yml</code> <code>marp.config.js</code> のどれでも</li>
-</ul></li>
-</ul>
-<h2 id="cli-netlify-を試す">CLI + Netlify を試す</h2>
-<p>試した:</p>
-<ul>
-<li><a href="https://github.com/matsubara0507/pub-slides">matsubara0507/pub-slides - GitHub</a></li>
-</ul>
-<p><a href="https://matsubara0507-slides.netlify.com/"><img src="/assets/re-recommend-marp/pub-slides-with-marp.jpg" alt="image.png"></img></a></p>
-<p>試し方: Marp の作者の<a href="https://github.com/yhatt/marp-cli-example">リポジトリ</a>の <code>Deploy to netlify</code> をクリックするだけ．</p>
-<p>この方法の場合，リポジトリの <code>PITCHME.md</code> を <code>index.html</code> に変換する． marp-cli の設定は <code>package.yml</code> に書いてある． <a href="https://github.com/marp-team/marp-cli#options">設定方法</a>はこれを参照．</p>
-<p>僕はできれば，複数のスライドを一つのリポジトリに置きたかった． ので，僕のリポジトリでは:</p>
-<ul>
-<li><code>slides</code> 以下の <code>*.md</code> を全部変換
-<ul>
-<li><code>index.md</code> が <code>index.html</code> のスライドになる</li>
-</ul></li>
-<li>後述する自作テーマをサブモジュールで設定</li>
-<li><code>slides/assets</code> にある画像を <code>public</code> にコピーしてる</li>
-</ul>
-<p>のように少しだけ設定を書き換えた．</p>
-<h2 id="web-ui-を試す">Web UI を試す</h2>
-<p>すでに<a href="https://web.marp.app/">ここ</a>から試せる． 手元で試すなら:</p>
-<pre><code>git clone https://github.com/marp-team/marp-web.git
-cd marp-web
-yarn install
-yarn start</code></pre>
-<p>でできた．</p>
-<p><img src="/assets/re-recommend-marp/editing_marp_next.jpg"></img></p>
-<ul>
-<li>ファイルの読み込みや保存が可能</li>
-<li>プレゼンテーションモードは(まだ)なかった</li>
-<li>PDFのエクスポートはブラウザの印刷機能を使うようだった</li>
-<li>カスタムテーマの設定などはまだできない？？</li>
-</ul>
-<h2 id="テーマを移植する">テーマを移植する</h2>
-<p>オリジナルテーマを作ってたので Marp Next にも移植した:</p>
-<ul>
-<li>olive</li>
-<li>colors</li>
-<li>haskell</li>
-</ul>
-<p><a href="https://github.com/matsubara0507/marp-themes">marp-themes</a> というリポジトリを作り，そこに置いてある． やったことは:</p>
-<ul>
-<li><a href="https://github.com/marp-team/marp-core/blob/26f2402d443d26af387adb0ee86cafa1149beb34/themes/gaia.scss">gaia の scss</a> を持ってきて主に色を変更
-<ul>
-<li>カスタムテーマとして指定できるのは CSS だけなので <code>scss</code> コマンドで手動変換する</li>
-</ul></li>
-<li>画像の中央寄せをできるようにした
-<ul>
-<li><code># ![](path/to/image.jpg)</code> とすると中央寄せになるようにした</li>
-<li><code>h1</code> から <code>h6</code> のどれでも良いです</li>
-<li>ただし，雑に <code>img</code> タグに適用してるので emoji を含ませるとずれる…</li>
-<li>marpit に修正入れてもらった方が良いかな</li>
-</ul></li>
-<li><code>lead</code> + <code>invert</code> などの class を作っておいた
-<ul>
-<li>scss で書いてるので <code>lead</code> を適当に mixi-in にして include するだけ</li>
-<li>これもできれば <code>class</code> の組み合わせができるようになって欲しい</li>
-<li>marp-core-0.6.0 から class を複数設定できるようになったので、これはいらない ;)</li>
-</ul></li>
-</ul>
-<h3 id="olive">Olive</h3>
-<iframe src="//www.slideshare.net/slideshow/embed_code/key/797Uraln5Fo9gD" width="595" height="485" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen>
-</iframe>
-<h3 id="colors">Colors</h3>
-<iframe src="//www.slideshare.net/slideshow/embed_code/key/2kOvCIcUpOzKRg" width="595" height="485" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen>
-</iframe>
-<h3 id="haskell">Haskell</h3>
-<iframe src="//www.slideshare.net/slideshow/embed_code/key/kJqmkk54SJnaky" width="595" height="485" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen>
-</iframe>
-<h2 id="おしまい">おしまい</h2>
-<p>もう既に十分使える状態になっていました． すごい！</p>
   </div>]]></summary>
 </entry>
 
