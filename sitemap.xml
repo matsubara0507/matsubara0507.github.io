@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
     <url>
+        <loc>https://matsubara0507.github.io/posts/2019-11-10-join-haskell-day-2019.html</loc>
+        <changefreq>never</changefreq>
+        <lastmod>2019-11-10</lastmod>
+        <priority>0.8</priority>
+    </url>
+
+    <url>
         <loc>https://matsubara0507.github.io/posts/2019-10-31-join-hacktoberfest-2019.html</loc>
         <changefreq>never</changefreq>
         <lastmod>2019-10-31</lastmod>
