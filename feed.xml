@@ -8,8 +8,285 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2019-11-15T00:00:00Z</updated>
+    <updated>2019-12-02T00:00:00Z</updated>
     <entry>
+    <title>Haskell で GitHub Actions する</title>
+    <link href="https://matsubara0507.github.io/posts/2019-12-02-haskell-with-gh-actions.html" />
+    <id>https://matsubara0507.github.io/posts/2019-12-02-haskell-with-gh-actions.html</id>
+    <published>2019-12-02T00:00:00Z</published>
+    <updated>2019-12-02T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
+    <p>本記事は「<a href="https://qiita.com/advent-calendar/2019/haskell">Haskell Advent Calendar 2019</a>」の2日目の記事です．</p>
+<h1 id="section"></h1>
+<p>2019/11/13 に GA された GitHub Actions を使って，Haskell プロジェクト，とりわけ Haskell Stack を使ったプロジェクトを CI/CD します．</p>
+<p>ちなみに，試すために導入した PR はこれです:</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/octbook/pull/1">自動ビルドを追加 by matsubara0507 · Pull Request #1 · matsubara0507/octbook</a></li>
+</ul>
+<p>これは適当な設定ファイルから GitHub の Organization や Organization の Team 機能にユーザーを招待したりキックしたりするための CLI ツールです．</p>
+<h2 id="cabal-の場合">Cabal の場合</h2>
+<p>はわりかし簡単． Haskell のセットアップは公式がすでに用意してくれてるのでこれを使えば良い:</p>
+<ul>
+<li><a href="https://github.com/actions/setup-haskell">actions/setup-haskell: Set up your GitHub Actions workflow with a specific version of Haskell (GHC and Cabal)</a></li>
+</ul>
+<p>こんな感じ:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="at">  </span><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ghc ${{ matrix.ghc }}</span></span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-16.04</span></span>
+<span id="cb1-5"><a href="#cb1-5"></a><span class="at">    </span><span class="fu">strategy</span><span class="kw">:</span></span>
+<span id="cb1-6"><a href="#cb1-6"></a><span class="at">      </span><span class="fu">matrix</span><span class="kw">:</span></span>
+<span id="cb1-7"><a href="#cb1-7"></a><span class="at">        </span><span class="fu">ghc</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;8.2.2&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;8.4.4&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;8.6.5&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;8.8.1&quot;</span><span class="kw">]</span></span>
+<span id="cb1-8"><a href="#cb1-8"></a><span class="at">        </span><span class="fu">cabal</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;3.0&quot;</span><span class="kw">]</span></span>
+<span id="cb1-9"><a href="#cb1-9"></a></span>
+<span id="cb1-10"><a href="#cb1-10"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb1-11"><a href="#cb1-11"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@master</span></span>
+<span id="cb1-12"><a href="#cb1-12"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb1-13"><a href="#cb1-13"></a><span class="at">        </span><span class="fu">fetch-depth</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb1-14"><a href="#cb1-14"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/setup-haskell@v1</span></span>
+<span id="cb1-15"><a href="#cb1-15"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Setup Haskell</span></span>
+<span id="cb1-16"><a href="#cb1-16"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb1-17"><a href="#cb1-17"></a><span class="at">        </span><span class="fu">ghc-version</span><span class="kw">:</span><span class="at"> ${{ matrix.ghc }}</span></span>
+<span id="cb1-18"><a href="#cb1-18"></a><span class="at">        </span><span class="fu">cabal-version</span><span class="kw">:</span><span class="at"> ${{ matrix.cabal }}</span></span></code></pre></div>
+<p>Haskell パッケージ系のリポジトリなら，こんな感じに matrix の設定をすると良い． で，キャッシュする場合は，この matrix ごとに <code>~/.cabal/store</code> だけをキャッシュすれば十分らしい（教えてもらった）:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1"></a><span class="at">   </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="at">   ...</span></span>
+<span id="cb2-3"><a href="#cb2-3"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Cache .cabal</span></span>
+<span id="cb2-4"><a href="#cb2-4"></a><span class="at">      </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/cache@preview</span></span>
+<span id="cb2-5"><a href="#cb2-5"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb2-6"><a href="#cb2-6"></a><span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> ~/.cabal/store</span></span>
+<span id="cb2-7"><a href="#cb2-7"></a><span class="at">        </span><span class="fu">key</span><span class="kw">:</span><span class="at"> ${{ matrix.ghc }}-cabal-${{ hashFiles(&#39;**/fallible.cabal&#39;) }}</span></span>
+<span id="cb2-8"><a href="#cb2-8"></a><span class="fu">        restore-keys</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb2-9"><a href="#cb2-9"></a>          ${{ matrix.ghc }}-cabal-</span>
+<span id="cb2-10"><a href="#cb2-10"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/setup-haskell@v1</span></span>
+<span id="cb2-11"><a href="#cb2-11"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Setup Haskell</span></span>
+<span id="cb2-12"><a href="#cb2-12"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb2-13"><a href="#cb2-13"></a><span class="at">        </span><span class="fu">ghc-version</span><span class="kw">:</span><span class="at"> ${{ matrix.ghc }}</span></span>
+<span id="cb2-14"><a href="#cb2-14"></a><span class="at">        </span><span class="fu">cabal-version</span><span class="kw">:</span><span class="at"> ${{ matrix.cabal }}</span></span>
+<span id="cb2-15"><a href="#cb2-15"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Install dependencies</span></span>
+<span id="cb2-16"><a href="#cb2-16"></a><span class="fu">      run</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb2-17"><a href="#cb2-17"></a>        cabal v2-update</span>
+<span id="cb2-18"><a href="#cb2-18"></a>        cabal v2-build --only-dependencies</span>
+<span id="cb2-19"><a href="#cb2-19"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Build &amp; test</span></span>
+<span id="cb2-20"><a href="#cb2-20"></a><span class="fu">      run</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb2-21"><a href="#cb2-21"></a>        cabal v2-build</span>
+<span id="cb2-22"><a href="#cb2-22"></a>        cabal v2-test</span></code></pre></div>
+<p>Cabal の方はちゃんと調査してないのでこんでお終い（すいません）．</p>
+<h2 id="stack-の場合">Stack の場合</h2>
+<p>こっからが本題．</p>
+<p>Stack はキャッシュすべきディレクトリ <code>~/.stack</code> がでかすぎる． 下記は試しに GitHub Actions 上で <code>du</code> して見た結果だ:</p>
+<pre><code>$ du -sh ~/.stack/*
+4.0K    /home/runner/.stack/config.yaml
+1.3G    /home/runner/.stack/pantry
+553M    /home/runner/.stack/pantry.sqlite3
+0       /home/runner/.stack/pantry.sqlite3.pantry-write-lock
+1.8G    /home/runner/.stack/programs
+16M     /home/runner/.stack/setup-exe-cache
+64K     /home/runner/.stack/setup-exe-src
+462M    /home/runner/.stack/snapshots
+192K    /home/runner/.stack/stack.sqlite3
+0       /home/runner/.stack/stack.sqlite3.pantry-write-lock</code></pre>
+<p>現在，<code>actions/cache@v1</code> では一度にキャッシュできるディレクトリの最大サイズは400MBしかない（今後緩和される可能性はあるが）． <code>actions/cache</code> は内部で gzip かなんかで圧縮しているので，この数字まんまではない． 試しに，このまんまキャッシュしてみたら次のような警告が出た:</p>
+<pre><code>Post job cleanup.
+/bin/tar -cz -f /home/runner/work/_temp/2706cc23-8789-4ed4-b4ec-4e7143b1cc98/cache.tgz -C /home/runner/.stack .
+##[warning]Cache size of 814014541 bytes is over the 400MB limit, not saving cache.</code></pre>
+<p>800MB強，意外と少ない！</p>
+<p>余談だが，<del>そのうち</del> v1.0.2 から<a href="https://github.com/actions/cache/pull/85">毎回キャッシュサイズが見れるようになる</a>はず（今でも <code>ACTIONS_STEP_DEBUG</code> を Secret に設定すると見れる）．</p>
+<h3 id="system-ghc-を使う">system-ghc を使う</h3>
+<p>stack は <code>--system-ghc</code> オプションを使うことで stack がインストールした GHC の代わりに，ホストマシンの GHC を直接使ってくれる:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="at">  </span><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb5-3"><a href="#cb5-3"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-18.04</span></span>
+<span id="cb5-4"><a href="#cb5-4"></a><span class="at">    </span><span class="fu">strategy</span><span class="kw">:</span></span>
+<span id="cb5-5"><a href="#cb5-5"></a><span class="at">      </span><span class="fu">matrix</span><span class="kw">:</span></span>
+<span id="cb5-6"><a href="#cb5-6"></a><span class="at">        </span><span class="fu">ghc</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;8.6.5&quot;</span><span class="kw">]</span></span>
+<span id="cb5-7"><a href="#cb5-7"></a><span class="at">        </span><span class="fu">cabal</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;3.0&quot;</span><span class="kw">]</span></span>
+<span id="cb5-8"><a href="#cb5-8"></a><span class="at">        </span><span class="fu">cache-version</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;v4&quot;</span><span class="kw">]</span></span>
+<span id="cb5-9"><a href="#cb5-9"></a></span>
+<span id="cb5-10"><a href="#cb5-10"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb5-11"><a href="#cb5-11"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v1</span></span>
+<span id="cb5-12"><a href="#cb5-12"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb5-13"><a href="#cb5-13"></a><span class="at">        </span><span class="fu">fetch-depth</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb5-14"><a href="#cb5-14"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Setup Haskell</span></span>
+<span id="cb5-15"><a href="#cb5-15"></a><span class="at">      </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/setup-haskell@v1</span></span>
+<span id="cb5-16"><a href="#cb5-16"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb5-17"><a href="#cb5-17"></a><span class="at">        </span><span class="fu">ghc-version</span><span class="kw">:</span><span class="at"> ${{ matrix.ghc }}</span></span>
+<span id="cb5-18"><a href="#cb5-18"></a><span class="at">        </span><span class="fu">cabal-version</span><span class="kw">:</span><span class="at"> ${{ matrix.cabal }}</span></span>
+<span id="cb5-19"><a href="#cb5-19"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> mstksg/setup-stack@v1</span></span>
+<span id="cb5-20"><a href="#cb5-20"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Install dependencies</span></span>
+<span id="cb5-21"><a href="#cb5-21"></a><span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> stack --system-ghc build --only-dependencies</span></span>
+<span id="cb5-22"><a href="#cb5-22"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Build binary</span></span>
+<span id="cb5-23"><a href="#cb5-23"></a><span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> stack --system-ghc install --local-bin-path=./bin</span></span></code></pre></div>
+<p>なんと system-ghc を使うことで <code>~/.stack/programs</code> が保存されなくなった（ここには stack がインストールした GHC が保存されてた）． これで，半分弱の削減に成功．残り約500MB．</p>
+<h3 id="必殺奥義-分割キャッシュ">必殺奥義: 分割キャッシュ</h3>
+<p>実は，キャッシュの最大サイズ 400MB は <strong>一つのディレクトリ毎の最大サイズ</strong> だ． なので，別々のディレクトリを別々にキャッシュすれば，最大 2GB までキャッシュできる（これがリポジトリ単位での最大サイズ）．</p>
+<p><code>~/.stack/pantry</code> というのが単体で 1.3GB ある． なので，これだけとそれ以外をキャッシュするようにしてみる． ちなみに，<a href="https://docs.haskellstack.org/en/stable/pantry">Pantry というのが Stack の依存パッケージのキャッシュシステム</a>だ．</p>
+<p>ここで問題が1つ． actions/cache はディレクトリを1つ指定して，それを圧縮しキャッシュしする． 複数のディレクトリを指定したり，中の一部のファイルだけを除外したりなどはできない（少なくとも現在のバージョンでは）． もちろん，一旦 <code>mv</code> してキャッシュし，restore したら <code>mv</code> し直せば良い． が，めんどいね． 単純なことはソフトウェアで解決しよう． ソフトウェアエンジニアの精神です（？）．</p>
+<p>ということで，それをやってくれるアクションがこちら:</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/actions/tree/master/move-files">actions/move-files at master · matsubara0507/actions</a></li>
+</ul>
+<p>ついに TypeScript デビューした． はい，actions/cache を参考にしてきていい感じに書き直しただけです． <code>mkdir</code> や <code>mv</code> は <a href="https://github.com/actions/toolkit/tree/master/packages/io">actions/toolkit</a> にあるので簡単に実装できた:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb6-1"><a href="#cb6-1"></a><span class="im">import</span> <span class="op">*</span> <span class="im">as</span> core <span class="im">from</span> <span class="st">&quot;@actions/core&quot;</span><span class="op">;</span></span>
+<span id="cb6-2"><a href="#cb6-2"></a><span class="im">import</span> <span class="op">*</span> <span class="im">as</span> io <span class="im">from</span> <span class="st">&quot;@actions/io&quot;</span><span class="op">;</span></span>
+<span id="cb6-3"><a href="#cb6-3"></a><span class="im">import</span> <span class="op">*</span> <span class="im">as</span> utils <span class="im">from</span> <span class="st">&quot;./utils/actionUtils&quot;</span><span class="op">;</span></span>
+<span id="cb6-4"><a href="#cb6-4"></a></span>
+<span id="cb6-5"><a href="#cb6-5"></a><span class="kw">async</span> <span class="kw">function</span> <span class="fu">run</span>()<span class="op">:</span> <span class="bu">Promise</span><span class="op">&lt;</span><span class="dt">void</span><span class="op">&gt;</span> <span class="op">{</span></span>
+<span id="cb6-6"><a href="#cb6-6"></a>    <span class="cf">try</span> <span class="op">{</span></span>
+<span id="cb6-7"><a href="#cb6-7"></a>        <span class="kw">const</span> source <span class="op">=</span> <span class="va">utils</span><span class="op">.</span><span class="fu">resolvePath</span>(</span>
+<span id="cb6-8"><a href="#cb6-8"></a>            <span class="va">core</span><span class="op">.</span><span class="fu">getInput</span>(<span class="st">&quot;source_dir&quot;</span><span class="op">,</span> <span class="op">{</span> required<span class="op">:</span> <span class="kw">true</span> <span class="op">}</span>)</span>
+<span id="cb6-9"><a href="#cb6-9"></a>        )<span class="op">;</span></span>
+<span id="cb6-10"><a href="#cb6-10"></a>        <span class="co">// 残念ながら inputs は文字列しか渡せないので改行で分割してる</span></span>
+<span id="cb6-11"><a href="#cb6-11"></a>        <span class="kw">const</span> files <span class="op">=</span> core</span>
+<span id="cb6-12"><a href="#cb6-12"></a>            .<span class="fu">getInput</span>(<span class="st">&quot;source_files&quot;</span><span class="op">,</span> <span class="op">{</span> required<span class="op">:</span> <span class="kw">true</span> <span class="op">}</span>)</span>
+<span id="cb6-13"><a href="#cb6-13"></a>            .<span class="fu">split</span>(<span class="ss">/</span><span class="sc">\r?\n</span><span class="ss">/</span>)</span>
+<span id="cb6-14"><a href="#cb6-14"></a>            .<span class="fu">filter</span>(pat <span class="kw">=&gt;</span> pat)</span>
+<span id="cb6-15"><a href="#cb6-15"></a>            .<span class="fu">map</span>(pat <span class="kw">=&gt;</span> <span class="va">pat</span><span class="op">.</span><span class="fu">trim</span>())<span class="op">;</span></span>
+<span id="cb6-16"><a href="#cb6-16"></a>        <span class="kw">const</span> target <span class="op">=</span> <span class="va">utils</span><span class="op">.</span><span class="fu">resolvePath</span>(</span>
+<span id="cb6-17"><a href="#cb6-17"></a>            <span class="va">core</span><span class="op">.</span><span class="fu">getInput</span>(<span class="st">&quot;target_dir&quot;</span><span class="op">,</span> <span class="op">{</span> required<span class="op">:</span> <span class="kw">true</span> <span class="op">}</span>)</span>
+<span id="cb6-18"><a href="#cb6-18"></a>        )<span class="op">;</span></span>
+<span id="cb6-19"><a href="#cb6-19"></a></span>
+<span id="cb6-20"><a href="#cb6-20"></a>        <span class="cf">await</span> <span class="va">io</span><span class="op">.</span><span class="fu">mkdirP</span>(target)<span class="op">;</span></span>
+<span id="cb6-21"><a href="#cb6-21"></a>        <span class="va">core</span><span class="op">.</span><span class="fu">debug</span>(<span class="vs">`mkdir -p </span><span class="sc">${</span>target<span class="sc">}</span><span class="vs">`</span>)<span class="op">;</span></span>
+<span id="cb6-22"><a href="#cb6-22"></a></span>
+<span id="cb6-23"><a href="#cb6-23"></a>        <span class="va">files</span><span class="op">.</span><span class="fu">forEach</span>(<span class="kw">async</span> <span class="fu">function</span>(file) <span class="op">{</span></span>
+<span id="cb6-24"><a href="#cb6-24"></a>            <span class="cf">try</span> <span class="op">{</span></span>
+<span id="cb6-25"><a href="#cb6-25"></a>                <span class="kw">const</span> path <span class="op">=</span> <span class="va">source</span><span class="op">.</span><span class="fu">concat</span>(<span class="st">&quot;/&quot;</span><span class="op">,</span> file)<span class="op">;</span></span>
+<span id="cb6-26"><a href="#cb6-26"></a>                <span class="cf">await</span> <span class="va">io</span><span class="op">.</span><span class="fu">mv</span>(path<span class="op">,</span> target)<span class="op">;</span></span>
+<span id="cb6-27"><a href="#cb6-27"></a>                <span class="va">core</span><span class="op">.</span><span class="fu">debug</span>(<span class="vs">`mv </span><span class="sc">${</span>path<span class="sc">}</span><span class="vs"> to </span><span class="sc">${</span>target<span class="sc">}</span><span class="vs">`</span>)<span class="op">;</span></span>
+<span id="cb6-28"><a href="#cb6-28"></a>            <span class="op">}</span> <span class="fu">catch</span> (error) <span class="op">{</span></span>
+<span id="cb6-29"><a href="#cb6-29"></a>                <span class="va">core</span><span class="op">.</span><span class="fu">warning</span>(<span class="va">error</span><span class="op">.</span><span class="at">message</span>)<span class="op">;</span></span>
+<span id="cb6-30"><a href="#cb6-30"></a>            <span class="op">}</span></span>
+<span id="cb6-31"><a href="#cb6-31"></a>        <span class="op">}</span>)<span class="op">;</span></span>
+<span id="cb6-32"><a href="#cb6-32"></a>    <span class="op">}</span> <span class="fu">catch</span> (error) <span class="op">{</span></span>
+<span id="cb6-33"><a href="#cb6-33"></a>        <span class="va">core</span><span class="op">.</span><span class="fu">warning</span>(<span class="va">error</span><span class="op">.</span><span class="at">message</span>)<span class="op">;</span></span>
+<span id="cb6-34"><a href="#cb6-34"></a>    <span class="op">}</span></span>
+<span id="cb6-35"><a href="#cb6-35"></a><span class="op">}</span></span>
+<span id="cb6-36"><a href="#cb6-36"></a></span>
+<span id="cb6-37"><a href="#cb6-37"></a><span class="fu">run</span>()<span class="op">;</span></span>
+<span id="cb6-38"><a href="#cb6-38"></a></span>
+<span id="cb6-39"><a href="#cb6-39"></a><span class="im">export</span> <span class="im">default</span> run<span class="op">;</span></span></code></pre></div>
+<p>使うときはこんな感じ:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Move .stack/pantry to temp</span></span>
+<span id="cb7-2"><a href="#cb7-2"></a><span class="at">      </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> matsubara0507/actions/move-files@master</span></span>
+<span id="cb7-3"><a href="#cb7-3"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb7-4"><a href="#cb7-4"></a><span class="at">        </span><span class="fu">source_dir</span><span class="kw">:</span><span class="at"> ~/.stack-temp/pantry</span></span>
+<span id="cb7-5"><a href="#cb7-5"></a><span class="fu">        source_files</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb7-6"><a href="#cb7-6"></a>          pantry</span>
+<span id="cb7-7"><a href="#cb7-7"></a><span class="at">        </span><span class="fu">target_dir</span><span class="kw">:</span><span class="at"> ~/.stack</span></span></code></pre></div>
+<p>実は，GitHub Actions には隠し機能（現状ドキュメントには書いてない）として <code>post</code> と <code>post-if</code> というのがある（<code>actions.yml</code> に設定できる）:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;Move Files&#39;</span></span>
+<span id="cb8-2"><a href="#cb8-2"></a><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;move files to other direcotory&#39;</span></span>
+<span id="cb8-3"><a href="#cb8-3"></a><span class="fu">inputs</span><span class="kw">:</span></span>
+<span id="cb8-4"><a href="#cb8-4"></a><span class="at">  </span><span class="fu">source_dir</span><span class="kw">:</span></span>
+<span id="cb8-5"><a href="#cb8-5"></a><span class="at">    </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb8-6"><a href="#cb8-6"></a><span class="at">  </span><span class="fu">source_files</span><span class="kw">:</span></span>
+<span id="cb8-7"><a href="#cb8-7"></a><span class="at">    </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb8-8"><a href="#cb8-8"></a><span class="at">  </span><span class="fu">target_dir</span><span class="kw">:</span></span>
+<span id="cb8-9"><a href="#cb8-9"></a><span class="at">    </span><span class="fu">require</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb8-10"><a href="#cb8-10"></a><span class="fu">runs</span><span class="kw">:</span></span>
+<span id="cb8-11"><a href="#cb8-11"></a><span class="at">  </span><span class="fu">using</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;node12&#39;</span></span>
+<span id="cb8-12"><a href="#cb8-12"></a><span class="at">  </span><span class="fu">main</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;dist/move/index.js&#39;</span></span>
+<span id="cb8-13"><a href="#cb8-13"></a><span class="at">  </span><span class="fu">post</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;dist/restore/index.js&#39;</span><span class="co"> # move.ts とは全く逆のことをするだけ</span></span>
+<span id="cb8-14"><a href="#cb8-14"></a><span class="at">  </span><span class="fu">post-if</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;success()&#39;</span><span class="co">          # move が成功したときにだけ</span></span></code></pre></div>
+<p>これは <a href="https://github.com/actions/cache">actions/cache</a> や <a href="https://github.com/actions/checkout">actions/checkout</a> がやっているやつで，ジョブステップの最後にデストラクタのように指定したアクションを実行してくれる機能だ． ちなみに，実行したステップとは逆順にポストステップは実行する．</p>
+<p>これと actions/cache を組み合わせることで，自由にキャッシュしたいディレクトリを分割してキャッシュすることができるようになった！</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb9-2"><a href="#cb9-2"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v1</span></span>
+<span id="cb9-3"><a href="#cb9-3"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb9-4"><a href="#cb9-4"></a><span class="at">        </span><span class="fu">fetch-depth</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb9-5"><a href="#cb9-5"></a></span>
+<span id="cb9-6"><a href="#cb9-6"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Cache .stack</span></span>
+<span id="cb9-7"><a href="#cb9-7"></a><span class="at">      </span><span class="fu">id</span><span class="kw">:</span><span class="at"> cache-stack</span></span>
+<span id="cb9-8"><a href="#cb9-8"></a><span class="at">      </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/cache@v1</span></span>
+<span id="cb9-9"><a href="#cb9-9"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb9-10"><a href="#cb9-10"></a><span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> ~/.stack</span></span>
+<span id="cb9-11"><a href="#cb9-11"></a><span class="at">        </span><span class="fu">key</span><span class="kw">:</span><span class="at"> ${{ runner.os }}-stack-${{ hashFiles(&#39;**/stack.yaml.lock&#39;) }}</span></span>
+<span id="cb9-12"><a href="#cb9-12"></a><span class="fu">        restore-keys</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb9-13"><a href="#cb9-13"></a>          ${{ runner.os }}-stack-</span>
+<span id="cb9-14"><a href="#cb9-14"></a></span>
+<span id="cb9-15"><a href="#cb9-15"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Cache .stack/pantry</span></span>
+<span id="cb9-16"><a href="#cb9-16"></a><span class="at">      </span><span class="fu">id</span><span class="kw">:</span><span class="at"> cache-pantry</span></span>
+<span id="cb9-17"><a href="#cb9-17"></a><span class="at">      </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/cache@v1</span></span>
+<span id="cb9-18"><a href="#cb9-18"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb9-19"><a href="#cb9-19"></a><span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> ~/.stack-temp/pantry</span></span>
+<span id="cb9-20"><a href="#cb9-20"></a><span class="at">        </span><span class="fu">key</span><span class="kw">:</span><span class="at"> ${{ runner.os }}-pantry-${{ hashFiles(&#39;**/stack.yaml.lock&#39;) }}</span></span>
+<span id="cb9-21"><a href="#cb9-21"></a><span class="fu">        restore-keys</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb9-22"><a href="#cb9-22"></a>          ${{ runner.os }}-pantry-</span>
+<span id="cb9-23"><a href="#cb9-23"></a></span>
+<span id="cb9-24"><a href="#cb9-24"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Move .stack/pantry to temp</span></span>
+<span id="cb9-25"><a href="#cb9-25"></a><span class="at">      </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> matsubara0507/actions/move-files@master</span></span>
+<span id="cb9-26"><a href="#cb9-26"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb9-27"><a href="#cb9-27"></a><span class="at">        </span><span class="fu">source_dir</span><span class="kw">:</span><span class="at"> ~/.stack-temp/pantry</span></span>
+<span id="cb9-28"><a href="#cb9-28"></a><span class="fu">        source_files</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb9-29"><a href="#cb9-29"></a>          pantry</span>
+<span id="cb9-30"><a href="#cb9-30"></a><span class="at">        </span><span class="fu">target_dir</span><span class="kw">:</span><span class="at"> ~/.stack</span></span>
+<span id="cb9-31"><a href="#cb9-31"></a></span>
+<span id="cb9-32"><a href="#cb9-32"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/setup-haskell@v1</span></span>
+<span id="cb9-33"><a href="#cb9-33"></a><span class="at">    ...</span></span></code></pre></div>
+<p>ちょっとわかりにくいですが，別々にキャッシュしたディレクトリを <code>move-files</code> で合体させるイメージ．</p>
+<h3 id="キャッシュバージョンを付ける">キャッシュバージョンを付ける</h3>
+<p>今回の PR のコミット履歴を見るとわかるのだが迷走してる． なぜかというと，actions/cache の「cache save は cache key が <strong>ヒットしなかったときにだけ</strong> 行う」という性質に気づくのに時間がかかったから． <code>key</code> にはヒットせず <code>restore-keys</code> でヒットしたときには restore をして更にキャッシュを更新する． しかし，key に変更が無いとズーーーット古いキャッシュを使い続けてしまった． 変だと思った．</p>
+<p><a href="https://github.com/actions/cache/issues/2">現状キャッシュを手動でクリアする方法が無い</a>． まぁなんでも良かったので cache-version というサフィックスを付けることにした笑:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1"></a><span class="at">    </span><span class="fu">strategy</span><span class="kw">:</span></span>
+<span id="cb10-2"><a href="#cb10-2"></a><span class="at">      </span><span class="fu">matrix</span><span class="kw">:</span></span>
+<span id="cb10-3"><a href="#cb10-3"></a><span class="at">        </span><span class="fu">ghc</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;8.6.5&quot;</span><span class="kw">]</span></span>
+<span id="cb10-4"><a href="#cb10-4"></a><span class="at">        </span><span class="fu">cabal</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;3.0&quot;</span><span class="kw">]</span></span>
+<span id="cb10-5"><a href="#cb10-5"></a><span class="at">        </span><span class="fu">cache-version</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;v4&quot;</span><span class="kw">]</span></span>
+<span id="cb10-6"><a href="#cb10-6"></a></span>
+<span id="cb10-7"><a href="#cb10-7"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb10-8"><a href="#cb10-8"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v1</span></span>
+<span id="cb10-9"><a href="#cb10-9"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb10-10"><a href="#cb10-10"></a><span class="at">        </span><span class="fu">fetch-depth</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb10-11"><a href="#cb10-11"></a></span>
+<span id="cb10-12"><a href="#cb10-12"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Cache .stack</span></span>
+<span id="cb10-13"><a href="#cb10-13"></a><span class="at">      </span><span class="fu">id</span><span class="kw">:</span><span class="at"> cache-stack</span></span>
+<span id="cb10-14"><a href="#cb10-14"></a><span class="at">      </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/cache@v1</span></span>
+<span id="cb10-15"><a href="#cb10-15"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb10-16"><a href="#cb10-16"></a><span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> ~/.stack</span></span>
+<span id="cb10-17"><a href="#cb10-17"></a><span class="at">        </span><span class="fu">key</span><span class="kw">:</span><span class="at"> ${{ runner.os }}-stack-${{ hashFiles(&#39;**/stack.yaml.lock&#39;) }}-${{ matrix.cache-version }}</span></span>
+<span id="cb10-18"><a href="#cb10-18"></a><span class="fu">        restore-keys</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb10-19"><a href="#cb10-19"></a>          ${{ runner.os }}-stack-</span></code></pre></div>
+<p>少なくとも，キャッシュを試行錯誤してるときには便利だ．</p>
+<h3 id="ビフォーアフター">ビフォーアフター</h3>
+<p>もともと25分以上かかかっていたビルドが:</p>
+<p><img src="/assets/haskell-with-gh-actions/before.jpg"></img></p>
+<p>なんと2分まで減った！</p>
+<p><img src="/assets/haskell-with-gh-actions/after.jpg"></img></p>
+<h2 id="おまけ-github-packages">おまけ: GitHub Packages</h2>
+<p>Haskell プログラムのバイナリを配布するために，僕は普段 Docker Image にして Docker Hub に置いてた． しかし，先日 GitHub の 2019年のもう一つの目玉機能「GitHub Packages」も GA されたので，こっちに置いてみることにした（なんと Docker レジストリにもなる）．</p>
+<p><a href="https://github.com/matsubara0507/octbook/packages"><img src="/assets/haskell-with-gh-actions/image.jpg"></img></a></p>
+<p>ちなみに，現状パブリックリポジトリのパッケージであっても <code>docker pull</code> するのに認証が必要である． その点がとても残念(改善されることを祈る)．</p>
+<h3 id="ログイン">ログイン</h3>
+<p>意外と手間取った． どうやら MFA 設定してるとトークンを使う他ないらしい． しかも，新しく（？）追加された <code>write:packages</code> というスコープをオンしないとダメっぽい．</p>
+<h3 id="github-actions-からプッシュ">GitHub Actions からプッシュ</h3>
+<p>こんな感じ</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Build binary</span></span>
+<span id="cb11-2"><a href="#cb11-2"></a><span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> stack --system-ghc install --local-bin-path=./bin</span></span>
+<span id="cb11-3"><a href="#cb11-3"></a></span>
+<span id="cb11-4"><a href="#cb11-4"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Build Docker Image</span></span>
+<span id="cb11-5"><a href="#cb11-5"></a><span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> docker build -t octbook . --build-arg local_bin_path=./bin</span></span>
+<span id="cb11-6"><a href="#cb11-6"></a></span>
+<span id="cb11-7"><a href="#cb11-7"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Push Docker Image</span></span>
+<span id="cb11-8"><a href="#cb11-8"></a><span class="at">      </span><span class="fu">if</span><span class="kw">:</span><span class="at"> github.ref == &#39;refs/heads/master&#39;</span></span>
+<span id="cb11-9"><a href="#cb11-9"></a><span class="fu">      run</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb11-10"><a href="#cb11-10"></a>        echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com -u matsubara0507 --password-stdin</span>
+<span id="cb11-11"><a href="#cb11-11"></a>        docker tag octbook docker.pkg.github.com/matsubara0507/octbook/cli</span>
+<span id="cb11-12"><a href="#cb11-12"></a>        docker push docker.pkg.github.com/matsubara0507/octbook/cli:latest</span>
+<span id="cb11-13"><a href="#cb11-13"></a></span>
+<span id="cb11-14"><a href="#cb11-14"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Push Docker Image (tag)</span></span>
+<span id="cb11-15"><a href="#cb11-15"></a><span class="at">      </span><span class="fu">if</span><span class="kw">:</span><span class="at"> startsWith(github.ref, &#39;refs/tags/&#39;)</span></span>
+<span id="cb11-16"><a href="#cb11-16"></a><span class="fu">      run</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb11-17"><a href="#cb11-17"></a>        echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com -u matsubara0507 --password-stdin</span>
+<span id="cb11-18"><a href="#cb11-18"></a>        docker tag octbook docker.pkg.github.com/matsubara0507/octbook/cli:${GITHUB_REF#refs/tags/}</span>
+<span id="cb11-19"><a href="#cb11-19"></a>        docker push docker.pkg.github.com/matsubara0507/octbook/cli:${GITHUB_REF#refs/tags/}</span></code></pre></div>
+<p><code>if: github.ref == &#39;refs/heads/master&#39;</code> とすることで master ブランチのときだけ，<code>if: startsWith(github.ref, &#39;refs/tags/&#39;)</code> とすることで tag のときだけ，それぞれのステップを評価させることができる．</p>
+<p>ちなみに，<code>GITHUB_TOKEN</code> という Secret はデフォルトで用意されてる． <a href="https://help.github.com/en/actions/automating-your-workflow-with-github-actions/authenticating-with-the-github_token#permissions-for-the-github_token">スコープについてはここに書いてある</a>． packages の read/write があるのでそのまま利用できるね．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>まぁきっと数ヶ月後ぐらいにはキャッシュ容量の制限が緩和されてこんなことしなくても良くなると思うけど．</p>
+  </div>]]></summary>
+</entry>
+<entry>
     <title>Elm で line charts する</title>
     <link href="https://matsubara0507.github.io/posts/2019-11-15-line-charts-with-elm.html" />
     <id>https://matsubara0507.github.io/posts/2019-11-15-line-charts-with-elm.html</id>
@@ -1264,289 +1541,6 @@ Hi matsubara0507!!</code></pre>
 <p>これは matsubara0507/drone-slack-notify-log のビルドステップ．</p>
 <h2 id="おしまい">おしまい</h2>
 <p>なんか他に良い方法が絶対にある気がするんだけどな…</p>
-  </div>]]></summary>
-</entry>
-<entry>
-    <title>Ruby のパターンマッチング機能を MinRuby で試す</title>
-    <link href="https://matsubara0507.github.io/posts/2019-05-16-minruby-with-patternmatch.html" />
-    <id>https://matsubara0507.github.io/posts/2019-05-16-minruby-with-patternmatch.html</id>
-    <published>2019-05-16T00:00:00Z</published>
-    <updated>2019-05-16T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
-    <p>Ruby 2.7 で導入予定で，すでに <a href="https://github.com/ruby/ruby">Ruby リポジトリ</a>の trunk (いわゆる master ブランチのこと) にマージ済みの「パターンマッチング」機能を試してみたので，そのメモ書きです． 特に包括的に検証したわけではないので注意してください．</p>
-<h2 id="パターンマッチング">パターンマッチング</h2>
-<p>(わざわざ解説することでもないけど)</p>
-<p>パターンマッチングは <code>if</code> 文や <code>case</code> 文のようなプログラムの分岐に使うプログラミング機能． <code>if</code> 文が真偽値を返す条件式 (e.g. <code>a &gt; 0 &amp;&amp; x == &#39;hoge&#39;</code>) の結果により分岐し，<code>case</code> 文が指定した変数の値によって分岐するのに対し，パターンマッチングは指定した変数のデータ構造によって分岐する．</p>
-<p>例えば Ruby に導入されたパターンマッチングだと次のようになる:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">case</span> var <span class="co"># var のデータ構造により分岐</span></span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">in</span> []</span>
-<span id="cb1-3"><a href="#cb1-3"></a>  puts <span class="st">&quot;var is empty list&quot;</span></span>
-<span id="cb1-4"><a href="#cb1-4"></a><span class="kw">in</span> [a]</span>
-<span id="cb1-5"><a href="#cb1-5"></a>  puts <span class="st">&quot;var is singleton: </span><span class="ot">#{</span>a<span class="ot">}</span><span class="st">&quot;</span> <span class="co"># 変数 a に値を代入する</span></span>
-<span id="cb1-6"><a href="#cb1-6"></a><span class="kw">in</span> [<span class="st">:hoge</span>, a, b]</span>
-<span id="cb1-7"><a href="#cb1-7"></a>  puts <span class="st">&quot;var is hoge list: </span><span class="ot">#{</span>[a, b]<span class="ot">}</span><span class="st">&quot;</span> <span class="co"># 一要素目が :hoge の3要素リスト</span></span>
-<span id="cb1-8"><a href="#cb1-8"></a><span class="kw">else</span></span>
-<span id="cb1-9"><a href="#cb1-9"></a>  puts <span class="st">&quot;No match: </span><span class="ot">#{</span>var<span class="ot">}</span><span class="st">&quot;</span> <span class="co"># else はどれにもマッチしないとき</span></span>
-<span id="cb1-10"><a href="#cb1-10"></a><span class="kw">end</span></span></code></pre></div>
-<p>このようにデータ構造(例えば配列の要素数など)によって分岐かつ変数への代入が可能になる． パターンマッチングは様々なデータを扱うようなプログラミングを行う時に極めて簡潔にかつ直感的にプログラムを記述することができる．</p>
-<p>ちなみに，パターンマッチングがあれば基本的に <code>if</code> 文も <code>case</code> 文も要らない． どちらもパターンマッチングの糖衣構文として表現でき，現に Haskell ではそうなっている(たぶん)．</p>
-<h3 id="ruby-のパターンマッチング">Ruby のパターンマッチング</h3>
-<p>ちょこちょこ既に記事があるが，RubyKaigi 2019 でも作者からの発表があり参考になる:</p>
-<ul>
-<li><a href="https://speakerdeck.com/k_tsj/pattern-matching-new-feature-in-ruby-2-dot-7">Pattern matching - New feature in Ruby 2.7</a></li>
-</ul>
-<p>すでに <a href="https://www.youtube.com/watch?v=paBlgsqoKk8">YouTube で動画も公開された</a>． ちなみに，2012 ぐらいからずっと作っていたらしい．</p>
-<p>Elixir のピンパターン(<code>^var</code>)など，数多くのパターンマッチング機能がある(後発の利点ですね)． ただし，変数のスコープが個人的には思ってたのと違った:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb2-1"><a href="#cb2-1"></a>irb(main):<span class="dv">001</span>:<span class="dv">0</span>&gt; <span class="kw">case</span> [<span class="dv">1</span>, <span class="dv">2</span>]</span>
-<span id="cb2-2"><a href="#cb2-2"></a>irb(main):<span class="dv">002</span>:<span class="dv">1</span>&gt; <span class="kw">in</span> [a, <span class="dv">3</span>] <span class="kw">then</span> p a</span>
-<span id="cb2-3"><a href="#cb2-3"></a>irb(main):<span class="dv">003</span>:<span class="dv">1</span>&gt; <span class="kw">in</span> [b, c] <span class="kw">then</span> p c</span>
-<span id="cb2-4"><a href="#cb2-4"></a>irb(main):<span class="dv">004</span>:<span class="dv">1</span>&gt; <span class="kw">end</span></span>
-<span id="cb2-5"><a href="#cb2-5"></a><span class="dv">2</span></span>
-<span id="cb2-6"><a href="#cb2-6"></a>=&gt; <span class="dv">2</span></span>
-<span id="cb2-7"><a href="#cb2-7"></a>irb(main):<span class="dv">005</span>:<span class="dv">0</span>&gt; [a,b,c]</span>
-<span id="cb2-8"><a href="#cb2-8"></a>=&gt; [<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">2</span>]</span></code></pre></div>
-<p><code>in ..</code> ごとにスコープは閉じてるのが一般的な気がするけど Ruby でそれは難しいのだろうか(<code>if</code> 文や <code>case</code> 文でもこんな感じの挙動)．</p>
-<h2 id="試す">試す</h2>
-<h3 id="ruby2.7-dev">Ruby2.7-dev</h3>
-<p>前述した通り，パターンマッチングは trunk にマージされているので Ruby2.7-dev で試すことができる． trunk を試す方法はいくつかあると思うが，僕は手っ取り早く <a href="https://github.com/rbenv/rbenv">rbenv</a> を使った．</p>
-<pre><code>$ rbenv install 2.7.0-dev</code></pre>
-<h3 id="minruby">MinRuby</h3>
-<p>パターンマッチングを試す対象として，「<a href="https://ascii.jp/elem/000/001/230/1230449/">Ruby で学ぶ Ruby</a>」という連載で作っている，かなり簡易的な Ruby のサブセット処理系 MinRuby を利用する．</p>
-<p>最終的な処理系は <a href="https://github.com/matsubara0507/MinRuby.rb/blob/dbe9891f916877fc3c260135696f48344bceb98a/interp.rb">Ruby コード一枚</a>でできている(一番めんどくさい構文解析を <a href="https://github.com/ruby/ruby/tree/970a25b10415bc3735e6e3c165e167e6abc3d7f4/ext/ripper">ripper</a> とそのラッパー <a href="https://github.com/mame/minruby">minruby</a> というのに任せているので):</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb4-1"><a href="#cb4-1"></a><span class="co"># interp.rb</span></span>
-<span id="cb4-2"><a href="#cb4-2"></a>require <span class="st">&quot;minruby&quot;</span></span>
-<span id="cb4-3"><a href="#cb4-3"></a></span>
-<span id="cb4-4"><a href="#cb4-4"></a><span class="kw">def</span> evaluate(tree, genv, lenv)</span>
-<span id="cb4-5"><a href="#cb4-5"></a>  <span class="kw">case</span> tree[<span class="dv">0</span>]</span>
-<span id="cb4-6"><a href="#cb4-6"></a>  <span class="kw">when</span> <span class="st">&quot;lit&quot;</span></span>
-<span id="cb4-7"><a href="#cb4-7"></a>    tree[<span class="dv">1</span>]</span>
-<span id="cb4-8"><a href="#cb4-8"></a>  <span class="kw">when</span> <span class="st">&quot;+&quot;</span></span>
-<span id="cb4-9"><a href="#cb4-9"></a>    evaluate(tree[<span class="dv">1</span>], genv, lenv) + evaluate(tree[<span class="dv">2</span>], genv, lenv)</span>
-<span id="cb4-10"><a href="#cb4-10"></a>  <span class="kw">when</span> <span class="st">&quot;-&quot;</span></span>
-<span id="cb4-11"><a href="#cb4-11"></a>    evaluate(tree[<span class="dv">1</span>], genv, lenv) - evaluate(tree[<span class="dv">2</span>], genv, lenv)</span>
-<span id="cb4-12"><a href="#cb4-12"></a>  <span class="kw">when</span> <span class="st">&quot;*&quot;</span></span>
-<span id="cb4-13"><a href="#cb4-13"></a>    evaluate(tree[<span class="dv">1</span>], genv, lenv) * evaluate(tree[<span class="dv">2</span>], genv, lenv)</span>
-<span id="cb4-14"><a href="#cb4-14"></a>  <span class="kw">when</span> <span class="st">&quot;/&quot;</span></span>
-<span id="cb4-15"><a href="#cb4-15"></a>    evaluate(tree[<span class="dv">1</span>], genv, lenv) / evaluate(tree[<span class="dv">2</span>], genv, lenv)</span>
-<span id="cb4-16"><a href="#cb4-16"></a>  <span class="kw">when</span> <span class="st">&quot;%&quot;</span></span>
-<span id="cb4-17"><a href="#cb4-17"></a>    evaluate(tree[<span class="dv">1</span>], genv, lenv) % evaluate(tree[<span class="dv">2</span>], genv, lenv)</span>
-<span id="cb4-18"><a href="#cb4-18"></a>  <span class="kw">when</span> <span class="st">&quot;&lt;&quot;</span></span>
-<span id="cb4-19"><a href="#cb4-19"></a>    evaluate(tree[<span class="dv">1</span>], genv, lenv) &lt; evaluate(tree[<span class="dv">2</span>], genv, lenv)</span>
-<span id="cb4-20"><a href="#cb4-20"></a>  <span class="kw">when</span> <span class="st">&quot;&lt;=&quot;</span></span>
-<span id="cb4-21"><a href="#cb4-21"></a>    evaluate(tree[<span class="dv">1</span>], genv, lenv) &lt;= evaluate(tree[<span class="dv">2</span>], genv, lenv)</span>
-<span id="cb4-22"><a href="#cb4-22"></a>  <span class="kw">when</span> <span class="st">&quot;==&quot;</span></span>
-<span id="cb4-23"><a href="#cb4-23"></a>    evaluate(tree[<span class="dv">1</span>], genv, lenv) == evaluate(tree[<span class="dv">2</span>], genv, lenv)</span>
-<span id="cb4-24"><a href="#cb4-24"></a>  <span class="kw">when</span> <span class="st">&quot;!=&quot;</span></span>
-<span id="cb4-25"><a href="#cb4-25"></a>    evaluate(tree[<span class="dv">1</span>], genv, lenv) != evaluate(tree[<span class="dv">2</span>], genv, lenv)</span>
-<span id="cb4-26"><a href="#cb4-26"></a>  <span class="kw">when</span> <span class="st">&quot;&gt;=&quot;</span></span>
-<span id="cb4-27"><a href="#cb4-27"></a>    evaluate(tree[<span class="dv">1</span>], genv, lenv) &gt;= evaluate(tree[<span class="dv">2</span>], genv, lenv)</span>
-<span id="cb4-28"><a href="#cb4-28"></a>  <span class="kw">when</span> <span class="st">&quot;&gt;&quot;</span></span>
-<span id="cb4-29"><a href="#cb4-29"></a>    evaluate(tree[<span class="dv">1</span>], genv, lenv) &gt; evaluate(tree[<span class="dv">2</span>], genv, lenv)</span>
-<span id="cb4-30"><a href="#cb4-30"></a>  <span class="kw">when</span> <span class="st">&quot;stmts&quot;</span></span>
-<span id="cb4-31"><a href="#cb4-31"></a>    i = <span class="dv">1</span></span>
-<span id="cb4-32"><a href="#cb4-32"></a>    last = <span class="dv">nil</span></span>
-<span id="cb4-33"><a href="#cb4-33"></a>    <span class="kw">while</span> tree[i]</span>
-<span id="cb4-34"><a href="#cb4-34"></a>      last = evaluate(tree[i], genv, lenv)</span>
-<span id="cb4-35"><a href="#cb4-35"></a>      i = i + <span class="dv">1</span></span>
-<span id="cb4-36"><a href="#cb4-36"></a>    <span class="kw">end</span></span>
-<span id="cb4-37"><a href="#cb4-37"></a>    last</span>
-<span id="cb4-38"><a href="#cb4-38"></a>  <span class="kw">when</span> <span class="st">&quot;var_assign&quot;</span></span>
-<span id="cb4-39"><a href="#cb4-39"></a>    lenv[tree[<span class="dv">1</span>]] = evaluate(tree[<span class="dv">2</span>], genv, lenv)</span>
-<span id="cb4-40"><a href="#cb4-40"></a>  <span class="kw">when</span> <span class="st">&quot;var_ref&quot;</span></span>
-<span id="cb4-41"><a href="#cb4-41"></a>    lenv[tree[<span class="dv">1</span>]]</span>
-<span id="cb4-42"><a href="#cb4-42"></a>  <span class="kw">when</span> <span class="st">&quot;if&quot;</span></span>
-<span id="cb4-43"><a href="#cb4-43"></a>    <span class="kw">if</span> evaluate(tree[<span class="dv">1</span>], genv, lenv)</span>
-<span id="cb4-44"><a href="#cb4-44"></a>      evaluate(tree[<span class="dv">2</span>], genv, lenv)</span>
-<span id="cb4-45"><a href="#cb4-45"></a>    <span class="kw">else</span></span>
-<span id="cb4-46"><a href="#cb4-46"></a>      evaluate(tree[<span class="dv">3</span>], genv, lenv)</span>
-<span id="cb4-47"><a href="#cb4-47"></a>    <span class="kw">end</span></span>
-<span id="cb4-48"><a href="#cb4-48"></a>  <span class="kw">when</span> <span class="st">&quot;while&quot;</span></span>
-<span id="cb4-49"><a href="#cb4-49"></a>    <span class="kw">while</span> evaluate(tree[<span class="dv">1</span>], genv, lenv)</span>
-<span id="cb4-50"><a href="#cb4-50"></a>      evaluate(tree[<span class="dv">2</span>], genv, lenv)</span>
-<span id="cb4-51"><a href="#cb4-51"></a>    <span class="kw">end</span></span>
-<span id="cb4-52"><a href="#cb4-52"></a>  <span class="kw">when</span> <span class="st">&quot;func_def&quot;</span></span>
-<span id="cb4-53"><a href="#cb4-53"></a>    genv[tree[<span class="dv">1</span>]] = [<span class="st">&quot;user_defined&quot;</span>, tree[<span class="dv">2</span>], tree[<span class="dv">3</span>]]</span>
-<span id="cb4-54"><a href="#cb4-54"></a>  <span class="kw">when</span> <span class="st">&quot;func_call&quot;</span></span>
-<span id="cb4-55"><a href="#cb4-55"></a>    args = []</span>
-<span id="cb4-56"><a href="#cb4-56"></a>    i = <span class="dv">0</span></span>
-<span id="cb4-57"><a href="#cb4-57"></a>    <span class="kw">while</span> tree[i + <span class="dv">2</span>]</span>
-<span id="cb4-58"><a href="#cb4-58"></a>      args[i] = evaluate(tree[i + <span class="dv">2</span>], genv, lenv)</span>
-<span id="cb4-59"><a href="#cb4-59"></a>      i = i + <span class="dv">1</span></span>
-<span id="cb4-60"><a href="#cb4-60"></a>    <span class="kw">end</span></span>
-<span id="cb4-61"><a href="#cb4-61"></a>    mhd = genv[tree[<span class="dv">1</span>]]</span>
-<span id="cb4-62"><a href="#cb4-62"></a>    <span class="kw">if</span> mhd[<span class="dv">0</span>] == <span class="st">&quot;builtin&quot;</span></span>
-<span id="cb4-63"><a href="#cb4-63"></a>      minruby_call(mhd[<span class="dv">1</span>], args)</span>
-<span id="cb4-64"><a href="#cb4-64"></a>    <span class="kw">else</span></span>
-<span id="cb4-65"><a href="#cb4-65"></a>      new_lenv = {}</span>
-<span id="cb4-66"><a href="#cb4-66"></a>      params = mhd[<span class="dv">1</span>]</span>
-<span id="cb4-67"><a href="#cb4-67"></a>      i = <span class="dv">0</span></span>
-<span id="cb4-68"><a href="#cb4-68"></a>      <span class="kw">while</span> params[i]</span>
-<span id="cb4-69"><a href="#cb4-69"></a>        new_lenv[params[i]] = args[i]</span>
-<span id="cb4-70"><a href="#cb4-70"></a>        i = i + <span class="dv">1</span></span>
-<span id="cb4-71"><a href="#cb4-71"></a>      <span class="kw">end</span></span>
-<span id="cb4-72"><a href="#cb4-72"></a>      evaluate(mhd[<span class="dv">2</span>], genv, new_lenv)</span>
-<span id="cb4-73"><a href="#cb4-73"></a>    <span class="kw">end</span></span>
-<span id="cb4-74"><a href="#cb4-74"></a>  <span class="kw">when</span> <span class="st">&quot;ary_new&quot;</span></span>
-<span id="cb4-75"><a href="#cb4-75"></a>    ary = []</span>
-<span id="cb4-76"><a href="#cb4-76"></a>    i = <span class="dv">0</span></span>
-<span id="cb4-77"><a href="#cb4-77"></a>    <span class="kw">while</span> tree[i + <span class="dv">1</span>]</span>
-<span id="cb4-78"><a href="#cb4-78"></a>      ary[i] = evaluate(tree[i + <span class="dv">1</span>], genv, lenv)</span>
-<span id="cb4-79"><a href="#cb4-79"></a>      i = i + <span class="dv">1</span></span>
-<span id="cb4-80"><a href="#cb4-80"></a>    <span class="kw">end</span></span>
-<span id="cb4-81"><a href="#cb4-81"></a>    ary</span>
-<span id="cb4-82"><a href="#cb4-82"></a>  <span class="kw">when</span> <span class="st">&quot;ary_ref&quot;</span></span>
-<span id="cb4-83"><a href="#cb4-83"></a>    ary = evaluate(tree[<span class="dv">1</span>], genv, lenv)</span>
-<span id="cb4-84"><a href="#cb4-84"></a>    idx = evaluate(tree[<span class="dv">2</span>], genv, lenv)</span>
-<span id="cb4-85"><a href="#cb4-85"></a>    ary[idx]</span>
-<span id="cb4-86"><a href="#cb4-86"></a>  <span class="kw">when</span> <span class="st">&quot;ary_assign&quot;</span></span>
-<span id="cb4-87"><a href="#cb4-87"></a>    ary = evaluate(tree[<span class="dv">1</span>], genv, lenv)</span>
-<span id="cb4-88"><a href="#cb4-88"></a>    idx = evaluate(tree[<span class="dv">2</span>], genv, lenv)</span>
-<span id="cb4-89"><a href="#cb4-89"></a>    val = evaluate(tree[<span class="dv">3</span>], genv, lenv)</span>
-<span id="cb4-90"><a href="#cb4-90"></a>    ary[idx] = val</span>
-<span id="cb4-91"><a href="#cb4-91"></a>  <span class="kw">when</span> <span class="st">&quot;hash_new&quot;</span></span>
-<span id="cb4-92"><a href="#cb4-92"></a>    hsh = {}</span>
-<span id="cb4-93"><a href="#cb4-93"></a>    i = <span class="dv">0</span></span>
-<span id="cb4-94"><a href="#cb4-94"></a>    <span class="kw">while</span> tree[i + <span class="dv">1</span>]</span>
-<span id="cb4-95"><a href="#cb4-95"></a>      key = evaluate(tree[i + <span class="dv">1</span>], genv, lenv)</span>
-<span id="cb4-96"><a href="#cb4-96"></a>      val = evaluate(tree[i + <span class="dv">2</span>], genv, lenv)</span>
-<span id="cb4-97"><a href="#cb4-97"></a>      hsh[key] = val</span>
-<span id="cb4-98"><a href="#cb4-98"></a>      i = i + <span class="dv">2</span></span>
-<span id="cb4-99"><a href="#cb4-99"></a>    <span class="kw">end</span></span>
-<span id="cb4-100"><a href="#cb4-100"></a>    hsh</span>
-<span id="cb4-101"><a href="#cb4-101"></a>  <span class="kw">end</span></span>
-<span id="cb4-102"><a href="#cb4-102"></a><span class="kw">end</span></span>
-<span id="cb4-103"><a href="#cb4-103"></a></span>
-<span id="cb4-104"><a href="#cb4-104"></a>str = minruby_load()</span>
-<span id="cb4-105"><a href="#cb4-105"></a></span>
-<span id="cb4-106"><a href="#cb4-106"></a>tree = minruby_parse(str)</span>
-<span id="cb4-107"><a href="#cb4-107"></a></span>
-<span id="cb4-108"><a href="#cb4-108"></a>genv = {</span>
-<span id="cb4-109"><a href="#cb4-109"></a>  <span class="st">&quot;p&quot;</span> =&gt; [<span class="st">&quot;builtin&quot;</span>, <span class="st">&quot;p&quot;</span>],</span>
-<span id="cb4-110"><a href="#cb4-110"></a>  <span class="st">&quot;require&quot;</span> =&gt; [<span class="st">&quot;builtin&quot;</span>, <span class="st">&quot;require&quot;</span>],</span>
-<span id="cb4-111"><a href="#cb4-111"></a>  <span class="st">&quot;minruby_parse&quot;</span> =&gt; [<span class="st">&quot;builtin&quot;</span>, <span class="st">&quot;minruby_parse&quot;</span>],</span>
-<span id="cb4-112"><a href="#cb4-112"></a>  <span class="st">&quot;minruby_load&quot;</span> =&gt; [<span class="st">&quot;builtin&quot;</span>, <span class="st">&quot;minruby_load&quot;</span>],</span>
-<span id="cb4-113"><a href="#cb4-113"></a>  <span class="st">&quot;minruby_call&quot;</span> =&gt; [<span class="st">&quot;builtin&quot;</span>, <span class="st">&quot;minruby_call&quot;</span>],</span>
-<span id="cb4-114"><a href="#cb4-114"></a>}</span>
-<span id="cb4-115"><a href="#cb4-115"></a>lenv = {}</span>
-<span id="cb4-116"><a href="#cb4-116"></a>evaluate(tree, genv, lenv)</span></code></pre></div>
-<p>コードを見て分かるように(?)，配列の一引数目のリテラルで <code>case</code> 文による分岐をし，分岐先で配列の要素を引っ張っている． このようにデータ構造 + <code>case</code> 文による分岐はパターンマッチングにうってつけのユースケースだ．</p>
-<h3 id="minruby-パターンマッチング">MinRuby + パターンマッチング</h3>
-<p>作業リポジトリはこれ:</p>
-<iframe width="320" height="163" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/MinRuby.rb">
-</iframe>
-<p><code>pattern-match</code> というブランチにパターンマッチングで書き換えたコードがある． パターンマッチングで書き換えたのは <code>evaluate</code> 関数だけなのでそこだけ載せる:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">def</span> evaluate(tree, genv, lenv)</span>
-<span id="cb5-2"><a href="#cb5-2"></a>  <span class="kw">case</span> tree</span>
-<span id="cb5-3"><a href="#cb5-3"></a>  <span class="kw">in</span> <span class="st">&quot;lit&quot;</span>, lit</span>
-<span id="cb5-4"><a href="#cb5-4"></a>    lit</span>
-<span id="cb5-5"><a href="#cb5-5"></a>  <span class="kw">in</span> <span class="st">&quot;+&quot;</span>, exp1, exp2</span>
-<span id="cb5-6"><a href="#cb5-6"></a>    evaluate(exp1, genv, lenv) + evaluate(exp2, genv, lenv)</span>
-<span id="cb5-7"><a href="#cb5-7"></a>  <span class="kw">in</span> <span class="st">&quot;-&quot;</span>, exp1, exp2</span>
-<span id="cb5-8"><a href="#cb5-8"></a>    evaluate(exp1, genv, lenv) - evaluate(exp2, genv, lenv)</span>
-<span id="cb5-9"><a href="#cb5-9"></a>  <span class="kw">in</span> <span class="st">&quot;*&quot;</span>, exp1, exp2</span>
-<span id="cb5-10"><a href="#cb5-10"></a>    evaluate(exp1, genv, lenv) * evaluate(exp2, genv, lenv)</span>
-<span id="cb5-11"><a href="#cb5-11"></a>  <span class="kw">in</span> <span class="st">&quot;/&quot;</span>, exp1, exp2</span>
-<span id="cb5-12"><a href="#cb5-12"></a>    evaluate(exp1, genv, lenv) / evaluate(exp2, genv, lenv)</span>
-<span id="cb5-13"><a href="#cb5-13"></a>  <span class="kw">in</span> <span class="st">&quot;%&quot;</span>, exp1, exp2</span>
-<span id="cb5-14"><a href="#cb5-14"></a>    evaluate(exp1, genv, lenv) % evaluate(exp2, genv, lenv)</span>
-<span id="cb5-15"><a href="#cb5-15"></a>  <span class="kw">in</span> <span class="st">&quot;&lt;&quot;</span>, exp1, exp2</span>
-<span id="cb5-16"><a href="#cb5-16"></a>    evaluate(exp1, genv, lenv) &lt; evaluate(exp2, genv, lenv)</span>
-<span id="cb5-17"><a href="#cb5-17"></a>  <span class="kw">in</span> <span class="st">&quot;&lt;=&quot;</span>, exp1, exp2</span>
-<span id="cb5-18"><a href="#cb5-18"></a>    evaluate(exp1, genv, lenv) &lt;= evaluate(exp2, genv, lenv)</span>
-<span id="cb5-19"><a href="#cb5-19"></a>  <span class="kw">in</span> <span class="st">&quot;==&quot;</span>, exp1, exp2</span>
-<span id="cb5-20"><a href="#cb5-20"></a>    evaluate(exp1, genv, lenv) == evaluate(exp2, genv, lenv)</span>
-<span id="cb5-21"><a href="#cb5-21"></a>  <span class="kw">in</span> <span class="st">&quot;!=&quot;</span>, exp1, exp2</span>
-<span id="cb5-22"><a href="#cb5-22"></a>    evaluate(exp1, genv, lenv) != evaluate(exp2, genv, lenv)</span>
-<span id="cb5-23"><a href="#cb5-23"></a>  <span class="kw">in</span> <span class="st">&quot;&gt;=&quot;</span>, exp1, exp2</span>
-<span id="cb5-24"><a href="#cb5-24"></a>    evaluate(exp1, genv, lenv) &gt;= evaluate(exp2, genv, lenv)</span>
-<span id="cb5-25"><a href="#cb5-25"></a>  <span class="kw">in</span> <span class="st">&quot;&gt;&quot;</span>, exp1, exp2</span>
-<span id="cb5-26"><a href="#cb5-26"></a>    evaluate(exp1, genv, lenv) &gt; evaluate(exp2, genv, lenv)</span>
-<span id="cb5-27"><a href="#cb5-27"></a>  <span class="kw">in</span> <span class="st">&quot;stmts&quot;</span>, *stmts</span>
-<span id="cb5-28"><a href="#cb5-28"></a>    last = <span class="dv">nil</span></span>
-<span id="cb5-29"><a href="#cb5-29"></a>    i = <span class="dv">0</span></span>
-<span id="cb5-30"><a href="#cb5-30"></a>    <span class="kw">while</span> stmts[i]</span>
-<span id="cb5-31"><a href="#cb5-31"></a>      last = evaluate(stmts[i], genv, lenv)</span>
-<span id="cb5-32"><a href="#cb5-32"></a>      i = i + <span class="dv">1</span></span>
-<span id="cb5-33"><a href="#cb5-33"></a>    <span class="kw">end</span></span>
-<span id="cb5-34"><a href="#cb5-34"></a>    last</span>
-<span id="cb5-35"><a href="#cb5-35"></a>  <span class="kw">in</span> <span class="st">&quot;var_assign&quot;</span>, var_name, var_value</span>
-<span id="cb5-36"><a href="#cb5-36"></a>    lenv[var_name] = evaluate(var_value, genv, lenv)</span>
-<span id="cb5-37"><a href="#cb5-37"></a>  <span class="kw">in</span> <span class="st">&quot;var_ref&quot;</span>, var_name</span>
-<span id="cb5-38"><a href="#cb5-38"></a>    lenv[var_name]</span>
-<span id="cb5-39"><a href="#cb5-39"></a>  <span class="kw">in</span> <span class="st">&quot;if&quot;</span>, cond, exp1, exp2</span>
-<span id="cb5-40"><a href="#cb5-40"></a>    <span class="kw">if</span> evaluate(cond, genv, lenv)</span>
-<span id="cb5-41"><a href="#cb5-41"></a>      evaluate(exp1, genv, lenv)</span>
-<span id="cb5-42"><a href="#cb5-42"></a>    <span class="kw">else</span></span>
-<span id="cb5-43"><a href="#cb5-43"></a>      evaluate(exp2, genv, lenv)</span>
-<span id="cb5-44"><a href="#cb5-44"></a>    <span class="kw">end</span></span>
-<span id="cb5-45"><a href="#cb5-45"></a>  <span class="kw">in</span> <span class="st">&quot;while&quot;</span>, cond, exp</span>
-<span id="cb5-46"><a href="#cb5-46"></a>    <span class="kw">while</span> evaluate(cond, genv, lenv)</span>
-<span id="cb5-47"><a href="#cb5-47"></a>      evaluate(exp, genv, lenv)</span>
-<span id="cb5-48"><a href="#cb5-48"></a>    <span class="kw">end</span></span>
-<span id="cb5-49"><a href="#cb5-49"></a>  <span class="kw">in</span> <span class="st">&quot;func_def&quot;</span>, func_name, func_args, func_body</span>
-<span id="cb5-50"><a href="#cb5-50"></a>    genv[func_name] = [<span class="st">&quot;user_defined&quot;</span>, func_args, func_body]</span>
-<span id="cb5-51"><a href="#cb5-51"></a>  <span class="kw">in</span> <span class="st">&quot;func_call&quot;</span>, func_name, *func_args</span>
-<span id="cb5-52"><a href="#cb5-52"></a>    args = []</span>
-<span id="cb5-53"><a href="#cb5-53"></a>    i = <span class="dv">0</span></span>
-<span id="cb5-54"><a href="#cb5-54"></a>    <span class="kw">while</span> func_args[i]</span>
-<span id="cb5-55"><a href="#cb5-55"></a>      args[i] = evaluate(func_args[i], genv, lenv)</span>
-<span id="cb5-56"><a href="#cb5-56"></a>      i = i + <span class="dv">1</span></span>
-<span id="cb5-57"><a href="#cb5-57"></a>    <span class="kw">end</span></span>
-<span id="cb5-58"><a href="#cb5-58"></a>    mhd = genv[func_name]</span>
-<span id="cb5-59"><a href="#cb5-59"></a>    <span class="kw">if</span> mhd[<span class="dv">0</span>] == <span class="st">&quot;builtin&quot;</span></span>
-<span id="cb5-60"><a href="#cb5-60"></a>      minruby_call(mhd[<span class="dv">1</span>], args)</span>
-<span id="cb5-61"><a href="#cb5-61"></a>    <span class="kw">else</span></span>
-<span id="cb5-62"><a href="#cb5-62"></a>      new_lenv = {}</span>
-<span id="cb5-63"><a href="#cb5-63"></a>      params = mhd[<span class="dv">1</span>]</span>
-<span id="cb5-64"><a href="#cb5-64"></a>      i = <span class="dv">0</span></span>
-<span id="cb5-65"><a href="#cb5-65"></a>      <span class="kw">while</span> params[i]</span>
-<span id="cb5-66"><a href="#cb5-66"></a>        new_lenv[params[i]] = args[i]</span>
-<span id="cb5-67"><a href="#cb5-67"></a>        i = i + <span class="dv">1</span></span>
-<span id="cb5-68"><a href="#cb5-68"></a>      <span class="kw">end</span></span>
-<span id="cb5-69"><a href="#cb5-69"></a>      evaluate(mhd[<span class="dv">2</span>], genv, new_lenv)</span>
-<span id="cb5-70"><a href="#cb5-70"></a>    <span class="kw">end</span></span>
-<span id="cb5-71"><a href="#cb5-71"></a>  <span class="kw">in</span> <span class="st">&quot;ary_new&quot;</span>, ary_values</span>
-<span id="cb5-72"><a href="#cb5-72"></a>    ary = []</span>
-<span id="cb5-73"><a href="#cb5-73"></a>    i = <span class="dv">0</span></span>
-<span id="cb5-74"><a href="#cb5-74"></a>    <span class="kw">while</span> ary_values[i]</span>
-<span id="cb5-75"><a href="#cb5-75"></a>      ary [i] = evaluate(ary_values[i], genv, lenv)</span>
-<span id="cb5-76"><a href="#cb5-76"></a>      i = i + <span class="dv">1</span></span>
-<span id="cb5-77"><a href="#cb5-77"></a>    <span class="kw">end</span></span>
-<span id="cb5-78"><a href="#cb5-78"></a>  <span class="kw">in</span> <span class="st">&quot;ary_ref&quot;</span>, ary_exp, idx_exp</span>
-<span id="cb5-79"><a href="#cb5-79"></a>    ary = evaluate(ary_exp, genv, lenv)</span>
-<span id="cb5-80"><a href="#cb5-80"></a>    idx = evaluate(idx_exp, genv, lenv)</span>
-<span id="cb5-81"><a href="#cb5-81"></a>    ary[idx]</span>
-<span id="cb5-82"><a href="#cb5-82"></a>  <span class="kw">in</span> <span class="st">&quot;ary_assign&quot;</span>, ary_exp, idx_exp, value_exp</span>
-<span id="cb5-83"><a href="#cb5-83"></a>    ary = evaluate(ary_exp, genv, lenv)</span>
-<span id="cb5-84"><a href="#cb5-84"></a>    idx = evaluate(idx_exp, genv, lenv)</span>
-<span id="cb5-85"><a href="#cb5-85"></a>    val = evaluate(value_exp, genv, lenv)</span>
-<span id="cb5-86"><a href="#cb5-86"></a>    ary[idx] = val</span>
-<span id="cb5-87"><a href="#cb5-87"></a>  <span class="kw">in</span> <span class="st">&quot;hash_new&quot;</span>, *key_values</span>
-<span id="cb5-88"><a href="#cb5-88"></a>    hsh = {}</span>
-<span id="cb5-89"><a href="#cb5-89"></a>    i = <span class="dv">0</span></span>
-<span id="cb5-90"><a href="#cb5-90"></a>    <span class="kw">while</span> key_values[i]</span>
-<span id="cb5-91"><a href="#cb5-91"></a>      key = evaluate(key_values[i], genv, lenv)</span>
-<span id="cb5-92"><a href="#cb5-92"></a>      val = evaluate(key_values[i + <span class="dv">1</span>], genv, lenv)</span>
-<span id="cb5-93"><a href="#cb5-93"></a>      hsh[key] = val</span>
-<span id="cb5-94"><a href="#cb5-94"></a>      i = i + <span class="dv">2</span></span>
-<span id="cb5-95"><a href="#cb5-95"></a>    <span class="kw">end</span></span>
-<span id="cb5-96"><a href="#cb5-96"></a>    hsh</span>
-<span id="cb5-97"><a href="#cb5-97"></a>  <span class="kw">end</span></span>
-<span id="cb5-98"><a href="#cb5-98"></a><span class="kw">end</span></span></code></pre></div>
-<p>配列にマッチさせる場合，<code>in [a, b, c]</code> の <code>[]</code> を省くことができる． また，<code>in &quot;hoge&quot;, *rest</code> は配列の残りの要素全てを <code>*rest</code> にマッチさせる構文だ． 他は特別な機能を使ってないのできっと読めるでしょう．</p>
-<h2 id="おまけ-minruby-パターンマッチング">おまけ: minruby + パターンマッチング</h2>
-<p>試しに <code>minruby</code> もパターンマッチで書き換えてみた． 差分は<a href="https://github.com/matsubara0507/minruby-gem/pull/1">これ</a>． めちゃくちゃやっつけで作ったので穴があるかもしれない．</p>
-<p>ここでは新しく Alternative Pattern を使っている． こういうのだ:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb6-1"><a href="#cb6-1"></a><span class="co"># Alternative Pattern: hoge | fuga</span></span>
-<span id="cb6-2"><a href="#cb6-2"></a><span class="kw">in</span> (<span class="st">:program</span> | <span class="st">:bodystmt</span>), exp1, *_</span>
-<span id="cb6-3"><a href="#cb6-3"></a>    make_stmts(exp1)</span></code></pre></div>
-<p>Alternative Pattern には注意点があって，このパターンでは変数へのマッチを利用することができない:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb7-1"><a href="#cb7-1"></a><span class="co"># Error: illegal variable in alternative pattern</span></span>
-<span id="cb7-2"><a href="#cb7-2"></a><span class="kw">in</span> (<span class="st">:program</span> exp1, *_ | <span class="st">:bodystmt</span> exp1, *_),</span>
-<span id="cb7-3"><a href="#cb7-3"></a>    make_stmts(exp1)</span></code></pre></div>
-<p>ここからは余談． MinRuby は <code>ruby interp.rb interp.rb fizzbuzz.rb</code> のように自身を自身で評価することが可能だ(そのため <code>map</code> や <code>foreach</code> などを使わずに少し冗長なコードになっている)． しかし，パターンマッチングを導入しちゃうとこれができない． なんとかできないかなぁと思って <code>minruby</code> をパターンマッチングで書き換えてみたけど，まぁ無理でした． いいアイデアあったら教えて．</p>
-<h2 id="おしまい">おしまい</h2>
-<p>次は型検査も試したいですね．</p>
   </div>]]></summary>
 </entry>
 
