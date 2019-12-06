@@ -41,7 +41,7 @@
 <li><a href="https://github.com/matsubara0507/ELaMbda">matsubara0507/ELaMbda - GitHub</a></li>
 </ul>
 <p>また，前回同様に<a href="https://matsubara0507.github.io/ELaMbda/?chap=chap7">Web ブラウザから遊べるようになってます</a>．</p>
-<p><a href="https://matsubara0507.github.io/ELaMbda/?chap=chap7&amp;exp=(\x%20.%20x%20x)%20(\x%20.%20x%20x)"><img src="/assets/tapl-with-elm/chap4.jpg"></img></a></p>
+<p><a href="https://matsubara0507.github.io/ELaMbda/?chap=chap7&amp;exp=(\x%20.%20x%20x)%20(\x%20.%20x%20x)"><img src="/assets/tapl-with-elm/chap7.jpg"></img></a></p>
 <h2 id="第7章-ラムダ計算の-ml-実装">第7章 ラムダ計算の ML 実装</h2>
 <p>さぁいよいよみんな大好き(型なし)ラムダ計算です． ちなみに，ラムダ計算の数理論理学的な議論は5章でしている．</p>
 <h3 id="構文規則">構文規則</h3>
