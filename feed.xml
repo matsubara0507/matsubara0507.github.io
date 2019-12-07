@@ -8,8 +8,162 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2019-12-07T00:00:00Z</updated>
+    <updated>2019-12-08T00:00:00Z</updated>
     <entry>
+    <title>久しぶりに thank_you_stars をビルドする</title>
+    <link href="https://matsubara0507.github.io/posts/2019-12-08-re-create-thank-you-stars-ver-elixir.html" />
+    <id>https://matsubara0507.github.io/posts/2019-12-08-re-create-thank-you-stars-ver-elixir.html</id>
+    <published>2019-12-08T00:00:00Z</published>
+    <updated>2019-12-08T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
+    <p>本記事は「<a href="https://qiita.com/advent-calendar/2019/elixir">Elixir Advent Calendar 2019</a>」の8日目の記事です．</p>
+<h1 id="section"></h1>
+<p>学生の頃アルバイトした時(2年前)に初めて Elixir を触って，その集大成として作った(嘘) OSS をヒッサビッサにビルドチャレンジしてみたという話です．</p>
+<ul>
+<li>OSS: <a href="https://github.com/matsubara0507/thank-you-stars">matsubara0507/thank-you-stars</a> (elixir バージョン)</li>
+<li>当時書いたブログ記事: <a href="https://matsubara0507.github.io/posts/2017-10-01-create-thank-you-stars-ver-elixir.html">Elixir ライブラリにスターを送るツール thank-you-stars を作ってみました - ひげメモ</a></li>
+</ul>
+<h2 id="思い出す">思い出す</h2>
+<p>そもそもどういうプログラムだったかってのは覚えてる． 当時何故か流行ってた，自身のプロジェクトの依存ライブラリに GitHub Star を送る CLI ツールの Elixir 版だ．</p>
+<p>で，こいつはどの環境でビルドしていたのか:</p>
+<ul>
+<li>Elixir のバージョンは多分 1.4 (ref. <a href="https://github.com/matsubara0507/thank-you-stars/blob/v0.1.0/mix.exs">mix.ex</a>)</li>
+<li>Erlang/OTP のバージョン: 多分 19.x？ (手元にあったのがそれ)</li>
+</ul>
+<p>依存パッケージのバージョンを見比べてみてもめっちゃ古いのがわかる． 2年ってすごいんだなぁ．</p>
+<h2 id="最新バージョンに対応する">最新バージョンに対応する</h2>
+<p>まずはここから．</p>
+<h3 id="最新-elixir-erlangotp-のインストール">最新 Elixir &amp; Erlang/OTP のインストール</h3>
+<p>Elixir は長いこと触ってないので，そもそも手元に最新の環境がない． 昔はどうやってたかな，と遠い記憶を辿って見たがおそらく <code>exenv</code> と <code>erlenv</code> を使っていたはず:</p>
+<ul>
+<li><a href="https://github.com/exenv/exenv">exenv/exenv</a></li>
+<li><a href="https://github.com/talentdeficit/erlenv">talentdeficit/erlenv</a> (いつのまにかアーカイブになってるのね)</li>
+</ul>
+<p>それぞれ別の Elixir や Erlang/OTP を取ってくるには <a href="https://github.com/mururu/elixir-build">elixir-build</a> や <a href="https://github.com/matsubara0507/erlang-build">erlang-build</a> を使う． 試しに手元でやってみたら，どうやら v20.x 以降の Erlang/OTP をビルドするには OpenSSL 1.1 を使わないといけないのだが，手元の OS が古くてできない（このためだけに更新したくない）． そして，最新の Elixir を使うには Erlang/OTP の v20.x 以降が必要っぽい． 詰んだ（？）．</p>
+<p>もちろん，今ならもっと他の方法でいろんなバージョンの Elixir や Erlang/OTP をイストールする方法はあるだろう． しかし，できれば手元の環境を汚したくない． ということで Docker に甘えた（ぇ</p>
+<pre><code>$ docker run --rm -v `pwd`:/work -it elixir:1.9.4 /bin/bash -c &quot;cd /work &amp;&amp; mix test&quot;</code></pre>
+<h3 id="依存パケッケージの更新">依存パケッケージの更新</h3>
+<p>とりあえず，Hex で最新のバージョンを取ってきて <code>mix.exs</code> を書き換えた． もちろん，すんなりビルドはできない． しかし，珍しくちゃんとテストを書いていたので，テストしつつ最新のバージョンに<a href="https://github.com/matsubara0507/thank-you-stars/commit/1574a16dec5ea5c7e8a4e39dbae4bf4729e8cfb6">合わせていく</a>:</p>
+<ul>
+<li><a href="https://github.com/CrowdHailer/OK/pull/57"><code>OK.with</code> は使えなくなっているので利用しない書き方に変更</a></li>
+<li><a href="https://github.com/edgurgel/tentacat/pull/132"><code>Tentacat.put</code> の返り値のタプルサイズが変わっていた</a></li>
+<li><a href="https://github.com/devinus/poison/commit/a4208a6252f4e58fbcc8d9fd2f4f64c99e974cc8"><code>Poison.decode</code> のエラーの返り値のタプルサイズが変わった</a></li>
+<li><a href="https://github.com/elixir-lang/elixir/pull/7838"><code>[ &quot;hoge&quot;: 123 ]</code> こういう形式のキーワードハッシュは警告が出るようになった</a></li>
+</ul>
+<p>パターンマッチしてたタプルのサイズが変わるのはきつい．</p>
+<h3 id="mix-format">mix format</h3>
+<p>Elixir 1.6 からフォーマッターがエコシステムに入った． なので <code>mix format</code> をかけてみる．</p>
+<p><code>mix format</code> をかけるには設定ファイル <code>.formatter.exs</code> を置かないと動作しないようだ（珍しい）． なので，公式ドキュメントにあったものをそのまま<a href="https://github.com/matsubara0507/thank-you-stars/commit/700910b927ff1abbd5701a177c83e0671ddffe29">コピペして <code>mix format</code> をかけた</a>．</p>
+<h2 id="github-actions">GitHub Actions</h2>
+<p>最近流行りだからね．</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/thank-you-stars/pull/1">Add GitHub Actions config by matsubara0507 · Pull Request #1 · matsubara0507/thank-you-stars</a></li>
+</ul>
+<p>Elixir や Erlang/OTP のセットアップには <a href="https://github.com/actions/setup-elixir"><code>actions/setup-elixir</code></a> を使う． 色々と試して，最終的なジョブの設定はこんな感じ:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1"></a><span class="co"># ほんとんど actions/elixir-setup の例のまんま</span></span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb2-3"><a href="#cb2-3"></a><span class="at">  </span><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-16.04</span></span>
+<span id="cb2-5"><a href="#cb2-5"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> OTP ${{matrix.otp}} / Elixir ${{matrix.elixir}}</span></span>
+<span id="cb2-6"><a href="#cb2-6"></a></span>
+<span id="cb2-7"><a href="#cb2-7"></a><span class="at">    </span><span class="fu">strategy</span><span class="kw">:</span></span>
+<span id="cb2-8"><a href="#cb2-8"></a><span class="at">      </span><span class="fu">matrix</span><span class="kw">:</span></span>
+<span id="cb2-9"><a href="#cb2-9"></a><span class="at">        </span><span class="fu">otp</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">21.x</span><span class="kw">,</span><span class="at"> 22.x</span><span class="kw">]</span><span class="co">      # 20.x は ubuntu 16,18 には無い様子</span></span>
+<span id="cb2-10"><a href="#cb2-10"></a><span class="at">        </span><span class="fu">elixir</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">1.8.x</span><span class="kw">,</span><span class="at"> 1.9.x</span><span class="kw">]</span></span>
+<span id="cb2-11"><a href="#cb2-11"></a><span class="at">      </span><span class="fu">fail-fast</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co">         # マトリックスのどれかのジョブが落ちても他のジョブは実行をやめない</span></span>
+<span id="cb2-12"><a href="#cb2-12"></a></span>
+<span id="cb2-13"><a href="#cb2-13"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb2-14"><a href="#cb2-14"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v1.0.0</span></span>
+<span id="cb2-15"><a href="#cb2-15"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb2-16"><a href="#cb2-16"></a><span class="at">        </span><span class="fu">fetch-depth</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb2-17"><a href="#cb2-17"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/setup-elixir@v1.0.0</span></span>
+<span id="cb2-18"><a href="#cb2-18"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb2-19"><a href="#cb2-19"></a><span class="at">        </span><span class="fu">otp-version</span><span class="kw">:</span><span class="at"> ${{matrix.otp}}</span></span>
+<span id="cb2-20"><a href="#cb2-20"></a><span class="at">        </span><span class="fu">elixir-version</span><span class="kw">:</span><span class="at"> ${{matrix.elixir}}</span></span>
+<span id="cb2-21"><a href="#cb2-21"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> mix deps.get</span></span>
+<span id="cb2-22"><a href="#cb2-22"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> mix test</span></span></code></pre></div>
+<p><code>mix.exs</code> でどうやって複数の Elixir のバージョンを許容するんだ？と結構調べたけど，単純にボトムのバージョンを <code>elixir: ~&gt; ...</code> で指定すればいいだけだった（普通 <code>&gt;=</code> じゃ無いの．．．）．</p>
+<p>キャッシュの導入も考えたが，たかが数分に入れてもしょうがないなってなってやめた．</p>
+<h2 id="おまけ-依存パケージを減らす大作戦">おまけ: 依存パケージを減らす大作戦</h2>
+<p>依存パッケージがなくなると <code>mix archive.install</code> で入れることができるはず． なので，もともと依存パッケージを無くしてみたかった． 今回，バージョンアップを追うのも大変だったし，せっかくのなので可能な限り減らしてみた:</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/thank-you-stars/pull/2">Remove OK library by matsubara0507 · Pull Request #2 · matsubara0507/thank-you-stars</a></li>
+<li><a href="https://github.com/matsubara0507/thank-you-stars/pull/3">Remove tentacat library by matsubara0507 · Pull Request #3 · matsubara0507/thank-you-stars</a></li>
+<li><a href="https://github.com/matsubara0507/thank-you-stars/pull/4">Remove poison library by matsubara0507 · Pull Request #4 · matsubara0507/thank-you-stars</a></li>
+</ul>
+<p>3/4 減らせました． 残るは鬼門 <code>httpoison</code> だけ． 果たしてできるのか．</p>
+<h3 id="vs.-ok">vs. <code>ok</code></h3>
+<p><code>ok</code> パッケージはいわゆる <code>Either</code> モナドだ． <code>{:ok, hoge} | {:error, fuga}</code> のような型を簡単に扱うためのマクロを提供している．</p>
+<p>これらの型の場合，Elixir の特徴であるパイプ演算子をうまく連結できない． なので，Elm 流に <code>and_then</code> 関数を用意して，それで賄うようにした:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb3-1"><a href="#cb3-1"></a>  <span class="co"># Result a -&gt; (a -&gt; Result b) -&gt; Result b</span></span>
+<span id="cb3-2"><a href="#cb3-2"></a>  <span class="co"># ただし Result a = {:ok, a} | {:error, e}</span></span>
+<span id="cb3-3"><a href="#cb3-3"></a>  <span class="kw">defp</span> and_then({<span class="va">:ok</span>, v}, f), <span class="kw">do</span>: f<span class="op">.</span>(v)</span>
+<span id="cb3-4"><a href="#cb3-4"></a>  <span class="kw">defp</span> and_then(err <span class="op">=</span> {<span class="va">:error</span>, _}, _), <span class="kw">do</span>: err</span>
+<span id="cb3-5"><a href="#cb3-5"></a></span>
+<span id="cb3-6"><a href="#cb3-6"></a>  <span class="co"># 使用例</span></span>
+<span id="cb3-7"><a href="#cb3-7"></a>  <span class="kw">def</span> star_package(package_name, client) <span class="kw">do</span></span>
+<span id="cb3-8"><a href="#cb3-8"></a>    fetch_package_github_url(package_name)</span>
+<span id="cb3-9"><a href="#cb3-9"></a>    <span class="op">|&gt;</span> and_then(<span class="op">&amp;</span>star_github_package(<span class="op">&amp;</span><span class="dv">1</span>, client)) <span class="co"># ココ</span></span>
+<span id="cb3-10"><a href="#cb3-10"></a>    <span class="op">|&gt;</span> <span class="kw">case</span> <span class="kw">do</span></span>
+<span id="cb3-11"><a href="#cb3-11"></a>      {<span class="va">:ok</span>, url} <span class="op">-&gt;</span> <span class="st">&quot;Starred! </span><span class="ot">#{</span>url<span class="ot">}</span><span class="st">&quot;</span></span>
+<span id="cb3-12"><a href="#cb3-12"></a>      {<span class="va">:error</span>, url} <span class="op">-&gt;</span> <span class="st">&quot;Error    </span><span class="ot">#{</span>url<span class="ot">}</span><span class="st">&quot;</span></span>
+<span id="cb3-13"><a href="#cb3-13"></a>    <span class="kw">end</span></span>
+<span id="cb3-14"><a href="#cb3-14"></a>  <span class="kw">end</span></span></code></pre></div>
+<h3 id="vs.-tentacat">vs. <code>tentacat</code></h3>
+<p>単純に HTTP リクエストの PUT を認証付きでしているだけなので，<code>httpoison</code> に書き直した． まぁ面倒を後に丸投げてるだけだが笑</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb4-1"><a href="#cb4-1"></a>  <span class="kw">def</span> star_github_package(url, token) <span class="kw">do</span></span>
+<span id="cb4-2"><a href="#cb4-2"></a>    <span class="cn">URI</span><span class="op">.</span>parse(url)</span>
+<span id="cb4-3"><a href="#cb4-3"></a>    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="va">:path</span>, <span class="st">&quot;&quot;</span>)</span>
+<span id="cb4-4"><a href="#cb4-4"></a>    <span class="op">|&gt;</span> (<span class="op">&amp;</span>put_github_api(<span class="st">&quot;user/starred</span><span class="ot">#{</span><span class="op">&amp;</span><span class="dv">1</span><span class="ot">}</span><span class="st">&quot;</span>, token))<span class="op">.</span>()</span>
+<span id="cb4-5"><a href="#cb4-5"></a>    <span class="op">|&gt;</span> and_then(<span class="op">&amp;</span>map_get_with_ok(<span class="op">&amp;</span><span class="dv">1</span>, <span class="va">:status_code</span>))</span>
+<span id="cb4-6"><a href="#cb4-6"></a>    <span class="op">|&gt;</span> <span class="kw">case</span> <span class="kw">do</span></span>
+<span id="cb4-7"><a href="#cb4-7"></a>      {<span class="va">:ok</span>, <span class="dv">204</span>} <span class="op">-&gt;</span> {<span class="va">:ok</span>, url} <span class="co"># もちろん返り値も変わる</span></span>
+<span id="cb4-8"><a href="#cb4-8"></a>      _ <span class="op">-&gt;</span> {<span class="va">:error</span>, url}</span>
+<span id="cb4-9"><a href="#cb4-9"></a>    <span class="kw">end</span></span>
+<span id="cb4-10"><a href="#cb4-10"></a>  <span class="kw">end</span></span>
+<span id="cb4-11"><a href="#cb4-11"></a></span>
+<span id="cb4-12"><a href="#cb4-12"></a>  <span class="kw">defp</span> put_github_api(path, token) <span class="kw">do</span></span>
+<span id="cb4-13"><a href="#cb4-13"></a>    headers <span class="op">=</span> [{<span class="st">&quot;Authorization&quot;</span>, <span class="st">&quot;token </span><span class="ot">#{</span>token<span class="ot">}</span><span class="st">&quot;</span>}]</span>
+<span id="cb4-14"><a href="#cb4-14"></a>    <span class="cn">HTTPoison</span><span class="op">.</span>put(<span class="st">&quot;https://api.github.com/</span><span class="ot">#{</span>path<span class="ot">}</span><span class="st">&quot;</span>, <span class="st">&quot;&quot;</span>, headers)</span>
+<span id="cb4-15"><a href="#cb4-15"></a>  <span class="kw">end</span></span></code></pre></div>
+<h3 id="vs.-poison">vs. <code>poison</code></h3>
+<p><code>poison</code> は JSON デコーダー・エンコーダーだ． GitHub トークンを設定(JSON)から取得したり，Hex から取得したライブラリの設定(JSON)をパースするのに使う．</p>
+<p>これを無くすにはどうするか．簡単ですね． <strong>JSON パーサーを自作すればいいのです</strong>．</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">defmodule</span> <span class="cn">ThankYouStars</span><span class="op">.</span><span class="cn">JSON</span> <span class="kw">do</span></span>
+<span id="cb5-2"><a href="#cb5-2"></a>  <span class="im">alias</span> <span class="cn">ThankYouStars</span><span class="op">.</span><span class="cn">Result</span>, <span class="va">as:</span> <span class="cn">Result</span></span>
+<span id="cb5-3"><a href="#cb5-3"></a></span>
+<span id="cb5-4"><a href="#cb5-4"></a>  <span class="co"># String をもらって JSON として Map や Bool，List などを返す</span></span>
+<span id="cb5-5"><a href="#cb5-5"></a>  <span class="kw">def</span> decode(str) <span class="kw">do</span></span>
+<span id="cb5-6"><a href="#cb5-6"></a>    match_value(%{<span class="va">rest:</span> <span class="cn">String</span><span class="op">.</span>trim(str), <span class="va">result:</span> %{}})</span>
+<span id="cb5-7"><a href="#cb5-7"></a>    <span class="op">|&gt;</span> <span class="kw">case</span> <span class="kw">do</span></span>
+<span id="cb5-8"><a href="#cb5-8"></a>      {<span class="va">:ok</span>, %{<span class="va">rest:</span> <span class="st">&quot;&quot;</span>, <span class="va">result:</span> result}} <span class="op">-&gt;</span> <span class="cn">Result</span><span class="op">.</span>success(result)</span>
+<span id="cb5-9"><a href="#cb5-9"></a>      {_, %{<span class="va">rest:</span> rest}} <span class="op">-&gt;</span> <span class="cn">Result</span><span class="op">.</span>failure(rest)</span>
+<span id="cb5-10"><a href="#cb5-10"></a>    <span class="kw">end</span></span>
+<span id="cb5-11"><a href="#cb5-11"></a>  <span class="kw">end</span></span>
+<span id="cb5-12"><a href="#cb5-12"></a></span>
+<span id="cb5-13"><a href="#cb5-13"></a>  <span class="kw">defp</span> match_value(stat) <span class="kw">do</span></span>
+<span id="cb5-14"><a href="#cb5-14"></a>    trim_leading(stat)</span>
+<span id="cb5-15"><a href="#cb5-15"></a>    <span class="op">|&gt;</span> match_value_body()</span>
+<span id="cb5-16"><a href="#cb5-16"></a>    <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>map(<span class="op">&amp;</span>trim_leading(<span class="op">&amp;</span><span class="dv">1</span>))</span>
+<span id="cb5-17"><a href="#cb5-17"></a>  <span class="kw">end</span></span>
+<span id="cb5-18"><a href="#cb5-18"></a></span>
+<span id="cb5-19"><a href="#cb5-19"></a>  <span class="co"># 無駄にパターンマッチとパイプを使ってみることにした(Elixir っぽい？)</span></span>
+<span id="cb5-20"><a href="#cb5-20"></a>  <span class="kw">defp</span> match_value_body(stat <span class="op">=</span> %{<span class="va">rest:</span> <span class="st">&quot;true&quot;</span> <span class="op">&lt;&gt;</span> rest}) <span class="kw">do</span></span>
+<span id="cb5-21"><a href="#cb5-21"></a>    <span class="cn">Map</span><span class="op">.</span>put(stat, <span class="va">:result</span>, <span class="cn">true</span>)</span>
+<span id="cb5-22"><a href="#cb5-22"></a>    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>put(<span class="va">:rest</span>, rest)</span>
+<span id="cb5-23"><a href="#cb5-23"></a>    <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>success()</span>
+<span id="cb5-24"><a href="#cb5-24"></a>  <span class="kw">end</span></span>
+<span id="cb5-25"><a href="#cb5-25"></a></span>
+<span id="cb5-26"><a href="#cb5-26"></a>  <span class="op">...</span></span></code></pre></div>
+<p>JSON パーサーは比較的簡単だ(細かいところに目をつぶれば)． なんせ構文の定義が <a href="https://www.json.org/json-en.html">json.org</a> というサイトに書いてあるから． また，テストスイートも <a href="https://github.com/nst/JSONTestSuite">nst/JSONTestSuite</a> というところに置いてある．</p>
+<h1 id="section-1"></h1>
+<p>今回はガッっと一晩で雑に作ったので浮動小数点の <code>e</code> 記法やユニコードのエスケープ記法 <code>\u</code> なんかの実装は無視した（まぁ多分すぐできるけど）． また，Elixir ということで積極的にパターンマッチングとパイプを利用して実装している． 興味がある人は PR を見てください（汚いのでリファクタリングしたい）．</p>
+<p>もう少し細かい紹介は気が向いたらするやもしれない．</p>
+<h2 id="おしまい">おしまい</h2>
+<p><code>httpoison</code> も無くしたいなぁ．</p>
+  </div>]]></summary>
+</entry>
+<entry>
     <title>Elm で作る TaPL のラムダ計算（その２）</title>
     <link href="https://matsubara0507.github.io/posts/2019-12-07-tapl-with-elm-part2.html" />
     <id>https://matsubara0507.github.io/posts/2019-12-07-tapl-with-elm-part2.html</id>
@@ -2100,71 +2254,6 @@ IMAGE               CREATED             CREATED BY                              
 <span id="cb12-15"><a href="#cb12-15"></a>  gcompileElmFields _ <span class="ot">=</span> gcompileElmFields (<span class="dt">Proxy</span> <span class="op">@</span> a) <span class="op">++</span> gcompileElmFields (<span class="dt">Proxy</span> <span class="op">@</span> b)</span></code></pre></div>
 <h2 id="おしまい">おしまい</h2>
 <p>もう少し簡単に解決する方法もあったような気もするけど，Haskell のメタプログラミングを色々味わえたのでまぁいいや． どうせ，僕ぐらいしか使わないだろうし(笑)</p>
-  </div>]]></summary>
-</entry>
-<entry>
-    <title>stack image コマンドなしに Haskell アプリの Docker イメージを作る</title>
-    <link href="https://matsubara0507.github.io/posts/2019-06-10-build-haskell-app-docker-image-without-stack-image-cmd.html" />
-    <id>https://matsubara0507.github.io/posts/2019-06-10-build-haskell-app-docker-image-without-stack-image-cmd.html</id>
-    <published>2019-06-10T00:00:00Z</published>
-    <updated>2019-06-10T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
-    <p>自分は Haskell アプリケーションの Docker イメージを作るのに <code>stack image</code> コマンドを愛用している． しかし悲しいことに <strong>stack v2 からはこの機能が無くなってしまう</strong> のだ． ということで代替方法を考えてみた，というお話．</p>
-<h2 id="tldr">tl;dr</h2>
-<p>matsubara0507/whoami というリポジトリで試したので，その PR を見ると良い:</p>
-<ul>
-<li><a href="https://github.com/matsubara0507/whoami/pull/6">Build docker image without stack image command by matsubara0507 · Pull Request #6 · matsubara0507/whoami</a></li>
-</ul>
-<p>結論としては stack の <code>--local-bin-path</code> オプションと Docker Integration を使って Docker イメージ用の実行ファイルをワークディレクトリに置いて，<code>docker build</code> でコピーしているだけ．</p>
-<h2 id="stack-image-コマンド">stack image コマンド</h2>
-<p>簡単に今は亡き <code>stack image</code> コマンドを説明する． このコマンドは <code>stack image container</code> というサブコマンドにより，stack.yaml の設定を元にして実行ファイルだけを含んだ Docker イメージを作ってくれる． <code>docker</code> コマンドで普通にイメージを作るのと違い，<code>.stack-work</code> のビルドキャッシュをホストマシンのローカルに保存し，利用してくれる． そのおかげで2回目以降のビルドも高速に行える(<code>stack</code> による初回ビルドはとても時間がかかる…)．</p>
-<p>使い方は簡単で，次のようなのを stack.yaml に記述し <code>stack --docker image container</code> とするだけ:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">docker</span><span class="kw">:</span></span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="at">  </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> fpco/stack-build</span></span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="at">  </span><span class="fu">enable</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span id="cb1-4"><a href="#cb1-4"></a><span class="fu">image</span><span class="kw">:</span></span>
-<span id="cb1-5"><a href="#cb1-5"></a><span class="at">  </span><span class="fu">container</span><span class="kw">:</span></span>
-<span id="cb1-6"><a href="#cb1-6"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> matsubara0507/whoami</span></span>
-<span id="cb1-7"><a href="#cb1-7"></a><span class="at">    </span><span class="fu">base</span><span class="kw">:</span><span class="at"> matsubara0507/ubuntu-for-haskell:git</span></span></code></pre></div>
-<p><code>docker</code> の方の設定は Docker Integration と呼ばれるもので，<code>repo</code> で設定したイメージのコンテナ内で stack のビルドをしてくれる(こいつがローカルの <code>.stack-work</code> を利用する)． <code>image</code> の方の設定が <code>stack image</code> の設定で，<code>base</code> が作成するイメージのベースイメージだ． やってることは実行ファイルを <code>.stack-work</code> からコピーしてくるだけで，ベースイメージが Docker Integration のイメージと同じ OS であればちゃんと動作する．</p>
-<h2 id="section"></h2>
-<p>さて，冒頭に書いた通り，<a href="https://github.com/commercialhaskell/stack/blob/c0c6510741a0f3e2f687a4fecf9b0ae625fca12a/ChangeLog.md#v2101-release-candidate"><strong>この機能は stack の新しいバージョンでは無くなってしまう</strong></a>．</p>
-<blockquote>
-<p>Remove the stack image command. With the advent of Docker multistage builds, this functionality is no longer useful. For an example, please see Building Haskell Apps with Docker.</p>
-</blockquote>
-<p>マルチステージビルドができたし，あんまりこれもう便利じゃないよね，とのこと． 代わりに「<a href="https://www.fpcomplete.com/blog/2017/12/building-haskell-apps-with-docker">Building Haskell Apps with Docker</a>」という記事を読むと良いらしい．</p>
-<h2 id="マルチステージビルドする">マルチステージビルドする</h2>
-<p>上記リンクではマルチステージビルドを使えと書いてある． 多分こんな感じ(試してない):</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">FROM</span> fpco/stack-build:lts-13.21 as bin</span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="kw">RUN</span> mkdir -p /root/work</span>
-<span id="cb2-3"><a href="#cb2-3"></a><span class="kw">COPY</span> . /root/work</span>
-<span id="cb2-4"><a href="#cb2-4"></a><span class="kw">RUN</span> cd /root/work &amp;&amp; stack install --system-ghc</span>
-<span id="cb2-5"><a href="#cb2-5"></a></span>
-<span id="cb2-6"><a href="#cb2-6"></a><span class="kw">FROM</span> matsubara0507/ubuntu-for-haskell</span>
-<span id="cb2-7"><a href="#cb2-7"></a><span class="kw">RUN</span> mkdir -p /root/.local/bin &amp;&amp; mkdir -p /root/work</span>
-<span id="cb2-8"><a href="#cb2-8"></a><span class="kw">ENV</span> PATH /root/.local/bin:$PATH</span>
-<span id="cb2-9"><a href="#cb2-9"></a><span class="kw">WORKDIR</span> /root/work</span>
-<span id="cb2-10"><a href="#cb2-10"></a><span class="kw">COPY</span> --from=bin /root/.local/bin /root/.local/bin</span></code></pre></div>
-<p>stack の Docker Integration は残ってるので <code>stack --docker build</code> とすることで Docker コンテナ内でのビルド自体は実行される(これによってローカルにキャッシュが作られる)． 一つ目のステージでは <code>stack install</code> により <code>.stack-work</code> 内の実行ファイルを <code>/root/.local/bin</code> にコピーし，二つ目のステージではさらにこの実行ファイルだけを最終的に作られるイメージにコピーしている． ちなみに，<code>/root/.local/bin</code> は stack が決めてるローカル実行ファイルを置くパスで，<code>stack path</code> で確認できる(OS によって違うはず)．</p>
-<p>でもこれ一つ欠点があって． <code>docker build</code> するときに，肥大化しがちな <code>.stack-work</code> をいちいち上げる必要があるので，だんだん <code>docker build</code> の時間が長くなる(最近作ってたアプリケーションは4GBになってしまって…)． <code>.dockerignore</code> で無視できれば良いのだが，それだと <code>stack insatll</code> できない(<code>.stack-work</code> 内の実行ファイルのパスは resolver や GHC のバージョンなどで変わるので，これをイチイチ <code>.dockerignore</code> に書くのはめんどくさい)．</p>
-<h2 id="local-bin-path-オプション">local-bin-path オプション</h2>
-<p><code>docker build</code> する時は <code>.stack-work</code> を無視したい． じゃぁどうするか． 一つ目のステージでやっているのは既に出来上がった実行ファイルを <code>stack install</code> を使って分かりやすいパスに持ってきてるだけだ． そこで気づく，それを上書きするオプションがあるのではないかと． あった:</p>
-<ul>
-<li><a href="https://github.com/commercialhaskell/stack/issues/730">Specify local-bin-path · Issue #730 · commercialhaskell/stack · GitHub</a></li>
-</ul>
-<p><code>stack --local-bin-path=any_path install</code> とすることで任意のパスに実行ファイルをコピーできる！ 知らなかった． あとはここから <code>docker build</code> で実行ファイルコピーしてくるように Dockerfile を書くだけ:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">FROM</span> matsubara0507/ubuntu-for-haskell</span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">ARG</span> local_bin_path</span>
-<span id="cb3-3"><a href="#cb3-3"></a><span class="kw">RUN</span> mkdir -p /root/.local/bin &amp;&amp; mkdir -p /root/work</span>
-<span id="cb3-4"><a href="#cb3-4"></a><span class="kw">ENV</span> PATH /root/.local/bin:$PATH</span>
-<span id="cb3-5"><a href="#cb3-5"></a><span class="kw">WORKDIR</span> /root/work</span>
-<span id="cb3-6"><a href="#cb3-6"></a><span class="kw">COPY</span> ${local_bin_path} /root/.local/bin</span></code></pre></div>
-<p><code>ARG</code> を使ったので次のように <code>docker build</code> コマンドのオプションで指定する:</p>
-<pre><code>$ stack --local-bin-path=./bin --docker install
-$ docker build -t matsubara0507/whoami . --build-arg local_bin_path=./bin</code></pre>
-<p>いい感じ！ もちろん <code>.dockerignore</code> に <code>.stack-work</code> が書いてあるのでイメージのビルドも速い．</p>
-<h2 id="おしまい">おしまい</h2>
-<p>これで心置き無く新しい stack のバージョンを使うことができる．</p>
   </div>]]></summary>
 </entry>
 
