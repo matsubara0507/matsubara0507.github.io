@@ -8,8 +8,376 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2019-12-10T00:00:00Z</updated>
+    <updated>2019-12-22T00:00:00Z</updated>
     <entry>
+    <title>Elixir による JSON Parser</title>
+    <link href="https://matsubara0507.github.io/posts/2019-12-22-json-parser-using-elixir.html" />
+    <id>https://matsubara0507.github.io/posts/2019-12-22-json-parser-using-elixir.html</id>
+    <published>2019-12-22T00:00:00Z</published>
+    <updated>2019-12-22T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
+    <p>「<a href="https://matsubara0507.github.io/posts/2019-12-08-re-create-thank-you-stars-ver-elixir.html">久しぶりに thank_you_stars をビルドする</a>」の続きというかおまけというかって感じの記事です． この記事の最後で poison を抜いてお手製 JSON パーサーを組み込みました． 綺麗に整えたので記事にまとめる．</p>
+<h2 id="実装する">実装する</h2>
+<p>外部パッケージを使えない縛りなので，完全な Pure Elixir で実装していく．</p>
+<h3 id="result-型">Result 型</h3>
+<p>その前に便利モジュールを作っておく． いわゆる <code>Either</code> 型だ．</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb1-1"><a href="#cb1-1"></a><span class="co"># Result e a = {:error, e} | {:ok, a} のような型を扱う</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">defmodule</span> <span class="cn">ThankYouStars</span><span class="op">.</span><span class="cn">Result</span> <span class="kw">do</span></span>
+<span id="cb1-3"><a href="#cb1-3"></a>  <span class="co"># {:ok, a}, {:error, e} をそのまま返す</span></span>
+<span id="cb1-4"><a href="#cb1-4"></a>  <span class="kw">def</span> success(v), <span class="kw">do</span>: {<span class="va">:ok</span>, v}</span>
+<span id="cb1-5"><a href="#cb1-5"></a>  <span class="kw">def</span> failure(v), <span class="kw">do</span>: {<span class="va">:error</span>, v}</span>
+<span id="cb1-6"><a href="#cb1-6"></a></span>
+<span id="cb1-7"><a href="#cb1-7"></a>  <span class="co"># {:ok, a} だった場合に {:ok, f(a)} を返す (f は a -&gt; b)</span></span>
+<span id="cb1-8"><a href="#cb1-8"></a>  <span class="kw">def</span> map({<span class="va">:ok</span>, v}, f), <span class="kw">do</span>: success(f<span class="op">.</span>(v))</span>
+<span id="cb1-9"><a href="#cb1-9"></a>  <span class="kw">def</span> map(err <span class="op">=</span> {<span class="va">:error</span>, _}, _), <span class="kw">do</span>: err</span>
+<span id="cb1-10"><a href="#cb1-10"></a></span>
+<span id="cb1-11"><a href="#cb1-11"></a>  <span class="co"># {:ok, a} だった場合に f(a) を返す (f は a -&gt; Result e b)</span></span>
+<span id="cb1-12"><a href="#cb1-12"></a>  <span class="kw">def</span> and_then({<span class="va">:ok</span>, v}, f), <span class="kw">do</span>: f<span class="op">.</span>(v)</span>
+<span id="cb1-13"><a href="#cb1-13"></a>  <span class="kw">def</span> and_then(err <span class="op">=</span> {<span class="va">:error</span>, _}, _), <span class="kw">do</span>: err</span>
+<span id="cb1-14"><a href="#cb1-14"></a></span>
+<span id="cb1-15"><a href="#cb1-15"></a>  <span class="co"># {:error, e} だった場合に {:error, f(e)} を返す (f は e -&gt; b)</span></span>
+<span id="cb1-16"><a href="#cb1-16"></a>  <span class="kw">def</span> map_error({<span class="va">:error</span>, e}, f), <span class="kw">do</span>: failure(f<span class="op">.</span>(e))</span>
+<span id="cb1-17"><a href="#cb1-17"></a>  <span class="kw">def</span> map_error(r <span class="op">=</span> {<span class="va">:ok</span>, _}, _), <span class="kw">do</span>: r</span>
+<span id="cb1-18"><a href="#cb1-18"></a><span class="kw">end</span></span></code></pre></div>
+<p>これを作っておくと <code>{:ok, a} | {:error, e}</code> なデータ型をパイプラインと組み合わせて利用できるようになる(実はプリミティブあったりしないよね？)．</p>
+<h3 id="状態のデータ構造">状態のデータ構造</h3>
+<p>シンプルにパース結果と残りの文字列を保存する連想配列を持ち回ることにする:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">defmodule</span> <span class="cn">ThankYouStars</span><span class="op">.</span><span class="cn">JSON</span> <span class="kw">do</span></span>
+<span id="cb2-2"><a href="#cb2-2"></a>  <span class="im">alias</span> <span class="cn">ThankYouStars</span><span class="op">.</span><span class="cn">Result</span>, <span class="va">as:</span> <span class="cn">Result</span></span>
+<span id="cb2-3"><a href="#cb2-3"></a></span>
+<span id="cb2-4"><a href="#cb2-4"></a>  <span class="kw">def</span> decode(str) <span class="kw">do</span></span>
+<span id="cb2-5"><a href="#cb2-5"></a>    init_stat(str)</span>
+<span id="cb2-6"><a href="#cb2-6"></a>    <span class="op">|&gt;</span> match_element() <span class="co"># これがパーサー</span></span>
+<span id="cb2-7"><a href="#cb2-7"></a>    <span class="op">|&gt;</span> <span class="kw">case</span> <span class="kw">do</span></span>
+<span id="cb2-8"><a href="#cb2-8"></a>      <span class="co"># パースが成功した場合 {:ok} かつ残り文字列が空になる想定</span></span>
+<span id="cb2-9"><a href="#cb2-9"></a>      {<span class="va">:ok</span>, %{<span class="va">rest:</span> <span class="st">&quot;&quot;</span>, <span class="va">result:</span> result}} <span class="op">-&gt;</span> <span class="cn">Result</span><span class="op">.</span>success(result)</span>
+<span id="cb2-10"><a href="#cb2-10"></a>      {_, %{<span class="va">rest:</span> rest}} <span class="op">-&gt;</span> <span class="cn">Result</span><span class="op">.</span>failure(rest)</span>
+<span id="cb2-11"><a href="#cb2-11"></a>    <span class="kw">end</span></span>
+<span id="cb2-12"><a href="#cb2-12"></a>  <span class="kw">end</span></span>
+<span id="cb2-13"><a href="#cb2-13"></a></span>
+<span id="cb2-14"><a href="#cb2-14"></a>  <span class="co"># rest が残り文字列で result がパース結果</span></span>
+<span id="cb2-15"><a href="#cb2-15"></a>  <span class="kw">defp</span> init_stat(str), <span class="kw">do</span>: %{<span class="va">rest:</span> str, <span class="va">result:</span> %{}}</span>
+<span id="cb2-16"><a href="#cb2-16"></a></span>
+<span id="cb2-17"><a href="#cb2-17"></a>  <span class="op">...</span></span>
+<span id="cb2-18"><a href="#cb2-18"></a><span class="kw">end</span></span></code></pre></div>
+<p>今回実装する JSON パーサーは最終的に Elixir の連想配列や配列，真偽値や文字列などのプリミティブなデータ型へ変換することとする． なので，初期値として空の連想配列 <code>%{}</code> を渡している．</p>
+<h3 id="json.org">JSON.org</h3>
+<p>JSON の(基本的な)構文定義は <a href="https://json.org">JSON.org</a> に書いてある． ご丁寧に BNF が書いてあるので，これに沿って実装するだけだ． 例えば，こんな感じの BNF が記述されている:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode txt"><code class="sourceCode default"><span id="cb3-1"><a href="#cb3-1"></a>json</span>
+<span id="cb3-2"><a href="#cb3-2"></a>  := element</span>
+<span id="cb3-3"><a href="#cb3-3"></a></span>
+<span id="cb3-4"><a href="#cb3-4"></a>element</span>
+<span id="cb3-5"><a href="#cb3-5"></a>  := ws value ws</span>
+<span id="cb3-6"><a href="#cb3-6"></a></span>
+<span id="cb3-7"><a href="#cb3-7"></a>value</span>
+<span id="cb3-8"><a href="#cb3-8"></a>  := object</span>
+<span id="cb3-9"><a href="#cb3-9"></a>   | array</span>
+<span id="cb3-10"><a href="#cb3-10"></a>   | string</span>
+<span id="cb3-11"><a href="#cb3-11"></a>   | number</span>
+<span id="cb3-12"><a href="#cb3-12"></a>   | &quot;true&quot;</span>
+<span id="cb3-13"><a href="#cb3-13"></a>   | &quot;false&quot;</span>
+<span id="cb3-14"><a href="#cb3-14"></a>   | &quot;null&quot;</span>
+<span id="cb3-15"><a href="#cb3-15"></a></span>
+<span id="cb3-16"><a href="#cb3-16"></a>ws</span>
+<span id="cb3-17"><a href="#cb3-17"></a>  := ... // 空白除去</span></code></pre></div>
+<p>これをパターンマッチを駆使して実装するとこんな感じ:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">defp</span> match_element(stat) <span class="kw">do</span></span>
+<span id="cb4-2"><a href="#cb4-2"></a>  trim_leading(stat) <span class="co"># rest の前方の空白を除去します</span></span>
+<span id="cb4-3"><a href="#cb4-3"></a>  <span class="op">|&gt;</span> match_value()</span>
+<span id="cb4-4"><a href="#cb4-4"></a>  <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>map(<span class="op">&amp;</span>trim_leading(<span class="op">&amp;</span><span class="dv">1</span>))</span>
+<span id="cb4-5"><a href="#cb4-5"></a><span class="kw">end</span></span>
+<span id="cb4-6"><a href="#cb4-6"></a></span>
+<span id="cb4-7"><a href="#cb4-7"></a><span class="co"># match_string や match_array はあとで</span></span>
+<span id="cb4-8"><a href="#cb4-8"></a><span class="kw">defp</span> match_value(%{<span class="va">rest:</span> <span class="st">&quot;true&quot;</span> <span class="op">&lt;&gt;</span> rest}), <span class="kw">do</span>: <span class="cn">Result</span><span class="op">.</span>success(%{<span class="va">result:</span> <span class="cn">true</span>, <span class="va">rest:</span> rest})</span>
+<span id="cb4-9"><a href="#cb4-9"></a><span class="kw">defp</span> match_value(%{<span class="va">rest:</span> <span class="st">&quot;false&quot;</span> <span class="op">&lt;&gt;</span> rest}), <span class="kw">do</span>: <span class="cn">Result</span><span class="op">.</span>success(%{<span class="va">result:</span> <span class="cn">false</span>, <span class="va">rest:</span> rest})</span>
+<span id="cb4-10"><a href="#cb4-10"></a><span class="kw">defp</span> match_value(%{<span class="va">rest:</span> <span class="st">&quot;null&quot;</span> <span class="op">&lt;&gt;</span> rest}), <span class="kw">do</span>: <span class="cn">Result</span><span class="op">.</span>success(%{<span class="va">result:</span> <span class="cn">nil</span>, <span class="va">rest:</span> rest})</span>
+<span id="cb4-11"><a href="#cb4-11"></a><span class="kw">defp</span> match_value(stat <span class="op">=</span> %{<span class="va">rest:</span> <span class="st">&quot;\&quot;&quot;</span> <span class="op">&lt;&gt;</span> _}), <span class="kw">do</span>: match_string(stat)</span>
+<span id="cb4-12"><a href="#cb4-12"></a><span class="kw">defp</span> match_value(stat <span class="op">=</span> %{<span class="va">rest:</span> <span class="st">&quot;[&quot;</span> <span class="op">&lt;&gt;</span> _}), <span class="kw">do</span>: match_array(stat)</span>
+<span id="cb4-13"><a href="#cb4-13"></a><span class="kw">defp</span> match_value(stat <span class="op">=</span> %{<span class="va">rest:</span> <span class="st">&quot;{&quot;</span> <span class="op">&lt;&gt;</span> _}), <span class="kw">do</span>: match_object(stat)</span>
+<span id="cb4-14"><a href="#cb4-14"></a><span class="kw">defp</span> match_value(stat), <span class="kw">do</span>: match_number(stat)</span></code></pre></div>
+<p><code>match_xxx</code> 系の関数は全て前述した <code>Result e a</code> 型を返すイメージ(<code>e</code> も <code>a</code> も前述した状態の連想配列だが)．</p>
+<h3 id="オブジェクトのパース">オブジェクトのパース</h3>
+<p><code>{}</code> で囲まれた連想配列のようなもの，例えば <code>{ &quot;key&quot; : true }</code> がオブジェクトだ:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode txt"><code class="sourceCode default"><span id="cb5-1"><a href="#cb5-1"></a>object</span>
+<span id="cb5-2"><a href="#cb5-2"></a>  := &#39;{&#39; ws &#39;}&#39;</span>
+<span id="cb5-3"><a href="#cb5-3"></a>   | &#39;{&#39; members &#39;}&#39;</span>
+<span id="cb5-4"><a href="#cb5-4"></a></span>
+<span id="cb5-5"><a href="#cb5-5"></a>members</span>
+<span id="cb5-6"><a href="#cb5-6"></a>  := member</span>
+<span id="cb5-7"><a href="#cb5-7"></a>   | member &#39;,&#39; members</span>
+<span id="cb5-8"><a href="#cb5-8"></a></span>
+<span id="cb5-9"><a href="#cb5-9"></a>member</span>
+<span id="cb5-10"><a href="#cb5-10"></a>  := ws string ws &#39;:&#39; element</span>
+<span id="cb5-11"><a href="#cb5-11"></a></span>
+<span id="cb5-12"><a href="#cb5-12"></a>string</span>
+<span id="cb5-13"><a href="#cb5-13"></a>  := ... // 文字列</span></code></pre></div>
+<p>文字列の部分はあとで実装するとして，他の部分だけをパターンマッチとパイプを利用して実装するとこんな感じ:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb6-1"><a href="#cb6-1"></a><span class="co"># parse_when_unmatch_by(stat, char, parser) は</span></span>
+<span id="cb6-2"><a href="#cb6-2"></a><span class="co"># char の文字列にマッチしなければ parser を実行し</span></span>
+<span id="cb6-3"><a href="#cb6-3"></a><span class="co"># マッチした場合は parser を実行せずに stat をそのまま返す</span></span>
+<span id="cb6-4"><a href="#cb6-4"></a><span class="kw">defp</span> match_object(stat) <span class="kw">do</span></span>
+<span id="cb6-5"><a href="#cb6-5"></a>  match_left_par(stat)                               <span class="co"># `{` にマッチ</span></span>
+<span id="cb6-6"><a href="#cb6-6"></a>  <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>map(<span class="op">&amp;</span>trim_leading(<span class="op">&amp;</span><span class="dv">1</span>))                   <span class="co"># 空白除去</span></span>
+<span id="cb6-7"><a href="#cb6-7"></a>  <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>and_then(<span class="op">&amp;</span>update_stat(<span class="op">&amp;</span><span class="dv">1</span>, <span class="va">:result</span>, %{})) <span class="co"># 状態の result を空オブジェクト %{} に更新</span></span>
+<span id="cb6-8"><a href="#cb6-8"></a>  <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>and_then(<span class="op">&amp;</span>parse_when_unmatch_by(<span class="op">&amp;</span><span class="dv">1</span>, <span class="st">&quot;}&quot;</span>, <span class="kw">fn</span> s <span class="op">-&gt;</span> match_members(s) <span class="kw">end</span>))</span>
+<span id="cb6-9"><a href="#cb6-9"></a>  <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>and_then(<span class="op">&amp;</span>match_right_par(<span class="op">&amp;</span><span class="dv">1</span>))           <span class="co"># `}` にマッチ</span></span>
+<span id="cb6-10"><a href="#cb6-10"></a><span class="kw">end</span></span>
+<span id="cb6-11"><a href="#cb6-11"></a></span>
+<span id="cb6-12"><a href="#cb6-12"></a><span class="kw">defp</span> match_members(stat) <span class="kw">do</span></span>
+<span id="cb6-13"><a href="#cb6-13"></a>  match_member(stat)</span>
+<span id="cb6-14"><a href="#cb6-14"></a>  <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>and_then(<span class="op">&amp;</span>match_members_tail(<span class="op">&amp;</span><span class="dv">1</span>))</span>
+<span id="cb6-15"><a href="#cb6-15"></a><span class="kw">end</span></span>
+<span id="cb6-16"><a href="#cb6-16"></a></span>
+<span id="cb6-17"><a href="#cb6-17"></a><span class="co"># match_members_tail は members の再帰処理をする</span></span>
+<span id="cb6-18"><a href="#cb6-18"></a><span class="co"># 先頭が `,` にマッチした時には再帰処理を行い</span></span>
+<span id="cb6-19"><a href="#cb6-19"></a><span class="co"># マッチしない場合は stat をそのまま返す</span></span>
+<span id="cb6-20"><a href="#cb6-20"></a><span class="kw">defp</span> match_members_tail(stat <span class="op">=</span> %{<span class="va">rest:</span> <span class="st">&quot;,&quot;</span> <span class="op">&lt;&gt;</span> rest}) <span class="kw">do</span></span>
+<span id="cb6-21"><a href="#cb6-21"></a>  update_stat(stat, <span class="va">:rest</span>, rest)</span>
+<span id="cb6-22"><a href="#cb6-22"></a>  <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>and_then(<span class="op">&amp;</span>match_members(<span class="op">&amp;</span><span class="dv">1</span>))</span>
+<span id="cb6-23"><a href="#cb6-23"></a><span class="kw">end</span></span>
+<span id="cb6-24"><a href="#cb6-24"></a><span class="kw">defp</span> match_members_tail(stat), <span class="kw">do</span>: <span class="cn">Result</span><span class="op">.</span>success(stat)</span>
+<span id="cb6-25"><a href="#cb6-25"></a></span>
+<span id="cb6-26"><a href="#cb6-26"></a><span class="kw">defp</span> match_member(stat <span class="op">=</span> %{<span class="va">result:</span> prev}) <span class="kw">do</span></span>
+<span id="cb6-27"><a href="#cb6-27"></a>  <span class="co"># 空白を除去してから文字列にマッチさせてみる</span></span>
+<span id="cb6-28"><a href="#cb6-28"></a>  <span class="kw">case</span> match_string(trim_leading(stat)) <span class="kw">do</span></span>
+<span id="cb6-29"><a href="#cb6-29"></a>    {<span class="va">:error</span>, stat} <span class="op">-&gt;</span></span>
+<span id="cb6-30"><a href="#cb6-30"></a>      <span class="cn">Result</span><span class="op">.</span>failure(stat)</span>
+<span id="cb6-31"><a href="#cb6-31"></a></span>
+<span id="cb6-32"><a href="#cb6-32"></a>    <span class="co"># string のパースに成功した場合にのみ，そのパース結果を `key` として残りをパースする</span></span>
+<span id="cb6-33"><a href="#cb6-33"></a>    {<span class="va">:ok</span>, stat <span class="op">=</span> %{<span class="va">result:</span> key}} <span class="op">-&gt;</span></span>
+<span id="cb6-34"><a href="#cb6-34"></a>      trim_leading(stat)</span>
+<span id="cb6-35"><a href="#cb6-35"></a>      <span class="op">|&gt;</span> match_colon() <span class="co"># &#39;:&#39; にマッチ</span></span>
+<span id="cb6-36"><a href="#cb6-36"></a>      <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>and_then(<span class="op">&amp;</span>match_element(<span class="op">&amp;</span><span class="dv">1</span>)) <span class="co">#match_element は前のと同じ</span></span>
+<span id="cb6-37"><a href="#cb6-37"></a>      <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>and_then(<span class="op">&amp;</span>modify_stat(<span class="op">&amp;</span><span class="dv">1</span>, <span class="va">:result</span>, <span class="kw">fn</span> v <span class="op">-&gt;</span> <span class="cn">Map</span><span class="op">.</span>put(prev, key, v) <span class="kw">end</span>))</span>
+<span id="cb6-38"><a href="#cb6-38"></a>  <span class="kw">end</span></span>
+<span id="cb6-39"><a href="#cb6-39"></a><span class="kw">end</span></span></code></pre></div>
+<p><code>update_stat(stat, key, value)</code> は <code>stat</code> の <code>key</code> を <code>value</code> で置き換える関数で，<code>modify_stat(stat, key, func)</code> は <code>stat</code> の <code>key</code> を <code>func</code> で更新する関数だ．</p>
+<p>余談だが，Elixir は(僕が思うに)普通の関数それ自体は第一級では無いが，無名関数 <code>fn args -&gt; ... end</code> は第一級のようだ． <code>&amp;any_function(&amp;1, &amp;2)</code> などとすることで <code>fn arg1 arg2 -&gt; any_function(arg1, arg2) end</code> の糖衣構文になるっぽく，関数を関数の引数に渡す場合はこうするらしい． ただし，この記法は入れ子にできないので，<code>modify_stat</code> や <code>parse_when_unmatch_by</code> では内部の方の関数を <code>fn args -&gt; ... end</code> で直接囲っている(<a href="https://stackoverflow.com/questions/38217426/can-i-nest-anonymous-functions-in-elixir">参照</a>)．</p>
+<h3 id="配列のパース">配列のパース</h3>
+<div class="sourceCode" id="cb7"><pre class="sourceCode txt"><code class="sourceCode default"><span id="cb7-1"><a href="#cb7-1"></a>array</span>
+<span id="cb7-2"><a href="#cb7-2"></a>  := &#39;[&#39; ws &#39;]&#39;</span>
+<span id="cb7-3"><a href="#cb7-3"></a>   | &#39;[&#39; elements &#39;]&#39;</span>
+<span id="cb7-4"><a href="#cb7-4"></a></span>
+<span id="cb7-5"><a href="#cb7-5"></a>elements</span>
+<span id="cb7-6"><a href="#cb7-6"></a>  := element</span>
+<span id="cb7-7"><a href="#cb7-7"></a>   | element &#39;,&#39; elements</span></code></pre></div>
+<p>実は <code>{}</code> が <code>[]</code> になっただけで，だいたいオブジェクトと同じだ:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">defp</span> match_array(stat) <span class="kw">do</span></span>
+<span id="cb8-2"><a href="#cb8-2"></a>  match_left_square(stat)                           <span class="co"># &#39;[&#39; にマッチ</span></span>
+<span id="cb8-3"><a href="#cb8-3"></a>  <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>map(<span class="op">&amp;</span>trim_leading(<span class="op">&amp;</span><span class="dv">1</span>))                  <span class="co"># 空白除去</span></span>
+<span id="cb8-4"><a href="#cb8-4"></a>  <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>and_then(<span class="op">&amp;</span>update_stat(<span class="op">&amp;</span><span class="dv">1</span>, <span class="va">:result</span>, [])) <span class="co"># 状態の result を空配列 [] に更新</span></span>
+<span id="cb8-5"><a href="#cb8-5"></a>  <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>and_then(<span class="op">&amp;</span>parse_when_unmatch_by(<span class="op">&amp;</span><span class="dv">1</span>, <span class="st">&quot;]&quot;</span>, <span class="kw">fn</span> s <span class="op">-&gt;</span> match_elements(s) <span class="kw">end</span>))</span>
+<span id="cb8-6"><a href="#cb8-6"></a>  <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>and_then(<span class="op">&amp;</span>match_right_square(<span class="op">&amp;</span><span class="dv">1</span>))       <span class="co"># &#39;]&#39; にマッチ</span></span>
+<span id="cb8-7"><a href="#cb8-7"></a><span class="kw">end</span></span>
+<span id="cb8-8"><a href="#cb8-8"></a></span>
+<span id="cb8-9"><a href="#cb8-9"></a><span class="kw">defp</span> match_elements(stat <span class="op">=</span> %{<span class="va">result:</span> prev}) <span class="kw">do</span></span>
+<span id="cb8-10"><a href="#cb8-10"></a>  match_element(stat)</span>
+<span id="cb8-11"><a href="#cb8-11"></a>  <span class="co"># ここで状態(配列)の更新をしてる点だけが違う</span></span>
+<span id="cb8-12"><a href="#cb8-12"></a>  <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>and_then(<span class="op">&amp;</span>modify_stat(<span class="op">&amp;</span><span class="dv">1</span>, <span class="va">:result</span>, <span class="kw">fn</span> v <span class="op">-&gt;</span> prev <span class="op">++</span> [v] <span class="kw">end</span>))</span>
+<span id="cb8-13"><a href="#cb8-13"></a>  <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>and_then(<span class="op">&amp;</span>match_elements_tail(<span class="op">&amp;</span><span class="dv">1</span>))</span>
+<span id="cb8-14"><a href="#cb8-14"></a><span class="kw">end</span></span>
+<span id="cb8-15"><a href="#cb8-15"></a></span>
+<span id="cb8-16"><a href="#cb8-16"></a><span class="kw">defp</span> match_elements_tail(stat <span class="op">=</span> %{<span class="va">rest:</span> <span class="st">&quot;,&quot;</span> <span class="op">&lt;&gt;</span> rest}) <span class="kw">do</span></span>
+<span id="cb8-17"><a href="#cb8-17"></a>  update_stat(stat, <span class="va">:rest</span>, rest)</span>
+<span id="cb8-18"><a href="#cb8-18"></a>  <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>and_then(<span class="op">&amp;</span>match_elements(<span class="op">&amp;</span><span class="dv">1</span>))</span>
+<span id="cb8-19"><a href="#cb8-19"></a><span class="kw">end</span></span>
+<span id="cb8-20"><a href="#cb8-20"></a><span class="kw">defp</span> match_elements_tail(stat), <span class="kw">do</span>: <span class="cn">Result</span><span class="op">.</span>success(stat)</span></code></pre></div>
+<h3 id="文字列のパース">文字列のパース</h3>
+<p>さぁこっからが大変． 文字列内でのエスケープをそれっぽく処理する必要がある:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">defp</span> match_string(stat) <span class="kw">do</span></span>
+<span id="cb9-2"><a href="#cb9-2"></a>  match_double_quote(stat)                          <span class="co"># &#39;&quot;&#39; にマッチ</span></span>
+<span id="cb9-3"><a href="#cb9-3"></a>  <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>and_then(<span class="op">&amp;</span>update_stat(<span class="op">&amp;</span><span class="dv">1</span>, <span class="va">:result</span>, <span class="st">&quot;&quot;</span>)) <span class="co"># 状態の result を空文字列 &quot;&quot; に更新</span></span>
+<span id="cb9-4"><a href="#cb9-4"></a>  <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>and_then(<span class="op">&amp;</span>match_characters(<span class="op">&amp;</span><span class="dv">1</span>))</span>
+<span id="cb9-5"><a href="#cb9-5"></a>  <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>and_then(<span class="op">&amp;</span>match_double_quote(<span class="op">&amp;</span><span class="dv">1</span>))       <span class="co"># &#39;&quot;&#39; にマッチ</span></span>
+<span id="cb9-6"><a href="#cb9-6"></a><span class="kw">end</span></span>
+<span id="cb9-7"><a href="#cb9-7"></a></span>
+<span id="cb9-8"><a href="#cb9-8"></a><span class="co"># どう見ても成功じゃ無いがどーせ後々エラーになるので...</span></span>
+<span id="cb9-9"><a href="#cb9-9"></a><span class="kw">defp</span> match_characters(stat <span class="op">=</span> %{<span class="va">rest:</span> <span class="st">&quot;&quot;</span>}), <span class="kw">do</span>: <span class="cn">Result</span><span class="op">.</span>success(stat)</span>
+<span id="cb9-10"><a href="#cb9-10"></a></span>
+<span id="cb9-11"><a href="#cb9-11"></a><span class="co"># &#39;&quot;&#39; にマッチしたら終わり</span></span>
+<span id="cb9-12"><a href="#cb9-12"></a><span class="kw">defp</span> match_characters(stat <span class="op">=</span> %{<span class="va">rest:</span> <span class="st">&quot;\&quot;&quot;</span> <span class="op">&lt;&gt;</span> _}), <span class="kw">do</span>: <span class="cn">Result</span><span class="op">.</span>success(stat)</span>
+<span id="cb9-13"><a href="#cb9-13"></a><span class="kw">defp</span> match_characters(stat) <span class="kw">do</span></span>
+<span id="cb9-14"><a href="#cb9-14"></a>  <span class="co"># &quot;\&quot; はエスケープ文字として処理する必要があるのでまずはそれ以外</span></span>
+<span id="cb9-15"><a href="#cb9-15"></a>  parse_when_unmatch_by(stat, <span class="st">&quot;\\&quot;</span>, <span class="op">&amp;</span>match_noescape_characters(<span class="op">&amp;</span><span class="dv">1</span>))</span>
+<span id="cb9-16"><a href="#cb9-16"></a>  <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>and_then(<span class="op">&amp;</span>match_escape(<span class="op">&amp;</span><span class="dv">1</span>))     <span class="co"># 次にエスケープ文字の処理</span></span>
+<span id="cb9-17"><a href="#cb9-17"></a>  <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>and_then(<span class="op">&amp;</span>match_characters(<span class="op">&amp;</span><span class="dv">1</span>)) <span class="co"># 再帰する</span></span>
+<span id="cb9-18"><a href="#cb9-18"></a><span class="kw">end</span></span></code></pre></div>
+<p>関数名の通り，<code>match_noescape_characters</code> がエスケープ文字以外のパーサーで，<code>match_escape</code> がエスケープ文字のパーサーだ． <code>match_noescape_characters</code> ではまず <code>\</code> や <code>&quot;</code> を含まない文字列をマッチさせたい． しかし，パターンマッチは exclude なマッチはできないので，あんまり良く無いが正規表現でサボることにする:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb10-1"><a href="#cb10-1"></a><span class="co"># エスケープされてない文字はダメっぽい</span></span>
+<span id="cb10-2"><a href="#cb10-2"></a><span class="kw">defp</span> match_noescape_characters(stat <span class="op">=</span> %{<span class="va">rest:</span> <span class="st">&quot;\n&quot;</span> <span class="op">&lt;&gt;</span> _}), <span class="kw">do</span>: <span class="cn">Result</span><span class="op">.</span>failure(stat)</span>
+<span id="cb10-3"><a href="#cb10-3"></a><span class="kw">defp</span> match_noescape_characters(stat <span class="op">=</span> %{<span class="va">rest:</span> <span class="st">&quot;\t&quot;</span> <span class="op">&lt;&gt;</span> _}), <span class="kw">do</span>: <span class="cn">Result</span><span class="op">.</span>failure(stat)</span>
+<span id="cb10-4"><a href="#cb10-4"></a><span class="kw">defp</span> match_noescape_characters(stat <span class="op">=</span> %{<span class="va">rest:</span> <span class="st">&quot;\u0000&quot;</span> <span class="op">&lt;&gt;</span> _}), <span class="kw">do</span>: <span class="cn">Result</span><span class="op">.</span>failure(stat)</span>
+<span id="cb10-5"><a href="#cb10-5"></a></span>
+<span id="cb10-6"><a href="#cb10-6"></a><span class="kw">defp</span> match_noescape_characters(stat <span class="op">=</span> %{<span class="va">result:</span> prev}) <span class="kw">do</span></span>
+<span id="cb10-7"><a href="#cb10-7"></a>  <span class="co"># 名前付きキャプチャ，便利</span></span>
+<span id="cb10-8"><a href="#cb10-8"></a>  %{<span class="st">&quot;body&quot;</span> <span class="op">=&gt;</span> body, <span class="st">&quot;rest&quot;</span> <span class="op">=&gt;</span> rest} <span class="op">=</span></span>
+<span id="cb10-9"><a href="#cb10-9"></a>    <span class="cn">Regex</span><span class="op">.</span>named_captures(<span class="op">~</span>r<span class="op">/</span>(?<span class="op">&lt;</span>body<span class="op">&gt;</span>[<span class="op">^</span>\\\<span class="st">&quot;\n\x00\t]*)(?&lt;rest&gt;.*)/s, stat[:rest])</span></span>
+<span id="cb10-10"><a href="#cb10-10"></a></span>
+<span id="cb10-11"><a href="#cb10-11"></a><span class="st">  update_stat(%{result: prev &lt;&gt; body}, :rest, rest)</span></span>
+<span id="cb10-12"><a href="#cb10-12"></a><span class="st">end</span></span></code></pre></div>
+<p>エスケープ文字は，もうパターンマッチで頑張る:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb11-1"><a href="#cb11-1"></a><span class="kw">defp</span> match_escape(%{<span class="va">rest:</span> <span class="st">&quot;\\\&quot;&quot;</span> <span class="op">&lt;&gt;</span> rest, <span class="va">result:</span> prev}),</span>
+<span id="cb11-2"><a href="#cb11-2"></a>  <span class="kw">do</span>: update_stat(%{<span class="va">result:</span> prev <span class="op">&lt;&gt;</span> <span class="st">&quot;\&quot;&quot;</span>}, <span class="va">:rest</span>, rest)</span>
+<span id="cb11-3"><a href="#cb11-3"></a></span>
+<span id="cb11-4"><a href="#cb11-4"></a><span class="kw">defp</span> match_escape(%{<span class="va">rest:</span> <span class="st">&quot;\\\\&quot;</span> <span class="op">&lt;&gt;</span> rest, <span class="va">result:</span> prev}),</span>
+<span id="cb11-5"><a href="#cb11-5"></a>  <span class="kw">do</span>: update_stat(%{<span class="va">result:</span> prev <span class="op">&lt;&gt;</span> <span class="st">&quot;\\&quot;</span>}, <span class="va">:rest</span>, rest)</span>
+<span id="cb11-6"><a href="#cb11-6"></a></span>
+<span id="cb11-7"><a href="#cb11-7"></a><span class="kw">defp</span> match_escape(%{<span class="va">rest:</span> <span class="st">&quot;\\\/&quot;</span> <span class="op">&lt;&gt;</span> rest, <span class="va">result:</span> prev}),</span>
+<span id="cb11-8"><a href="#cb11-8"></a>  <span class="kw">do</span>: update_stat(%{<span class="va">result:</span> prev <span class="op">&lt;&gt;</span> <span class="st">&quot;\/&quot;</span>}, <span class="va">:rest</span>, rest)</span>
+<span id="cb11-9"><a href="#cb11-9"></a></span>
+<span id="cb11-10"><a href="#cb11-10"></a><span class="kw">defp</span> match_escape(%{<span class="va">rest:</span> <span class="st">&quot;\\b&quot;</span> <span class="op">&lt;&gt;</span> rest, <span class="va">result:</span> prev}),</span>
+<span id="cb11-11"><a href="#cb11-11"></a>  <span class="kw">do</span>: update_stat(%{<span class="va">result:</span> prev <span class="op">&lt;&gt;</span> <span class="st">&quot;\b&quot;</span>}, <span class="va">:rest</span>, rest)</span>
+<span id="cb11-12"><a href="#cb11-12"></a></span>
+<span id="cb11-13"><a href="#cb11-13"></a><span class="kw">defp</span> match_escape(%{<span class="va">rest:</span> <span class="st">&quot;\\f&quot;</span> <span class="op">&lt;&gt;</span> rest, <span class="va">result:</span> prev}),</span>
+<span id="cb11-14"><a href="#cb11-14"></a>  <span class="kw">do</span>: update_stat(%{<span class="va">result:</span> prev <span class="op">&lt;&gt;</span> <span class="st">&quot;\f&quot;</span>}, <span class="va">:rest</span>, rest)</span>
+<span id="cb11-15"><a href="#cb11-15"></a></span>
+<span id="cb11-16"><a href="#cb11-16"></a><span class="kw">defp</span> match_escape(%{<span class="va">rest:</span> <span class="st">&quot;\\n&quot;</span> <span class="op">&lt;&gt;</span> rest, <span class="va">result:</span> prev}),</span>
+<span id="cb11-17"><a href="#cb11-17"></a>  <span class="kw">do</span>: update_stat(%{<span class="va">result:</span> prev <span class="op">&lt;&gt;</span> <span class="st">&quot;\n&quot;</span>}, <span class="va">:rest</span>, rest)</span>
+<span id="cb11-18"><a href="#cb11-18"></a></span>
+<span id="cb11-19"><a href="#cb11-19"></a><span class="kw">defp</span> match_escape(%{<span class="va">rest:</span> <span class="st">&quot;\\r&quot;</span> <span class="op">&lt;&gt;</span> rest, <span class="va">result:</span> prev}),</span>
+<span id="cb11-20"><a href="#cb11-20"></a>  <span class="kw">do</span>: update_stat(%{<span class="va">result:</span> prev <span class="op">&lt;&gt;</span> <span class="st">&quot;\r&quot;</span>}, <span class="va">:rest</span>, rest)</span>
+<span id="cb11-21"><a href="#cb11-21"></a></span>
+<span id="cb11-22"><a href="#cb11-22"></a><span class="kw">defp</span> match_escape(%{<span class="va">rest:</span> <span class="st">&quot;\\t&quot;</span> <span class="op">&lt;&gt;</span> rest, <span class="va">result:</span> prev}),</span>
+<span id="cb11-23"><a href="#cb11-23"></a>  <span class="kw">do</span>: update_stat(%{<span class="va">result:</span> prev <span class="op">&lt;&gt;</span> <span class="st">&quot;\t&quot;</span>}, <span class="va">:rest</span>, rest)</span>
+<span id="cb11-24"><a href="#cb11-24"></a></span>
+<span id="cb11-25"><a href="#cb11-25"></a><span class="co"># \u1234 とかいうやつ</span></span>
+<span id="cb11-26"><a href="#cb11-26"></a><span class="kw">defp</span> match_escape(stat <span class="op">=</span> %{<span class="va">rest:</span> <span class="st">&quot;\\u&quot;</span> <span class="op">&lt;&gt;</span> rest, <span class="va">result:</span> prev}) <span class="kw">do</span></span>
+<span id="cb11-27"><a href="#cb11-27"></a>  <span class="co"># /.{n,m}/ で n 個以上 m 個以下にマッチする</span></span>
+<span id="cb11-28"><a href="#cb11-28"></a>  <span class="kw">case</span> <span class="cn">Regex</span><span class="op">.</span>named_captures(<span class="op">~</span>r<span class="op">/</span>(?<span class="op">&lt;</span>body<span class="op">&gt;</span>[\dA<span class="op">-</span><span class="cn">Fa</span><span class="op">-</span>f]{<span class="dv">4</span>,<span class="dv">4</span>})(?<span class="op">&lt;</span>rest<span class="op">&gt;.*</span>)<span class="op">/</span>s, rest) <span class="kw">do</span></span>
+<span id="cb11-29"><a href="#cb11-29"></a>    %{<span class="st">&quot;body&quot;</span> <span class="op">=&gt;</span> body, <span class="st">&quot;rest&quot;</span> <span class="op">=&gt;</span> rest} <span class="op">-&gt;</span></span>
+<span id="cb11-30"><a href="#cb11-30"></a>      <span class="co"># 4桁の16進数をエスケープされた文字列として変換する</span></span>
+<span id="cb11-31"><a href="#cb11-31"></a>      <span class="co"># 変換できなかった場合は nil が返ってくる</span></span>
+<span id="cb11-32"><a href="#cb11-32"></a>      <span class="kw">case</span> hex_to_string(body) <span class="kw">do</span></span>
+<span id="cb11-33"><a href="#cb11-33"></a>        <span class="cn">nil</span> <span class="op">-&gt;</span> <span class="cn">Result</span><span class="op">.</span>failure(stat)</span>
+<span id="cb11-34"><a href="#cb11-34"></a>        hex <span class="op">-&gt;</span> update_stat(%{<span class="va">result:</span> prev <span class="op">&lt;&gt;</span> hex}, <span class="va">:rest</span>, rest)</span>
+<span id="cb11-35"><a href="#cb11-35"></a>      <span class="kw">end</span></span>
+<span id="cb11-36"><a href="#cb11-36"></a></span>
+<span id="cb11-37"><a href="#cb11-37"></a>    _ <span class="op">-&gt;</span></span>
+<span id="cb11-38"><a href="#cb11-38"></a>      <span class="cn">Result</span><span class="op">.</span>failure(stat)</span>
+<span id="cb11-39"><a href="#cb11-39"></a>  <span class="kw">end</span></span>
+<span id="cb11-40"><a href="#cb11-40"></a><span class="kw">end</span></span>
+<span id="cb11-41"><a href="#cb11-41"></a></span>
+<span id="cb11-42"><a href="#cb11-42"></a><span class="kw">defp</span> hex_to_string(str) <span class="kw">do</span></span>
+<span id="cb11-43"><a href="#cb11-43"></a>  <span class="cf">try</span> <span class="kw">do</span></span>
+<span id="cb11-44"><a href="#cb11-44"></a>    <span class="co"># 文字列を16進数として int 型に変換</span></span>
+<span id="cb11-45"><a href="#cb11-45"></a>    {hex, _} <span class="op">=</span> <span class="cn">Integer</span><span class="op">.</span>parse(str, <span class="dv">16</span>)</span>
+<span id="cb11-46"><a href="#cb11-46"></a>    <span class="op">&lt;&lt;</span><span class="va">hex::utf8</span><span class="op">&gt;&gt;</span> <span class="co"># こういう記法で int を16進数でエスケープされた文字列に変換できる</span></span>
+<span id="cb11-47"><a href="#cb11-47"></a>  <span class="cf">rescue</span></span>
+<span id="cb11-48"><a href="#cb11-48"></a>    _ <span class="op">-&gt;</span> <span class="cn">nil</span></span>
+<span id="cb11-49"><a href="#cb11-49"></a>  <span class="kw">end</span></span>
+<span id="cb11-50"><a href="#cb11-50"></a><span class="kw">end</span></span></code></pre></div>
+<p>まぁ正直，色々と雑で漏れてるケースもきっとあるのだが，そんな変な JSON をパースしたいわけでは無いのでこれでいいかな．</p>
+<h3 id="数値のパース">数値のパース</h3>
+<p>数値は，マイナス符号・整数・浮動小数点数・<code>e</code>記法を網羅する必要がある． これも，めんどくさいので正規表現に頼っちゃう:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">defp</span> match_number(stat) <span class="kw">do</span></span>
+<span id="cb12-2"><a href="#cb12-2"></a>  {value, rest} <span class="op">=</span> compile_number(stat[<span class="va">:rest</span>])</span>
+<span id="cb12-3"><a href="#cb12-3"></a></span>
+<span id="cb12-4"><a href="#cb12-4"></a>  <span class="co"># 文字列から数値を取得できなかった場合は nil が返ってくる</span></span>
+<span id="cb12-5"><a href="#cb12-5"></a>  <span class="kw">case</span> value <span class="kw">do</span></span>
+<span id="cb12-6"><a href="#cb12-6"></a>    <span class="cn">nil</span> <span class="op">-&gt;</span></span>
+<span id="cb12-7"><a href="#cb12-7"></a>      <span class="cn">Result</span><span class="op">.</span>failure(stat)</span>
+<span id="cb12-8"><a href="#cb12-8"></a></span>
+<span id="cb12-9"><a href="#cb12-9"></a>    _ <span class="op">-&gt;</span></span>
+<span id="cb12-10"><a href="#cb12-10"></a>      <span class="cn">Map</span><span class="op">.</span>put(stat, <span class="va">:result</span>, value)</span>
+<span id="cb12-11"><a href="#cb12-11"></a>      <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>put(<span class="va">:rest</span>, rest)</span>
+<span id="cb12-12"><a href="#cb12-12"></a>      <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>success()</span>
+<span id="cb12-13"><a href="#cb12-13"></a>  <span class="kw">end</span></span>
+<span id="cb12-14"><a href="#cb12-14"></a><span class="kw">end</span></span>
+<span id="cb12-15"><a href="#cb12-15"></a></span>
+<span id="cb12-16"><a href="#cb12-16"></a><span class="kw">def</span> compile_number(str) <span class="kw">do</span></span>
+<span id="cb12-17"><a href="#cb12-17"></a>  <span class="co"># 名前付きキャプチャ，超便利</span></span>
+<span id="cb12-18"><a href="#cb12-18"></a>  <span class="co"># minus は `-`，digit は整数部，frac は小数点以下，exp は `e`記法 (`10e-2`とか)</span></span>
+<span id="cb12-19"><a href="#cb12-19"></a>  %{<span class="st">&quot;minus&quot;</span> <span class="op">=&gt;</span> minus, <span class="st">&quot;digit&quot;</span> <span class="op">=&gt;</span> digit, <span class="st">&quot;frac&quot;</span> <span class="op">=&gt;</span> frac, <span class="st">&quot;exp&quot;</span> <span class="op">=&gt;</span> exp, <span class="st">&quot;rest&quot;</span> <span class="op">=&gt;</span> rest} <span class="op">=</span></span>
+<span id="cb12-20"><a href="#cb12-20"></a>    <span class="cn">Regex</span><span class="op">.</span>named_captures(</span>
+<span id="cb12-21"><a href="#cb12-21"></a>      <span class="op">~</span>r<span class="op">/</span>(?<span class="op">&lt;</span>minus<span class="op">&gt;-</span>?)(?<span class="op">&lt;</span>digit<span class="op">&gt;</span>[[<span class="va">:digit</span>:]]<span class="op">*</span>)(?<span class="op">&lt;</span>frac<span class="op">&gt;</span>\<span class="op">.</span>?[[<span class="va">:digit</span>:]]<span class="op">*</span>)(?<span class="op">&lt;</span>exp<span class="op">&gt;</span>[eE]?[<span class="op">-+</span>]?[[<span class="va">:digit</span>:]]<span class="op">*</span>)(?<span class="op">&lt;</span>rest<span class="op">&gt;.*</span>)<span class="op">/</span>s,</span>
+<span id="cb12-22"><a href="#cb12-22"></a>      str</span>
+<span id="cb12-23"><a href="#cb12-23"></a>    )</span>
+<span id="cb12-24"><a href="#cb12-24"></a></span>
+<span id="cb12-25"><a href="#cb12-25"></a>  value <span class="op">=</span></span>
+<span id="cb12-26"><a href="#cb12-26"></a>    <span class="kw">case</span> {digit, frac, exp} <span class="kw">do</span></span>
+<span id="cb12-27"><a href="#cb12-27"></a>      {<span class="st">&quot;&quot;</span>, _, _} <span class="op">-&gt;</span></span>
+<span id="cb12-28"><a href="#cb12-28"></a>        <span class="cn">nil</span> <span class="co"># 整数部が無い場合はダメ</span></span>
+<span id="cb12-29"><a href="#cb12-29"></a></span>
+<span id="cb12-30"><a href="#cb12-30"></a>      {<span class="st">&quot;0&quot;</span> <span class="op">&lt;&gt;</span> num, <span class="st">&quot;&quot;</span>, <span class="st">&quot;&quot;</span>} <span class="kw">when</span> num<span class="op"> !=</span> <span class="st">&quot;&quot;</span> <span class="op">-&gt;</span></span>
+<span id="cb12-31"><a href="#cb12-31"></a>        <span class="cn">nil</span> <span class="co"># 0 から始まる整数もダメ(小数はOK)</span></span>
+<span id="cb12-32"><a href="#cb12-32"></a></span>
+<span id="cb12-33"><a href="#cb12-33"></a>      {_, <span class="st">&quot;.&quot;</span> <span class="op">&lt;&gt;</span> num, _} <span class="kw">when</span> num <span class="op">==</span> <span class="st">&quot;&quot;</span> <span class="op">-&gt;</span></span>
+<span id="cb12-34"><a href="#cb12-34"></a>        <span class="cn">nil</span> <span class="co"># 小数点だけはダメ</span></span>
+<span id="cb12-35"><a href="#cb12-35"></a></span>
+<span id="cb12-36"><a href="#cb12-36"></a>      {_, _, <span class="st">&quot;e&quot;</span> <span class="op">&lt;&gt;</span> num} <span class="kw">when</span> num <span class="op">==</span> <span class="st">&quot;&quot;</span> <span class="op">-&gt;</span></span>
+<span id="cb12-37"><a href="#cb12-37"></a>        <span class="cn">nil</span> <span class="co"># e だけはダメ</span></span>
+<span id="cb12-38"><a href="#cb12-38"></a></span>
+<span id="cb12-39"><a href="#cb12-39"></a>      {_, _, <span class="st">&quot;E&quot;</span> <span class="op">&lt;&gt;</span> num} <span class="kw">when</span> num <span class="op">==</span> <span class="st">&quot;&quot;</span> <span class="op">-&gt;</span></span>
+<span id="cb12-40"><a href="#cb12-40"></a>        <span class="cn">nil</span> <span class="co"># E だけはダメ</span></span>
+<span id="cb12-41"><a href="#cb12-41"></a></span>
+<span id="cb12-42"><a href="#cb12-42"></a>      {_, <span class="st">&quot;&quot;</span>, <span class="st">&quot;&quot;</span>} <span class="op">-&gt;</span> <span class="co"># これは整数の場合</span></span>
+<span id="cb12-43"><a href="#cb12-43"></a>        <span class="kw">case</span> <span class="cn">Integer</span><span class="op">.</span>parse(minus <span class="op">&lt;&gt;</span> digit) <span class="kw">do</span></span>
+<span id="cb12-44"><a href="#cb12-44"></a>          {num, <span class="st">&quot;&quot;</span>} <span class="op">-&gt;</span> num</span>
+<span id="cb12-45"><a href="#cb12-45"></a>          _ <span class="op">-&gt;</span> <span class="cn">nil</span></span>
+<span id="cb12-46"><a href="#cb12-46"></a>        <span class="kw">end</span></span>
+<span id="cb12-47"><a href="#cb12-47"></a></span>
+<span id="cb12-48"><a href="#cb12-48"></a>      _ <span class="op">-&gt;</span> <span class="co"># これは浮動小数点数の場合</span></span>
+<span id="cb12-49"><a href="#cb12-49"></a>        <span class="kw">case</span> <span class="cn">Float</span><span class="op">.</span>parse(minus <span class="op">&lt;&gt;</span> digit <span class="op">&lt;&gt;</span> frac <span class="op">&lt;&gt;</span> exp) <span class="kw">do</span></span>
+<span id="cb12-50"><a href="#cb12-50"></a>          {num, <span class="st">&quot;&quot;</span>} <span class="op">-&gt;</span> num</span>
+<span id="cb12-51"><a href="#cb12-51"></a>          _ <span class="op">-&gt;</span> <span class="cn">nil</span></span>
+<span id="cb12-52"><a href="#cb12-52"></a>        <span class="kw">end</span></span>
+<span id="cb12-53"><a href="#cb12-53"></a>    <span class="kw">end</span></span>
+<span id="cb12-54"><a href="#cb12-54"></a></span>
+<span id="cb12-55"><a href="#cb12-55"></a>  {value, rest}</span>
+<span id="cb12-56"><a href="#cb12-56"></a><span class="kw">end</span></span></code></pre></div>
+<p>これでとりあえず完成．</p>
+<h2 id="テストする">テストする</h2>
+<p>JSON のテストスイートとして <a href="https://github.com/nst/JSONTestSuite">nst/JSONTestSuite</a> と言うのがあるので使わせてもらう． こんな感じに配置する:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode txt"><code class="sourceCode default"><span id="cb13-1"><a href="#cb13-1"></a>\</span>
+<span id="cb13-2"><a href="#cb13-2"></a>|- lib // elixir のコード置き場</span>
+<span id="cb13-3"><a href="#cb13-3"></a>|- test</span>
+<span id="cb13-4"><a href="#cb13-4"></a>|  |- fixture</span>
+<span id="cb13-5"><a href="#cb13-5"></a>|  |  \- test_parsing // JSONTestSuite のテスト用 JSON ファイル群</span>
+<span id="cb13-6"><a href="#cb13-6"></a>|  \- json_spec.exs</span>
+<span id="cb13-7"><a href="#cb13-7"></a>\- mix.exs</span></code></pre></div>
+<p>テストには espec を使ってこんな感じに記述した:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb14-1"><a href="#cb14-1"></a><span class="co"># json_spec.exs</span></span>
+<span id="cb14-2"><a href="#cb14-2"></a><span class="kw">defmodule</span> <span class="cn">JSONSuite</span> <span class="kw">do</span></span>
+<span id="cb14-3"><a href="#cb14-3"></a>  <span class="kw">def</span> test_suite <span class="kw">do</span></span>
+<span id="cb14-4"><a href="#cb14-4"></a>    [</span>
+<span id="cb14-5"><a href="#cb14-5"></a>      <span class="co"># エラーケース</span></span>
+<span id="cb14-6"><a href="#cb14-6"></a>      {<span class="st">&quot;n_array_1_true_without_comma.json&quot;</span>, {<span class="va">:error</span>, <span class="cn">nil</span>}},</span>
+<span id="cb14-7"><a href="#cb14-7"></a>      {<span class="st">&quot;n_array_a_invalid_utf8.json&quot;</span>, {<span class="va">:error</span>, <span class="cn">nil</span>}},</span>
+<span id="cb14-8"><a href="#cb14-8"></a>      <span class="op">...</span></span>
+<span id="cb14-9"><a href="#cb14-9"></a>      <span class="co"># 成功ケース</span></span>
+<span id="cb14-10"><a href="#cb14-10"></a>      {<span class="st">&quot;y_array_arraysWithSpaces.json&quot;</span>, {<span class="va">:ok</span>, [[]]}},</span>
+<span id="cb14-11"><a href="#cb14-11"></a>      {<span class="st">&quot;y_array_empty-string.json&quot;</span>, {<span class="va">:ok</span>, [<span class="st">&quot;&quot;</span>]}},</span>
+<span id="cb14-12"><a href="#cb14-12"></a>      <span class="op">...</span></span>
+<span id="cb14-13"><a href="#cb14-13"></a>    ]</span>
+<span id="cb14-14"><a href="#cb14-14"></a>  <span class="kw">end</span></span>
+<span id="cb14-15"><a href="#cb14-15"></a><span class="kw">end</span></span>
+<span id="cb14-16"><a href="#cb14-16"></a></span>
+<span id="cb14-17"><a href="#cb14-17"></a><span class="co"># JSONSuite を先に宣言しないと使えなかった</span></span>
+<span id="cb14-18"><a href="#cb14-18"></a><span class="kw">defmodule</span> <span class="cn">JSONSpec</span> <span class="kw">do</span></span>
+<span id="cb14-19"><a href="#cb14-19"></a>  <span class="im">use</span> <span class="cn">ESpec</span></span>
+<span id="cb14-20"><a href="#cb14-20"></a>  <span class="im">alias</span> <span class="cn">ThankYouStars</span><span class="op">.</span><span class="cn">JSON</span>, <span class="va">as:</span> <span class="cn">JSON</span></span>
+<span id="cb14-21"><a href="#cb14-21"></a>  <span class="im">alias</span> <span class="cn">ThankYouStars</span><span class="op">.</span><span class="cn">Result</span>, <span class="va">as:</span> <span class="cn">Result</span></span>
+<span id="cb14-22"><a href="#cb14-22"></a></span>
+<span id="cb14-23"><a href="#cb14-23"></a>  describe <span class="st">&quot;JSON.decode&quot;</span> <span class="kw">do</span></span>
+<span id="cb14-24"><a href="#cb14-24"></a>    <span class="cn">Enum</span><span class="op">.</span>map(<span class="cn">JSONSuite</span><span class="op">.</span>test_suite(), <span class="kw">fn</span> {path, result} <span class="op">-&gt;</span></span>
+<span id="cb14-25"><a href="#cb14-25"></a>      context path <span class="kw">do</span></span>
+<span id="cb14-26"><a href="#cb14-26"></a>        <span class="co"># 変数を利用するには unquote する必要がある(マクロのせい？)</span></span>
+<span id="cb14-27"><a href="#cb14-27"></a>        let(<span class="va">:json</span>, <span class="kw">do</span>: <span class="cn">File</span><span class="op">.</span>read!(<span class="st">&quot;test/fixture/test_parsing/</span><span class="ot">#{</span><span class="kw">unquote</span>(path)<span class="ot">}</span><span class="st">&quot;</span>))</span>
+<span id="cb14-28"><a href="#cb14-28"></a>        it(</span>
+<span id="cb14-29"><a href="#cb14-29"></a>          <span class="kw">do</span>:</span>
+<span id="cb14-30"><a href="#cb14-30"></a>            <span class="cn">Result</span><span class="op">.</span>map_error(<span class="cn">JSON</span><span class="op">.</span>decode(json()), <span class="kw">fn</span> _ <span class="op">-&gt;</span> <span class="cn">nil</span> <span class="kw">end</span>)</span>
+<span id="cb14-31"><a href="#cb14-31"></a>            <span class="op">|&gt;</span> to(eq(<span class="kw">unquote</span>(<span class="cn">Macro</span><span class="op">.</span>escape(result))))</span>
+<span id="cb14-32"><a href="#cb14-32"></a>        )</span>
+<span id="cb14-33"><a href="#cb14-33"></a>      <span class="kw">end</span></span>
+<span id="cb14-34"><a href="#cb14-34"></a>    <span class="kw">end</span>)</span>
+<span id="cb14-35"><a href="#cb14-35"></a>  <span class="kw">end</span></span>
+<span id="cb14-36"><a href="#cb14-36"></a><span class="kw">end</span></span></code></pre></div>
+<p><code>unquote</code> やらモジュールの順序周りやら結構苦労した． なお，いくつかテストの通らない JSONTestSuite のケースがあるので，そう言うのはとりあえずコメントアウトしてる．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>意外と綺麗にかけて満足． なお，パフォーマンスは無視してる笑．</p>
+  </div>]]></summary>
+</entry>
+<entry>
     <title>Elm で作る TaPL のラムダ計算（その３）</title>
     <link href="https://matsubara0507.github.io/posts/2019-12-10-tapl-with-elm-part3.html" />
     <id>https://matsubara0507.github.io/posts/2019-12-10-tapl-with-elm-part3.html</id>
@@ -2278,224 +2646,6 @@ IMAGE               CREATED             CREATED BY                              
 <p>要するに，Stackage にある全てのパッケージを利用するための全ての <code>apt-get install</code> やらなんやらをしている． そりゃ重いわけだ．</p>
 <h2 id="おしまい">おしまい</h2>
 <p>CI が爆速になったし，自動で Resolver の追従もしてくれるし，私は満足です． ちょこっとずつ古いプロジェクトの置き換えしている．</p>
-  </div>]]></summary>
-</entry>
-<entry>
-    <title>Elm で QR コードリーダー</title>
-    <link href="https://matsubara0507.github.io/posts/2019-08-26-qr-code-reader-with-elm.html" />
-    <id>https://matsubara0507.github.io/posts/2019-08-26-qr-code-reader-with-elm.html</id>
-    <published>2019-08-26T00:00:00Z</published>
-    <updated>2019-08-26T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
-    <p>タイトル通りです． ただし，jsQR とポートを使ってるだけです． Elm 側で QR コードのデコードをするわけじゃないので，そういうのを期待した人はすいません．</p>
-<p>今回の実装は下記のリポジトリにあります:</p>
-<h4 id="section"><iframe width="320" height="215" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/anaqram-web-samples"></iframe></h4>
-<p>リポジトリの詳細のとこを読むとわかるんですけど，実はこの話は書典7のネタの一部を抜粋したものです(典の方はもっと丁寧に書いてます)．</p>
-<h2 id="elm-からカメラを使う">Elm からカメラを使う</h2>
-<p>ブラウザからカメラを使うには JavaScript の <a href="https://developer.mozilla.org/ja/docs/Web/API/MediaDevices/getUserMedia"><code>MediaDevices.getUserMedia()</code></a> を使う． このメソッドを使うには <a href="https://webrtc.github.io/samples/src/content/getusermedia/gum">WebRTC のサンプルコード</a>を参考に次のように書く:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">const</span> constraints <span class="op">=</span> <span class="op">{</span> <span class="dt">audio</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">video</span><span class="op">:</span> <span class="kw">true</span> <span class="op">};</span></span>
-<span id="cb1-2"><a href="#cb1-2"></a></span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="kw">async</span> <span class="kw">function</span> <span class="at">initCamera</span>(videoId) <span class="op">{</span></span>
-<span id="cb1-4"><a href="#cb1-4"></a>  <span class="cf">try</span> <span class="op">{</span></span>
-<span id="cb1-5"><a href="#cb1-5"></a>    <span class="kw">const</span> stream <span class="op">=</span> <span class="cf">await</span> <span class="va">navigator</span>.<span class="va">mediaDevices</span>.<span class="at">getUserMedia</span>(constraints)<span class="op">;</span></span>
-<span id="cb1-6"><a href="#cb1-6"></a>    <span class="va">document</span>.<span class="at">getElementById</span>(videoId).<span class="at">srcObject</span> <span class="op">=</span> stream<span class="op">;</span></span>
-<span id="cb1-7"><a href="#cb1-7"></a>  <span class="op">}</span> <span class="cf">catch</span> (e) <span class="op">{</span></span>
-<span id="cb1-8"><a href="#cb1-8"></a>    <span class="at">handleError</span>(e)<span class="op">;</span> <span class="co">// ここの実装は割愛</span></span>
-<span id="cb1-9"><a href="#cb1-9"></a>  <span class="op">}</span></span>
-<span id="cb1-10"><a href="#cb1-10"></a><span class="op">}</span></span></code></pre></div>
-<p>HTML 側は <code>id=videoId</code> を設定した <code>video</code> タグを用意するだけで良い． <code>initCamera</code> メソッドを Elm から使うにはポート機能を使って呼び出す:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb2-1"><a href="#cb2-1"></a><span class="co">-- QRCode.elm</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="kw">port</span> <span class="kw">module</span> <span class="dt">QRCode</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
-<span id="cb2-3"><a href="#cb2-3"></a></span>
-<span id="cb2-4"><a href="#cb2-4"></a><span class="kw">port</span> <span class="fu">startCamera</span> : () <span class="op">-&gt;</span> <span class="dt">Cmd</span> <span class="fu">msg</span></span></code></pre></div>
-<p>純粋関数型プログラミング言語である Elm にとって JavaScript のコードを直接呼び出すことは非純粋な行為(<code>Cmd a</code> 型は非純粋な型)であり，<code>port</code> プレフィックスを使って普通の関数とは全く別に管理される(<code>port</code> が付くモジュール・関数はパッケージに含めることができない)． より詳しいポート機能については <a href="https://guide.elm-lang.jp/interop/ports.html">guide.elm-lang.jp のポートのページ</a>を読むと良いだろう．</p>
-<p>さて，<code>startCamera</code> 関数の実装は JavaScript 側で次のように行った:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb3-1"><a href="#cb3-1"></a><span class="co">// flags は Elm コードの JavaScript 側から与える初期値</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">const</span> flags <span class="op">=</span> <span class="op">{</span></span>
-<span id="cb3-3"><a href="#cb3-3"></a>  <span class="dt">ids</span><span class="op">:</span> <span class="op">{</span> <span class="dt">video</span><span class="op">:</span> <span class="st">&#39;video_area&#39;</span> <span class="op">},</span></span>
-<span id="cb3-4"><a href="#cb3-4"></a>  <span class="dt">size</span><span class="op">:</span> <span class="op">{</span> <span class="dt">width</span><span class="op">:</span> <span class="dv">300</span><span class="op">,</span> <span class="dt">height</span><span class="op">:</span> <span class="dv">300</span> <span class="op">}</span></span>
-<span id="cb3-5"><a href="#cb3-5"></a><span class="op">};</span></span>
-<span id="cb3-6"><a href="#cb3-6"></a></span>
-<span id="cb3-7"><a href="#cb3-7"></a><span class="co">// true だけではなくカメラのサイズとリアカメラ優先フラグ(facingMode)を与える</span></span>
-<span id="cb3-8"><a href="#cb3-8"></a><span class="kw">const</span> constraints <span class="op">=</span> <span class="op">{</span></span>
-<span id="cb3-9"><a href="#cb3-9"></a>  <span class="dt">audio</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span></span>
-<span id="cb3-10"><a href="#cb3-10"></a>  <span class="dt">video</span><span class="op">:</span> <span class="op">{</span>...<span class="va">flags</span>.<span class="at">size</span><span class="op">,</span> <span class="dt">facingMode</span><span class="op">:</span> <span class="st">&quot;environment&quot;</span> <span class="op">}</span></span>
-<span id="cb3-11"><a href="#cb3-11"></a><span class="op">};</span></span>
-<span id="cb3-12"><a href="#cb3-12"></a></span>
-<span id="cb3-13"><a href="#cb3-13"></a><span class="kw">const</span> app <span class="op">=</span> <span class="va">Elm</span>.<span class="va">Main</span>.<span class="at">init</span>(<span class="op">{</span></span>
-<span id="cb3-14"><a href="#cb3-14"></a>  <span class="dt">node</span><span class="op">:</span> <span class="va">document</span>.<span class="at">getElementById</span>(<span class="st">&#39;main&#39;</span>)<span class="op">,</span></span>
-<span id="cb3-15"><a href="#cb3-15"></a>  <span class="dt">flags</span><span class="op">:</span> flags</span>
-<span id="cb3-16"><a href="#cb3-16"></a><span class="op">}</span>)<span class="op">;</span></span>
-<span id="cb3-17"><a href="#cb3-17"></a><span class="va">app</span>.<span class="va">ports</span>.<span class="va">startCamera</span>.<span class="at">subscribe</span>(<span class="kw">function</span>() <span class="op">{</span> <span class="at">initCamera</span>(<span class="va">flags</span>.<span class="va">ids</span>.<span class="at">video</span>) <span class="op">}</span>)<span class="op">;</span></span></code></pre></div>
-<p>あとはこんな感じに Elm 側で呼び出す:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">exposing</span> (<span class="fu">main</span>)</span>
-<span id="cb4-2"><a href="#cb4-2"></a></span>
-<span id="cb4-3"><a href="#cb4-3"></a><span class="kw">import</span> <span class="dt">QRCode</span></span>
-<span id="cb4-4"><a href="#cb4-4"></a><span class="kw">import</span> <span class="dt">Browser</span></span>
-<span id="cb4-5"><a href="#cb4-5"></a><span class="kw">import</span> <span class="dt">Html</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
-<span id="cb4-6"><a href="#cb4-6"></a><span class="kw">import</span> <span class="dt">Html</span><span class="op">.</span><span class="dt">Attributes</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
-<span id="cb4-7"><a href="#cb4-7"></a><span class="kw">import</span> <span class="dt">Html</span><span class="op">.</span><span class="dt">Events</span> <span class="kw">exposing</span> (<span class="fu">onClick</span>)</span>
-<span id="cb4-8"><a href="#cb4-8"></a></span>
-<span id="cb4-9"><a href="#cb4-9"></a><span class="fu">main</span> : <span class="dt">Program</span> <span class="dt">Config</span> <span class="dt">Model</span> <span class="dt">Msg</span></span>
-<span id="cb4-10"><a href="#cb4-10"></a><span class="fu">main</span> <span class="op">=</span></span>
-<span id="cb4-11"><a href="#cb4-11"></a>  <span class="dt">Browser</span><span class="op">.</span><span class="fu">element</span></span>
-<span id="cb4-12"><a href="#cb4-12"></a>    { <span class="fu">init</span> <span class="op">=</span> <span class="fu">init</span></span>
-<span id="cb4-13"><a href="#cb4-13"></a>    <span class="op">,</span> <span class="fu">view</span> <span class="op">=</span> <span class="fu">view</span></span>
-<span id="cb4-14"><a href="#cb4-14"></a>    <span class="op">,</span> <span class="fu">update</span> <span class="op">=</span> <span class="fu">update</span></span>
-<span id="cb4-15"><a href="#cb4-15"></a>    <span class="op">,</span> <span class="fu">subscriptions</span> <span class="op">=</span> \<span class="fu">_</span> <span class="op">-&gt;</span> <span class="dt">Sub</span><span class="op">.</span><span class="fu">none</span></span>
-<span id="cb4-16"><a href="#cb4-16"></a>    }</span>
-<span id="cb4-17"><a href="#cb4-17"></a></span>
-<span id="cb4-18"><a href="#cb4-18"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Config</span> <span class="op">=</span></span>
-<span id="cb4-19"><a href="#cb4-19"></a>  { <span class="fu">ids</span> : { <span class="fu">video</span> : <span class="dt">String</span> }<span class="op">,</span> <span class="fu">size</span> : { <span class="fu">width</span> : <span class="dt">Int</span><span class="op">,</span> <span class="fu">height</span> : <span class="dt">Int</span> } }</span>
-<span id="cb4-20"><a href="#cb4-20"></a></span>
-<span id="cb4-21"><a href="#cb4-21"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Model</span> <span class="op">=</span> { <span class="fu">config</span> : <span class="dt">Config</span> }</span>
-<span id="cb4-22"><a href="#cb4-22"></a></span>
-<span id="cb4-23"><a href="#cb4-23"></a><span class="fu">init</span> : <span class="dt">Config</span> <span class="op">-&gt;</span> (<span class="dt">Model</span><span class="op">,</span> <span class="dt">Cmd</span> <span class="dt">Msg</span>)</span>
-<span id="cb4-24"><a href="#cb4-24"></a><span class="fu">init</span> <span class="fu">config</span> <span class="op">=</span> (<span class="dt">Model</span> <span class="fu">config</span><span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span>)</span>
-<span id="cb4-25"><a href="#cb4-25"></a></span>
-<span id="cb4-26"><a href="#cb4-26"></a><span class="kw">type</span> <span class="dt">Msg</span> <span class="op">=</span> <span class="dt">EnableCamera</span></span>
-<span id="cb4-27"><a href="#cb4-27"></a></span>
-<span id="cb4-28"><a href="#cb4-28"></a><span class="fu">update</span> : <span class="dt">Msg</span> <span class="op">-&gt;</span> <span class="dt">Model</span> <span class="op">-&gt;</span> (<span class="dt">Model</span><span class="op">,</span> <span class="dt">Cmd</span> <span class="dt">Msg</span>)</span>
-<span id="cb4-29"><a href="#cb4-29"></a><span class="fu">update</span> <span class="fu">msg</span> <span class="fu">model</span> <span class="op">=</span></span>
-<span id="cb4-30"><a href="#cb4-30"></a>  <span class="cf">case</span> <span class="fu">msg</span> <span class="cf">of</span></span>
-<span id="cb4-31"><a href="#cb4-31"></a>    <span class="dt">EnableCamera</span> <span class="op">-&gt;</span> (<span class="fu">model</span><span class="op">,</span> <span class="dt">QRCode</span><span class="op">.</span><span class="fu">startCamera</span> ())</span>
-<span id="cb4-32"><a href="#cb4-32"></a></span>
-<span id="cb4-33"><a href="#cb4-33"></a><span class="fu">view</span> : <span class="dt">Model</span> <span class="op">-&gt;</span> <span class="dt">Html</span> <span class="dt">Msg</span></span>
-<span id="cb4-34"><a href="#cb4-34"></a><span class="fu">view</span> <span class="fu">model</span> <span class="op">=</span></span>
-<span id="cb4-35"><a href="#cb4-35"></a>  <span class="fu">div</span> []</span>
-<span id="cb4-36"><a href="#cb4-36"></a>    [ <span class="fu">video</span></span>
-<span id="cb4-37"><a href="#cb4-37"></a>        [ <span class="fu">id</span> <span class="fu">model</span><span class="op">.</span><span class="fu">config</span><span class="op">.</span><span class="fu">ids</span><span class="op">.</span><span class="fu">video</span><span class="op">,</span> <span class="fu">style</span> <span class="st">&quot;background-color&quot;</span> <span class="st">&quot;#000&quot;</span><span class="op">,</span> <span class="fu">autoplay</span> <span class="dt">True</span></span>
-<span id="cb4-38"><a href="#cb4-38"></a>        <span class="op">,</span> <span class="fu">width</span> <span class="fu">model</span><span class="op">.</span><span class="fu">config</span><span class="op">.</span><span class="fu">size</span><span class="op">.</span><span class="fu">width</span><span class="op">,</span> <span class="fu">height</span> <span class="fu">model</span><span class="op">.</span><span class="fu">config</span><span class="op">.</span><span class="fu">size</span><span class="op">.</span><span class="fu">height</span></span>
-<span id="cb4-39"><a href="#cb4-39"></a>        <span class="co">-- iOS のために必要</span></span>
-<span id="cb4-40"><a href="#cb4-40"></a>        <span class="op">,</span> <span class="fu">attribute</span> <span class="st">&quot;playsinline&quot;</span> <span class="st">&quot;&quot;</span></span>
-<span id="cb4-41"><a href="#cb4-41"></a>        ] []</span>
-<span id="cb4-42"><a href="#cb4-42"></a>    <span class="op">,</span> <span class="fu">p</span> [] [ <span class="fu">button</span> [ <span class="fu">onClick</span> <span class="dt">EnableCamera</span> ] [ <span class="fu">text</span> <span class="st">&quot;Enable Camera&quot;</span> ] ]</span>
-<span id="cb4-43"><a href="#cb4-43"></a>    ]</span></code></pre></div>
-<p>ボタンの <code>onClick</code> でイベントハンドラを受け取り，<code>startCamera</code> ポート関数を呼び出しているだけ． また，<code>Flags</code> 機能を使って <code>video</code> タグに必要な id を JavaScript 側と共有している． <a href="https://matsubara0507.github.io/anaqram-web-samples/step1/">ここ</a>で実際にビルド結果を触れる．</p>
-<h2 id="qr-コードを読み取る">QR コードを読み取る</h2>
-<p>Elm からカメラを起動できたので，次に QR コードを読み取る． 冒頭で述べた通り，QR コードのでコードには <a href="https://github.com/cozmo/jsQR">jsQR</a> という JavaScript のライブラリを利用する． jsQR の使い方は簡単で，<code>jsQR</code> というメソッドに <code>ImageData</code> オブジェクト(とサイズ)を渡してあげるだけ:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb5-1"><a href="#cb5-1"></a><span class="co">// jsQR の README に載っているサンプルコード</span></span>
-<span id="cb5-2"><a href="#cb5-2"></a><span class="kw">const</span> code <span class="op">=</span> <span class="at">jsQR</span>(imageData<span class="op">,</span> width<span class="op">,</span> height)<span class="op">;</span></span>
-<span id="cb5-3"><a href="#cb5-3"></a><span class="co">// QR コードがなければ null になるようです</span></span>
-<span id="cb5-4"><a href="#cb5-4"></a><span class="cf">if</span> (code) <span class="op">{</span></span>
-<span id="cb5-5"><a href="#cb5-5"></a>  <span class="va">console</span>.<span class="at">log</span>(<span class="st">&quot;Found QR code&quot;</span><span class="op">,</span> code)<span class="op">;</span></span>
-<span id="cb5-6"><a href="#cb5-6"></a><span class="op">}</span></span></code></pre></div>
-<p><code>ImageData</code> オブジェクトはカメラ画像をいったん Canvas に退避させることで取得できる:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">function</span> <span class="at">captureImage</span>(videoId<span class="op">,</span> captureId) <span class="op">{</span></span>
-<span id="cb6-2"><a href="#cb6-2"></a>  <span class="kw">var</span> canvas <span class="op">=</span> <span class="va">document</span>.<span class="at">getElementById</span>(captureId)<span class="op">;</span></span>
-<span id="cb6-3"><a href="#cb6-3"></a>  <span class="kw">var</span> video <span class="op">=</span> <span class="va">document</span>.<span class="at">getElementById</span>(videoId)<span class="op">;</span></span>
-<span id="cb6-4"><a href="#cb6-4"></a>  <span class="va">canvas</span>.<span class="at">width</span>  <span class="op">=</span> <span class="va">video</span>.<span class="at">videoWidth</span><span class="op">;</span></span>
-<span id="cb6-5"><a href="#cb6-5"></a>  <span class="va">canvas</span>.<span class="at">height</span> <span class="op">=</span> <span class="va">video</span>.<span class="at">videoHeight</span><span class="op">;</span></span>
-<span id="cb6-6"><a href="#cb6-6"></a></span>
-<span id="cb6-7"><a href="#cb6-7"></a>  <span class="kw">const</span> ctx <span class="op">=</span> <span class="va">canvas</span>.<span class="at">getContext</span>(<span class="st">&#39;2d&#39;</span>)<span class="op">;</span></span>
-<span id="cb6-8"><a href="#cb6-8"></a>  <span class="va">ctx</span>.<span class="at">drawImage</span>(video<span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>)<span class="op">;</span></span>
-<span id="cb6-9"><a href="#cb6-9"></a>  <span class="cf">return</span> <span class="va">ctx</span>.<span class="at">getImageData</span>(<span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="va">video</span>.<span class="at">videoWidth</span><span class="op">,</span> <span class="va">video</span>.<span class="at">videoHeight</span>)<span class="op">;</span></span>
-<span id="cb6-10"><a href="#cb6-10"></a><span class="op">}</span></span></code></pre></div>
-<p>さて，後はこれを Elm で呼び出す． ただし，カメラを起動する <code>startCamera</code> 関数の時と違い，ボタンを押したらQRコードのデコード結果の文字列を取得したい． なので JavaScript 側から実行されることを想定した「内向き」のポート関数も定義する:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb7-1"><a href="#cb7-1"></a><span class="co">-- QRCode.elm</span></span>
-<span id="cb7-2"><a href="#cb7-2"></a><span class="kw">port</span> <span class="kw">module</span> <span class="dt">QRCode</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
-<span id="cb7-3"><a href="#cb7-3"></a></span>
-<span id="cb7-4"><a href="#cb7-4"></a><span class="kw">import</span> <span class="dt">Json</span><span class="op">.</span><span class="dt">Decode</span> <span class="kw">as</span> <span class="dt">D</span> <span class="kw">exposing</span> (<span class="dt">Decoder</span>)</span>
-<span id="cb7-5"><a href="#cb7-5"></a><span class="kw">import</span> <span class="dt">Json</span><span class="op">.</span><span class="dt">Encode</span> <span class="kw">as</span> <span class="dt">E</span></span>
-<span id="cb7-6"><a href="#cb7-6"></a></span>
-<span id="cb7-7"><a href="#cb7-7"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">QRCode</span> <span class="op">=</span> { <span class="fu">data</span> : <span class="dt">String</span> }</span>
-<span id="cb7-8"><a href="#cb7-8"></a></span>
-<span id="cb7-9"><a href="#cb7-9"></a><span class="fu">decoder</span> : <span class="dt">Decoder</span> <span class="dt">QRCode</span></span>
-<span id="cb7-10"><a href="#cb7-10"></a><span class="fu">decoder</span> <span class="op">=</span> <span class="dt">D</span><span class="op">.</span><span class="fu">map</span> <span class="dt">QRCode</span> (<span class="dt">D</span><span class="op">.</span><span class="fu">field</span> <span class="st">&quot;data&quot;</span> <span class="dt">D</span><span class="op">.</span><span class="fu">string</span>)</span>
-<span id="cb7-11"><a href="#cb7-11"></a></span>
-<span id="cb7-12"><a href="#cb7-12"></a><span class="kw">port</span> <span class="fu">startCamera</span> : () <span class="op">-&gt;</span> <span class="dt">Cmd</span> <span class="fu">msg</span></span>
-<span id="cb7-13"><a href="#cb7-13"></a></span>
-<span id="cb7-14"><a href="#cb7-14"></a><span class="kw">port</span> <span class="fu">captureImage</span> : () <span class="op">-&gt;</span> <span class="dt">Cmd</span> <span class="fu">msg</span></span>
-<span id="cb7-15"><a href="#cb7-15"></a></span>
-<span id="cb7-16"><a href="#cb7-16"></a><span class="co">-- JS とは JSON データでやり取りするのが良いらしい</span></span>
-<span id="cb7-17"><a href="#cb7-17"></a><span class="kw">port</span> <span class="fu">updateQRCode</span> : (<span class="dt">E</span><span class="op">.</span><span class="dt">Value</span> <span class="op">-&gt;</span> <span class="fu">msg</span>) <span class="op">-&gt;</span> <span class="dt">Sub</span> <span class="fu">msg</span></span>
-<span id="cb7-18"><a href="#cb7-18"></a></span>
-<span id="cb7-19"><a href="#cb7-19"></a><span class="fu">updateQRCodeWithDecode</span> : (<span class="dt">Result</span> <span class="dt">D</span><span class="op">.</span><span class="dt">Error</span> (<span class="dt">Maybe</span> <span class="dt">QRCode</span>) <span class="op">-&gt;</span> <span class="fu">msg</span>) <span class="op">-&gt;</span> <span class="dt">Sub</span> <span class="fu">msg</span></span>
-<span id="cb7-20"><a href="#cb7-20"></a><span class="fu">updateQRCodeWithDecode</span> <span class="fu">msg</span> <span class="op">=</span></span>
-<span id="cb7-21"><a href="#cb7-21"></a>  <span class="fu">updateQRCode</span> (<span class="fu">msg</span> <span class="op">&lt;&lt;</span> <span class="dt">D</span><span class="op">.</span><span class="fu">decodeValue</span> (<span class="dt">D</span><span class="op">.</span><span class="fu">nullable</span> <span class="fu">decoder</span>))</span></code></pre></div>
-<p><code>updateQRCode</code> 関数が内向きのポート関数だ． <code>Sub a</code> 型はタイマーやマウスの動作など外部から非同期に送られてくるメッセージを取得するための型だ． 次のように，JS 側で実装する <code>captureImage</code> 関数の最後で <code>updateQRCode</code> 関数が呼ばれ <code>QRCode</code> 型を表す JS オブジェクトが送られてくる:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb8-1"><a href="#cb8-1"></a><span class="co">// canvas の id を追加</span></span>
-<span id="cb8-2"><a href="#cb8-2"></a><span class="kw">const</span> flags <span class="op">=</span> <span class="op">{</span></span>
-<span id="cb8-3"><a href="#cb8-3"></a>  <span class="dt">ids</span><span class="op">:</span> <span class="op">{</span> <span class="dt">video</span><span class="op">:</span> <span class="st">&#39;video_area&#39;</span><span class="op">,</span> <span class="dt">capture</span><span class="op">:</span> <span class="st">&#39;capture_image&#39;</span> <span class="op">},</span></span>
-<span id="cb8-4"><a href="#cb8-4"></a>  <span class="dt">size</span><span class="op">:</span> <span class="op">{</span> <span class="dt">width</span><span class="op">:</span> <span class="dv">300</span><span class="op">,</span> <span class="dt">height</span><span class="op">:</span> <span class="dv">300</span> <span class="op">}</span></span>
-<span id="cb8-5"><a href="#cb8-5"></a><span class="op">};</span></span>
-<span id="cb8-6"><a href="#cb8-6"></a></span>
-<span id="cb8-7"><a href="#cb8-7"></a><span class="va">app</span>.<span class="va">ports</span>.<span class="va">captureImage</span>.<span class="at">subscribe</span>(<span class="kw">function</span>() <span class="op">{</span></span>
-<span id="cb8-8"><a href="#cb8-8"></a>  <span class="kw">const</span> imageData <span class="op">=</span> <span class="at">captureImage</span>(<span class="va">flags</span>.<span class="va">ids</span>.<span class="at">video</span><span class="op">,</span> <span class="va">flags</span>.<span class="va">ids</span>.<span class="at">capture</span>)<span class="op">;</span></span>
-<span id="cb8-9"><a href="#cb8-9"></a>  <span class="kw">const</span> qrcode <span class="op">=</span> <span class="at">jsQR</span>(<span class="va">imageData</span>.<span class="at">data</span><span class="op">,</span> <span class="va">imageData</span>.<span class="at">width</span><span class="op">,</span> <span class="va">imageData</span>.<span class="at">height</span>)</span>
-<span id="cb8-10"><a href="#cb8-10"></a>  <span class="va">app</span>.<span class="va">ports</span>.<span class="va">updateQRCode</span>.<span class="at">send</span>(qrcode)<span class="op">;</span> <span class="co">// ココ</span></span>
-<span id="cb8-11"><a href="#cb8-11"></a><span class="op">}</span>)</span></code></pre></div>
-<p>Elm 側は次のように書き換える:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">exposing</span> (<span class="fu">main</span>)</span>
-<span id="cb9-2"><a href="#cb9-2"></a></span>
-<span id="cb9-3"><a href="#cb9-3"></a><span class="kw">import</span> <span class="dt">AnaQRam</span><span class="op">.</span><span class="dt">QRCode</span> <span class="kw">as</span> <span class="dt">QRCode</span> <span class="kw">exposing</span> (<span class="dt">QRCode</span>)</span>
-<span id="cb9-4"><a href="#cb9-4"></a><span class="kw">import</span> <span class="dt">Json</span><span class="op">.</span><span class="dt">Decode</span> <span class="kw">exposing</span> (<span class="dt">Error</span><span class="op">,</span> <span class="fu">errorToString</span>)</span>
-<span id="cb9-5"><a href="#cb9-5"></a></span>
-<span id="cb9-6"><a href="#cb9-6"></a><span class="fu">main</span> : <span class="dt">Program</span> <span class="dt">Config</span> <span class="dt">Model</span> <span class="dt">Msg</span></span>
-<span id="cb9-7"><a href="#cb9-7"></a><span class="fu">main</span> <span class="op">=</span></span>
-<span id="cb9-8"><a href="#cb9-8"></a>  <span class="dt">Browser</span><span class="op">.</span><span class="fu">element</span></span>
-<span id="cb9-9"><a href="#cb9-9"></a>    { <span class="op">..</span> <span class="co">-- 割愛</span></span>
-<span id="cb9-10"><a href="#cb9-10"></a>    <span class="op">,</span> <span class="fu">subscriptions</span> <span class="op">=</span> <span class="fu">subscriptions</span></span>
-<span id="cb9-11"><a href="#cb9-11"></a>    }</span>
-<span id="cb9-12"><a href="#cb9-12"></a></span>
-<span id="cb9-13"><a href="#cb9-13"></a><span class="co">-- capture を追加</span></span>
-<span id="cb9-14"><a href="#cb9-14"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Config</span> <span class="op">=</span></span>
-<span id="cb9-15"><a href="#cb9-15"></a>  { <span class="fu">ids</span> : { <span class="fu">video</span> : <span class="dt">String</span><span class="op">,</span> <span class="fu">capture</span> : <span class="dt">String</span> }</span>
-<span id="cb9-16"><a href="#cb9-16"></a>  <span class="op">,</span> <span class="fu">size</span> : { <span class="fu">width</span> : <span class="dt">Int</span><span class="op">,</span> <span class="fu">height</span> : <span class="dt">Int</span> }</span>
-<span id="cb9-17"><a href="#cb9-17"></a>  }</span>
-<span id="cb9-18"><a href="#cb9-18"></a></span>
-<span id="cb9-19"><a href="#cb9-19"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Model</span> <span class="op">=</span></span>
-<span id="cb9-20"><a href="#cb9-20"></a>  { <span class="fu">config</span> : <span class="dt">Config</span></span>
-<span id="cb9-21"><a href="#cb9-21"></a>  <span class="op">,</span> <span class="fu">qrcode</span> : <span class="dt">Maybe</span> <span class="dt">QRCode</span> <span class="co">-- QRコードのデコード結果</span></span>
-<span id="cb9-22"><a href="#cb9-22"></a>  <span class="op">,</span> <span class="fu">error</span> : <span class="dt">String</span>        <span class="co">-- JSONのデコード失敗結果</span></span>
-<span id="cb9-23"><a href="#cb9-23"></a>  }</span>
-<span id="cb9-24"><a href="#cb9-24"></a></span>
-<span id="cb9-25"><a href="#cb9-25"></a><span class="fu">init</span> : <span class="dt">Config</span> <span class="op">-&gt;</span> (<span class="dt">Model</span><span class="op">,</span> <span class="dt">Cmd</span> <span class="dt">Msg</span>)</span>
-<span id="cb9-26"><a href="#cb9-26"></a><span class="fu">init</span> <span class="fu">config</span> <span class="op">=</span> (<span class="dt">Model</span> <span class="fu">config</span> <span class="dt">Nothing</span> <span class="st">&quot;&quot;</span><span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span>)</span>
-<span id="cb9-27"><a href="#cb9-27"></a></span>
-<span id="cb9-28"><a href="#cb9-28"></a><span class="kw">type</span> <span class="dt">Msg</span></span>
-<span id="cb9-29"><a href="#cb9-29"></a>  <span class="op">=</span> <span class="dt">EnableCamera</span></span>
-<span id="cb9-30"><a href="#cb9-30"></a>  <span class="op">|</span> <span class="dt">CaptureImage</span></span>
-<span id="cb9-31"><a href="#cb9-31"></a>  <span class="op">|</span> <span class="dt">UpdateQRCode</span> (<span class="dt">Result</span> <span class="dt">Error</span> (<span class="dt">Maybe</span> <span class="dt">QRCode</span>))</span>
-<span id="cb9-32"><a href="#cb9-32"></a></span>
-<span id="cb9-33"><a href="#cb9-33"></a><span class="fu">update</span> : <span class="dt">Msg</span> <span class="op">-&gt;</span> <span class="dt">Model</span> <span class="op">-&gt;</span> (<span class="dt">Model</span><span class="op">,</span> <span class="dt">Cmd</span> <span class="dt">Msg</span>)</span>
-<span id="cb9-34"><a href="#cb9-34"></a><span class="fu">update</span> <span class="fu">msg</span> <span class="fu">model</span> <span class="op">=</span></span>
-<span id="cb9-35"><a href="#cb9-35"></a>  <span class="cf">case</span> <span class="fu">msg</span> <span class="cf">of</span></span>
-<span id="cb9-36"><a href="#cb9-36"></a>    <span class="op">...</span> <span class="co">-- 割愛</span></span>
-<span id="cb9-37"><a href="#cb9-37"></a></span>
-<span id="cb9-38"><a href="#cb9-38"></a>    <span class="dt">CaptureImage</span> <span class="op">-&gt;</span> (<span class="fu">model</span><span class="op">,</span> <span class="dt">QRCode</span><span class="op">.</span><span class="fu">captureImage</span> ())</span>
-<span id="cb9-39"><a href="#cb9-39"></a></span>
-<span id="cb9-40"><a href="#cb9-40"></a>    <span class="co">-- QRコードがなかった場合(null が返ってくるので)</span></span>
-<span id="cb9-41"><a href="#cb9-41"></a>    <span class="dt">UpdateQRCode</span> (<span class="dt">Ok</span> <span class="dt">Nothing</span>) <span class="op">-&gt;</span> ({ <span class="fu">model</span> <span class="op">|</span> <span class="fu">error</span> <span class="op">=</span> <span class="st">&quot;QR code is not found&quot;</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span>)</span>
-<span id="cb9-42"><a href="#cb9-42"></a></span>
-<span id="cb9-43"><a href="#cb9-43"></a>    <span class="co">-- QRコードのデコード成功</span></span>
-<span id="cb9-44"><a href="#cb9-44"></a>    <span class="dt">UpdateQRCode</span> (<span class="dt">Ok</span> <span class="fu">qrcode</span>) <span class="op">-&gt;</span> ({ <span class="fu">model</span> <span class="op">|</span> <span class="fu">qrcode</span> <span class="op">=</span> <span class="fu">qrcode</span><span class="op">,</span> <span class="fu">error</span> <span class="op">=</span> <span class="st">&quot;&quot;</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span>)</span>
-<span id="cb9-45"><a href="#cb9-45"></a></span>
-<span id="cb9-46"><a href="#cb9-46"></a>    <span class="co">-- JSONのデコード失敗</span></span>
-<span id="cb9-47"><a href="#cb9-47"></a>    <span class="dt">UpdateQRCode</span> (<span class="dt">Err</span> <span class="fu">message</span>) <span class="op">-&gt;</span> ({ <span class="fu">model</span> <span class="op">|</span> <span class="fu">error</span> <span class="op">=</span> <span class="fu">errorToString</span> <span class="fu">message</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span>)</span>
-<span id="cb9-48"><a href="#cb9-48"></a></span>
-<span id="cb9-49"><a href="#cb9-49"></a><span class="fu">view</span> : <span class="dt">Model</span> <span class="op">-&gt;</span> <span class="dt">Html</span> <span class="dt">Msg</span></span>
-<span id="cb9-50"><a href="#cb9-50"></a><span class="fu">view</span> <span class="fu">model</span> <span class="op">=</span></span>
-<span id="cb9-51"><a href="#cb9-51"></a>  <span class="fu">div</span> []</span>
-<span id="cb9-52"><a href="#cb9-52"></a>    [ <span class="fu">video</span> <span class="co">-- 割愛</span></span>
-<span id="cb9-53"><a href="#cb9-53"></a>    <span class="op">,</span> <span class="fu">p</span> [] [ <span class="fu">button</span> [ <span class="fu">onClick</span> <span class="dt">EnableCamera</span> ] [ <span class="fu">text</span> <span class="st">&quot;Enable Camera&quot;</span> ] ]</span>
-<span id="cb9-54"><a href="#cb9-54"></a>    <span class="op">,</span> <span class="fu">p</span> [] [ <span class="fu">button</span> [ <span class="fu">onClick</span> <span class="dt">CaptureImage</span> ] [ <span class="fu">text</span> <span class="st">&quot;Decode QR&quot;</span> ] ]</span>
-<span id="cb9-55"><a href="#cb9-55"></a>    <span class="op">,</span> <span class="fu">canvas</span> [ <span class="fu">id</span> <span class="fu">model</span><span class="op">.</span><span class="fu">config</span><span class="op">.</span><span class="fu">ids</span><span class="op">.</span><span class="fu">capture</span><span class="op">,</span> <span class="fu">hidden</span> <span class="dt">True</span> ] [] <span class="co">-- カメラ画像退避用</span></span>
-<span id="cb9-56"><a href="#cb9-56"></a>    <span class="op">,</span> <span class="fu">viewResult</span> <span class="fu">model</span></span>
-<span id="cb9-57"><a href="#cb9-57"></a>    ]</span>
-<span id="cb9-58"><a href="#cb9-58"></a></span>
-<span id="cb9-59"><a href="#cb9-59"></a><span class="fu">viewResult</span> : <span class="dt">Model</span> <span class="op">-&gt;</span> <span class="dt">Html</span> <span class="dt">Msg</span></span>
-<span id="cb9-60"><a href="#cb9-60"></a><span class="fu">viewResult</span> <span class="fu">model</span> <span class="op">=</span></span>
-<span id="cb9-61"><a href="#cb9-61"></a>  <span class="cf">if</span> <span class="dt">String</span><span class="op">.</span><span class="fu">isEmpty</span> <span class="fu">model</span><span class="op">.</span><span class="fu">error</span> <span class="cf">then</span></span>
-<span id="cb9-62"><a href="#cb9-62"></a>    <span class="fu">p</span> [] [ <span class="fu">text</span> (<span class="st">&quot;QR code: &quot;</span> <span class="op">++</span> <span class="dt">Maybe</span><span class="op">.</span><span class="fu">withDefault</span> <span class="st">&quot;&quot;</span> (<span class="dt">Maybe</span><span class="op">.</span><span class="fu">map</span> <span class="op">.</span><span class="fu">data</span> <span class="fu">model</span><span class="op">.</span><span class="fu">qrcode</span>)) ]</span>
-<span id="cb9-63"><a href="#cb9-63"></a>  <span class="cf">else</span></span>
-<span id="cb9-64"><a href="#cb9-64"></a>    <span class="fu">p</span> [] [ <span class="fu">text</span> <span class="fu">model</span><span class="op">.</span><span class="fu">error</span> ]</span>
-<span id="cb9-65"><a href="#cb9-65"></a></span>
-<span id="cb9-66"><a href="#cb9-66"></a><span class="fu">subscriptions</span> : <span class="dt">Model</span> <span class="op">-&gt;</span> <span class="dt">Sub</span> <span class="dt">Msg</span></span>
-<span id="cb9-67"><a href="#cb9-67"></a><span class="fu">subscriptions</span> <span class="fu">_</span> <span class="op">=</span> <span class="dt">QRCode</span><span class="op">.</span><span class="fu">updateQRCodeWithDecode</span> <span class="dt">UpdateQRCode</span></span></code></pre></div>
-<p>出来上がったのが<a href="https://matsubara0507.github.io/anaqram-web-samples/step2">こんな感じ</a>． ほんとはここがゴールじゃないんだが結果的に QR コードリーダーができた．</p>
-<h2 id="おしまい">おしまい</h2>
-<p>Elm 側でデコードする話は気が向いたらそのうち頑張るかもしれない(画像データをポートでやりとりするのは，あまり効率的ではないと思うけど)．</p>
   </div>]]></summary>
 </entry>
 
