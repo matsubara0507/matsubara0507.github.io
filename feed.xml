@@ -2009,7 +2009,7 @@
 462M    /home/runner/.stack/snapshots
 192K    /home/runner/.stack/stack.sqlite3
 0       /home/runner/.stack/stack.sqlite3.pantry-write-lock</code></pre>
-<p>現在，<code>actions/cache@v1</code> では一度にキャッシュできるディレクトリの最大サイズは400MBしかない（今後緩和される可能性はあるが）． <code>actions/cache</code> は内部で gzip かなんかで圧縮しているので，この数字まんまではない． 試しに，このまんまキャッシュしてみたら次のような警告が出た:</p>
+<p>現在，<code>actions/cache@v1</code> では一度にキャッシュできるディレクトリの最大サイズは400MBしかない（<del>今後緩和される可能性はあるが</del> <a href="https://github.com/actions/cache/issues/6#issuecomment-571290282">2020年1月7日ごろにリリースされた v1.1.0 より上限が2GBに緩和された</a>ので、以降の涙ぐましい努力をする必要はなくなった笑）． <code>actions/cache</code> は内部で gzip かなんかで圧縮しているので，この数字まんまではない． 試しに，このまんまキャッシュしてみたら次のような警告が出た:</p>
 <pre><code>Post job cleanup.
 /bin/tar -cz -f /home/runner/work/_temp/2706cc23-8789-4ed4-b4ec-4e7143b1cc98/cache.tgz -C /home/runner/.stack .
 ##[warning]Cache size of 814014541 bytes is over the 400MB limit, not saving cache.</code></pre>
