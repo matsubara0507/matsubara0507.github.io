@@ -453,23 +453,23 @@ $ elchemy init</code></pre>
 <p>Brunch 設定が難しかったので，本質的には Elchemy と関係ないけど残しておく．</p>
 <p>Phoenix 1.3 系ではトップレベルに <code>assets</code> というディレクトリがあり，HTML/JS/CSS/画像 のような静的ファイルはここに置いておく． Brunch を使って複数の JS や CSS を合わせることが出来る． <a href="https://github.com/madsflensted/elm-brunch">elm-brunch</a> を使うことで Elm を JS にコンパイルしてくれる．</p>
 <p>branch-config に次のような設定を書き加えてあげる． Elm のフロントコードは <code>lib/web/elm</code> に置いてある．</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb22-1"><a href="#cb22-1"></a><span class="va">exports</span>.<span class="at">config</span> <span class="op">=</span> <span class="op">{</span></span>
-<span id="cb22-2"><a href="#cb22-2"></a>  ...</span>
-<span id="cb22-3"><a href="#cb22-3"></a>  <span class="dt">paths</span><span class="op">:</span> <span class="op">{</span></span>
+<div class="sourceCode" id="cb22"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb22-1"><a href="#cb22-1"></a>exports<span class="op">.</span><span class="at">config</span> <span class="op">=</span> {</span>
+<span id="cb22-2"><a href="#cb22-2"></a>  <span class="op">...</span></span>
+<span id="cb22-3"><a href="#cb22-3"></a>  <span class="dt">paths</span><span class="op">:</span> {</span>
 <span id="cb22-4"><a href="#cb22-4"></a>    <span class="dt">watched</span><span class="op">:</span> [<span class="st">&quot;static&quot;</span><span class="op">,</span> <span class="st">&quot;css&quot;</span><span class="op">,</span> <span class="st">&quot;js&quot;</span><span class="op">,</span> <span class="st">&quot;vendor&quot;</span><span class="op">,</span> <span class="st">&quot;../lib/web/elm&quot;</span>]<span class="op">,</span></span>
 <span id="cb22-5"><a href="#cb22-5"></a>    <span class="dt">public</span><span class="op">:</span> <span class="st">&quot;../priv/static&quot;</span></span>
-<span id="cb22-6"><a href="#cb22-6"></a>  <span class="op">},</span></span>
+<span id="cb22-6"><a href="#cb22-6"></a>  }<span class="op">,</span></span>
 <span id="cb22-7"><a href="#cb22-7"></a></span>
-<span id="cb22-8"><a href="#cb22-8"></a>  <span class="dt">plugins</span><span class="op">:</span> <span class="op">{</span></span>
-<span id="cb22-9"><a href="#cb22-9"></a>    <span class="dt">elmBrunch</span><span class="op">:</span> <span class="op">{</span></span>
+<span id="cb22-8"><a href="#cb22-8"></a>  <span class="dt">plugins</span><span class="op">:</span> {</span>
+<span id="cb22-9"><a href="#cb22-9"></a>    <span class="dt">elmBrunch</span><span class="op">:</span> {</span>
 <span id="cb22-10"><a href="#cb22-10"></a>      <span class="dt">elmFolder</span><span class="op">:</span> <span class="st">&quot;../lib/web/elm&quot;</span><span class="op">,</span></span>
 <span id="cb22-11"><a href="#cb22-11"></a>      <span class="dt">mainModules</span><span class="op">:</span> [<span class="st">&quot;Main.elm&quot;</span>]<span class="op">,</span></span>
 <span id="cb22-12"><a href="#cb22-12"></a>      <span class="dt">outputFolder</span><span class="op">:</span> <span class="st">&quot;vendor&quot;</span></span>
-<span id="cb22-13"><a href="#cb22-13"></a>    <span class="op">},</span></span>
-<span id="cb22-14"><a href="#cb22-14"></a>  ...</span>
-<span id="cb22-15"><a href="#cb22-15"></a>  <span class="op">}</span></span>
-<span id="cb22-16"><a href="#cb22-16"></a>  ...</span>
-<span id="cb22-17"><a href="#cb22-17"></a><span class="op">}</span></span></code></pre></div>
+<span id="cb22-13"><a href="#cb22-13"></a>    }<span class="op">,</span></span>
+<span id="cb22-14"><a href="#cb22-14"></a>  <span class="op">...</span></span>
+<span id="cb22-15"><a href="#cb22-15"></a>  }</span>
+<span id="cb22-16"><a href="#cb22-16"></a>  <span class="op">...</span></span>
+<span id="cb22-17"><a href="#cb22-17"></a>}</span></code></pre></div>
 <h3 id="フロント部分">フロント部分</h3>
 <p>ほんの少しだがコードを再利用できる． API クライアントは以下のようになる．</p>
 <div class="sourceCode" id="cb23"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb23-1"><a href="#cb23-1"></a><span class="kw">module</span> <span class="dt">TodoAPI</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>

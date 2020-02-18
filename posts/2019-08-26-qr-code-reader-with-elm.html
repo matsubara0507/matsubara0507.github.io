@@ -91,16 +91,16 @@
 <p>リポジトリの詳細のとこを読むとわかるんですけど，実はこの話は書典7のネタの一部を抜粋したものです(典の方はもっと丁寧に書いてます)．</p>
 <h2 id="elm-からカメラを使う">Elm からカメラを使う</h2>
 <p>ブラウザからカメラを使うには JavaScript の <a href="https://developer.mozilla.org/ja/docs/Web/API/MediaDevices/getUserMedia"><code>MediaDevices.getUserMedia()</code></a> を使う． このメソッドを使うには <a href="https://webrtc.github.io/samples/src/content/getusermedia/gum">WebRTC のサンプルコード</a>を参考に次のように書く:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">const</span> constraints <span class="op">=</span> <span class="op">{</span> <span class="dt">audio</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">video</span><span class="op">:</span> <span class="kw">true</span> <span class="op">};</span></span>
+<div class="sourceCode" id="cb1"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">const</span> constraints <span class="op">=</span> { <span class="dt">audio</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">video</span><span class="op">:</span> <span class="kw">true</span> }<span class="op">;</span></span>
 <span id="cb1-2"><a href="#cb1-2"></a></span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="kw">async</span> <span class="kw">function</span> <span class="at">initCamera</span>(videoId) <span class="op">{</span></span>
-<span id="cb1-4"><a href="#cb1-4"></a>  <span class="cf">try</span> <span class="op">{</span></span>
-<span id="cb1-5"><a href="#cb1-5"></a>    <span class="kw">const</span> stream <span class="op">=</span> <span class="cf">await</span> <span class="va">navigator</span>.<span class="va">mediaDevices</span>.<span class="at">getUserMedia</span>(constraints)<span class="op">;</span></span>
-<span id="cb1-6"><a href="#cb1-6"></a>    <span class="va">document</span>.<span class="at">getElementById</span>(videoId).<span class="at">srcObject</span> <span class="op">=</span> stream<span class="op">;</span></span>
-<span id="cb1-7"><a href="#cb1-7"></a>  <span class="op">}</span> <span class="cf">catch</span> (e) <span class="op">{</span></span>
-<span id="cb1-8"><a href="#cb1-8"></a>    <span class="at">handleError</span>(e)<span class="op">;</span> <span class="co">// ここの実装は割愛</span></span>
-<span id="cb1-9"><a href="#cb1-9"></a>  <span class="op">}</span></span>
-<span id="cb1-10"><a href="#cb1-10"></a><span class="op">}</span></span></code></pre></div>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="kw">async</span> <span class="kw">function</span> <span class="fu">initCamera</span>(videoId) {</span>
+<span id="cb1-4"><a href="#cb1-4"></a>  <span class="cf">try</span> {</span>
+<span id="cb1-5"><a href="#cb1-5"></a>    <span class="kw">const</span> stream <span class="op">=</span> <span class="cf">await</span> <span class="bu">navigator</span><span class="op">.</span><span class="at">mediaDevices</span><span class="op">.</span><span class="fu">getUserMedia</span>(constraints)<span class="op">;</span></span>
+<span id="cb1-6"><a href="#cb1-6"></a>    <span class="bu">document</span><span class="op">.</span><span class="fu">getElementById</span>(videoId)<span class="op">.</span><span class="at">srcObject</span> <span class="op">=</span> stream<span class="op">;</span></span>
+<span id="cb1-7"><a href="#cb1-7"></a>  } <span class="cf">catch</span> (e) {</span>
+<span id="cb1-8"><a href="#cb1-8"></a>    handleError(e)<span class="op">;</span> <span class="co">// ここの実装は割愛</span></span>
+<span id="cb1-9"><a href="#cb1-9"></a>  }</span>
+<span id="cb1-10"><a href="#cb1-10"></a>}</span></code></pre></div>
 <p>HTML 側は <code>id=videoId</code> を設定した <code>video</code> タグを用意するだけで良い． <code>initCamera</code> メソッドを Elm から使うにはポート機能を使って呼び出す:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb2-1"><a href="#cb2-1"></a><span class="co">-- QRCode.elm</span></span>
 <span id="cb2-2"><a href="#cb2-2"></a><span class="kw">port</span> <span class="kw">module</span> <span class="dt">QRCode</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
@@ -109,22 +109,22 @@
 <p>純粋関数型プログラミング言語である Elm にとって JavaScript のコードを直接呼び出すことは非純粋な行為(<code>Cmd a</code> 型は非純粋な型)であり，<code>port</code> プレフィックスを使って普通の関数とは全く別に管理される(<code>port</code> が付くモジュール・関数はパッケージに含めることができない)． より詳しいポート機能については <a href="https://guide.elm-lang.jp/interop/ports.html">guide.elm-lang.jp のポートのページ</a>を読むと良いだろう．</p>
 <p>さて，<code>startCamera</code> 関数の実装は JavaScript 側で次のように行った:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb3-1"><a href="#cb3-1"></a><span class="co">// flags は Elm コードの JavaScript 側から与える初期値</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">const</span> flags <span class="op">=</span> <span class="op">{</span></span>
-<span id="cb3-3"><a href="#cb3-3"></a>  <span class="dt">ids</span><span class="op">:</span> <span class="op">{</span> <span class="dt">video</span><span class="op">:</span> <span class="st">'video_area'</span> <span class="op">},</span></span>
-<span id="cb3-4"><a href="#cb3-4"></a>  <span class="dt">size</span><span class="op">:</span> <span class="op">{</span> <span class="dt">width</span><span class="op">:</span> <span class="dv">300</span><span class="op">,</span> <span class="dt">height</span><span class="op">:</span> <span class="dv">300</span> <span class="op">}</span></span>
-<span id="cb3-5"><a href="#cb3-5"></a><span class="op">};</span></span>
+<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">const</span> flags <span class="op">=</span> {</span>
+<span id="cb3-3"><a href="#cb3-3"></a>  <span class="dt">ids</span><span class="op">:</span> { <span class="dt">video</span><span class="op">:</span> <span class="st">'video_area'</span> }<span class="op">,</span></span>
+<span id="cb3-4"><a href="#cb3-4"></a>  <span class="dt">size</span><span class="op">:</span> { <span class="dt">width</span><span class="op">:</span> <span class="dv">300</span><span class="op">,</span> <span class="dt">height</span><span class="op">:</span> <span class="dv">300</span> }</span>
+<span id="cb3-5"><a href="#cb3-5"></a>}<span class="op">;</span></span>
 <span id="cb3-6"><a href="#cb3-6"></a></span>
 <span id="cb3-7"><a href="#cb3-7"></a><span class="co">// true だけではなくカメラのサイズとリアカメラ優先フラグ(facingMode)を与える</span></span>
-<span id="cb3-8"><a href="#cb3-8"></a><span class="kw">const</span> constraints <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb3-8"><a href="#cb3-8"></a><span class="kw">const</span> constraints <span class="op">=</span> {</span>
 <span id="cb3-9"><a href="#cb3-9"></a>  <span class="dt">audio</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span></span>
-<span id="cb3-10"><a href="#cb3-10"></a>  <span class="dt">video</span><span class="op">:</span> <span class="op">{</span>...<span class="va">flags</span>.<span class="at">size</span><span class="op">,</span> <span class="dt">facingMode</span><span class="op">:</span> <span class="st">&quot;environment&quot;</span> <span class="op">}</span></span>
-<span id="cb3-11"><a href="#cb3-11"></a><span class="op">};</span></span>
+<span id="cb3-10"><a href="#cb3-10"></a>  <span class="dt">video</span><span class="op">:</span> {<span class="op">...</span><span class="at">flags</span><span class="op">.</span><span class="at">size</span><span class="op">,</span> <span class="dt">facingMode</span><span class="op">:</span> <span class="st">&quot;environment&quot;</span> }</span>
+<span id="cb3-11"><a href="#cb3-11"></a>}<span class="op">;</span></span>
 <span id="cb3-12"><a href="#cb3-12"></a></span>
-<span id="cb3-13"><a href="#cb3-13"></a><span class="kw">const</span> app <span class="op">=</span> <span class="va">Elm</span>.<span class="va">Main</span>.<span class="at">init</span>(<span class="op">{</span></span>
-<span id="cb3-14"><a href="#cb3-14"></a>  <span class="dt">node</span><span class="op">:</span> <span class="va">document</span>.<span class="at">getElementById</span>(<span class="st">'main'</span>)<span class="op">,</span></span>
+<span id="cb3-13"><a href="#cb3-13"></a><span class="kw">const</span> app <span class="op">=</span> Elm<span class="op">.</span><span class="at">Main</span><span class="op">.</span><span class="fu">init</span>({</span>
+<span id="cb3-14"><a href="#cb3-14"></a>  <span class="dt">node</span><span class="op">:</span> <span class="bu">document</span><span class="op">.</span><span class="fu">getElementById</span>(<span class="st">'main'</span>)<span class="op">,</span></span>
 <span id="cb3-15"><a href="#cb3-15"></a>  <span class="dt">flags</span><span class="op">:</span> flags</span>
-<span id="cb3-16"><a href="#cb3-16"></a><span class="op">}</span>)<span class="op">;</span></span>
-<span id="cb3-17"><a href="#cb3-17"></a><span class="va">app</span>.<span class="va">ports</span>.<span class="va">startCamera</span>.<span class="at">subscribe</span>(<span class="kw">function</span>() <span class="op">{</span> <span class="at">initCamera</span>(<span class="va">flags</span>.<span class="va">ids</span>.<span class="at">video</span>) <span class="op">}</span>)<span class="op">;</span></span></code></pre></div>
+<span id="cb3-16"><a href="#cb3-16"></a>})<span class="op">;</span></span>
+<span id="cb3-17"><a href="#cb3-17"></a>app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">startCamera</span><span class="op">.</span><span class="fu">subscribe</span>(<span class="kw">function</span>() { initCamera(flags<span class="op">.</span><span class="at">ids</span><span class="op">.</span><span class="at">video</span>) })<span class="op">;</span></span></code></pre></div>
 <p>あとはこんな感じに Elm 側で呼び出す:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">exposing</span> (<span class="fu">main</span>)</span>
 <span id="cb4-2"><a href="#cb4-2"></a></span>
@@ -173,22 +173,22 @@
 <h2 id="qr-コードを読み取る">QR コードを読み取る</h2>
 <p>Elm からカメラを起動できたので，次に QR コードを読み取る． 冒頭で述べた通り，QR コードのでコードには <a href="https://github.com/cozmo/jsQR">jsQR</a> という JavaScript のライブラリを利用する． jsQR の使い方は簡単で，<code>jsQR</code> というメソッドに <code>ImageData</code> オブジェクト(とサイズ)を渡してあげるだけ:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb5-1"><a href="#cb5-1"></a><span class="co">// jsQR の README に載っているサンプルコード</span></span>
-<span id="cb5-2"><a href="#cb5-2"></a><span class="kw">const</span> code <span class="op">=</span> <span class="at">jsQR</span>(imageData<span class="op">,</span> width<span class="op">,</span> height)<span class="op">;</span></span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="kw">const</span> code <span class="op">=</span> jsQR(imageData<span class="op">,</span> width<span class="op">,</span> height)<span class="op">;</span></span>
 <span id="cb5-3"><a href="#cb5-3"></a><span class="co">// QR コードがなければ null になるようです</span></span>
-<span id="cb5-4"><a href="#cb5-4"></a><span class="cf">if</span> (code) <span class="op">{</span></span>
-<span id="cb5-5"><a href="#cb5-5"></a>  <span class="va">console</span>.<span class="at">log</span>(<span class="st">&quot;Found QR code&quot;</span><span class="op">,</span> code)<span class="op">;</span></span>
-<span id="cb5-6"><a href="#cb5-6"></a><span class="op">}</span></span></code></pre></div>
+<span id="cb5-4"><a href="#cb5-4"></a><span class="cf">if</span> (code) {</span>
+<span id="cb5-5"><a href="#cb5-5"></a>  <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="st">&quot;Found QR code&quot;</span><span class="op">,</span> code)<span class="op">;</span></span>
+<span id="cb5-6"><a href="#cb5-6"></a>}</span></code></pre></div>
 <p><code>ImageData</code> オブジェクトはカメラ画像をいったん Canvas に退避させることで取得できる:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">function</span> <span class="at">captureImage</span>(videoId<span class="op">,</span> captureId) <span class="op">{</span></span>
-<span id="cb6-2"><a href="#cb6-2"></a>  <span class="kw">var</span> canvas <span class="op">=</span> <span class="va">document</span>.<span class="at">getElementById</span>(captureId)<span class="op">;</span></span>
-<span id="cb6-3"><a href="#cb6-3"></a>  <span class="kw">var</span> video <span class="op">=</span> <span class="va">document</span>.<span class="at">getElementById</span>(videoId)<span class="op">;</span></span>
-<span id="cb6-4"><a href="#cb6-4"></a>  <span class="va">canvas</span>.<span class="at">width</span>  <span class="op">=</span> <span class="va">video</span>.<span class="at">videoWidth</span><span class="op">;</span></span>
-<span id="cb6-5"><a href="#cb6-5"></a>  <span class="va">canvas</span>.<span class="at">height</span> <span class="op">=</span> <span class="va">video</span>.<span class="at">videoHeight</span><span class="op">;</span></span>
+<div class="sourceCode" id="cb6"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">function</span> <span class="fu">captureImage</span>(videoId<span class="op">,</span> captureId) {</span>
+<span id="cb6-2"><a href="#cb6-2"></a>  <span class="kw">var</span> canvas <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">getElementById</span>(captureId)<span class="op">;</span></span>
+<span id="cb6-3"><a href="#cb6-3"></a>  <span class="kw">var</span> video <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">getElementById</span>(videoId)<span class="op">;</span></span>
+<span id="cb6-4"><a href="#cb6-4"></a>  canvas<span class="op">.</span><span class="at">width</span>  <span class="op">=</span> video<span class="op">.</span><span class="at">videoWidth</span><span class="op">;</span></span>
+<span id="cb6-5"><a href="#cb6-5"></a>  canvas<span class="op">.</span><span class="at">height</span> <span class="op">=</span> video<span class="op">.</span><span class="at">videoHeight</span><span class="op">;</span></span>
 <span id="cb6-6"><a href="#cb6-6"></a></span>
-<span id="cb6-7"><a href="#cb6-7"></a>  <span class="kw">const</span> ctx <span class="op">=</span> <span class="va">canvas</span>.<span class="at">getContext</span>(<span class="st">'2d'</span>)<span class="op">;</span></span>
-<span id="cb6-8"><a href="#cb6-8"></a>  <span class="va">ctx</span>.<span class="at">drawImage</span>(video<span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>)<span class="op">;</span></span>
-<span id="cb6-9"><a href="#cb6-9"></a>  <span class="cf">return</span> <span class="va">ctx</span>.<span class="at">getImageData</span>(<span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="va">video</span>.<span class="at">videoWidth</span><span class="op">,</span> <span class="va">video</span>.<span class="at">videoHeight</span>)<span class="op">;</span></span>
-<span id="cb6-10"><a href="#cb6-10"></a><span class="op">}</span></span></code></pre></div>
+<span id="cb6-7"><a href="#cb6-7"></a>  <span class="kw">const</span> ctx <span class="op">=</span> canvas<span class="op">.</span><span class="fu">getContext</span>(<span class="st">'2d'</span>)<span class="op">;</span></span>
+<span id="cb6-8"><a href="#cb6-8"></a>  ctx<span class="op">.</span><span class="fu">drawImage</span>(video<span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>)<span class="op">;</span></span>
+<span id="cb6-9"><a href="#cb6-9"></a>  <span class="cf">return</span> ctx<span class="op">.</span><span class="fu">getImageData</span>(<span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> video<span class="op">.</span><span class="at">videoWidth</span><span class="op">,</span> video<span class="op">.</span><span class="at">videoHeight</span>)<span class="op">;</span></span>
+<span id="cb6-10"><a href="#cb6-10"></a>}</span></code></pre></div>
 <p>さて，後はこれを Elm で呼び出す． ただし，カメラを起動する <code>startCamera</code> 関数の時と違い，ボタンを押したらQRコードのデコード結果の文字列を取得したい． なので JavaScript 側から実行されることを想定した「内向き」のポート関数も定義する:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb7-1"><a href="#cb7-1"></a><span class="co">-- QRCode.elm</span></span>
 <span id="cb7-2"><a href="#cb7-2"></a><span class="kw">port</span> <span class="kw">module</span> <span class="dt">QRCode</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
@@ -213,16 +213,16 @@
 <span id="cb7-21"><a href="#cb7-21"></a>  <span class="fu">updateQRCode</span> (<span class="fu">msg</span> <span class="op">&lt;&lt;</span> <span class="dt">D</span><span class="op">.</span><span class="fu">decodeValue</span> (<span class="dt">D</span><span class="op">.</span><span class="fu">nullable</span> <span class="fu">decoder</span>))</span></code></pre></div>
 <p><code>updateQRCode</code> 関数が内向きのポート関数だ． <code>Sub a</code> 型はタイマーやマウスの動作など外部から非同期に送られてくるメッセージを取得するための型だ． 次のように，JS 側で実装する <code>captureImage</code> 関数の最後で <code>updateQRCode</code> 関数が呼ばれ <code>QRCode</code> 型を表す JS オブジェクトが送られてくる:</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb8-1"><a href="#cb8-1"></a><span class="co">// canvas の id を追加</span></span>
-<span id="cb8-2"><a href="#cb8-2"></a><span class="kw">const</span> flags <span class="op">=</span> <span class="op">{</span></span>
-<span id="cb8-3"><a href="#cb8-3"></a>  <span class="dt">ids</span><span class="op">:</span> <span class="op">{</span> <span class="dt">video</span><span class="op">:</span> <span class="st">'video_area'</span><span class="op">,</span> <span class="dt">capture</span><span class="op">:</span> <span class="st">'capture_image'</span> <span class="op">},</span></span>
-<span id="cb8-4"><a href="#cb8-4"></a>  <span class="dt">size</span><span class="op">:</span> <span class="op">{</span> <span class="dt">width</span><span class="op">:</span> <span class="dv">300</span><span class="op">,</span> <span class="dt">height</span><span class="op">:</span> <span class="dv">300</span> <span class="op">}</span></span>
-<span id="cb8-5"><a href="#cb8-5"></a><span class="op">};</span></span>
+<span id="cb8-2"><a href="#cb8-2"></a><span class="kw">const</span> flags <span class="op">=</span> {</span>
+<span id="cb8-3"><a href="#cb8-3"></a>  <span class="dt">ids</span><span class="op">:</span> { <span class="dt">video</span><span class="op">:</span> <span class="st">'video_area'</span><span class="op">,</span> <span class="dt">capture</span><span class="op">:</span> <span class="st">'capture_image'</span> }<span class="op">,</span></span>
+<span id="cb8-4"><a href="#cb8-4"></a>  <span class="dt">size</span><span class="op">:</span> { <span class="dt">width</span><span class="op">:</span> <span class="dv">300</span><span class="op">,</span> <span class="dt">height</span><span class="op">:</span> <span class="dv">300</span> }</span>
+<span id="cb8-5"><a href="#cb8-5"></a>}<span class="op">;</span></span>
 <span id="cb8-6"><a href="#cb8-6"></a></span>
-<span id="cb8-7"><a href="#cb8-7"></a><span class="va">app</span>.<span class="va">ports</span>.<span class="va">captureImage</span>.<span class="at">subscribe</span>(<span class="kw">function</span>() <span class="op">{</span></span>
-<span id="cb8-8"><a href="#cb8-8"></a>  <span class="kw">const</span> imageData <span class="op">=</span> <span class="at">captureImage</span>(<span class="va">flags</span>.<span class="va">ids</span>.<span class="at">video</span><span class="op">,</span> <span class="va">flags</span>.<span class="va">ids</span>.<span class="at">capture</span>)<span class="op">;</span></span>
-<span id="cb8-9"><a href="#cb8-9"></a>  <span class="kw">const</span> qrcode <span class="op">=</span> <span class="at">jsQR</span>(<span class="va">imageData</span>.<span class="at">data</span><span class="op">,</span> <span class="va">imageData</span>.<span class="at">width</span><span class="op">,</span> <span class="va">imageData</span>.<span class="at">height</span>)</span>
-<span id="cb8-10"><a href="#cb8-10"></a>  <span class="va">app</span>.<span class="va">ports</span>.<span class="va">updateQRCode</span>.<span class="at">send</span>(qrcode)<span class="op">;</span> <span class="co">// ココ</span></span>
-<span id="cb8-11"><a href="#cb8-11"></a><span class="op">}</span>)</span></code></pre></div>
+<span id="cb8-7"><a href="#cb8-7"></a>app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">captureImage</span><span class="op">.</span><span class="fu">subscribe</span>(<span class="kw">function</span>() {</span>
+<span id="cb8-8"><a href="#cb8-8"></a>  <span class="kw">const</span> imageData <span class="op">=</span> captureImage(flags<span class="op">.</span><span class="at">ids</span><span class="op">.</span><span class="at">video</span><span class="op">,</span> flags<span class="op">.</span><span class="at">ids</span><span class="op">.</span><span class="at">capture</span>)<span class="op">;</span></span>
+<span id="cb8-9"><a href="#cb8-9"></a>  <span class="kw">const</span> qrcode <span class="op">=</span> jsQR(imageData<span class="op">.</span><span class="at">data</span><span class="op">,</span> imageData<span class="op">.</span><span class="at">width</span><span class="op">,</span> imageData<span class="op">.</span><span class="at">height</span>)</span>
+<span id="cb8-10"><a href="#cb8-10"></a>  app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">updateQRCode</span><span class="op">.</span><span class="fu">send</span>(qrcode)<span class="op">;</span> <span class="co">// ココ</span></span>
+<span id="cb8-11"><a href="#cb8-11"></a>})</span></code></pre></div>
 <p>Elm 側は次のように書き換える:</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">exposing</span> (<span class="fu">main</span>)</span>
 <span id="cb9-2"><a href="#cb9-2"></a></span>

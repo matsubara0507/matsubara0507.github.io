@@ -501,8 +501,8 @@ Successfully generated static/main.js</code></pre>
 <span id="cb24-5"><a href="#cb24-5"></a><span class="kw">&lt;div</span><span class="ot"> id=</span><span class="st">&quot;main&quot;</span><span class="kw">&gt;&lt;/div&gt;</span></span>
 <span id="cb24-6"><a href="#cb24-6"></a><span class="kw">&lt;script</span><span class="ot"> src=</span><span class="st">&quot;static/main.js&quot;</span><span class="kw">&gt;&lt;/script&gt;</span></span>
 <span id="cb24-7"><a href="#cb24-7"></a><span class="kw">&lt;script&gt;</span></span>
-<span id="cb24-8"><a href="#cb24-8"></a>  <span class="kw">var</span> node <span class="op">=</span> <span class="va">document</span>.<span class="at">getElementById</span>(<span class="st">'main'</span>)<span class="op">;</span></span>
-<span id="cb24-9"><a href="#cb24-9"></a>  <span class="kw">var</span> app <span class="op">=</span> <span class="va">Elm</span>.<span class="va">Main</span>.<span class="at">embed</span>(node)<span class="op">;</span></span>
+<span id="cb24-8"><a href="#cb24-8"></a>  <span class="kw">var</span> node <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">getElementById</span>(<span class="st">'main'</span>)<span class="op">;</span></span>
+<span id="cb24-9"><a href="#cb24-9"></a>  <span class="kw">var</span> app <span class="op">=</span> Elm<span class="op">.</span><span class="at">Main</span><span class="op">.</span><span class="fu">embed</span>(node)<span class="op">;</span></span>
 <span id="cb24-10"><a href="#cb24-10"></a><span class="kw">&lt;/script&gt;</span></span></code></pre></div>
 <p>もう一度サーバーを立てて <code>localhost:8080</code> にアクセスしてみる． もちろん，真っ白で <code>Uncaught Error: Ran into a Debug.crash in module Main on line 68</code> というエラーメッセージが出るだけなんだが(笑)</p>
 <h2 id="section-3"></h2>

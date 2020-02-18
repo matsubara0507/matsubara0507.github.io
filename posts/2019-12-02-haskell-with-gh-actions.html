@@ -198,45 +198,45 @@
 <li><a href="https://github.com/matsubara0507/actions/tree/master/move-files">actions/move-files at master · matsubara0507/actions</a></li>
 </ul>
 <p>ついに TypeScript デビューした． はい，actions/cache を参考にしてきていい感じに書き直しただけです． <code>mkdir</code> や <code>mv</code> は <a href="https://github.com/actions/toolkit/tree/master/packages/io">actions/toolkit</a> にあるので簡単に実装できた:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb6-1"><a href="#cb6-1"></a><span class="im">import</span> <span class="op">*</span> <span class="im">as</span> core <span class="im">from</span> <span class="st">&quot;@actions/core&quot;</span><span class="op">;</span></span>
-<span id="cb6-2"><a href="#cb6-2"></a><span class="im">import</span> <span class="op">*</span> <span class="im">as</span> io <span class="im">from</span> <span class="st">&quot;@actions/io&quot;</span><span class="op">;</span></span>
-<span id="cb6-3"><a href="#cb6-3"></a><span class="im">import</span> <span class="op">*</span> <span class="im">as</span> utils <span class="im">from</span> <span class="st">&quot;./utils/actionUtils&quot;</span><span class="op">;</span></span>
+<div class="sourceCode" id="cb6"><pre class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb6-1"><a href="#cb6-1"></a><span class="im">import</span> <span class="op">*</span> <span class="im">as</span> core from <span class="st">&quot;@actions/core&quot;</span><span class="op">;</span></span>
+<span id="cb6-2"><a href="#cb6-2"></a><span class="im">import</span> <span class="op">*</span> <span class="im">as</span> io from <span class="st">&quot;@actions/io&quot;</span><span class="op">;</span></span>
+<span id="cb6-3"><a href="#cb6-3"></a><span class="im">import</span> <span class="op">*</span> <span class="im">as</span> utils from <span class="st">&quot;./utils/actionUtils&quot;</span><span class="op">;</span></span>
 <span id="cb6-4"><a href="#cb6-4"></a></span>
-<span id="cb6-5"><a href="#cb6-5"></a><span class="kw">async</span> <span class="kw">function</span> <span class="fu">run</span>()<span class="op">:</span> <span class="bu">Promise</span><span class="op">&lt;</span><span class="dt">void</span><span class="op">&gt;</span> <span class="op">{</span></span>
-<span id="cb6-6"><a href="#cb6-6"></a>    <span class="cf">try</span> <span class="op">{</span></span>
-<span id="cb6-7"><a href="#cb6-7"></a>        <span class="kw">const</span> source <span class="op">=</span> <span class="va">utils</span><span class="op">.</span><span class="fu">resolvePath</span>(</span>
-<span id="cb6-8"><a href="#cb6-8"></a>            <span class="va">core</span><span class="op">.</span><span class="fu">getInput</span>(<span class="st">&quot;source_dir&quot;</span><span class="op">,</span> <span class="op">{</span> required<span class="op">:</span> <span class="kw">true</span> <span class="op">}</span>)</span>
+<span id="cb6-5"><a href="#cb6-5"></a>async <span class="kw">function</span> <span class="fu">run</span>()<span class="op">:</span> <span class="bu">Promise</span><span class="op">&lt;</span><span class="dt">void</span><span class="op">&gt;</span> {</span>
+<span id="cb6-6"><a href="#cb6-6"></a>    try {</span>
+<span id="cb6-7"><a href="#cb6-7"></a>        const source <span class="op">=</span> utils<span class="op">.</span><span class="fu">resolvePath</span>(</span>
+<span id="cb6-8"><a href="#cb6-8"></a>            core<span class="op">.</span><span class="fu">getInput</span>(<span class="st">&quot;source_dir&quot;</span><span class="op">,</span> { required<span class="op">:</span> true })</span>
 <span id="cb6-9"><a href="#cb6-9"></a>        )<span class="op">;</span></span>
 <span id="cb6-10"><a href="#cb6-10"></a>        <span class="co">// 残念ながら inputs は文字列しか渡せないので改行で分割してる</span></span>
-<span id="cb6-11"><a href="#cb6-11"></a>        <span class="kw">const</span> files <span class="op">=</span> core</span>
-<span id="cb6-12"><a href="#cb6-12"></a>            .<span class="fu">getInput</span>(<span class="st">&quot;source_files&quot;</span><span class="op">,</span> <span class="op">{</span> required<span class="op">:</span> <span class="kw">true</span> <span class="op">}</span>)</span>
-<span id="cb6-13"><a href="#cb6-13"></a>            .<span class="fu">split</span>(<span class="ss">/</span><span class="sc">\r?\n</span><span class="ss">/</span>)</span>
-<span id="cb6-14"><a href="#cb6-14"></a>            .<span class="fu">filter</span>(pat <span class="kw">=&gt;</span> pat)</span>
-<span id="cb6-15"><a href="#cb6-15"></a>            .<span class="fu">map</span>(pat <span class="kw">=&gt;</span> <span class="va">pat</span><span class="op">.</span><span class="fu">trim</span>())<span class="op">;</span></span>
-<span id="cb6-16"><a href="#cb6-16"></a>        <span class="kw">const</span> target <span class="op">=</span> <span class="va">utils</span><span class="op">.</span><span class="fu">resolvePath</span>(</span>
-<span id="cb6-17"><a href="#cb6-17"></a>            <span class="va">core</span><span class="op">.</span><span class="fu">getInput</span>(<span class="st">&quot;target_dir&quot;</span><span class="op">,</span> <span class="op">{</span> required<span class="op">:</span> <span class="kw">true</span> <span class="op">}</span>)</span>
+<span id="cb6-11"><a href="#cb6-11"></a>        const files <span class="op">=</span> core</span>
+<span id="cb6-12"><a href="#cb6-12"></a>            <span class="op">.</span><span class="fu">getInput</span>(<span class="st">&quot;source_files&quot;</span><span class="op">,</span> { required<span class="op">:</span> true })</span>
+<span id="cb6-13"><a href="#cb6-13"></a>            <span class="op">.</span><span class="fu">split</span>(<span class="ss">/</span><span class="sc">\r?\n</span><span class="ss">/</span>)</span>
+<span id="cb6-14"><a href="#cb6-14"></a>            <span class="op">.</span><span class="fu">filter</span>(pat <span class="kw">=&gt;</span> pat)</span>
+<span id="cb6-15"><a href="#cb6-15"></a>            <span class="op">.</span><span class="fu">map</span>(pat <span class="kw">=&gt;</span> pat<span class="op">.</span><span class="fu">trim</span>())<span class="op">;</span></span>
+<span id="cb6-16"><a href="#cb6-16"></a>        const target <span class="op">=</span> utils<span class="op">.</span><span class="fu">resolvePath</span>(</span>
+<span id="cb6-17"><a href="#cb6-17"></a>            core<span class="op">.</span><span class="fu">getInput</span>(<span class="st">&quot;target_dir&quot;</span><span class="op">,</span> { required<span class="op">:</span> true })</span>
 <span id="cb6-18"><a href="#cb6-18"></a>        )<span class="op">;</span></span>
 <span id="cb6-19"><a href="#cb6-19"></a></span>
-<span id="cb6-20"><a href="#cb6-20"></a>        <span class="cf">await</span> <span class="va">io</span><span class="op">.</span><span class="fu">mkdirP</span>(target)<span class="op">;</span></span>
-<span id="cb6-21"><a href="#cb6-21"></a>        <span class="va">core</span><span class="op">.</span><span class="fu">debug</span>(<span class="vs">`mkdir -p </span><span class="sc">${</span>target<span class="sc">}</span><span class="vs">`</span>)<span class="op">;</span></span>
+<span id="cb6-20"><a href="#cb6-20"></a>        await io<span class="op">.</span><span class="fu">mkdirP</span>(target)<span class="op">;</span></span>
+<span id="cb6-21"><a href="#cb6-21"></a>        core<span class="op">.</span><span class="fu">debug</span>(<span class="vs">`mkdir -p </span><span class="sc">${</span>target<span class="sc">}</span><span class="vs">`</span>)<span class="op">;</span></span>
 <span id="cb6-22"><a href="#cb6-22"></a></span>
-<span id="cb6-23"><a href="#cb6-23"></a>        <span class="va">files</span><span class="op">.</span><span class="fu">forEach</span>(<span class="kw">async</span> <span class="fu">function</span>(file) <span class="op">{</span></span>
-<span id="cb6-24"><a href="#cb6-24"></a>            <span class="cf">try</span> <span class="op">{</span></span>
-<span id="cb6-25"><a href="#cb6-25"></a>                <span class="kw">const</span> path <span class="op">=</span> <span class="va">source</span><span class="op">.</span><span class="fu">concat</span>(<span class="st">&quot;/&quot;</span><span class="op">,</span> file)<span class="op">;</span></span>
-<span id="cb6-26"><a href="#cb6-26"></a>                <span class="cf">await</span> <span class="va">io</span><span class="op">.</span><span class="fu">mv</span>(path<span class="op">,</span> target)<span class="op">;</span></span>
-<span id="cb6-27"><a href="#cb6-27"></a>                <span class="va">core</span><span class="op">.</span><span class="fu">debug</span>(<span class="vs">`mv </span><span class="sc">${</span>path<span class="sc">}</span><span class="vs"> to </span><span class="sc">${</span>target<span class="sc">}</span><span class="vs">`</span>)<span class="op">;</span></span>
-<span id="cb6-28"><a href="#cb6-28"></a>            <span class="op">}</span> <span class="fu">catch</span> (error) <span class="op">{</span></span>
-<span id="cb6-29"><a href="#cb6-29"></a>                <span class="va">core</span><span class="op">.</span><span class="fu">warning</span>(<span class="va">error</span><span class="op">.</span><span class="at">message</span>)<span class="op">;</span></span>
-<span id="cb6-30"><a href="#cb6-30"></a>            <span class="op">}</span></span>
-<span id="cb6-31"><a href="#cb6-31"></a>        <span class="op">}</span>)<span class="op">;</span></span>
-<span id="cb6-32"><a href="#cb6-32"></a>    <span class="op">}</span> <span class="fu">catch</span> (error) <span class="op">{</span></span>
-<span id="cb6-33"><a href="#cb6-33"></a>        <span class="va">core</span><span class="op">.</span><span class="fu">warning</span>(<span class="va">error</span><span class="op">.</span><span class="at">message</span>)<span class="op">;</span></span>
-<span id="cb6-34"><a href="#cb6-34"></a>    <span class="op">}</span></span>
-<span id="cb6-35"><a href="#cb6-35"></a><span class="op">}</span></span>
+<span id="cb6-23"><a href="#cb6-23"></a>        files<span class="op">.</span><span class="fu">forEach</span>(async <span class="kw">function</span>(file) {</span>
+<span id="cb6-24"><a href="#cb6-24"></a>            try {</span>
+<span id="cb6-25"><a href="#cb6-25"></a>                const path <span class="op">=</span> source<span class="op">.</span><span class="fu">concat</span>(<span class="st">&quot;/&quot;</span><span class="op">,</span> file)<span class="op">;</span></span>
+<span id="cb6-26"><a href="#cb6-26"></a>                await io<span class="op">.</span><span class="fu">mv</span>(path<span class="op">,</span> target)<span class="op">;</span></span>
+<span id="cb6-27"><a href="#cb6-27"></a>                core<span class="op">.</span><span class="fu">debug</span>(<span class="vs">`mv </span><span class="sc">${</span>path<span class="sc">}</span><span class="vs"> to </span><span class="sc">${</span>target<span class="sc">}</span><span class="vs">`</span>)<span class="op">;</span></span>
+<span id="cb6-28"><a href="#cb6-28"></a>            } catch (error) {</span>
+<span id="cb6-29"><a href="#cb6-29"></a>                core<span class="op">.</span><span class="fu">warning</span>(error<span class="op">.</span><span class="at">message</span>)<span class="op">;</span></span>
+<span id="cb6-30"><a href="#cb6-30"></a>            }</span>
+<span id="cb6-31"><a href="#cb6-31"></a>        })<span class="op">;</span></span>
+<span id="cb6-32"><a href="#cb6-32"></a>    } catch (error) {</span>
+<span id="cb6-33"><a href="#cb6-33"></a>        core<span class="op">.</span><span class="fu">warning</span>(error<span class="op">.</span><span class="at">message</span>)<span class="op">;</span></span>
+<span id="cb6-34"><a href="#cb6-34"></a>    }</span>
+<span id="cb6-35"><a href="#cb6-35"></a>}</span>
 <span id="cb6-36"><a href="#cb6-36"></a></span>
-<span id="cb6-37"><a href="#cb6-37"></a><span class="fu">run</span>()<span class="op">;</span></span>
+<span id="cb6-37"><a href="#cb6-37"></a>run()<span class="op">;</span></span>
 <span id="cb6-38"><a href="#cb6-38"></a></span>
-<span id="cb6-39"><a href="#cb6-39"></a><span class="im">export</span> <span class="im">default</span> run<span class="op">;</span></span></code></pre></div>
+<span id="cb6-39"><a href="#cb6-39"></a>export default run<span class="op">;</span></span></code></pre></div>
 <p>使うときはこんな感じ:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Move .stack/pantry to temp</span></span>
 <span id="cb7-2"><a href="#cb7-2"></a><span class="at">      </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> matsubara0507/actions/move-files@master</span></span>

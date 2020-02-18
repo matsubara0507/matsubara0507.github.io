@@ -63,7 +63,7 @@
 <span id="cb2-2"><a href="#cb2-2"></a><span class="st">&#39;use strict&#39;</span><span class="op">;</span></span>
 <span id="cb2-3"><a href="#cb2-3"></a></span>
 <span id="cb2-4"><a href="#cb2-4"></a><span class="co">// コレらの設定は公開してもいいらしいけど</span></span>
-<span id="cb2-5"><a href="#cb2-5"></a><span class="kw">var</span> firebaseConfig <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb2-5"><a href="#cb2-5"></a><span class="kw">var</span> firebaseConfig <span class="op">=</span> {</span>
 <span id="cb2-6"><a href="#cb2-6"></a>  <span class="dt">apiKey</span><span class="op">:</span> <span class="st">&quot;...&quot;</span><span class="op">,</span></span>
 <span id="cb2-7"><a href="#cb2-7"></a>  <span class="dt">authDomain</span><span class="op">:</span> <span class="st">&quot;...&quot;</span><span class="op">,</span></span>
 <span id="cb2-8"><a href="#cb2-8"></a>  <span class="dt">databaseURL</span><span class="op">:</span> <span class="st">&quot;...&quot;</span><span class="op">,</span></span>
@@ -71,10 +71,10 @@
 <span id="cb2-10"><a href="#cb2-10"></a>  <span class="dt">storageBucket</span><span class="op">:</span> <span class="st">&quot;...&quot;</span><span class="op">,</span></span>
 <span id="cb2-11"><a href="#cb2-11"></a>  <span class="dt">messagingSenderId</span><span class="op">:</span> <span class="st">&quot;...&quot;</span><span class="op">,</span></span>
 <span id="cb2-12"><a href="#cb2-12"></a>  <span class="dt">appId</span><span class="op">:</span> <span class="st">&quot;...&quot;</span></span>
-<span id="cb2-13"><a href="#cb2-13"></a><span class="op">};</span></span>
+<span id="cb2-13"><a href="#cb2-13"></a>}<span class="op">;</span></span>
 <span id="cb2-14"><a href="#cb2-14"></a></span>
-<span id="cb2-15"><a href="#cb2-15"></a><span class="va">firebase</span>.<span class="at">initializeApp</span>(firebaseConfig)<span class="op">;</span></span>
-<span id="cb2-16"><a href="#cb2-16"></a><span class="kw">const</span> provider <span class="op">=</span> <span class="kw">new</span> <span class="va">firebase</span>.<span class="va">auth</span>.<span class="at">GithubAuthProvider</span>()<span class="op">;</span></span></code></pre></div>
+<span id="cb2-15"><a href="#cb2-15"></a>firebase<span class="op">.</span><span class="fu">initializeApp</span>(firebaseConfig)<span class="op">;</span></span>
+<span id="cb2-16"><a href="#cb2-16"></a><span class="kw">const</span> provider <span class="op">=</span> <span class="kw">new</span> firebase<span class="op">.</span><span class="at">auth</span><span class="op">.</span><span class="fu">GithubAuthProvider</span>()<span class="op">;</span></span></code></pre></div>
 <p>あとは Elm から Firebase のメソッドを呼び出す． 基本的にコレを参考にした：</p>
 <ul>
 <li><a href="https://qiita.com/ababup1192/items/f27f9af282d9fa642eb5">Elm portsでFirebase Firestoreを触ろう！ - Qiita</a></li>
@@ -88,28 +88,28 @@
 <span id="cb3-6"><a href="#cb3-6"></a><span class="kw">port</span> <span class="fu">getSignInResult</span> : () <span class="op">-&gt;</span> <span class="dt">Cmd</span> <span class="fu">msg</span></span>
 <span id="cb3-7"><a href="#cb3-7"></a><span class="kw">port</span> <span class="fu">signedIn</span> : (<span class="dt">E</span><span class="op">.</span><span class="dt">Value</span> <span class="op">-&gt;</span> <span class="fu">msg</span>) <span class="op">-&gt;</span> <span class="dt">Sub</span> <span class="fu">msg</span></span></code></pre></div>
 <div class="sourceCode" id="cb4"><pre class="sourceCode js"><code class="sourceCode javascript"><span id="cb4-1"><a href="#cb4-1"></a><span class="co">// static/index.js</span></span>
-<span id="cb4-2"><a href="#cb4-2"></a>...</span>
+<span id="cb4-2"><a href="#cb4-2"></a><span class="op">...</span></span>
 <span id="cb4-3"><a href="#cb4-3"></a></span>
-<span id="cb4-4"><a href="#cb4-4"></a><span class="kw">const</span> app <span class="op">=</span> <span class="va">Elm</span>.<span class="va">Main</span>.<span class="at">init</span>(</span>
-<span id="cb4-5"><a href="#cb4-5"></a>  <span class="op">{</span> <span class="dt">node</span><span class="op">:</span> <span class="va">document</span>.<span class="at">getElementById</span>(<span class="st">&#39;main&#39;</span>)</span>
-<span id="cb4-6"><a href="#cb4-6"></a>  <span class="op">,</span> <span class="dt">flags</span><span class="op">:</span> <span class="op">{}</span></span>
-<span id="cb4-7"><a href="#cb4-7"></a>  <span class="op">}</span></span>
+<span id="cb4-4"><a href="#cb4-4"></a><span class="kw">const</span> app <span class="op">=</span> Elm<span class="op">.</span><span class="at">Main</span><span class="op">.</span><span class="fu">init</span>(</span>
+<span id="cb4-5"><a href="#cb4-5"></a>  { <span class="dt">node</span><span class="op">:</span> <span class="bu">document</span><span class="op">.</span><span class="fu">getElementById</span>(<span class="st">&#39;main&#39;</span>)</span>
+<span id="cb4-6"><a href="#cb4-6"></a>  <span class="op">,</span> <span class="dt">flags</span><span class="op">:</span> {}</span>
+<span id="cb4-7"><a href="#cb4-7"></a>  }</span>
 <span id="cb4-8"><a href="#cb4-8"></a>)<span class="op">;</span></span>
 <span id="cb4-9"><a href="#cb4-9"></a></span>
-<span id="cb4-10"><a href="#cb4-10"></a><span class="va">app</span>.<span class="va">ports</span>.<span class="va">signIn</span>.<span class="at">subscribe</span>(_ <span class="kw">=&gt;</span> <span class="op">{</span></span>
+<span id="cb4-10"><a href="#cb4-10"></a>app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">signIn</span><span class="op">.</span><span class="fu">subscribe</span>(_ <span class="kw">=&gt;</span> {</span>
 <span id="cb4-11"><a href="#cb4-11"></a>  <span class="co">// popup の方はモバイル系でうまく動作しなかったのでこっちを使う</span></span>
-<span id="cb4-12"><a href="#cb4-12"></a>  <span class="va">firebase</span>.<span class="at">auth</span>().<span class="at">signInWithRedirect</span>(provider)<span class="op">;</span></span>
-<span id="cb4-13"><a href="#cb4-13"></a><span class="op">}</span>)<span class="op">;</span></span>
+<span id="cb4-12"><a href="#cb4-12"></a>  firebase<span class="op">.</span><span class="fu">auth</span>()<span class="op">.</span><span class="fu">signInWithRedirect</span>(provider)<span class="op">;</span></span>
+<span id="cb4-13"><a href="#cb4-13"></a>})<span class="op">;</span></span>
 <span id="cb4-14"><a href="#cb4-14"></a></span>
-<span id="cb4-15"><a href="#cb4-15"></a><span class="va">app</span>.<span class="va">ports</span>.<span class="va">getSignInResult</span>.<span class="at">subscribe</span>(_ <span class="kw">=&gt;</span> <span class="op">{</span></span>
-<span id="cb4-16"><a href="#cb4-16"></a>  <span class="va">firebase</span>.<span class="at">auth</span>().<span class="at">getRedirectResult</span>().<span class="at">then</span>(<span class="kw">function</span>(result) <span class="op">{</span></span>
-<span id="cb4-17"><a href="#cb4-17"></a>    <span class="cf">if</span> (<span class="va">result</span>.<span class="at">credential</span>) <span class="op">{</span></span>
-<span id="cb4-18"><a href="#cb4-18"></a>      <span class="va">app</span>.<span class="va">ports</span>.<span class="va">signedIn</span>.<span class="at">send</span>(result)<span class="op">;</span></span>
-<span id="cb4-19"><a href="#cb4-19"></a>    <span class="op">}</span></span>
-<span id="cb4-20"><a href="#cb4-20"></a>  <span class="op">}</span>).<span class="at">catch</span>(<span class="kw">function</span>(error) <span class="op">{</span></span>
-<span id="cb4-21"><a href="#cb4-21"></a>    <span class="va">app</span>.<span class="va">ports</span>.<span class="va">failSignIn</span>.<span class="at">send</span>(error)</span>
-<span id="cb4-22"><a href="#cb4-22"></a>  <span class="op">}</span>)<span class="op">;</span></span>
-<span id="cb4-23"><a href="#cb4-23"></a><span class="op">}</span>)<span class="op">;</span></span></code></pre></div>
+<span id="cb4-15"><a href="#cb4-15"></a>app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">getSignInResult</span><span class="op">.</span><span class="fu">subscribe</span>(_ <span class="kw">=&gt;</span> {</span>
+<span id="cb4-16"><a href="#cb4-16"></a>  firebase<span class="op">.</span><span class="fu">auth</span>()<span class="op">.</span><span class="fu">getRedirectResult</span>()<span class="op">.</span><span class="fu">then</span>(<span class="kw">function</span>(result) {</span>
+<span id="cb4-17"><a href="#cb4-17"></a>    <span class="cf">if</span> (result<span class="op">.</span><span class="at">credential</span>) {</span>
+<span id="cb4-18"><a href="#cb4-18"></a>      app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">signedIn</span><span class="op">.</span><span class="fu">send</span>(result)<span class="op">;</span></span>
+<span id="cb4-19"><a href="#cb4-19"></a>    }</span>
+<span id="cb4-20"><a href="#cb4-20"></a>  })<span class="op">.</span><span class="fu">catch</span>(<span class="kw">function</span>(error) {</span>
+<span id="cb4-21"><a href="#cb4-21"></a>    app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">failSignIn</span><span class="op">.</span><span class="fu">send</span>(error)</span>
+<span id="cb4-22"><a href="#cb4-22"></a>  })<span class="op">;</span></span>
+<span id="cb4-23"><a href="#cb4-23"></a>})<span class="op">;</span></span></code></pre></div>
 <p>繋ぎ込みはできた． サクッとトークンだけもらって，GitHub API v3 からユーザー名を取得する部分を実装する：</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">module</span> <span class="dt">GitHub</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
 <span id="cb5-2"><a href="#cb5-2"></a></span>
@@ -935,7 +935,7 @@
 <li><a href="https://github.com/matsubara0507/ELaMbda">matsubara0507/ELaMbda - GitHub</a></li>
 </ul>
 <p>また，今まで同様に<a href="https://matsubara0507.github.io/ELaMbda/?chap=chap10">Web ブラウザから遊べるようになってます</a>．</p>
-<p><a href="http://localhost:8000/docs/index.html?chap=chap10&amp;exp=(\x%20:%20Bool%20.%20if%20x%20then%20x%20else%20(\f%20:%20Bool%20-%3E%20Bool%20-%3E%20Bool%20.%20f%20x%20x)%20(\x%20:%20Bool%20.%20\y%20:%20Bool%20.%20y))%20(if%20true%20then%20false%20else%20true)"><img src="/assets/tapl-with-elm/chap10.jpg"></img></a></p>
+<p><a href="https://matsubara0507.github.io/ELaMbda/?chap=chap10&amp;exp=(\x%20:%20Bool%20.%20if%20x%20then%20x%20else%20(\f%20:%20Bool%20-%3E%20Bool%20-%3E%20Bool%20.%20f%20x%20x)%20(\x%20:%20Bool%20.%20\y%20:%20Bool%20.%20y))%20(if%20true%20then%20false%20else%20true)"><img src="/assets/tapl-with-elm/chap10.jpg"></img></a></p>
 <h2 id="第10章-単純型の-ml-実装">第10章 単純型の ML 実装</h2>
 <p>さて，いよいよみんな大好き「型」の登場だ． 10章は少し面白くて，4章で実装した算術式の真偽値に関する部分と7章の型なしラムダ計算を組み合わせて，更にそれに型をのせるプログラミング言語を実装する． つまり，今までの実装をちゃんとやっていれば割とサクッとできています．</p>
 <h1 id="section-1"></h1>
@@ -1511,7 +1511,7 @@
 </ul>
 <p>また，前回同様に<a href="https://matsubara0507.github.io/ELaMbda/?chap=chap7">Web ブラウザから遊べるようになってます</a>．</p>
 <p><a href="https://matsubara0507.github.io/ELaMbda/?chap=chap7&amp;exp=(\x%20.%20x%20x)%20(\x%20.%20x%20x)"><img src="/assets/tapl-with-elm/chap7.jpg"></img></a></p>
-<h2 id="第7章-ラムダ計算の-ml-実装">第7章 ラムダ計算の ML 実装</h2>
+<h2 id="第7章-ラムタ計算の-ml-実装">第7章 ラムダ計算の ML 実装</h2>
 <p>さぁいよいよみんな大好き(型なし)ラムダ計算です． ちなみに，ラムダ計算の数理論理学的な議論は5章でしている．</p>
 <h3 id="構文規則">構文規則</h3>
 <p>構文規則はこんな感じ:</p>
@@ -2506,45 +2506,45 @@
 <li><a href="https://github.com/matsubara0507/actions/tree/master/move-files">actions/move-files at master · matsubara0507/actions</a></li>
 </ul>
 <p>ついに TypeScript デビューした． はい，actions/cache を参考にしてきていい感じに書き直しただけです． <code>mkdir</code> や <code>mv</code> は <a href="https://github.com/actions/toolkit/tree/master/packages/io">actions/toolkit</a> にあるので簡単に実装できた:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb6-1"><a href="#cb6-1"></a><span class="im">import</span> <span class="op">*</span> <span class="im">as</span> core <span class="im">from</span> <span class="st">&quot;@actions/core&quot;</span><span class="op">;</span></span>
-<span id="cb6-2"><a href="#cb6-2"></a><span class="im">import</span> <span class="op">*</span> <span class="im">as</span> io <span class="im">from</span> <span class="st">&quot;@actions/io&quot;</span><span class="op">;</span></span>
-<span id="cb6-3"><a href="#cb6-3"></a><span class="im">import</span> <span class="op">*</span> <span class="im">as</span> utils <span class="im">from</span> <span class="st">&quot;./utils/actionUtils&quot;</span><span class="op">;</span></span>
+<div class="sourceCode" id="cb6"><pre class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb6-1"><a href="#cb6-1"></a><span class="im">import</span> <span class="op">*</span> <span class="im">as</span> core from <span class="st">&quot;@actions/core&quot;</span><span class="op">;</span></span>
+<span id="cb6-2"><a href="#cb6-2"></a><span class="im">import</span> <span class="op">*</span> <span class="im">as</span> io from <span class="st">&quot;@actions/io&quot;</span><span class="op">;</span></span>
+<span id="cb6-3"><a href="#cb6-3"></a><span class="im">import</span> <span class="op">*</span> <span class="im">as</span> utils from <span class="st">&quot;./utils/actionUtils&quot;</span><span class="op">;</span></span>
 <span id="cb6-4"><a href="#cb6-4"></a></span>
-<span id="cb6-5"><a href="#cb6-5"></a><span class="kw">async</span> <span class="kw">function</span> <span class="fu">run</span>()<span class="op">:</span> <span class="bu">Promise</span><span class="op">&lt;</span><span class="dt">void</span><span class="op">&gt;</span> <span class="op">{</span></span>
-<span id="cb6-6"><a href="#cb6-6"></a>    <span class="cf">try</span> <span class="op">{</span></span>
-<span id="cb6-7"><a href="#cb6-7"></a>        <span class="kw">const</span> source <span class="op">=</span> <span class="va">utils</span><span class="op">.</span><span class="fu">resolvePath</span>(</span>
-<span id="cb6-8"><a href="#cb6-8"></a>            <span class="va">core</span><span class="op">.</span><span class="fu">getInput</span>(<span class="st">&quot;source_dir&quot;</span><span class="op">,</span> <span class="op">{</span> required<span class="op">:</span> <span class="kw">true</span> <span class="op">}</span>)</span>
+<span id="cb6-5"><a href="#cb6-5"></a>async <span class="kw">function</span> <span class="fu">run</span>()<span class="op">:</span> <span class="bu">Promise</span><span class="op">&lt;</span><span class="dt">void</span><span class="op">&gt;</span> {</span>
+<span id="cb6-6"><a href="#cb6-6"></a>    try {</span>
+<span id="cb6-7"><a href="#cb6-7"></a>        const source <span class="op">=</span> utils<span class="op">.</span><span class="fu">resolvePath</span>(</span>
+<span id="cb6-8"><a href="#cb6-8"></a>            core<span class="op">.</span><span class="fu">getInput</span>(<span class="st">&quot;source_dir&quot;</span><span class="op">,</span> { required<span class="op">:</span> true })</span>
 <span id="cb6-9"><a href="#cb6-9"></a>        )<span class="op">;</span></span>
 <span id="cb6-10"><a href="#cb6-10"></a>        <span class="co">// 残念ながら inputs は文字列しか渡せないので改行で分割してる</span></span>
-<span id="cb6-11"><a href="#cb6-11"></a>        <span class="kw">const</span> files <span class="op">=</span> core</span>
-<span id="cb6-12"><a href="#cb6-12"></a>            .<span class="fu">getInput</span>(<span class="st">&quot;source_files&quot;</span><span class="op">,</span> <span class="op">{</span> required<span class="op">:</span> <span class="kw">true</span> <span class="op">}</span>)</span>
-<span id="cb6-13"><a href="#cb6-13"></a>            .<span class="fu">split</span>(<span class="ss">/</span><span class="sc">\r?\n</span><span class="ss">/</span>)</span>
-<span id="cb6-14"><a href="#cb6-14"></a>            .<span class="fu">filter</span>(pat <span class="kw">=&gt;</span> pat)</span>
-<span id="cb6-15"><a href="#cb6-15"></a>            .<span class="fu">map</span>(pat <span class="kw">=&gt;</span> <span class="va">pat</span><span class="op">.</span><span class="fu">trim</span>())<span class="op">;</span></span>
-<span id="cb6-16"><a href="#cb6-16"></a>        <span class="kw">const</span> target <span class="op">=</span> <span class="va">utils</span><span class="op">.</span><span class="fu">resolvePath</span>(</span>
-<span id="cb6-17"><a href="#cb6-17"></a>            <span class="va">core</span><span class="op">.</span><span class="fu">getInput</span>(<span class="st">&quot;target_dir&quot;</span><span class="op">,</span> <span class="op">{</span> required<span class="op">:</span> <span class="kw">true</span> <span class="op">}</span>)</span>
+<span id="cb6-11"><a href="#cb6-11"></a>        const files <span class="op">=</span> core</span>
+<span id="cb6-12"><a href="#cb6-12"></a>            <span class="op">.</span><span class="fu">getInput</span>(<span class="st">&quot;source_files&quot;</span><span class="op">,</span> { required<span class="op">:</span> true })</span>
+<span id="cb6-13"><a href="#cb6-13"></a>            <span class="op">.</span><span class="fu">split</span>(<span class="ss">/</span><span class="sc">\r?\n</span><span class="ss">/</span>)</span>
+<span id="cb6-14"><a href="#cb6-14"></a>            <span class="op">.</span><span class="fu">filter</span>(pat <span class="kw">=&gt;</span> pat)</span>
+<span id="cb6-15"><a href="#cb6-15"></a>            <span class="op">.</span><span class="fu">map</span>(pat <span class="kw">=&gt;</span> pat<span class="op">.</span><span class="fu">trim</span>())<span class="op">;</span></span>
+<span id="cb6-16"><a href="#cb6-16"></a>        const target <span class="op">=</span> utils<span class="op">.</span><span class="fu">resolvePath</span>(</span>
+<span id="cb6-17"><a href="#cb6-17"></a>            core<span class="op">.</span><span class="fu">getInput</span>(<span class="st">&quot;target_dir&quot;</span><span class="op">,</span> { required<span class="op">:</span> true })</span>
 <span id="cb6-18"><a href="#cb6-18"></a>        )<span class="op">;</span></span>
 <span id="cb6-19"><a href="#cb6-19"></a></span>
-<span id="cb6-20"><a href="#cb6-20"></a>        <span class="cf">await</span> <span class="va">io</span><span class="op">.</span><span class="fu">mkdirP</span>(target)<span class="op">;</span></span>
-<span id="cb6-21"><a href="#cb6-21"></a>        <span class="va">core</span><span class="op">.</span><span class="fu">debug</span>(<span class="vs">`mkdir -p </span><span class="sc">${</span>target<span class="sc">}</span><span class="vs">`</span>)<span class="op">;</span></span>
+<span id="cb6-20"><a href="#cb6-20"></a>        await io<span class="op">.</span><span class="fu">mkdirP</span>(target)<span class="op">;</span></span>
+<span id="cb6-21"><a href="#cb6-21"></a>        core<span class="op">.</span><span class="fu">debug</span>(<span class="vs">`mkdir -p </span><span class="sc">${</span>target<span class="sc">}</span><span class="vs">`</span>)<span class="op">;</span></span>
 <span id="cb6-22"><a href="#cb6-22"></a></span>
-<span id="cb6-23"><a href="#cb6-23"></a>        <span class="va">files</span><span class="op">.</span><span class="fu">forEach</span>(<span class="kw">async</span> <span class="fu">function</span>(file) <span class="op">{</span></span>
-<span id="cb6-24"><a href="#cb6-24"></a>            <span class="cf">try</span> <span class="op">{</span></span>
-<span id="cb6-25"><a href="#cb6-25"></a>                <span class="kw">const</span> path <span class="op">=</span> <span class="va">source</span><span class="op">.</span><span class="fu">concat</span>(<span class="st">&quot;/&quot;</span><span class="op">,</span> file)<span class="op">;</span></span>
-<span id="cb6-26"><a href="#cb6-26"></a>                <span class="cf">await</span> <span class="va">io</span><span class="op">.</span><span class="fu">mv</span>(path<span class="op">,</span> target)<span class="op">;</span></span>
-<span id="cb6-27"><a href="#cb6-27"></a>                <span class="va">core</span><span class="op">.</span><span class="fu">debug</span>(<span class="vs">`mv </span><span class="sc">${</span>path<span class="sc">}</span><span class="vs"> to </span><span class="sc">${</span>target<span class="sc">}</span><span class="vs">`</span>)<span class="op">;</span></span>
-<span id="cb6-28"><a href="#cb6-28"></a>            <span class="op">}</span> <span class="fu">catch</span> (error) <span class="op">{</span></span>
-<span id="cb6-29"><a href="#cb6-29"></a>                <span class="va">core</span><span class="op">.</span><span class="fu">warning</span>(<span class="va">error</span><span class="op">.</span><span class="at">message</span>)<span class="op">;</span></span>
-<span id="cb6-30"><a href="#cb6-30"></a>            <span class="op">}</span></span>
-<span id="cb6-31"><a href="#cb6-31"></a>        <span class="op">}</span>)<span class="op">;</span></span>
-<span id="cb6-32"><a href="#cb6-32"></a>    <span class="op">}</span> <span class="fu">catch</span> (error) <span class="op">{</span></span>
-<span id="cb6-33"><a href="#cb6-33"></a>        <span class="va">core</span><span class="op">.</span><span class="fu">warning</span>(<span class="va">error</span><span class="op">.</span><span class="at">message</span>)<span class="op">;</span></span>
-<span id="cb6-34"><a href="#cb6-34"></a>    <span class="op">}</span></span>
-<span id="cb6-35"><a href="#cb6-35"></a><span class="op">}</span></span>
+<span id="cb6-23"><a href="#cb6-23"></a>        files<span class="op">.</span><span class="fu">forEach</span>(async <span class="kw">function</span>(file) {</span>
+<span id="cb6-24"><a href="#cb6-24"></a>            try {</span>
+<span id="cb6-25"><a href="#cb6-25"></a>                const path <span class="op">=</span> source<span class="op">.</span><span class="fu">concat</span>(<span class="st">&quot;/&quot;</span><span class="op">,</span> file)<span class="op">;</span></span>
+<span id="cb6-26"><a href="#cb6-26"></a>                await io<span class="op">.</span><span class="fu">mv</span>(path<span class="op">,</span> target)<span class="op">;</span></span>
+<span id="cb6-27"><a href="#cb6-27"></a>                core<span class="op">.</span><span class="fu">debug</span>(<span class="vs">`mv </span><span class="sc">${</span>path<span class="sc">}</span><span class="vs"> to </span><span class="sc">${</span>target<span class="sc">}</span><span class="vs">`</span>)<span class="op">;</span></span>
+<span id="cb6-28"><a href="#cb6-28"></a>            } catch (error) {</span>
+<span id="cb6-29"><a href="#cb6-29"></a>                core<span class="op">.</span><span class="fu">warning</span>(error<span class="op">.</span><span class="at">message</span>)<span class="op">;</span></span>
+<span id="cb6-30"><a href="#cb6-30"></a>            }</span>
+<span id="cb6-31"><a href="#cb6-31"></a>        })<span class="op">;</span></span>
+<span id="cb6-32"><a href="#cb6-32"></a>    } catch (error) {</span>
+<span id="cb6-33"><a href="#cb6-33"></a>        core<span class="op">.</span><span class="fu">warning</span>(error<span class="op">.</span><span class="at">message</span>)<span class="op">;</span></span>
+<span id="cb6-34"><a href="#cb6-34"></a>    }</span>
+<span id="cb6-35"><a href="#cb6-35"></a>}</span>
 <span id="cb6-36"><a href="#cb6-36"></a></span>
-<span id="cb6-37"><a href="#cb6-37"></a><span class="fu">run</span>()<span class="op">;</span></span>
+<span id="cb6-37"><a href="#cb6-37"></a>run()<span class="op">;</span></span>
 <span id="cb6-38"><a href="#cb6-38"></a></span>
-<span id="cb6-39"><a href="#cb6-39"></a><span class="im">export</span> <span class="im">default</span> run<span class="op">;</span></span></code></pre></div>
+<span id="cb6-39"><a href="#cb6-39"></a>export default run<span class="op">;</span></span></code></pre></div>
 <p>使うときはこんな感じ:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Move .stack/pantry to temp</span></span>
 <span id="cb7-2"><a href="#cb7-2"></a><span class="at">      </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> matsubara0507/actions/move-files@master</span></span>

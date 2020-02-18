@@ -146,26 +146,26 @@
 <p>JS 詳しくないのでこれが良い方法なのかはわからないけど，これを参考にして次のような JS を書いて <code>index.html</code> から読み込むようにした:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb2-1"><a href="#cb2-1"></a><span class="st">&quot;use strict&quot;</span><span class="op">;</span></span>
 <span id="cb2-2"><a href="#cb2-2"></a></span>
-<span id="cb2-3"><a href="#cb2-3"></a><span class="kw">function</span> <span class="at">loadJSON</span>(callback) <span class="op">{</span></span>
-<span id="cb2-4"><a href="#cb2-4"></a>   <span class="kw">var</span> xobj <span class="op">=</span> <span class="kw">new</span> <span class="at">XMLHttpRequest</span>()<span class="op">;</span></span>
-<span id="cb2-5"><a href="#cb2-5"></a>       <span class="va">xobj</span>.<span class="at">overrideMimeType</span>(<span class="st">&quot;application/json&quot;</span>)<span class="op">;</span></span>
-<span id="cb2-6"><a href="#cb2-6"></a>   <span class="va">xobj</span>.<span class="at">open</span>(<span class="st">'GET'</span><span class="op">,</span> <span class="st">'static/info.json'</span><span class="op">,</span> <span class="kw">true</span>)<span class="op">;</span></span>
-<span id="cb2-7"><a href="#cb2-7"></a>   <span class="va">xobj</span>.<span class="at">onreadystatechange</span> <span class="op">=</span> <span class="kw">function</span> () <span class="op">{</span></span>
-<span id="cb2-8"><a href="#cb2-8"></a>         <span class="cf">if</span> (<span class="va">xobj</span>.<span class="at">readyState</span> <span class="op">==</span> <span class="dv">4</span> <span class="op">&amp;&amp;</span> <span class="va">xobj</span>.<span class="at">status</span> <span class="op">==</span> <span class="st">&quot;200&quot;</span>) <span class="op">{</span></span>
-<span id="cb2-9"><a href="#cb2-9"></a>           <span class="at">callback</span>(<span class="va">xobj</span>.<span class="at">responseText</span>)<span class="op">;</span></span>
-<span id="cb2-10"><a href="#cb2-10"></a>         <span class="op">}</span></span>
-<span id="cb2-11"><a href="#cb2-11"></a>   <span class="op">};</span></span>
-<span id="cb2-12"><a href="#cb2-12"></a>   <span class="va">xobj</span>.<span class="at">send</span>(<span class="kw">null</span>)<span class="op">;</span></span>
-<span id="cb2-13"><a href="#cb2-13"></a><span class="op">}</span></span>
+<span id="cb2-3"><a href="#cb2-3"></a><span class="kw">function</span> <span class="fu">loadJSON</span>(callback) {</span>
+<span id="cb2-4"><a href="#cb2-4"></a>   <span class="kw">var</span> xobj <span class="op">=</span> <span class="kw">new</span> <span class="bu">XMLHttpRequest</span>()<span class="op">;</span></span>
+<span id="cb2-5"><a href="#cb2-5"></a>       xobj<span class="op">.</span><span class="fu">overrideMimeType</span>(<span class="st">&quot;application/json&quot;</span>)<span class="op">;</span></span>
+<span id="cb2-6"><a href="#cb2-6"></a>   xobj<span class="op">.</span><span class="fu">open</span>(<span class="st">'GET'</span><span class="op">,</span> <span class="st">'static/info.json'</span><span class="op">,</span> <span class="kw">true</span>)<span class="op">;</span></span>
+<span id="cb2-7"><a href="#cb2-7"></a>   xobj<span class="op">.</span><span class="at">onreadystatechange</span> <span class="op">=</span> <span class="kw">function</span> () {</span>
+<span id="cb2-8"><a href="#cb2-8"></a>         <span class="cf">if</span> (xobj<span class="op">.</span><span class="at">readyState</span> <span class="op">==</span> <span class="dv">4</span> <span class="op">&amp;&amp;</span> xobj<span class="op">.</span><span class="at">status</span> <span class="op">==</span> <span class="st">&quot;200&quot;</span>) {</span>
+<span id="cb2-9"><a href="#cb2-9"></a>           callback(xobj<span class="op">.</span><span class="at">responseText</span>)<span class="op">;</span></span>
+<span id="cb2-10"><a href="#cb2-10"></a>         }</span>
+<span id="cb2-11"><a href="#cb2-11"></a>   }<span class="op">;</span></span>
+<span id="cb2-12"><a href="#cb2-12"></a>   xobj<span class="op">.</span><span class="fu">send</span>(<span class="kw">null</span>)<span class="op">;</span></span>
+<span id="cb2-13"><a href="#cb2-13"></a>}</span>
 <span id="cb2-14"><a href="#cb2-14"></a></span>
-<span id="cb2-15"><a href="#cb2-15"></a><span class="at">loadJSON</span>(<span class="kw">function</span>(response) <span class="op">{</span></span>
-<span id="cb2-16"><a href="#cb2-16"></a>  <span class="kw">var</span> json <span class="op">=</span> <span class="va">JSON</span>.<span class="at">parse</span>(response)<span class="op">;</span></span>
-<span id="cb2-17"><a href="#cb2-17"></a>  <span class="va">Elm</span>.<span class="va">Main</span>.<span class="at">init</span>(</span>
-<span id="cb2-18"><a href="#cb2-18"></a>    <span class="op">{</span> <span class="dt">node</span><span class="op">:</span> <span class="va">document</span>.<span class="at">getElementById</span>(<span class="st">'main'</span>)</span>
-<span id="cb2-19"><a href="#cb2-19"></a>    <span class="op">,</span> <span class="dt">flags</span><span class="op">:</span> <span class="op">{</span> <span class="dt">info</span><span class="op">:</span> json <span class="op">}</span></span>
-<span id="cb2-20"><a href="#cb2-20"></a>    <span class="op">}</span></span>
+<span id="cb2-15"><a href="#cb2-15"></a>loadJSON(<span class="kw">function</span>(response) {</span>
+<span id="cb2-16"><a href="#cb2-16"></a>  <span class="kw">var</span> json <span class="op">=</span> <span class="bu">JSON</span><span class="op">.</span><span class="fu">parse</span>(response)<span class="op">;</span></span>
+<span id="cb2-17"><a href="#cb2-17"></a>  Elm<span class="op">.</span><span class="at">Main</span><span class="op">.</span><span class="fu">init</span>(</span>
+<span id="cb2-18"><a href="#cb2-18"></a>    { <span class="dt">node</span><span class="op">:</span> <span class="bu">document</span><span class="op">.</span><span class="fu">getElementById</span>(<span class="st">'main'</span>)</span>
+<span id="cb2-19"><a href="#cb2-19"></a>    <span class="op">,</span> <span class="dt">flags</span><span class="op">:</span> { <span class="dt">info</span><span class="op">:</span> json }</span>
+<span id="cb2-20"><a href="#cb2-20"></a>    }</span>
 <span id="cb2-21"><a href="#cb2-21"></a>  )<span class="op">;</span></span>
-<span id="cb2-22"><a href="#cb2-22"></a><span class="op">}</span>)<span class="op">;</span></span></code></pre></div>
+<span id="cb2-22"><a href="#cb2-22"></a>})<span class="op">;</span></span></code></pre></div>
 <p>少なくとも，うまく動作はしている．</p>
 <p>いつも通り，GitHub Pages に置いたので<a href="https://matsubara0507.github.io/my-github-cards/">ここ</a>から見れる． というか，さっきから表示している GitHub Card がこれで埋め込んだものだ．</p>
 <h3 id="daily-cron-on-travisci">Daily cron on TravisCI</h3>

@@ -153,20 +153,20 @@
 <p>シンタックスハイライトは皆さんご存知 <a href="https://highlightjs.org/">highlight.js</a> を使う． Elm 製のパッケージは見当たらなかったので，js のパッケージを使うことにした．</p>
 <p><a href="https://github.com/evancz/elm-markdown/blob/e395295cbe0b460ab051c4040011470628f05b72/src/Native/Markdown.js#L77">evancz/elm-markdown が highlight.js を使っていた</a>ので，それを参考に Native モジュールを作った．</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb3-1"><a href="#cb3-1"></a><span class="co">// src/Native/Highlight.js</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">var</span> _matsubara0507$elmdeck$Native_Highlight <span class="op">=</span> <span class="kw">function</span>() <span class="op">{</span></span>
-<span id="cb3-3"><a href="#cb3-3"></a>  <span class="kw">function</span> <span class="at">toHighlight</span>(lang<span class="op">,</span> code)</span>
-<span id="cb3-4"><a href="#cb3-4"></a>  <span class="op">{</span></span>
-<span id="cb3-5"><a href="#cb3-5"></a>    <span class="cf">if</span> (<span class="kw">typeof</span> hljs <span class="op">!==</span> <span class="st">'undefined'</span> <span class="op">&amp;&amp;</span> lang <span class="op">&amp;&amp;</span> <span class="va">hljs</span>.<span class="at">listLanguages</span>().<span class="at">indexOf</span>(lang) <span class="op">&gt;=</span> <span class="dv">0</span>)</span>
-<span id="cb3-6"><a href="#cb3-6"></a>    <span class="op">{</span></span>
-<span id="cb3-7"><a href="#cb3-7"></a>      <span class="cf">return</span> <span class="va">hljs</span>.<span class="at">highlight</span>(lang<span class="op">,</span> code<span class="op">,</span> <span class="kw">true</span>).<span class="at">value</span><span class="op">;</span></span>
-<span id="cb3-8"><a href="#cb3-8"></a>    <span class="op">}</span></span>
+<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">var</span> _matsubara0507$elmdeck$Native_Highlight <span class="op">=</span> <span class="kw">function</span>() {</span>
+<span id="cb3-3"><a href="#cb3-3"></a>  <span class="kw">function</span> toHighlight(lang<span class="op">,</span> code)</span>
+<span id="cb3-4"><a href="#cb3-4"></a>  {</span>
+<span id="cb3-5"><a href="#cb3-5"></a>    <span class="cf">if</span> (<span class="kw">typeof</span> hljs <span class="op">!==</span> <span class="st">'undefined'</span> <span class="op">&amp;&amp;</span> lang <span class="op">&amp;&amp;</span> hljs<span class="op">.</span><span class="fu">listLanguages</span>()<span class="op">.</span><span class="fu">indexOf</span>(lang) <span class="op">&gt;=</span> <span class="dv">0</span>)</span>
+<span id="cb3-6"><a href="#cb3-6"></a>    {</span>
+<span id="cb3-7"><a href="#cb3-7"></a>      <span class="cf">return</span> hljs<span class="op">.</span><span class="fu">highlight</span>(lang<span class="op">,</span> code<span class="op">,</span> <span class="kw">true</span>)<span class="op">.</span><span class="at">value</span><span class="op">;</span></span>
+<span id="cb3-8"><a href="#cb3-8"></a>    }</span>
 <span id="cb3-9"><a href="#cb3-9"></a>    <span class="cf">return</span> code<span class="op">;</span></span>
-<span id="cb3-10"><a href="#cb3-10"></a>  <span class="op">}</span></span>
+<span id="cb3-10"><a href="#cb3-10"></a>  }</span>
 <span id="cb3-11"><a href="#cb3-11"></a></span>
-<span id="cb3-12"><a href="#cb3-12"></a>  <span class="cf">return</span> <span class="op">{</span></span>
-<span id="cb3-13"><a href="#cb3-13"></a>    <span class="dt">toHighlight</span><span class="op">:</span> <span class="at">F2</span>(toHighlight)</span>
-<span id="cb3-14"><a href="#cb3-14"></a>  <span class="op">}</span></span>
-<span id="cb3-15"><a href="#cb3-15"></a><span class="op">}</span>()<span class="op">;</span></span></code></pre></div>
+<span id="cb3-12"><a href="#cb3-12"></a>  <span class="cf">return</span> {</span>
+<span id="cb3-13"><a href="#cb3-13"></a>    <span class="dt">toHighlight</span><span class="op">:</span> F2(toHighlight)</span>
+<span id="cb3-14"><a href="#cb3-14"></a>  }</span>
+<span id="cb3-15"><a href="#cb3-15"></a>}()<span class="op">;</span></span></code></pre></div>
 <p>Elm 側はこんな感じ．</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">import</span> <span class="dt">Native</span><span class="op">.</span><span class="dt">Highlight</span></span>
 <span id="cb4-2"><a href="#cb4-2"></a></span>
@@ -201,24 +201,24 @@
 <p>どう考えても効率悪いけど(笑)</p>
 <h3 id="数式">数式</h3>
 <p>Marp を参考にして <a href="https://khan.github.io/KaTeX/">KaTeX</a> を使うことにした． KaTeX も highlight.js と同じように文字列を受け取って HTML に変換した文字列を返す関数 <code>renderToString</code> がある． 注意点は，<code>renderToString</code> の場合は失敗すると例外を投げてくるところ．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">var</span> _matsubara0507$elmdeck$Native_Katex <span class="op">=</span> <span class="kw">function</span>() <span class="op">{</span></span>
-<span id="cb6-2"><a href="#cb6-2"></a>  <span class="kw">function</span> <span class="at">toKatex</span>(code)</span>
-<span id="cb6-3"><a href="#cb6-3"></a>  <span class="op">{</span></span>
+<div class="sourceCode" id="cb6"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">var</span> _matsubara0507$elmdeck$Native_Katex <span class="op">=</span> <span class="kw">function</span>() {</span>
+<span id="cb6-2"><a href="#cb6-2"></a>  <span class="kw">function</span> toKatex(code)</span>
+<span id="cb6-3"><a href="#cb6-3"></a>  {</span>
 <span id="cb6-4"><a href="#cb6-4"></a>    <span class="cf">if</span> (<span class="kw">typeof</span> katex <span class="op">!==</span> <span class="st">'undefined'</span>)</span>
-<span id="cb6-5"><a href="#cb6-5"></a>    <span class="op">{</span></span>
-<span id="cb6-6"><a href="#cb6-6"></a>      <span class="cf">try</span> <span class="op">{</span></span>
-<span id="cb6-7"><a href="#cb6-7"></a>        <span class="cf">return</span> <span class="va">katex</span>.<span class="at">renderToString</span>(code)<span class="op">;</span></span>
-<span id="cb6-8"><a href="#cb6-8"></a>      <span class="op">}</span> <span class="cf">catch</span> (e) <span class="op">{</span></span>
+<span id="cb6-5"><a href="#cb6-5"></a>    {</span>
+<span id="cb6-6"><a href="#cb6-6"></a>      <span class="cf">try</span> {</span>
+<span id="cb6-7"><a href="#cb6-7"></a>        <span class="cf">return</span> katex<span class="op">.</span><span class="fu">renderToString</span>(code)<span class="op">;</span></span>
+<span id="cb6-8"><a href="#cb6-8"></a>      } <span class="cf">catch</span> (e) {</span>
 <span id="cb6-9"><a href="#cb6-9"></a>        <span class="cf">return</span> code</span>
-<span id="cb6-10"><a href="#cb6-10"></a>      <span class="op">}</span></span>
-<span id="cb6-11"><a href="#cb6-11"></a>    <span class="op">}</span></span>
+<span id="cb6-10"><a href="#cb6-10"></a>      }</span>
+<span id="cb6-11"><a href="#cb6-11"></a>    }</span>
 <span id="cb6-12"><a href="#cb6-12"></a>    <span class="cf">return</span> code<span class="op">;</span></span>
-<span id="cb6-13"><a href="#cb6-13"></a>  <span class="op">}</span></span>
+<span id="cb6-13"><a href="#cb6-13"></a>  }</span>
 <span id="cb6-14"><a href="#cb6-14"></a></span>
-<span id="cb6-15"><a href="#cb6-15"></a>  <span class="cf">return</span> <span class="op">{</span></span>
+<span id="cb6-15"><a href="#cb6-15"></a>  <span class="cf">return</span> {</span>
 <span id="cb6-16"><a href="#cb6-16"></a>    <span class="dt">toKatex</span><span class="op">:</span> toKatex</span>
-<span id="cb6-17"><a href="#cb6-17"></a>  <span class="op">}</span></span>
-<span id="cb6-18"><a href="#cb6-18"></a><span class="op">}</span>()<span class="op">;</span></span></code></pre></div>
+<span id="cb6-17"><a href="#cb6-17"></a>  }</span>
+<span id="cb6-18"><a href="#cb6-18"></a>}()<span class="op">;</span></span></code></pre></div>
 <p>Elm 側はほぼ同じ．</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">import</span> <span class="dt">Native</span><span class="op">.</span><span class="dt">Katex</span></span>
 <span id="cb7-2"><a href="#cb7-2"></a></span>
