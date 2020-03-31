@@ -156,7 +156,7 @@
     Building library for Cabal-2.0.1.1..</code></pre>
 <p>かなーーり古い LTS だとうまくいくので，仕方なくそれを使っていたのだが直すことにした． というか知り合いが直し方を記事にしてくれてたのでやってみた．</p>
 <ul>
-<li><a href="https://haskell.e-bigmoon.com/posts/2017-12-31-travis-out-of-memory.html">travis-ci の初回ビルドで OUT OF MEMORY が出た時の対処法</a></li>
+<li><a href="https://haskell.e-bigmoon.com/posts/2017/12-31-travis-out-of-memory.html">travis-ci の初回ビルドで OUT OF MEMORY が出た時の対処法</a></li>
 </ul>
 <p>戦犯は <code>Cabal</code> パッケージなので，こいつだけ先に <code>-j 1</code> オプション(メモリを節約するが速度が遅い)でビルドしてしまうという戦略． この記事のサイトの <a href="https://github.com/e-bigmoon/haskell-blog/blob/a229f118f121e0ad843faae1412e938e3e4f3a6b/.travis.yml"><code>.travis.yml</code></a> を <del>コピペ</del> 参考にして次のようにした</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">install</span><span class="kw">:</span></span>
@@ -265,10 +265,10 @@
 <span id="cb11-12"><a href="#cb11-12"></a>sortByM f <span class="ot">=</span> <span class="fu">fmap</span> (<span class="fu">map</span> <span class="fu">fst</span> <span class="op">.</span> sortBy (comparing <span class="fu">snd</span>)) <span class="op">.</span> <span class="fu">mapM</span> (<span class="fu">fmap</span> <span class="op">&lt;$&gt;</span> (,) <span class="op">&lt;*&gt;</span> f)</span></code></pre></div>
 <p><code>sortByM</code> 関数は <code>sortBy</code> の <code>Monad</code> 版． <code>[a]</code> を <code>[(a, m k)]</code> とし <code>[m (a, k)]</code> にして <code>m [(a, k)]</code> にしてから <code>k</code> でソートし最後に <code>a</code> だけ取り出している． ちなみに，<code>fmap &lt;$&gt; (,) &lt;*&gt; f</code> の部分は分かりますか？ <code>\x -&gt; (,) x &lt;$&gt; f x</code> をしてるだけですよ．</p>
 <h2 id="フィードページネーションタグ">フィード・ページネーション・タグ</h2>
-<p>実はフィード生成・ページネーション・タグは，もとから Hakyll で提供されている機能だ． どれもこの記事に日本語で書いてある．</p>
+<p><del>実はフィード生成・ページネーション・タグは，もとから Hakyll で提供されている機能だ． どれもこの記事に日本語で書いてある．</del> 残念ながらリンクが死んでた…</p>
 <ul>
-<li><a href="https://imokuri123.com/blog/2015/12/how-to-create-blog-with-hakyll-part2.html">Hakyllでブログを作る(実践編2) - Wake up! Good night*</a></li>
-<li><a href="https://imokuri123.com/blog/2015/12/how-to-create-blog-with-hakyll-part3.html">Hakyllでブログを作る(実践編3) - Wake up! Good night*</a></li>
+<li>~~Hakyllでブログを作る(実践編2) - Wake up! Good night*~~</li>
+<li>~~Hakyllでブログを作る(実践編3) - Wake up! Good night*~~</li>
 </ul>
 <p>だが躓きポイントはいくつかあった(だいたい日時のやつだけど…)．</p>
 <h3 id="フィードを生成">フィードを生成</h3>
@@ -330,7 +330,7 @@
 <span id="cb15-17"><a href="#cb15-17"></a>  toContext k <span class="ot">=</span> toContext k <span class="op">.</span> runIdentity</span></code></pre></div>
 <p>拡張可能レコード最高です．</p>
 <h3 id="ページネーションを追加">ページネーションを追加</h3>
-<p><a href="https://imokuri123.com/blog/2015/12/how-to-create-blog-with-hakyll-part2.html#%E3%83%9A%E3%83%BC%E3%82%B8%E3%83%8D%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3">参考記事</a>の中で使われている <code>sortRecentFirst</code> も日時を取得しているので書き換える．</p>
+<p><del>参考記事</del> の中で使われている <code>sortRecentFirst</code> も日時を取得しているので書き換える． 参考記事は残念ながらリンク切れになってしまった．</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb16-1"><a href="#cb16-1"></a><span class="ot">sortRecentFirst' ::</span> <span class="dt">MonadMetadata</span> m <span class="ot">=&gt;</span> [<span class="dt">Identifier</span>] <span class="ot">-&gt;</span> m [<span class="dt">Identifier</span>]</span>
 <span id="cb16-2"><a href="#cb16-2"></a>sortRecentFirst' <span class="ot">=</span></span>
 <span id="cb16-3"><a href="#cb16-3"></a>  <span class="fu">fmap</span> (<span class="fu">fmap</span> itemIdentifier) <span class="op">.</span> recentFirst' <span class="op">.</span> <span class="fu">fmap</span> (<span class="fu">flip</span> <span class="dt">Item</span> ())</span></code></pre></div>

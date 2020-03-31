@@ -153,7 +153,7 @@ debian              jessie              8cedef9d7368        6 days ago          
 <pre><code>$ docker pull haskell
 $ docker images | grep haskell
 haskell             latest              198e758a94f7        8 days ago          961.1 MB</code></pre>
-<p>Haskell の<a href="https://github.com/freebroccolo/docker-haskell/blob/5f1ae82bd27501322100b915c9ae6cc9f9aea129/8.0/Dockerfile">公式のDockerfile</a> を見ると，GHC を直接入れて，stack の global config yaml の <code>system-ghc</code> のオプションを <code>true</code> にしている． こうすることで，<code>stack ghc</code> や <code>stack ghci</code> などがカレントディレクトリに config yaml が無い場合に，インストール済みの GHC を使ってくれる．</p>
+<p>Haskell の<a href="https://github.com/haskell/docker-haskell/blob/5f1ae82bd27501322100b915c9ae6cc9f9aea129/8.0/Dockerfile">公式のDockerfile</a> を見ると，GHC を直接入れて，stack の global config yaml の <code>system-ghc</code> のオプションを <code>true</code> にしている． こうすることで，<code>stack ghc</code> や <code>stack ghci</code> などがカレントディレクトリに config yaml が無い場合に，インストール済みの GHC を使ってくれる．</p>
 <p>なるほど，こうしよう．</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">RUN</span> echo <span class="st">'deb http://ppa.launchpad.net/hvr/ghc/ubuntu trusty main'</span> &gt; /etc/apt/sources.list.d/ghc.list \</span>
 <span id="cb4-2"><a href="#cb4-2"></a>    &amp;&amp; apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F6F88286 \</span>

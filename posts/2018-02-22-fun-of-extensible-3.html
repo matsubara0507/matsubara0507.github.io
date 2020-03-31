@@ -207,7 +207,7 @@
 <h2 id="section-2"></h2>
 <p>ただ問題がひとつ． 今回は <a href="https://hackage.haskell.org/package/aeson"><code>aeson</code></a> や <a href="https://hackage.haskell.org/package/cassava"><code>cassava</code></a> の型クラスのインスタンスを拡張可能レコードで使いたいので，Stackage に登録していない <a href="https://github.com/matsubara0507/extensible-instances"><code>matsubara0507/extensible-instances</code></a> にも依存したい． そこで，カスタムスナップショットだ． 日本語で詳しくは下記のサイトにまとまっていた．</p>
 <ul>
-<li><a href="https://haskell.e-bigmoon.com/posts/2017-12-23-stack161.html">カスタムスナップショットの紹介</a></li>
+<li><a href="https://haskell.e-bigmoon.com/posts/2017/12-23-stack161.html">カスタムスナップショットの紹介</a></li>
 </ul>
 <p>ここには書いてないが，カスタムスナップショットは <code>stack script</code> にも使える． 例えば今回は次のようなカスタムスナップショットを作った．</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1"></a><span class="fu">resolver</span><span class="kw">:</span><span class="at"> lts-10.6</span></span>

@@ -203,7 +203,7 @@
 <span id="cb7-5"><a href="#cb7-5"></a>print_hi('Tom')</span>
 <span id="cb7-6"><a href="#cb7-6"></a>#=&gt; prints 'Hi, Tom' to STDOUT.</span>
 <span id="cb7-7"><a href="#cb7-7"></a>{% endhighlight %}</span></code></pre></div>
-<p>仕方がないので， パッケージを使うことにした． このやり方は <a href="https://imokuri123.com/blog/2015/12/how-to-create-blog-with-hakyll-part4.html#シンタックスハイライト">このページ</a> を参照した．</p>
+<p>仕方がないので， パッケージを使うことにした． このやり方は <del>このページ</del> を参照した． 残念ながら参考先のリンクが切れてしまった…</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1"></a>create [<span class="st">&quot;css/highlight.css&quot;</span>] <span class="op">$</span> <span class="kw">do</span></span>
 <span id="cb8-2"><a href="#cb8-2"></a>  route   idRoute</span>
 <span id="cb8-3"><a href="#cb8-3"></a>  compile <span class="op">$</span> makeItem (compressCss <span class="op">$</span> styleToCss pygments)</span></code></pre></div>

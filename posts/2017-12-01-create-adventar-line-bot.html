@@ -160,7 +160,7 @@
 <ul>
 <li><a href="https://matsubara0507.github.io/posts/2017-02-22-curry-howard-linebot.html">Haskell で LINE Bot を作った - ひげメモ</a></li>
 </ul>
-<p>ちゃんと API のバージョンアップも追っていた． 流石中の人製(笑) いっそのこと<a href="https://developers.line.me/ja/docs/messaging-api/reference/">公式の一覧</a>にも書けばいいのに．</p>
+<p>ちゃんと API のバージョンアップも追っていた． 流石中の人製(笑)</p>
 <h2 id="section-4"></h2>
 <p>今回は Push するだけで，webhook 用のサーバーを立てる必要が無いので，<a href="https://hackage.haskell.org/package/wai"><code>wai</code></a> や <a href="https://hackage.haskell.org/package/scotty"><code>scotty</code></a> は必要ない． こんな感じの関数を書くだけ，簡単ですね．</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1"></a><span class="ot">pushMessage ::</span> <span class="dt">ChannelAccessToken</span> <span class="ot">-&gt;</span> <span class="dt">ID</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Either</span> <span class="dt">APIError</span> ())</span>
