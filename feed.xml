@@ -8,8 +8,80 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2020-02-10T00:00:00Z</updated>
+    <updated>2020-04-01T00:00:00Z</updated>
     <entry>
+    <title>git-plantation の依存パッケージのバージョンアゲアゲ with LTS-15</title>
+    <link href="https://matsubara0507.github.io/posts/2020-04-01-update-dependencies-with-lts15.html" />
+    <id>https://matsubara0507.github.io/posts/2020-04-01-update-dependencies-with-lts15.html</id>
+    <published>2020-04-01T00:00:00Z</published>
+    <updated>2020-04-01T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
+    <p>自作している git-plantation という Haskell アプリケーションの依存パッケージのバージョンを、Stackage LTS-15 でビルドできるようにバージョンを色々とあげました． 本記事はそのメモ書きです（記事にするほどのことではないんだけど，思ったより色々したので忘れそうだから記事にした笑）．</p>
+<p>ちなみに git-plantation については，<a href="https://www.slideshare.net/noob00/haskell-191796924">このスライド</a>を参照してください． いくつかのパッケージをフォークしたり，ラッパーパッケージを作ったり，そもそも自作したりしてるのでタイミングによっては LTS のメジャーバージョンを一つ上げるだけでも結構大変なのです．</p>
+<h2 id="ハイライト">ハイライト</h2>
+<p>ちなみに，元々は LTS 14 だった</p>
+<ul>
+<li>GHC のバージョンが 8.8.3 になる（影響はさほどない）</li>
+<li>extensible を 0.8 にする</li>
+<li>github を 0.25 にする</li>
+<li>servant-elm を 0.7.1 にする（これもさほど影響はない）</li>
+</ul>
+<p><a href="https://github.com/matsubara0507/git-plantation/pull/58">最終的なPRはこれ</a>．</p>
+<h2 id="extensible-0.8">extensible-0.8</h2>
+<p>0.8 ではもともと deprecated になっていた関数や型がついに消えたので，利用しっぱなしだったコードがビルドできなくなった：</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1"></a> <span class="ex">/.../drone-1.0.1/src/Drone/Types</span>/Cron.hs:<span class="ex">25</span>:44: error:</span>
+<span id="cb1-2"><a href="#cb1-2"></a>     <span class="ex">Not</span> in scope: type constructor or class ‘:*’</span>
+<span id="cb1-3"><a href="#cb1-3"></a>     <span class="ex">Perhaps</span> you meant one of these:</span>
+<span id="cb1-4"><a href="#cb1-4"></a>       ‘:<span class="kw">&amp;</span>’ <span class="kw">(</span><span class="ex">imported</span> from Data.Extensible<span class="kw">)</span>,</span>
+<span id="cb1-5"><a href="#cb1-5"></a>       ‘:/’ <span class="kw">(</span><span class="ex">imported</span> from Data.Extensible<span class="kw">)</span></span>
+<span id="cb1-6"><a href="#cb1-6"></a>    <span class="kw">|</span>                  </span>
+<span id="cb1-7"><a href="#cb1-7"></a> <span class="ex">25</span> <span class="kw">|</span> <span class="bu">type</span> CronPatch = Nullable (Field Identity) <span class="bu">:</span>* CronPatchFields</span>
+<span id="cb1-8"><a href="#cb1-8"></a>    <span class="kw">|</span>                                            ^^</span></code></pre></div>
+<p>消えたのはこれら</p>
+<ul>
+<li><code>Associate k v xs</code> =&gt; <code>Lookup xs k v</code></li>
+<li><code>h :* xs</code> =&gt; <code>xs :&amp; h</code></li>
+<li><code>h :| xs</code> =&gt; <code>xs :/ h</code></li>
+<li><code>AssocKey kv</code> =&gt; <code>KeyOf kv</code></li>
+<li><code>AssocValue kv</code> =&gt; <code>TargetOf kv</code></li>
+<li><code>ValueIs</code> =&gt; <code>TargetIs</code></li>
+<li><code>KeyValue</code> =&gt; <code>KeyTargetAre</code></li>
+<li><code>proxyAssocKey</code> =&gt; <code>proxyKeyOf</code></li>
+<li><code>proxyAssocValue</code> =&gt; <code>proxyTargetOf</code></li>
+<li><code>stringAssocKey</code> =&gt; <code>stringKeyOf</code></li>
+<li><code>訊</code> =&gt; <code>xlb</code></li>
+</ul>
+<p>上3つは演算子の順番が変わってる点に注意． 他はただ名前を変えただけ（<code>Associate</code> の名前が変わったためかしら？）．</p>
+<h2 id="github-0.25">github-0.25</h2>
+<p>github パッケージは 0.24 でかなり大きなインターフェースの刷新をしており，その影響がデカかった． 今までは一つの API に対して最大3つの関数が用意されていた：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1"></a><span class="co">-- https://developer.github.com/v3/users/#get-a-single-user の関数</span></span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="ot">userInfoFor ::</span> <span class="dt">Name</span> <span class="dt">User</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Either</span> <span class="dt">Error</span> <span class="dt">User</span>)</span>
+<span id="cb2-3"><a href="#cb2-3"></a><span class="ot">userInfoFor&#39; ::</span> <span class="dt">Maybe</span> <span class="dt">Auth</span> <span class="ot">-&gt;</span> <span class="dt">Name</span> <span class="dt">User</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Either</span> <span class="dt">Error</span> <span class="dt">User</span>)</span>
+<span id="cb2-4"><a href="#cb2-4"></a><span class="ot">userInfoForR ::</span> <span class="dt">Name</span> <span class="dt">User</span> <span class="ot">-&gt;</span> <span class="dt">Request</span> k <span class="dt">User</span></span></code></pre></div>
+<p>ベースは <code>hogeR</code> 関数で，他はこの関数のラッパー関数だ． 0.24 からは <code>hogeR</code> 関数だけ残して他の関数は廃止し，<code>github</code> と <code>github&#39;</code> の2つの関数を用意した：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1"></a><span class="co">-- だいたいこういう対応</span></span>
+<span id="cb3-2"><a href="#cb3-2"></a>userInfoFor name <span class="ot">=</span> github&#39; (userInfoForR name)</span>
+<span id="cb3-3"><a href="#cb3-3"></a>userInfoFor&#39; (<span class="dt">Just</span> auth) name <span class="ot">=</span> github auth (userInfoForR name)</span></code></pre></div>
+<p>また，github パッケージはフォークして足りない API 関数を足して利用していたため，それらの修正（というか <code>hogeR</code> 以外の削除）をする必要があった． 追加してたけどフォーク元に PR を投げてなかったのはこれらの関数（完全にメモ）：</p>
+<ul>
+<li><code>removeCollaborator</code> : リポジトリのコラボレーターの削除</li>
+<li><code>teamInfoByName</code> : Organization のチームをチーム名から引く</li>
+<li><code>addOrUpdateMembership</code> : Organization メンバーの権限の追加ないしは変更</li>
+<li><code>removeMembership</code> : Organization メンバーの権限の削除</li>
+</ul>
+<h2 id="servant-elm-0.7.1">servant-elm-0.7.1</h2>
+<p>ビルドが通らないことはないが生成ファイルが変わったので，念のため差分をチェックした． 少なくとも僕の生成コードに影響があったのは<a href="https://github.com/haskell-servant/servant-elm/pull/59">この PR</a>：</p>
+<blockquote>
+<p>Using the appropriate toString functions for different types</p>
+</blockquote>
+<p>要するに，デフォルトで定義しているデータ型以外の型で文字列からJSONデコードするときの振る舞いを自分で定義したいって感じだと思う． たぶん．</p>
+<h1 id="section"></h1>
+<p>servant-elm は elmap.hs というのでラップしてるのでそっちのアップデートも行った． こっちには生成コードのテストも追加してあるので<a href="https://github.com/matsubara0507/elmap.hs/pull/1/files#diff-3e612857d13f467c108121bba96a6232">差分がわかりやすい</a>．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>他にも CI/CD を GitHub Actions にしたりした．</p>
+  </div>]]></summary>
+</entry>
+<entry>
     <title>Elm + GitHub OAuth 2.0 (Firebase) のサンプルプログラムを書いてみた</title>
     <link href="https://matsubara0507.github.io/posts/2020-02-10-elm-github-oauth2-sample.html" />
     <id>https://matsubara0507.github.io/posts/2020-02-10-elm-github-oauth2-sample.html</id>
@@ -2901,77 +2973,6 @@ installed yet?</code></pre>
 <p>なんとこれを Slack に貼ると色を確認できる(賢い)． で，最終的には最初と最後の黒白を抜いて適当に使った．</p>
 <h2 id="おしまい">おしまい</h2>
 <p>submodule のやつしんどいし，なんか自動で <code>elm.json</code> を書き換えてくれる CLI ツールでも作ろうかしら．</p>
-  </div>]]></summary>
-</entry>
-<entry>
-    <title>Haskell Day 2019 に参加してきた</title>
-    <link href="https://matsubara0507.github.io/posts/2019-11-10-join-haskell-day-2019.html" />
-    <id>https://matsubara0507.github.io/posts/2019-11-10-join-haskell-day-2019.html</id>
-    <published>2019-11-10T00:00:00Z</published>
-    <updated>2019-11-10T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
-    <p>11月9日にあった「<a href="https://techplay.jp/event/727059">Haskell Day 2019</a>」に参加してきたのでメモ書きです． 裏方もほんの少しだけ手伝ったけど，裏方については公式のブログで(誰かが)書くと思うので割愛． ただ，全部オープンな場でやりとりしてるの気になる方は Haskell-jp slack を見に行くか Haskell-jp の GitHub を漁るといいと思う．</p>
-<h3 id="関数型function-typeを見つめるプログラミング">関数型(function type)を見つめるプログラミング</h3>
-<p><a href="https://github.com/nobsun">山下</a>氏の発表． <a href="https://github.com/nobsun/hday2019/blob/master/doc/ftype.pdf">発表資料はこちら</a>．</p>
-<p>関数型(プログラミング)の話かとずっと思ってたら関数「型」の話だった(よく読め)． 今回で唯一の Basics なセッション． 特別動くコードは出てこないとのこと． 話の中で <code>A -&gt; B</code> という関数型があるときに，ドメイン(<code>A</code> 側)がさらに関数型なのは多くの人たちも慣れて来てる(他の言語の人たちも含め)が，コドメイン(<code>B</code> 側)が関数型になるのはしっくりこない人が多いらしい．</p>
-<pre><code>f :: (X -&gt; Y) -&gt; Z -- は平気
-g :: X -&gt; (Y -&gt; Z) -- はダメらしい(もちろん Haskell はカッコいらない)</code></pre>
-<p>まぁ確かに，他の言語ではあんまり使わないですね． 自分は学生の頃に，なんかのプログラミング言語に慣れる前に C/C++/Java/Ruby/Haskell を学んだから困った記憶ないけど． ちなみに「拡張適用演算子」っていう用語は山下氏の造語らしい．</p>
-<h3 id="hkdhigher-kinded-datatype">HKD(Higher Kinded Datatype)</h3>
-<p><a href="https://github.com/fumieval">fumieval</a> 氏の発表． <a href="https://assets.adobe.com/public/b93f214d-58c2-482f-5528-a939d3e83660">発表資料はこちら</a>．</p>
-<p>Haskell のレコードの各フィールドに共通の性質を付加したいことはしばしばある． 多相な型パラメータ <code>h :: Type -&gt; Type</code> を付けてあげれば実現可能． <a href="https://hackage.haskell.org/package/barbies">barbies</a>パッケージを使うと自動でやってくれるし，fumieval 氏が作った <a href="https://hackage.haskell.org/package/extensible">extensible</a> パッケージはその機能もサポートしてる(2014~)． 僕は2017年ぐらいから愛用していますありがとうございます．</p>
-<p>他にも <code>TangleT</code> という機能を紹介してましたが，なんとこのサイトを生成してる Hakyll プログラムにも <code>TangleT</code> を使ってます笑． <code>TangleT</code> はレコードのフィールド間に依存関係がある場合に有用で，フィールドの評価順を制御できるようになる． これと，静的サイトのレンダリング順を組み合わせたらいいんじゃね？ってなってやってみた(別段効果があったわけじゃないけど)．</p>
-<h3 id="しんさんきぼうghcのderivingテクノロジー">「しんさんきぼう」GHCのderivingテクノロジー</h3>
-<p><a href="https://github.com/aiya000">aiya000</a> 氏の発表． <a href="https://aiya000.github.io/Maid/haskell-day-2019-deriving/#/">発表資料はこちら</a></p>
-<p>表題の通り，型クラスのインスタンス宣言を容易にしてくれる <code>deriving</code> 機能の最近の話． 標準のを含め，現在 GHC には <code>deriving</code> は4種類もあり，特に <code>DerivingVia</code> GHC 拡張はすごいぞ！って感じです． で，さらに4種類の <code>deriving</code> を整理して綺麗に記述するために <code>DerivingStrategies</code> という GHC 拡張があるとのこと．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1"></a><span class="ot">{-# LANGUAGE DerivingStrategies #-}</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="kw">newtype</span> <span class="dt">SomeBody</span> <span class="ot">=</span> <span class="dt">SomeBody</span> <span class="dt">Person</span></span>
-<span id="cb2-3"><a href="#cb2-3"></a>  <span class="kw">deriving</span>          (<span class="dt">Show</span>)                <span class="co">-- 標準</span></span>
-<span id="cb2-4"><a href="#cb2-4"></a>  <span class="kw">deriving</span> stock    (<span class="dt">Eq</span>)                  <span class="co">-- 標準</span></span>
-<span id="cb2-5"><a href="#cb2-5"></a>  <span class="kw">deriving</span> anyclass (<span class="dt">Visible</span>)             <span class="co">-- DeriveAnyClass</span></span>
-<span id="cb2-6"><a href="#cb2-6"></a>  <span class="kw">deriving</span> <span class="kw">newtype</span>  (<span class="dt">Enum</span>)                <span class="co">-- GeneralizedNewtypeDeriving</span></span>
-<span id="cb2-7"><a href="#cb2-7"></a>  <span class="kw">deriving</span>          (<span class="dt">Bounded</span>) via <span class="dt">Person</span>  <span class="co">-- DerivingVia</span></span></code></pre></div>
-<p>(発表資料より引用)ここまでのコードは書いたことも見たこともないけど笑</p>
-<p>ちなみに，<code>DerivingVia</code> は僕も前に「<a href="https://speakerdeck.com/konn/ben-dang-hasugoi-newtype">本当はすごい newtype</a>」っていう資料を読んでびっくりした記憶． 今回紹介した git-plantation では CLI の「なんらかの型の ID を列挙する」引数から「なんらかの型」を探す部分の ID 側に <code>DerivingVia</code> を使った． 思うにただの <code>Int</code> や <code>String</code> になりやすい ID 系の型は <code>DerivingVia</code> との相性がいい気がする．</p>
-<h3 id="haskellメタプログラミングによるegisonのパターンマッチの実装">HaskellメタプログラミングによるEgisonのパターンマッチの実装</h3>
-<p><a href="https://github.com/egisatoshi">江木</a>氏の発表． <a href="https://www.egison.org/download/20191109HaskellDay.pdf">発表資料はこちら</a>．</p>
-<p>egisatoshi 氏が学生時代(?)から作成し続けてるプログラミング言語 <a href="https://www.egison.org">Egison</a> の強力なパターンマッチング機能を Haskell に導入した話． <a href="https://github.com/egison/egison-haskell">リポジトリは多分これ</a>． Egison の機能を他の言語に突っ込むというのは Scheme ですでにやっていたが，Haskell の場合は型付けをしなくちゃいけないらしく苦労したとのこと． もう，すっごい GHC の型拡張機能をふんだんに使ってました(多くの人に手伝ってもらったらしい)．</p>
-<p>なお，スライドはめっちゃ長く，時間が足りなかったので全部のページを丁寧に説明してはなかった笑． あとで読んでだって．</p>
-<p>僕は Egison を学生の頃から知ってて，ずーっと何かに使えないかなぁって考えてるけど思いつかない． Egison パターンマッチングは，再帰の「全探索する部分」と「条件付けて絞り込む部分」の前者をサボることができるようになるらしい． つまり，順番を無視するために似たようなパターンを記述しなくて済むようになる． 順番を無視したい場合，うーん，CLI の引数とか？ 今度試してみるか(なんか違う気もする)．</p>
-<p>あ，ちなみに，最後にステマ(?)してた Egison Jornal は全部買ってます． 面白いです．</p>
-<h3 id="関数と型で理解する自動微分">関数と型で理解する自動微分</h3>
-<p><a href="https://github.com/lotz84">lotz</a> 氏の発表． <a href="https://speakerdeck.com/lotz84/guan-shu-toxing-deli-jie-suruzi-dong-wei-fen">発表資料はこちら</a>．</p>
-<p>ぱっと見，一番好評だった気がする． 急に導関数が欲しくなる時がありますよね？ってことで自動で導関数を導出する方法を紹介します，って感じの話です(?)． Haskell で自動微分するためには <a href="https://github.com/ekmett/ad">ad</a> パッケージを使うといいらしい． ちなみにこのパッケージは，今回の Haskell Day のスペシャルゲストとしていらしゃった ekmett 氏が作ったものだ． で，動作を理解するために <code>diff</code> 関数を自作してみたっていう流れでした．</p>
-<p>本来，型エラーになって欲しい部分が型エラーにならないので，幽霊型や存在型を使って実現している． といった Haskell 型機能のアドバンスドな話から，自動微分というアカデミックな話まで，盛りだくさんでした． というか話が上手．</p>
-<h3 id="ghcjs-による-web-フロントエンド開発">GHCJS による Web フロントエンド開発</h3>
-<p><a href="https://github.com/y-taka-23">チャシャ猫</a>氏の発表． <a href="https://guide.elm-lang.jp/architecture/">The Elm Architecture</a> を表現した GHCJS の <a href="https://github.com/dmjio/miso">Miso</a> パッケージをライブコーデイング形式で紹介． 基本ライブコーディングだった結果，スライドはないのかな．</p>
-<h3 id="haskell-で作る競技型イベントの裏側">Haskell で作る競技型イベントの裏側</h3>
-<p>僕の発表． <a href="https://www.slideshare.net/noob00/haskell-191796924">発表資料はこちら</a>．</p>
-<p>去年の6月ぐらいから少しずーつ作ってた <a href="https://github.com/matsubara0507/git-plantation">git-plantation</a> の紹介． 話題が逸れるから言わなかったけど「作り直すか〜」ってやり始めたのは技術書典5のネタ用でした笑． もちろん，作り直す意義は発表した通りですよ．</p>
-<p>extensible・Servant・Elm・STM・Dhall など前回・今回の Haskell Day で出たような話題をふんだんに使ってるので「詳しくは〜」って形で引用させてもらった． この発表以外の多くは，Haskell の強力な「型」でいろんな問題を解決したよって感じの話でしたが，僕はその解決した機能をふんだんに使ってリアルアプリケーションをサクッと作ったって感じなのです． 巨人の肩に乗ろう．</p>
-<h3 id="大規模数値計算を支える-haskell-pragmatic-haskell-in-large-scale-numerical-computation">大規模数値計算を支える Haskell ── Pragmatic Haskell in Large-Scale Numerical Computation</h3>
-<p><a href="https://github.com/konn">石井</a>氏の発表． <del>内容があれなので写真は最初のスライドだけで，的なこと言ってたのでスライドは公開されないんじゃないかな</del><a href="https://speakerdeck.com/konn/da-gui-mo-shu-zhi-ji-suan-wozhi-eru-haskell-nil-nil-pragmatic-haskell-in-large-scale-numerical-computation-nil-nil">公開されました</a>．</p>
-<p>GoS2014(?)で ekmett 氏にメンターをしてもらったとのこと．すごい． で，発表の内容は社長(?)が前に言っていた「<a href="https://twitter.com/hiroki_f/status/1135160082373652480">弊社のプロダクトはモナドで各々知っているべき領域を区分して仕事を分けています。ですので、全部知ってなくても、仕事ができます。</a>」というツイートの詳しい話(代弁)． どうやら，物理系ソルバを(Haskellで)記述してる人たちが，それに注力できるように本質的な部分以外は Haskell の魔法(モナド)で隠蔽しているという感じの話らしい． 今回はその魔法についてたくさん紹介してくれた． 例えば，前にも出てきた依存型や拡張可能レコード，他にも Tagless final など． 高度な Haskell (というか GHC)の機能を Real World に消化しておりすごかった(小並感)．</p>
-<h3 id="special-talk-cadenza-building-fast-functional-languages-on-the-jvm">Special Talk: Cadenza: Building fast functional languages on the JVM</h3>
-<p><a href="https://github.com/ekmett/">ekmett</a> 氏の特別講演． これまたライブコーデイングでした(まさかの被り)． タイトルでも言及してる <a href="https://github.com/ekmett/cadenza">Cadenza ってのはこれっぽい</a>． JVM の方は最近よく耳にする(?) <a href="https://www.graalvm.org/">GraalVM</a> のことだった． ライブコーデイングの内容は単純型付きラムダ計算をささっと作ってるみたいだった．</p>
-<h3 id="lt">LT</h3>
-<p>だいたい間に合ってない笑 特にメモも何も取ってなかったのでリンクの列挙だけ．</p>
-<ul>
-<li><a href="https://github.com/as-capabl">アズなんとかさん</a>氏の「<a href="https://docs.google.com/presentation/d/1TiDWz3zLUwEWgpzXfgVZFIib6JtYriB03TVgHsimJC0">3D Model in Haskell</a>」</li>
-<li><a href="https://github.com/cyclone-t">CycloneT</a>氏の「HaskellでIoTやってます」
-<ul>
-<li>業務の紹介なのでスライドは公開されてないかも</li>
-</ul></li>
-<li><a href="https://github.com/jabaraster">河野</a>氏の「<a href="https://docs.google.com/presentation/d/1xcdZ42lF64b_S0wZfi1Er-3YTs8H_Ob15BO3kpuRSMU">QuoraでHaskellへの愛を語る</a>」</li>
-<li><a href="https://github.com/coord-e">coord_e</a> 氏の「<a href="https://gitpitch.com/coord-e/slide-type-class-impl">Haskellで作ってわかる型クラス</a>」
-<ul>
-<li>型クラス機能自体を作る方の話だった笑(間に合ってはない)</li>
-</ul></li>
-<li><a href="https://github.com/minoki">mod_poppo</a> 氏の「<a href="https://drive.google.com/file/d/1YGKjl8S-LlfuB8yrHnKSK5G5MGsP9xd3/view">Abstract Typeclasses</a>」</li>
-<li><a href="https://github.com/kazu-yamamoto">kazu_yamamoto</a> 氏の「<a href="http://www.mew.org/~kazu/material/2019-gc.pdf">GHCのGC</a>」</li>
-</ul>
-<h2 id="おしまい">おしまい</h2>
-<p>さて，来年のネタ仕込みを始めるか(発表するかはさておき)．</p>
   </div>]]></summary>
 </entry>
 
