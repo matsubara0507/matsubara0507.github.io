@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
     <url>
+        <loc>https://matsubara0507.github.io/posts/2020-04-20-servant-with-slack-verifying-requests.html</loc>
+        <changefreq>never</changefreq>
+        <lastmod>2020-04-20</lastmod>
+        <priority>0.8</priority>
+    </url>
+
+    <url>
         <loc>https://matsubara0507.github.io/posts/2020-04-06-servant-auth-with-github-apps.html</loc>
         <changefreq>never</changefreq>
         <lastmod>2020-04-06</lastmod>
