@@ -90,7 +90,7 @@
 <h2 id="何が遅いのか">何が遅いのか</h2>
 <p>TravisCI のログを見てみる:</p>
 <p><img src="../assets/stack-build-image/ci-log-1.jpg" /></p>
-<p><code>1571.75s</code> もかかってるのは依存パッケージのみをビルドしているステップだ． 現状の主原因は単純に Haskell Stack のビルドがゲキオモなせい(巷でもよく言われてる)． でもこれは初回だけで，Stack v2 からは <a href="https://www.fpcomplete.com/blog/2018/08/pantry-part-3/specifying-dependencies">Pantry</a> というシステムを導入して効率よく依存パッケージを SQLite にキャッシュしている(2回目以降でキャッシュを使うのは v1 もだったが v2 からは別のプロジェクトでも共有できるようになった)． なので，TravisCI にうまくキャッシュをする設定をすることで CI 中のビルド時間は劇的に改善する:</p>
+<p><code>1571.75s</code> もかかってるのは依存パッケージのみをビルドしているステップだ． 現状の主原因は単純に Haskell Stack のビルドがゲキオモなせい(巷でもよく言われてる)． でもこれは初回だけで，Stack v2 からは <a href="https://fpcomplete.com/pantry-part-3-specifying-dependencies">Pantry</a> というシステムを導入して効率よく依存パッケージを SQLite にキャッシュしている(2回目以降でキャッシュを使うのは v1 もだったが v2 からは別のプロジェクトでも共有できるようになった)． なので，TravisCI にうまくキャッシュをする設定をすることで CI 中のビルド時間は劇的に改善する:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1"></a><span class="co"># .travis.yml の一部</span></span>
 <span id="cb1-2"><a href="#cb1-2"></a><span class="fu">cache</span><span class="kw">:</span></span>
 <span id="cb1-3"><a href="#cb1-3"></a><span class="at">  </span><span class="fu">timeout</span><span class="kw">:</span><span class="at"> </span><span class="dv">360</span></span>

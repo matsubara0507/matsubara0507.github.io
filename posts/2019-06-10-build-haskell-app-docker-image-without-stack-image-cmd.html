@@ -108,7 +108,7 @@
 <blockquote>
 <p>Remove the stack image command. With the advent of Docker multistage builds, this functionality is no longer useful. For an example, please see Building Haskell Apps with Docker.</p>
 </blockquote>
-<p>マルチステージビルドができたし，あんまりこれもう便利じゃないよね，とのこと． 代わりに「<a href="https://www.fpcomplete.com/blog/2017/12/building-haskell-apps-with-docker">Building Haskell Apps with Docker</a>」という記事を読むと良いらしい．</p>
+<p>マルチステージビルドができたし，あんまりこれもう便利じゃないよね，とのこと． 代わりに「<a href="https://fpcomplete.com/building-haskell-apps-with-docker">Building Haskell Apps with Docker</a>」という記事を読むと良いらしい．</p>
 <h2 id="マルチステージビルドする">マルチステージビルドする</h2>
 <p>上記リンクではマルチステージビルドを使えと書いてある． 多分こんな感じ(試してない):</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">FROM</span> fpco/stack-build:lts-13.21 as bin</span>
