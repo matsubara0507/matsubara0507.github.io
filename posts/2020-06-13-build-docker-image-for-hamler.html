@@ -85,7 +85,7 @@
   </header>
 
   <div class="post-content" itemprop="articleBody">
-    <p><a href="https://www.hamler-lang.org/">Hamler</a> という ErlangVM 上で動作する Haskell に似た構文のプログラミング言語が公開された． 手元で遊ぶためにまず，Docker イメージを作ってみることにした（brew したくなかった）．</p>
+    <p><a href="https://www.hamler-lang.org/">Hamler</a> という ErlangVM 上で動作する Haskell に似た構文のプログラミング言語が公開された． 手元で遊ぶためにまず，Docker イメージを作ってみることにした（brew したくなかった）． <a href="https://hub.docker.com/repository/docker/matsubara0507/hamler">作成したイメージはココ</a>で<a href="https://github.com/matsubara0507/docker-hamler">リポジトリはココ</a>．</p>
 <p>ちなみに，今回利用するバージョンは <code>0.1</code> です．</p>
 <h2 id="docker-イメージを作る">Docker イメージを作る</h2>
 <p><a href="https://github.com/erlang/docker-erlang-otp/blob/ed3bd9400e1b72b2bdd08596990f8ed3350a75c0/22/Dockerfile#L1">公式の Erlang の Docker イメージは Debian</a> なので，Debian の Docker イメージを作る． 現状は Mac 用のバイナリしか提供されていないので自前でビルドする必要がある． 自前でビルドする方法は<a href="https://github.com/hamler-lang/hamler/tree/2ed8e6088721471a4dd7993eb6a984fb7ce66a73#installation">公式ドキュメント</a>によると次の通り：</p>
