@@ -8,8 +8,420 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2020-06-13T00:00:00Z</updated>
+    <updated>2020-07-02T00:00:00Z</updated>
     <entry>
+    <title>Featherweight Go を読んでみた</title>
+    <link href="https://matsubara0507.github.io/posts/2020-07-02-read-featherweight-go.html" />
+    <id>https://matsubara0507.github.io/posts/2020-07-02-read-featherweight-go.html</id>
+    <published>2020-07-02T00:00:00Z</published>
+    <updated>2020-07-02T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
+    <p>Go言語にジェネリクスを導入するために，その形式的な議論を研究した論文「<a href="https://arxiv.org/abs/2005.11710">Featherweight Go</a>」が6月頭に発表されました． せっかくなので（久々に）全訳をしながら丁寧に読んでみたので，それを簡単にまとめることにします．</p>
+<p>可能な限りGo言語に馴染みのない人や，プログラミング言語の形式的な議論に馴染みのない人でも理解できるようにしてみます．</p>
+<h4 id="注意">注意</h4>
+<ul>
+<li>僕は英語がとても苦手です（DeepLを駆使しても3週間かかりました）</li>
+<li>僕はGoでアプリケーションを少し書いていますがコアについては全く詳しくありません</li>
+<li>僕は言語の形式的な議論を院生時代にやってましたが卒業して数年経ちます</li>
+</ul>
+<p>なので間違ってる可能性も十分に考慮してください．</p>
+<h2 id="tldr">TL;DR</h2>
+<ul>
+<li>Goにジェネリクスを導入する新しいデザインを提案：
+<ul>
+<li>インターフェースと型アサーションを駆使する方法</li>
+</ul></li>
+<li>新デザインを形式的に議論するために FG と FGG を定義
+<ul>
+<li>FG：Goの極めて小さいモデル</li>
+<li>FGG：FG をジェネリクスで拡張</li>
+</ul></li>
+<li>単相化（Monomorphisation）というFGGからFGの変換を定義
+<ul>
+<li>単相化は型パラメーターを具体化した実装を必要な型だけ完全に列挙する方法</li>
+</ul></li>
+<li><a href="https://github.com/rhu1/fgg">これらは全てGoでプロトタイプ実装した</a></li>
+</ul>
+<p>加えて，この Go のジェネリクスは Expression Problem の解法にもなり得るという議論もある．</p>
+<h2 id="前提知識">前提知識</h2>
+<h3 id="featherweight-java">Featherweight Java</h3>
+<p>1999年に出された論文に「<a href="https://dl.acm.org/doi/abs/10.1145/320385.320395">Featherweight Java</a>」というものがある． 僕はこの論文を読んではいないがどうやら，この論文も FJ という Java の小さな言語モデルを定義し，それをジェネリクスで拡張した FGJ を定義し，FGJ から FJ への変換の仕方を定義して形式的な議論を与えている．</p>
+<p>Featherweight Go でも言及されているとおり，Featherweight Go は議論の展開の仕方に Featherweight Java を参考としている．</p>
+<h3 id="goの型">Goの型</h3>
+<p>Goで型と呼べるものは大きく分けて2つ，構造体（structure）とインターフェース（interface）がある：</p>
+<ul>
+<li>構造体：
+<ul>
+<li><code>type [name] structure { ... }</code> という形で宣言</li>
+<li><code>...</code> にフィールド名と型を列挙（いわゆるレコード型）</li>
+<li>フィールドアクセスはドット記法（e.g. <code>x.m()</code>）</li>
+</ul></li>
+<li>インターフェース：
+<ul>
+<li><code>type [name] interface { ... }</code> という形で宣言</li>
+<li><code>...</code> にメソッド仕様（method specification，メソッド名 + 型）を列挙</li>
+<li>列挙したメソッドを定義した型はインターフェースのサブタイプになる（いわゆる構造的部分型）</li>
+</ul></li>
+</ul>
+<h3 id="型アサーション">型アサーション</h3>
+<p>Goでの型キャストっぽい機能． インターフェースで指定されてる型からサブタイプへと変換する．</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">type</span> Hoge <span class="kw">interface</span> { ... }</span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">type</span> Fuga <span class="kw">struct</span> { ... }</span>
+<span id="cb1-3"><a href="#cb1-3"></a></span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="co">// Fuga は Hoge を実装しているとする</span></span>
+<span id="cb1-5"><a href="#cb1-5"></a><span class="kw">func</span> piyo(x Hoge) *Fuga {  <span class="co">// *X はX型のポインタ型</span></span>
+<span id="cb1-6"><a href="#cb1-6"></a>    y, ok := x.(Fuga)      <span class="co">// これが型アサーション</span></span>
+<span id="cb1-7"><a href="#cb1-7"></a>    <span class="kw">if</span> !ok {               <span class="co">// 型アサーションに失敗したときに false を返す</span></span>
+<span id="cb1-8"><a href="#cb1-8"></a>        <span class="kw">return</span> <span class="ot">nil</span>         <span class="co">// nil はポインタのゼロ値</span></span>
+<span id="cb1-9"><a href="#cb1-9"></a>    }</span>
+<span id="cb1-10"><a href="#cb1-10"></a>    <span class="kw">return</span> &amp;y</span>
+<span id="cb1-11"><a href="#cb1-11"></a>}</span></code></pre></div>
+<p><code>piyo</code> 関数は <code>Hoge</code> インターフェースを実装した型の値であれば，なんでも引数として与えることができる． 型アサーションの <code>ok</code> は省略することができ，その場合は型アサーションに失敗したときに実行時エラーとなる．</p>
+<h3 id="用語と翻訳">用語と翻訳</h3>
+<p>基本的に，この分野の入門書として名高い[要出典]「型システム入門（原題：Type and Programming Language，略して TaPL）」の訳し方を参考にする． TaPL には無い用語は次のように翻訳したが，Go ジェネリクスが市民権を得たときには別の翻訳が宛てがわれるかもしれない：</p>
+<ul>
+<li>Monomorphisation：単相化
+<ul>
+<li>Polymorphism（多相性）の対義語が Monomorphism（単相性）というらしい</li>
+<li>Rust でも Monomorphization という用語を単相化と訳していた</li>
+<li>（この表記の揺れはおそらくイギリス綴りかアメリカ綴りかの差？）</li>
+</ul></li>
+<li>Bound：境界
+<ul>
+<li>機能は Java の Bounded Types（境界型などと訳されている）に近い</li>
+<li><a href="https://github.com/rust-lang-ja/the-rust-programming-language-ja/issues/153">Rust でも色々議論した結果 Bound を「境界」と訳した</a></li>
+</ul></li>
+</ul>
+<p>また，プログラミング言語の形式的な議論で頻出する用語について簡単に解説する：</p>
+<ul>
+<li>構文（Syntax）:
+<ul>
+<li>ある言語においてプログラムの「正しい記述方法」を定義したもの</li>
+<li>一般的に BNF（バッカス・ナウア記法）で定義する</li>
+</ul></li>
+<li>意味論（Semantics）:
+<ul>
+<li>ある言語においてプログラムが「どのように実行されるか」を定義したもの</li>
+<li>いくつか定義の仕方があるがこの論文では簡約規則（操作的意味論）を利用している</li>
+</ul></li>
+<li>型付け規則（Typing Rule）:
+<ul>
+<li>式 <span class="math inline"><em>e</em></span> に対して「正しい」型の付け方の規則</li>
+<li>正しく型付けされているとはつまり静的型検査が通るような状態</li>
+<li>一般的に <span class="math inline"><em>Γ</em> ⊢ <em>e</em> : <em>t</em></span> とかく（<span class="math inline"><em>Γ</em></span> は環境で変数がなんの型なのかを保存している）</li>
+</ul></li>
+<li>簡約（Reduction）:
+<ul>
+<li>ある式 <span class="math inline"><em>e</em></span> から別の式（値）への変換</li>
+<li>一般的に <span class="math inline"><em>e</em> → <em>e</em>′</span> のように矢印を使う</li>
+<li>例: <span class="math inline">1 + 2 * 3 → 1 + 6 → 7</span></li>
+</ul></li>
+<li>型安全性（Safety）:
+<ul>
+<li>健全性（Soundness）とも呼ぶ</li>
+<li>正しく型付けされた項は「おかしくなる」ことがないということ</li>
+<li>「おかしくなる」の定義は言語モデルによって異なる（例：行き詰まり状態）</li>
+<li>進行定理 + 保存定理 なのでこの2つを証明するのが一般的</li>
+</ul></li>
+<li>進行定理（Progress）:
+<ul>
+<li>正しく型付けされた項は行き詰まり状態では無い</li>
+<li>行き詰まり状態：値でもないし簡約もできない状態</li>
+</ul></li>
+<li>保存定理（Preservation）:
+<ul>
+<li>正しく型付けされた項が評価できるならば，評価後の項も正しく型付けされる</li>
+</ul></li>
+<li>双模倣性（Bisimulation）:
+<ul>
+<li>並行モデルでよく出てくる性質（今回の中では最もマイナーな性質）</li>
+<li>ざっくりいうと，2つのモデルが同じように振舞うという性質</li>
+</ul></li>
+</ul>
+<h3 id="プログラミング言語の形式的な議論">プログラミング言語の形式的な議論</h3>
+<p>なぜ，わざわざ形式的な議論（証明を与える）をするのか． TaPL の第19章「事例: Featherweight Java」にはこう書いてある：</p>
+<blockquote>
+<p>プログラミング言語のような現実世界の複雑な人工物を設計するには，形式的にモデル化することが大きな手助けとなる．形式モデルを使うと，設計のある側面を正確に説明したり，その性質を記述・証明したり，そこまでしないと見落としかねない問題に注意を向けたりできる．</p>
+</blockquote>
+<p>現に，Featherweight Go ではFGGがある「前提条件」のもとで必ず単相化できることを証明しており，その結果，実際のジェネリクス付きGoの「正しい」静的検査（コンパイル）を定義できた（この条件がないと，単相化が停止しない可能性がある）．</p>
+<h3 id="expression-problem">Expression Problem</h3>
+<p>今回は割愛する（ググって）が，本論文で提案するジェネリクス付きGoは Expression Problem に対する解法になっていると主張している（個人的には，あまり Go っぽい書き方じゃない気がするけど笑）．</p>
+<h2 id="goで多相的な実装をする">Goで多相的な実装をする</h2>
+<p>現状のGoでも多相的な実装をする方法がいくつかある． 今回目を付けたのが，インターフェースと型アサーションを使った方法だ．</p>
+<p>例えば，高階関数を次のように表現できる：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">type</span> Any <span class="kw">interface</span> {}</span>
+<span id="cb2-2"><a href="#cb2-2"></a></span>
+<span id="cb2-3"><a href="#cb2-3"></a><span class="kw">type</span> Function <span class="kw">interface</span> {</span>
+<span id="cb2-4"><a href="#cb2-4"></a>    Apply(x Any) Any</span>
+<span id="cb2-5"><a href="#cb2-5"></a>}</span>
+<span id="cb2-6"><a href="#cb2-6"></a></span>
+<span id="cb2-7"><a href="#cb2-7"></a><span class="co">// g(f(x)) を表現</span></span>
+<span id="cb2-8"><a href="#cb2-8"></a><span class="kw">type</span> compose <span class="kw">struct</span> {</span>
+<span id="cb2-9"><a href="#cb2-9"></a>    f Function</span>
+<span id="cb2-10"><a href="#cb2-10"></a>    g Function</span>
+<span id="cb2-11"><a href="#cb2-11"></a>}</span>
+<span id="cb2-12"><a href="#cb2-12"></a><span class="kw">func</span> (this compose) Apply(x Any) Any {</span>
+<span id="cb2-13"><a href="#cb2-13"></a>    <span class="kw">return</span> this.g.Apply(this.f.Apply(x))</span>
+<span id="cb2-14"><a href="#cb2-14"></a>}</span>
+<span id="cb2-15"><a href="#cb2-15"></a></span>
+<span id="cb2-16"><a href="#cb2-16"></a><span class="kw">type</span> incr <span class="kw">struct</span> { n <span class="dt">int</span> } <span class="co">// nだけインクリメントする</span></span>
+<span id="cb2-17"><a href="#cb2-17"></a><span class="kw">func</span> (this incr) Apply(x Any) Any {</span>
+<span id="cb2-18"><a href="#cb2-18"></a>    <span class="kw">return</span> x.(<span class="dt">int</span>) + this.n</span>
+<span id="cb2-19"><a href="#cb2-19"></a>}</span>
+<span id="cb2-20"><a href="#cb2-20"></a></span>
+<span id="cb2-21"><a href="#cb2-21"></a><span class="kw">type</span> pos <span class="kw">struct</span> {} <span class="co">// 正数なら真が返る</span></span>
+<span id="cb2-22"><a href="#cb2-22"></a><span class="kw">func</span> (this pos) Apply(x Any) Any {</span>
+<span id="cb2-23"><a href="#cb2-23"></a>    <span class="kw">return</span> x.(<span class="dt">int</span>) &gt; <span class="dv">0</span></span>
+<span id="cb2-24"><a href="#cb2-24"></a>}</span>
+<span id="cb2-25"><a href="#cb2-25"></a></span>
+<span id="cb2-26"><a href="#cb2-26"></a><span class="kw">func</span> main() {</span>
+<span id="cb2-27"><a href="#cb2-27"></a>    <span class="kw">var</span> f Function = compose{incr{-<span class="dv">5</span>}, pos{}}</span>
+<span id="cb2-28"><a href="#cb2-28"></a>    <span class="kw">var</span> b <span class="dt">bool</span> = f.Apply(<span class="dv">3</span>).(<span class="dt">bool</span>) <span class="co">// false</span></span>
+<span id="cb2-29"><a href="#cb2-29"></a>}</span></code></pre></div>
+<p>このコードは，既存の Go としても完全に正しい． <code>Any</code> インターフェースは実装すべきメソッド仕様を一つも持たないので，全ての型が実装していることになる． 無論，本当は <code>int</code> や <code>bool</code> であるべきところが <code>Any</code> になっていたり，<code>Any</code> な型同士の区別が付かなくなっていたりする問題がある． だがしかし，それがコンパイル時に検査できるようになったらどうだろうか．新しいデザインがまさにそういう形式になっている．</p>
+<h2 id="fg-と-fgg">FG と FGG</h2>
+<p>論文では，それぞれの構文と型付け規則，簡約規則を定義し，構文的正しさの検証規則の定義と，保存定理と進行定理を証明している（すなわち型安全であることを示している）． ここでは2つの構文だけ紹介する．</p>
+<h3 id="fgの構文">FGの構文</h3>
+<p><span class="math inline"><em>x̄</em></span> のような上線付きの記法は，ある形式の項の「列」であることを示している． 例えば <span class="math inline"><em>x̄</em></span> の場合は <span class="math inline"><em>x</em><sub>1</sub>, <em>x</em><sub>2</sub>, ...<em>x</em><sub><em>n</em></sub></span> を意味している．</p>
+<p><img src="/assets/read-featherweight-go/fg.jpg"></img></p>
+<p>プログラム <span class="math inline"><em>P</em></span> は，Go の形式にならって定義されているが，論文中では諸々省略して <span class="math inline"><em>D̄</em> ⊳ <em>e</em></span> と記述することもある．</p>
+<p>FG は極めてコンパクトな Go のサブセットである． そのため，有効な式は変数・メソッド呼び出し・構造体リテラル・フィールド選択・型アサーションの5つしかない． 対して型（構造体・インターフェース）に関する構文はかなり充実している．</p>
+<h2 id="section"></h2>
+<p>FG には他に型付け規則と簡約規則がある．特に型付け規則の一部である，構造的部分型を表現した規則 <span class="math inline"><em>t</em> &lt;  : <em>u</em></span> は重要だ：</p>
+<ul>
+<li><span class="math inline"><em>u</em></span> が構造体 <span class="math inline"><em>t</em><sub><em>S</em></sub></span> の場合は <span class="math inline"><em>t</em><sub><em>S</em></sub></span> 自信のみがサブタイプになる（i.e. <span class="math inline"><em>t</em><sub><em>S</em></sub> &lt;  : <em>t</em><sub><em>S</em></sub></span>）</li>
+<li><span class="math inline"><em>u</em></span> がインターフェース <span class="math inline"><em>t</em><sub><em>I</em></sub></span> の場合は <span class="math inline"><em>m</em><em>e</em><em>t</em><em>h</em><em>o</em><em>d</em><em>s</em>(<em>t</em>) ⊇ <em>m</em><em>e</em><em>t</em><em>h</em><em>o</em><em>d</em><em>s</em>(<em>t</em><sub><em>I</em></sub>)</span> を満たすような <span class="math inline"><em>t</em></span> のみがサブタイプになる（i.e. <span class="math inline"><em>t</em><sub><em>S</em></sub> &lt;  : <em>t</em><sub><em>I</em></sub></span>）</li>
+</ul>
+<p>ここで <span class="math inline"><em>m</em><em>e</em><em>t</em><em>h</em><em>o</em><em>d</em><em>s</em>(<em>t</em>)</span> という補助関数は型 <span class="math inline"><em>t</em></span> に定義されているメソッドのメソッド仕様の集合である（重複しないという前提）． また，メソッド仕様の等価性には変数名は関係しない（つまり，メソッド名・引数の型・返り値の型が一致するかどうかをみる）． この部分型関係 <span class="math inline"> &lt; :</span> は，メソッド呼び出しや構造体リテラルの引数を適用する部分や，型アサーションの型付け規則で利用される．</p>
+<h3 id="fggの構文">FGGの構文</h3>
+<p>前述したとおり，FGG は FG をジェネリクスで拡張した言語である． なので下記の構文規則のうち，FG からの拡張に当たる部分を赤でハイライトしてある．</p>
+<p><img src="/assets/read-featherweight-go/fgg.jpg"></img></p>
+<p>最も大きな変更として型宣言とメソッド宣言（メソッドシグネチャ）が型引数 <span class="math inline"><em>Φ</em></span> も取りうるようになったことだ． この型引数がまさにジェネリクスである． 手っ取り早く具体的なコードを見てみよう． 下記のコードは「Goで多相的な実装をする」を FGG 風の記法で置き換えたものだ（風というのは <code>+</code> や <code>&gt;</code> や <code>int</code> や <code>bool</code> は FGG にはまだ無いため）：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">type</span> Any <span class="kw">interface</span> {}</span>
+<span id="cb3-2"><a href="#cb3-2"></a></span>
+<span id="cb3-3"><a href="#cb3-3"></a><span class="kw">type</span> Function(<span class="kw">type</span> a Any, b Any) <span class="kw">interface</span> {</span>
+<span id="cb3-4"><a href="#cb3-4"></a>    Apply(x a) b</span>
+<span id="cb3-5"><a href="#cb3-5"></a>}</span>
+<span id="cb3-6"><a href="#cb3-6"></a></span>
+<span id="cb3-7"><a href="#cb3-7"></a><span class="co">// g(f(x)) を表現</span></span>
+<span id="cb3-8"><a href="#cb3-8"></a><span class="kw">type</span> compose(<span class="kw">type</span> a Any, b Any, c Any) <span class="kw">struct</span> {</span>
+<span id="cb3-9"><a href="#cb3-9"></a>    f Function(a, b)</span>
+<span id="cb3-10"><a href="#cb3-10"></a>    g Function(b, c)</span>
+<span id="cb3-11"><a href="#cb3-11"></a>}</span>
+<span id="cb3-12"><a href="#cb3-12"></a><span class="kw">func</span> (this compose(<span class="kw">type</span> a Any, b Any, c Any)) Apply(x a) c {</span>
+<span id="cb3-13"><a href="#cb3-13"></a>    <span class="kw">return</span> this.g.Apply(this.f.Apply(x))</span>
+<span id="cb3-14"><a href="#cb3-14"></a>}</span>
+<span id="cb3-15"><a href="#cb3-15"></a></span>
+<span id="cb3-16"><a href="#cb3-16"></a><span class="kw">type</span> incr <span class="kw">struct</span> { n <span class="dt">int</span> } <span class="co">// nだけインクリメントする</span></span>
+<span id="cb3-17"><a href="#cb3-17"></a><span class="kw">func</span> (this incr) Apply(x <span class="dt">int</span>) <span class="dt">int</span> {</span>
+<span id="cb3-18"><a href="#cb3-18"></a>    <span class="kw">return</span> x + this.n</span>
+<span id="cb3-19"><a href="#cb3-19"></a>}</span>
+<span id="cb3-20"><a href="#cb3-20"></a></span>
+<span id="cb3-21"><a href="#cb3-21"></a><span class="kw">type</span> pos <span class="kw">struct</span> {} <span class="co">// 正数なら真が返る</span></span>
+<span id="cb3-22"><a href="#cb3-22"></a><span class="kw">func</span> (this pos) Apply(x <span class="dt">int</span>) <span class="dt">bool</span> {</span>
+<span id="cb3-23"><a href="#cb3-23"></a>    <span class="kw">return</span> x &gt; <span class="dv">0</span></span>
+<span id="cb3-24"><a href="#cb3-24"></a>}</span>
+<span id="cb3-25"><a href="#cb3-25"></a></span>
+<span id="cb3-26"><a href="#cb3-26"></a><span class="kw">func</span> main() {</span>
+<span id="cb3-27"><a href="#cb3-27"></a>    <span class="kw">var</span> f Function(<span class="dt">int</span>, <span class="dt">bool</span>) = compose(<span class="dt">int</span>, <span class="dt">int</span>, <span class="dt">bool</span>){incr{-<span class="dv">5</span>}, pos{}}</span>
+<span id="cb3-28"><a href="#cb3-28"></a>    <span class="kw">var</span> b <span class="dt">bool</span> = f.Apply(<span class="dv">3</span>) <span class="co">// false</span></span>
+<span id="cb3-29"><a href="#cb3-29"></a>}</span></code></pre></div>
+<p>なんと，このコードには型アサーションが一切出てこない． また，高階関数を表現するインターフェースで，ちゃんと引数と戻り値の型を区別することができている．</p>
+<p>構文の本質的な変更を見てみよう． インターフェースや構造体，メソッドの宣言に <code>(type a Any, b Any)</code> というのが出てくるようになった． これがまさに型引数 <span class="math inline"><em>Φ</em></span> や <span class="math inline"><em>Ψ</em></span> に当たる． <code>a</code> や <code>b</code> の型パラメーターの後に記述している <code>Any</code> は <strong>境界（bound）</strong> と呼び，自由にインターフェースを置くことができる． 構造体リテラルやメソッド呼び出しで型引数に型を適用する場合や，部分型関係が成り立つ場合（<code>Apply(x int) bool</code> の <code>int</code> や <code>bool</code> のこと）は，与えた型が境界のインターフェースのサブタイプになっている必要がある（今回の場合は <code>Any</code> なのでどんな型でも良いが）． ここで重要になるのが，型引数の型パラメーターのスコープである：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb4-1"><a href="#cb4-1"></a><span class="co">// 型名やメソッド名の型パラメーターは内部のメソッドシグネチャで利用できる</span></span>
+<span id="cb4-2"><a href="#cb4-2"></a><span class="kw">type</span> List(<span class="kw">type</span> a Any) <span class="kw">interface</span> {</span>
+<span id="cb4-3"><a href="#cb4-3"></a>    Map(<span class="kw">type</span> b Any)(f Function(a, b)) List(b)</span>
+<span id="cb4-4"><a href="#cb4-4"></a>}</span>
+<span id="cb4-5"><a href="#cb4-5"></a></span>
+<span id="cb4-6"><a href="#cb4-6"></a><span class="co">// 型パラメーターを自身の境界で利用することもできる</span></span>
+<span id="cb4-7"><a href="#cb4-7"></a><span class="kw">type</span> Eq(<span class="kw">type</span> a Eq(a)) <span class="kw">interface</span> {</span>
+<span id="cb4-8"><a href="#cb4-8"></a>    Equal(that a) <span class="dt">bool</span></span>
+<span id="cb4-9"><a href="#cb4-9"></a>}</span></code></pre></div>
+<p>インターフェースの型引数はメソッド仕様の型引数でも使うことはできるが，その逆はできない．</p>
+<h2 id="単相化">単相化</h2>
+<p>いよいよ FGG から FG への変換方法をみていく． 論文では，単相化の規則を形式的に定義し，単相化したコードは構文的正しさが保存されることと，双模倣性を証明した．ここでは形式的な議論を割愛する．</p>
+<h3 id="単相化の例">単相化の例</h3>
+<p>まずは例を見てみよう． 前述した FGG の <code>Function</code> などの例を「単相化」で FG に変換すると次のようになる．</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">type</span> Top <span class="kw">struct</span> {}</span>
+<span id="cb5-2"><a href="#cb5-2"></a></span>
+<span id="cb5-3"><a href="#cb5-3"></a><span class="kw">func</span> main() {</span>
+<span id="cb5-4"><a href="#cb5-4"></a>    <span class="kw">var</span> f Function&lt;<span class="dt">int</span>, <span class="dt">bool</span>&gt; = compose&lt;<span class="dt">int</span>, <span class="dt">int</span>, <span class="dt">bool</span>&gt;{incr{-<span class="dv">5</span>}, pos{}}</span>
+<span id="cb5-5"><a href="#cb5-5"></a>    <span class="kw">var</span> b <span class="dt">bool</span> = f.Apply(<span class="dv">3</span>)</span>
+<span id="cb5-6"><a href="#cb5-6"></a>}</span>
+<span id="cb5-7"><a href="#cb5-7"></a></span>
+<span id="cb5-8"><a href="#cb5-8"></a><span class="kw">type</span> compose&lt;<span class="dt">int</span>, <span class="dt">int</span>, <span class="dt">bool</span>&gt; <span class="kw">struct</span> {</span>
+<span id="cb5-9"><a href="#cb5-9"></a>    f Function&lt;<span class="dt">int</span>, <span class="dt">int</span>&gt;</span>
+<span id="cb5-10"><a href="#cb5-10"></a>    g Function&lt;<span class="dt">int</span>, <span class="dt">bool</span>&gt;</span>
+<span id="cb5-11"><a href="#cb5-11"></a>}</span>
+<span id="cb5-12"><a href="#cb5-12"></a></span>
+<span id="cb5-13"><a href="#cb5-13"></a><span class="kw">type</span> Function&lt;<span class="dt">int</span>, <span class="dt">int</span>&gt; <span class="kw">interface</span> {</span>
+<span id="cb5-14"><a href="#cb5-14"></a>    Apply&lt;<span class="dv">0</span>&gt; Top</span>
+<span id="cb5-15"><a href="#cb5-15"></a>    Apply(x <span class="dt">int</span>) <span class="dt">int</span>    </span>
+<span id="cb5-16"><a href="#cb5-16"></a>}</span>
+<span id="cb5-17"><a href="#cb5-17"></a></span>
+<span id="cb5-18"><a href="#cb5-18"></a><span class="kw">type</span> Function&lt;<span class="dt">int</span>, <span class="dt">bool</span>&gt; <span class="kw">interface</span> {</span>
+<span id="cb5-19"><a href="#cb5-19"></a>    Apply&lt;<span class="dv">1</span>&gt; Top</span>
+<span id="cb5-20"><a href="#cb5-20"></a>    Apply(x <span class="dt">int</span>) <span class="dt">bool</span>    </span>
+<span id="cb5-21"><a href="#cb5-21"></a>}</span>
+<span id="cb5-22"><a href="#cb5-22"></a></span>
+<span id="cb5-23"><a href="#cb5-23"></a><span class="kw">type</span> (this compose&lt;<span class="dt">int</span>, <span class="dt">int</span>, <span class="dt">bool</span>&gt;) Apply(x <span class="dt">int</span>) <span class="dt">bool</span> {</span>
+<span id="cb5-24"><a href="#cb5-24"></a>    <span class="kw">return</span> this.g.Apply(this.f.Apply(x))</span>
+<span id="cb5-25"><a href="#cb5-25"></a>}</span>
+<span id="cb5-26"><a href="#cb5-26"></a><span class="kw">type</span> (this compose&lt;<span class="dt">int</span>, <span class="dt">int</span>, <span class="dt">bool</span>&gt;) Apply&lt;<span class="dv">1</span>&gt;() Top {</span>
+<span id="cb5-27"><a href="#cb5-27"></a>    <span class="kw">return</span> Top{}</span>
+<span id="cb5-28"><a href="#cb5-28"></a>}</span>
+<span id="cb5-29"><a href="#cb5-29"></a></span>
+<span id="cb5-30"><a href="#cb5-30"></a><span class="kw">type</span> incr <span class="kw">struct</span> { n <span class="dt">int</span> }</span>
+<span id="cb5-31"><a href="#cb5-31"></a></span>
+<span id="cb5-32"><a href="#cb5-32"></a><span class="kw">type</span> (this incr) Apply(x <span class="dt">int</span>) <span class="dt">int</span> {</span>
+<span id="cb5-33"><a href="#cb5-33"></a>    <span class="kw">return</span> x + this.n</span>
+<span id="cb5-34"><a href="#cb5-34"></a>}</span>
+<span id="cb5-35"><a href="#cb5-35"></a><span class="kw">func</span> (this incr) Apply&lt;<span class="dv">0</span>&gt;() Top {</span>
+<span id="cb5-36"><a href="#cb5-36"></a>    <span class="kw">return</span> Top{}</span>
+<span id="cb5-37"><a href="#cb5-37"></a>}</span>
+<span id="cb5-38"><a href="#cb5-38"></a></span>
+<span id="cb5-39"><a href="#cb5-39"></a><span class="kw">type</span> pos strcut {}</span>
+<span id="cb5-40"><a href="#cb5-40"></a></span>
+<span id="cb5-41"><a href="#cb5-41"></a><span class="kw">func</span> (this pos) Apply(x <span class="dt">int</span>) <span class="dt">bool</span> {</span>
+<span id="cb5-42"><a href="#cb5-42"></a>    <span class="kw">return</span> x &gt; <span class="dv">0</span></span>
+<span id="cb5-43"><a href="#cb5-43"></a>}</span>
+<span id="cb5-44"><a href="#cb5-44"></a><span class="kw">func</span> (this incr) Apply&lt;<span class="dv">1</span>&gt;() Top {</span>
+<span id="cb5-45"><a href="#cb5-45"></a>    <span class="kw">return</span> Top{}</span>
+<span id="cb5-46"><a href="#cb5-46"></a>}</span></code></pre></div>
+<p>大きな変更箇所として，<code>Function&lt;int, int&gt;</code> のように <code>(,)</code> が <code>&lt;,&gt;</code> へ至る所でなっている． FGG のときの <code>(,)</code> は内部の型は個別の型として認識されていたが，<code>&lt;,&gt;</code> は <code>Function&lt;int, int&gt;</code> で一つの型となり内部の型は区別されない．</p>
+<p>また，<code>Apply&lt;0&gt; Top</code> のようなメソッドやメソッド仕様が追加されている． これは，部分型関係を正しく解決するためのダミーメソッドだ． 全てのメソッド宣言に対してダミーメソッドは追加で宣言され，インターフェースの全てのメソッド仕様に対してダミーメソッドのメソッド仕様が追加される． メソッド仕様の数字（<code>&lt;0&gt;</code> とか <code>&lt;1&gt;</code> とか）はメソッドの引数の型と返り値の型に対して一意に定まる（そのため <code>compose</code> と <code>pos</code> の <code>Apply</code> メソッドの数字は同じになる）．</p>
+<p>ちなみに <code>Top</code> 構造体はダミーメソッドのために追加された構造体だ．</p>
+<h3 id="ダミーメソッドが有効な例">ダミーメソッドが有効な例</h3>
+<p>さて，上記の例ではダミーメソッドの有効性がわからないので，もう一つ例を示す． 前にちょっとだけ出てきた <code>List</code> インターフェースの完全な例を示す． 下記は FGG でのコードだ．</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">type</span> List(<span class="kw">type</span> a Any) <span class="kw">interface</span> {</span>
+<span id="cb6-2"><a href="#cb6-2"></a>    Map(<span class="kw">type</span> b Any)(f Function(a, b)) List(b)</span>
+<span id="cb6-3"><a href="#cb6-3"></a>}</span>
+<span id="cb6-4"><a href="#cb6-4"></a></span>
+<span id="cb6-5"><a href="#cb6-5"></a><span class="kw">type</span> Nil(<span class="kw">type</span> a Any) <span class="kw">struct</span> {}</span>
+<span id="cb6-6"><a href="#cb6-6"></a><span class="kw">type</span> Cons(<span class="kw">type</span> a Any) <span class="kw">struct</span> {</span>
+<span id="cb6-7"><a href="#cb6-7"></a>    head a</span>
+<span id="cb6-8"><a href="#cb6-8"></a>    tail List(a)</span>
+<span id="cb6-9"><a href="#cb6-9"></a>}</span>
+<span id="cb6-10"><a href="#cb6-10"></a></span>
+<span id="cb6-11"><a href="#cb6-11"></a><span class="kw">func</span> (xs Nil(<span class="kw">type</span> a Any)) Map(<span class="kw">type</span> b Any)(f Function(a,b)) List(b) {</span>
+<span id="cb6-12"><a href="#cb6-12"></a>    <span class="kw">return</span> Nil(b){}</span>
+<span id="cb6-13"><a href="#cb6-13"></a>}</span>
+<span id="cb6-14"><a href="#cb6-14"></a></span>
+<span id="cb6-15"><a href="#cb6-15"></a><span class="kw">func</span> (xs Cons(<span class="kw">type</span> a Any)) Map(<span class="kw">type</span> b Any)(f Function(a,b)) List(b) {</span>
+<span id="cb6-16"><a href="#cb6-16"></a>    <span class="kw">return</span> Cons(b){f.Apply(xs.head), xs.tail.Map(b)(f)}</span>
+<span id="cb6-17"><a href="#cb6-17"></a>}</span>
+<span id="cb6-18"><a href="#cb6-18"></a></span>
+<span id="cb6-19"><a href="#cb6-19"></a><span class="kw">func</span> main() {</span>
+<span id="cb6-20"><a href="#cb6-20"></a>    <span class="kw">var</span> xs List(<span class="dt">int</span>) = Cons(<span class="dt">int</span>){<span class="dv">3</span>, Cons(<span class="dt">int</span>){<span class="dv">6</span>, Nil(<span class="dt">int</span>){}}}</span>
+<span id="cb6-21"><a href="#cb6-21"></a>    <span class="kw">var</span> ys List(<span class="dt">int</span>) = xs.Map(<span class="dt">int</span>)(incr{-<span class="dv">5</span>})</span>
+<span id="cb6-22"><a href="#cb6-22"></a>    <span class="kw">var</span> _ List(<span class="dt">bool</span>) = ys.Map(<span class="dt">bool</span>)(pos{})</span>
+<span id="cb6-23"><a href="#cb6-23"></a>}</span></code></pre></div>
+<p><code>List</code> インターフェースは，配列のようなコンテナ型の各要素に同じメソッドを適用する高階関数を提供する． <code>Nil</code> と <code>Cons</code> 構造体は線形リストを表したものだ． ちなみに，Go の構造体は構造体による再帰的な構造を宣言することはできないが，インターフェースを介する場合は可能だ．</p>
+<p>さて，これを単相化すると次のようになる．</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">func</span> main() {</span>
+<span id="cb7-2"><a href="#cb7-2"></a>    <span class="kw">var</span> xs List&lt;<span class="dt">int</span>&gt; = Cons&lt;<span class="dt">int</span>&gt;{<span class="dv">3</span>, Cons&lt;<span class="dt">int</span>&gt;{<span class="dv">6</span>, Nil&lt;<span class="dt">int</span>&gt;}}</span>
+<span id="cb7-3"><a href="#cb7-3"></a>    <span class="kw">var</span> ys List&lt;<span class="dt">int</span>&gt; = xs.Map&lt;<span class="dt">int</span>&gt;(incr{-<span class="dv">5</span>})</span>
+<span id="cb7-4"><a href="#cb7-4"></a>    <span class="kw">var</span> _ List&lt;<span class="dt">bool</span>&gt; = ys.Map&lt;<span class="dt">bool</span>&gt;(pos{})</span>
+<span id="cb7-5"><a href="#cb7-5"></a>}</span>
+<span id="cb7-6"><a href="#cb7-6"></a></span>
+<span id="cb7-7"><a href="#cb7-7"></a><span class="kw">type</span> List&lt;<span class="dt">int</span>&gt; <span class="kw">interface</span> {</span>
+<span id="cb7-8"><a href="#cb7-8"></a>    Map&lt;<span class="dv">2</span>&gt;() Top <span class="co">// これは `(f Function(int, b)) List(b)` からの数字</span></span>
+<span id="cb7-9"><a href="#cb7-9"></a>    Map&lt;<span class="dt">int</span>&gt;(f Function&lt;<span class="dt">int</span>,<span class="dt">int</span>&gt;) List&lt;<span class="dt">int</span>&gt;</span>
+<span id="cb7-10"><a href="#cb7-10"></a>    Map&lt;<span class="dt">bool</span>&gt;(f Function&lt;<span class="dt">int</span>,<span class="dt">bool</span>&gt;) List&lt;<span class="dt">bool</span>&gt;</span>
+<span id="cb7-11"><a href="#cb7-11"></a>}</span>
+<span id="cb7-12"><a href="#cb7-12"></a></span>
+<span id="cb7-13"><a href="#cb7-13"></a><span class="kw">type</span> Nil&lt;<span class="dt">int</span>&gt; <span class="kw">struct</span> {}</span>
+<span id="cb7-14"><a href="#cb7-14"></a><span class="kw">func</span> (xs Nil&lt;<span class="dt">int</span>&gt;) Map&lt;<span class="dt">int</span>&gt;(f Function&lt;<span class="dt">int</span>,<span class="dt">int</span>&gt;) List&lt;<span class="dt">int</span>&gt; {</span>
+<span id="cb7-15"><a href="#cb7-15"></a>    <span class="kw">return</span> Nil&lt;<span class="dt">int</span>&gt;{}</span>
+<span id="cb7-16"><a href="#cb7-16"></a>}</span>
+<span id="cb7-17"><a href="#cb7-17"></a><span class="kw">func</span> (xs Nil&lt;<span class="dt">int</span>&gt;) Map&lt;<span class="dt">bool</span>&gt;(f Function&lt;<span class="dt">int</span>,<span class="dt">bool</span>&gt;) List&lt;<span class="dt">bool</span>&gt; {</span>
+<span id="cb7-18"><a href="#cb7-18"></a>    <span class="kw">return</span> Nil&lt;<span class="dt">bool</span>&gt;{}</span>
+<span id="cb7-19"><a href="#cb7-19"></a>}</span>
+<span id="cb7-20"><a href="#cb7-20"></a><span class="kw">func</span> (xs Nil&lt;<span class="dt">int</span>&gt;) Map&lt;<span class="dv">2</span>&gt;() Top {</span>
+<span id="cb7-21"><a href="#cb7-21"></a>    <span class="kw">return</span> Top{}</span>
+<span id="cb7-22"><a href="#cb7-22"></a>}</span>
+<span id="cb7-23"><a href="#cb7-23"></a></span>
+<span id="cb7-24"><a href="#cb7-24"></a><span class="kw">type</span> Cons&lt;<span class="dt">int</span>&gt; <span class="kw">struct</span> {</span>
+<span id="cb7-25"><a href="#cb7-25"></a>    head <span class="dt">int</span></span>
+<span id="cb7-26"><a href="#cb7-26"></a>    tail List&lt;<span class="dt">int</span>&gt;</span>
+<span id="cb7-27"><a href="#cb7-27"></a>}</span>
+<span id="cb7-28"><a href="#cb7-28"></a><span class="kw">func</span> (xs Cons&lt;<span class="dt">int</span>&gt;) Map&lt;<span class="dt">int</span>&gt;(f Function&lt;<span class="dt">int</span>,<span class="dt">int</span>&gt;) List&lt;<span class="dt">int</span>&gt; {</span>
+<span id="cb7-29"><a href="#cb7-29"></a>    <span class="kw">return</span> Cons&lt;<span class="dt">int</span>&gt;{f.Apply(xs.head), xs.tail.Map&lt;<span class="dt">int</span>&gt;(f)}</span>
+<span id="cb7-30"><a href="#cb7-30"></a>}</span>
+<span id="cb7-31"><a href="#cb7-31"></a><span class="kw">func</span> (xs Cons&lt;<span class="dt">int</span>&gt;) Map&lt;<span class="dt">bool</span>&gt;(f Function&lt;<span class="dt">int</span>,<span class="dt">bool</span>&gt;) List&lt;<span class="dt">bool</span>&gt; {</span>
+<span id="cb7-32"><a href="#cb7-32"></a>    <span class="kw">return</span> Cons&lt;<span class="dt">bool</span>&gt;{f.Apply(xs.head), xs.tail.Map&lt;<span class="dt">bool</span>&gt;(f)}</span>
+<span id="cb7-33"><a href="#cb7-33"></a>}</span>
+<span id="cb7-34"><a href="#cb7-34"></a><span class="kw">func</span> (xs Cons&lt;<span class="dt">int</span>&gt;) Map&lt;<span class="dv">2</span>&gt;() Top {</span>
+<span id="cb7-35"><a href="#cb7-35"></a>    <span class="kw">return</span> Top{}</span>
+<span id="cb7-36"><a href="#cb7-36"></a>}</span>
+<span id="cb7-37"><a href="#cb7-37"></a></span>
+<span id="cb7-38"><a href="#cb7-38"></a><span class="kw">type</span> List&lt;<span class="dt">bool</span>&gt; <span class="kw">interface</span> {</span>
+<span id="cb7-39"><a href="#cb7-39"></a>    Map&lt;<span class="dv">3</span>&gt;() Top</span>
+<span id="cb7-40"><a href="#cb7-40"></a>}</span>
+<span id="cb7-41"><a href="#cb7-41"></a></span>
+<span id="cb7-42"><a href="#cb7-42"></a><span class="kw">type</span> Nil&lt;<span class="dt">bool</span>&gt; <span class="kw">struct</span> {}</span>
+<span id="cb7-43"><a href="#cb7-43"></a><span class="kw">func</span> (xs Nil&lt;<span class="dt">bool</span>&gt;) Map&lt;<span class="dv">3</span>&gt;() Top {</span>
+<span id="cb7-44"><a href="#cb7-44"></a>    <span class="kw">return</span> Top{}</span>
+<span id="cb7-45"><a href="#cb7-45"></a>}</span>
+<span id="cb7-46"><a href="#cb7-46"></a></span>
+<span id="cb7-47"><a href="#cb7-47"></a><span class="kw">type</span> Cons&lt;<span class="dt">bool</span>&gt; <span class="kw">struct</span> {</span>
+<span id="cb7-48"><a href="#cb7-48"></a>    head <span class="dt">bool</span></span>
+<span id="cb7-49"><a href="#cb7-49"></a>    tail List&lt;<span class="dt">bool</span>&gt;</span>
+<span id="cb7-50"><a href="#cb7-50"></a>}</span>
+<span id="cb7-51"><a href="#cb7-51"></a><span class="kw">func</span> (xs Cons&lt;<span class="dt">bool</span>&gt;) Map&lt;<span class="dv">3</span>&gt;() Top {</span>
+<span id="cb7-52"><a href="#cb7-52"></a>    <span class="kw">return</span> Top{}</span>
+<span id="cb7-53"><a href="#cb7-53"></a>}</span></code></pre></div>
+<p><code>List&lt;int&gt;</code> の <code>Map</code> メソッドは <code>main</code> のところで <code>int -&gt; int</code> と <code>int -&gt; bool</code> の2パターンで使われていたため，2つもインターフェースのメソッドとして宣言されている． 対して <code>List&lt;bool&gt;</code> は <code>ys.Map&lt;bool&gt;(pos{})</code> で生成されるものの，<code>Map</code> メソッドを呼んでいないため，インターフェースのメソッドは1つもない． このようにインターフェースのメソッドは，実際に利用された型のものしか生成されない． これにより，メソッドの無いインターフェースが生成されることがある（正確にはダミーメソッド以外には無い，だが）． ダミーメソッドはこのような振る舞いに対して有効だ．例えば，変数 <code>f</code> に <code>incr{1}</code> が束縛されているときを考える． 型アサーション <code>f.(List&lt;bool&gt;)</code> はダミーメソッドがあることで失敗するが，ダミーメソッドがないと成功してしまう．</p>
+<h3 id="単相化ができない場合">単相化ができない場合</h3>
+<p>全ての型付け可能な FGG のコードが単相化可能かというとそうではない． 例えば，次のような FGG のコードは単相化できない．</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">type</span> Box(<span class="kw">type</span> a Any) <span class="kw">struct</span> {</span>
+<span id="cb8-2"><a href="#cb8-2"></a>    value a</span>
+<span id="cb8-3"><a href="#cb8-3"></a>}</span>
+<span id="cb8-4"><a href="#cb8-4"></a></span>
+<span id="cb8-5"><a href="#cb8-5"></a><span class="kw">func</span> (this Box(<span class="kw">type</span> a Any)) Nest(n <span class="dt">int</span>) Any {</span>
+<span id="cb8-6"><a href="#cb8-6"></a>    <span class="kw">if</span> (n == <span class="dv">0</span>) {</span>
+<span id="cb8-7"><a href="#cb8-7"></a>        <span class="kw">return</span> this</span>
+<span id="cb8-8"><a href="#cb8-8"></a>    } <span class="kw">else</span> {</span>
+<span id="cb8-9"><a href="#cb8-9"></a>        <span class="kw">return</span> Box(Box(a)){this}.Nest(n<span class="dv">-1</span>)</span>
+<span id="cb8-10"><a href="#cb8-10"></a>    }</span>
+<span id="cb8-11"><a href="#cb8-11"></a>}</span></code></pre></div>
+<p>これは多相再帰（polymorphic recursion），ある型で呼び出されたメソッドが別の型で再帰呼び出しをするもの，をしているプログラムの例である．<code>Box(a)</code> 型をレシーバーとするメソッド <code>Nest</code> を呼び出すと <code>Box(Box(a))</code> 型のレシーバーで再帰的に呼び出される． この例は型がどれだけ深くネストするかを事前に決定することができないので単相化することができない．</p>
+<p>逆に，このような多相再帰なコードが含まれていない場合は，全ての FGG のコードを単相化することができる（ことを論文で証明していた）． なので，実際のコンパイラでは多相再帰が含まれてるかどうかの検査をするようだ．</p>
+<h3 id="単相化の仕組み">単相化の仕組み</h3>
+<p>単相化のプロセスは2つのフェーズから構成されている． 第一フェーズは，FGG プログラムから型とメソッドのインスタンス（型パラメーターを具体化したものだと思う）を取集する． 第二フェーズでは，第一フェーズで収集したインスタンスをもとにして，FGG プログラムを等価な FG プログラムへと変換する．</p>
+<p>FGG のプログラム <span class="math inline"><em>P</em></span> から，各インスタンスの集合 <span class="math inline"><em>Ω</em></span> を収集した場合は <span class="math inline"><em>P</em> ▸ <em>Ω</em></span> と記述する（これが第一フェーズ）．FGG のプログラム <span class="math inline"><em>P</em></span> から FG のプログラム <span class="math inline"><em>P</em>′</span> への変換は <span class="math inline"> ⊢ <em>P</em> ↦ <em>P</em>′</span> と記述する．</p>
+<p>論文ではこれらの規則を形式的に定義している（がここでは割愛）．</p>
+<h3 id="他言語と単相化">他言語と単相化</h3>
+<p>7章の「RELATED WORK」では，他のプログラミング言語での単相化の事例について紹介されていた．興味深いので論文から引用する．</p>
+<ul>
+<li>Bracha 氏らは「Making the Future Safe for the Past: Adding Genericity to the Java Programming Language」という論文でジェネリクス付きの Java からジェネリクスなしの Java へ，全ての型パラメーターの情報を消去することで変換する方法を提案した（これは単相化では無い）．消去の欠点として消去されたコードは単相化されたコードに比べて（実行？）効率が悪くなることがよくある．一方，消去はコードサイズの増加が線形であるのに対して，単相化はコードサイズが爆発的に増加する可能性がある．</li>
+<li>Kennedy 氏と Syme 氏は「Design and Implementation of Generics for the .NET Common Language Runtime」で .NET Common Language Runtime (CLR) と C# の拡張を開発してジェネリクスをサポートした．これらは特化したコードと共有したコードを混ぜたものを生成する．前者は，各プリミティブ型ごとに個別にコンパイルする（これは単相化に似ている）．後者は，全てのオブジェクト型に対してひとつにコンパイルされる（これは消去に似ている）．</li>
+<li>Stroustrup 氏は「The C++ Programming Language」という書籍の16章で，C++ におけるテンプレートのインスタンス化について述べている（実質，単相化）．これは広く使われているがコードが肥大化するとして悪名高い．</li>
+<li>Benton 氏らは「Compiling Standard ML to Java Bytecodes」という論文で SML’97 プログラムから Java バイトコードへ変換するコンパイラについて述べており，ここで多相性は完全に単相化される．Standard ML では多相的な再帰を禁止しているため，常に単相化することが可能．</li>
+<li>Fluet 氏は <a href="http://mlton.org/Monomorphise">MLton のウェブページ</a>で，SML の最適化コンパイラ MLton で利用している同様のアプローチを紹介している．</li>
+<li>Tolmach 氏と Oliva 氏は「From ML to Ada: Strongly-Typed Language Interoperability via Source Translation」という論文で，MLライクな言語から Agda への型付きの変換を単相化ベースで開発し，その詳細を発表した．FGGのとは異なりサブタイピングに対応しておらず多相再帰もない．</li>
+<li>Jones 氏は「Dictionary-free overloading by partial evaluation」という論文で，Haskell用の型クラスを効率的にコンパイルする方法について述べており，これは単相化に多少似ている．</li>
+<li>Yu 氏らは「Formalization of generics for the .NET common language runtime」で，.NET JIT コンパイラの特化と共有を混ぜるメカニズムの形式化している．この論文では，型と意味論を保持した多相的な .NET の中間言語（IL）への変換を記述している．</li>
+<li>Siek 氏と Taha 氏は「A Semantic Analysis of C++ Templates」という論文で，C++テンプレートのインスタンス化メカニズムを形式化している．</li>
+<li>田中氏らは「Safe Low-level Code Generation in Coq Using Monomorphization and Monadification」という論文で，低レベルのCコードを生成する Coq (Gallina) のための単相化アルゴリズムをレポートしている．</li>
+</ul>
+<h2 id="実装について">実装について</h2>
+<ul>
+<li>FGとFGGの型検査器とインタプリタ</li>
+<li>FGG から FG への変換器（monomorphiser）のプロトタイプ実装（単相化可能かの検査も含む）</li>
+</ul>
+<p>を Go で実装して公開したそうだ． Go で実装したのは Go の設計者やコミュニティとの議論を容易にするためらしい． さらに，これらの実装を使い多くのテストを行ったようだ．</p>
+<ul>
+<li>FG の評価結果を公式の Go コンパイラを使用したものと比較</li>
+<li>FG と FGG インタプリタは保存定理と進行定理の動的な検査をサポート</li>
+<li>単相化をテストするために双模倣性のテストを追加</li>
+</ul>
+<p>また，<a href="https://doi.org/10.1017/s0956796815000143">NEAT</a> を利用して FGG のサブセットから全ての正しく型付けされたプログラム（ただし，メソッドと型の出現巣の合計を指定して，ある程度のサイズまでに限定した上で）を列挙もしたらしい（SmallCheck に似ているらしい）． このサブセットに含まれる全ての FGG プログラムをサイズ20まで生成して，上述した双模倣性のテストが通ったことを確認したそうだ．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>今後は C# のような，型のランタイム表現を渡すことに基づいた実装を検討して，単相化と組み合わせる方法を模索するらしい． あと，代入・配列・スライス・パッケージなどの他の重要な機能のモデル化も計画してるらしく，これを Bantamweight Go と呼ぶつもりらしい． さらに，「goroutines」とメッセージパッシングに基づくGoの並行メカニズムのモデル化も計画していて，これを Cruiserweight Go と呼ぶらしい． いったい素の Go は何級なんだろう笑</p>
+  </div>]]></summary>
+</entry>
+<entry>
     <title>Hamler の Docker イメージを作る</title>
     <link href="https://matsubara0507.github.io/posts/2020-06-13-build-docker-image-for-hamler.html" />
     <id>https://matsubara0507.github.io/posts/2020-06-13-build-docker-image-for-hamler.html</id>
@@ -2139,160 +2551,6 @@ $ docker run -it --rm -w /work -v `pwd`/example:/work matsubara0507/hamler run
 <p>あとはこれらを <code>Main</code> でいい感じに呼び出すだけ．</p>
 <h2 id="おしまい">おしまい</h2>
 <p>次回はいつになることやら．</p>
-  </div>]]></summary>
-</entry>
-<entry>
-    <title>久しぶりに thank_you_stars をビルドする</title>
-    <link href="https://matsubara0507.github.io/posts/2019-12-08-re-create-thank-you-stars-ver-elixir.html" />
-    <id>https://matsubara0507.github.io/posts/2019-12-08-re-create-thank-you-stars-ver-elixir.html</id>
-    <published>2019-12-08T00:00:00Z</published>
-    <updated>2019-12-08T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
-    <p>本記事は「<a href="https://qiita.com/advent-calendar/2019/elixir">Elixir Advent Calendar 2019</a>」の8日目の記事です．</p>
-<h1 id="section"></h1>
-<p>学生の頃アルバイトした時(2年前)に初めて Elixir を触って，その集大成として作った(嘘) OSS をヒッサビッサにビルドチャレンジしてみたという話です．</p>
-<ul>
-<li>OSS: <a href="https://github.com/matsubara0507/thank-you-stars">matsubara0507/thank-you-stars</a> (elixir バージョン)</li>
-<li>当時書いたブログ記事: <a href="https://matsubara0507.github.io/posts/2017-10-01-create-thank-you-stars-ver-elixir.html">Elixir ライブラリにスターを送るツール thank-you-stars を作ってみました - ひげメモ</a></li>
-</ul>
-<h2 id="思い出す">思い出す</h2>
-<p>そもそもどういうプログラムだったかってのは覚えてる． 当時何故か流行ってた，自身のプロジェクトの依存ライブラリに GitHub Star を送る CLI ツールの Elixir 版だ．</p>
-<p>で，こいつはどの環境でビルドしていたのか:</p>
-<ul>
-<li>Elixir のバージョンは多分 1.4 (ref. <a href="https://github.com/matsubara0507/thank-you-stars/blob/v0.1.0/mix.exs">mix.ex</a>)</li>
-<li>Erlang/OTP のバージョン: 多分 19.x？ (手元にあったのがそれ)</li>
-</ul>
-<p>依存パッケージのバージョンを見比べてみてもめっちゃ古いのがわかる． 2年ってすごいんだなぁ．</p>
-<h2 id="最新バージョンに対応する">最新バージョンに対応する</h2>
-<p>まずはここから．</p>
-<h3 id="最新-elixir-erlangotp-のインストール">最新 Elixir &amp; Erlang/OTP のインストール</h3>
-<p>Elixir は長いこと触ってないので，そもそも手元に最新の環境がない． 昔はどうやってたかな，と遠い記憶を辿って見たがおそらく <code>exenv</code> と <code>erlenv</code> を使っていたはず:</p>
-<ul>
-<li><a href="https://github.com/exenv/exenv">exenv/exenv</a></li>
-<li><a href="https://github.com/talentdeficit/erlenv">talentdeficit/erlenv</a> (いつのまにかアーカイブになってるのね)</li>
-</ul>
-<p>それぞれ別の Elixir や Erlang/OTP を取ってくるには <a href="https://github.com/mururu/elixir-build">elixir-build</a> や <a href="https://github.com/matsubara0507/erlang-build">erlang-build</a> を使う． 試しに手元でやってみたら，どうやら v20.x 以降の Erlang/OTP をビルドするには OpenSSL 1.1 を使わないといけないのだが，手元の OS が古くてできない（このためだけに更新したくない）． そして，最新の Elixir を使うには Erlang/OTP の v20.x 以降が必要っぽい． 詰んだ（？）．</p>
-<p>もちろん，今ならもっと他の方法でいろんなバージョンの Elixir や Erlang/OTP をイストールする方法はあるだろう． しかし，できれば手元の環境を汚したくない． ということで Docker に甘えた（ぇ</p>
-<pre><code>$ docker run --rm -v `pwd`:/work -it elixir:1.9.4 /bin/bash -c &quot;cd /work &amp;&amp; mix test&quot;</code></pre>
-<h3 id="依存パケッケージの更新">依存パケッケージの更新</h3>
-<p>とりあえず，Hex で最新のバージョンを取ってきて <code>mix.exs</code> を書き換えた． もちろん，すんなりビルドはできない． しかし，珍しくちゃんとテストを書いていたので，テストしつつ最新のバージョンに<a href="https://github.com/matsubara0507/thank-you-stars/commit/1574a16dec5ea5c7e8a4e39dbae4bf4729e8cfb6">合わせていく</a>:</p>
-<ul>
-<li><a href="https://github.com/CrowdHailer/OK/pull/57"><code>OK.with</code> は使えなくなっているので利用しない書き方に変更</a></li>
-<li><a href="https://github.com/edgurgel/tentacat/pull/132"><code>Tentacat.put</code> の返り値のタプルサイズが変わっていた</a></li>
-<li><a href="https://github.com/devinus/poison/commit/a4208a6252f4e58fbcc8d9fd2f4f64c99e974cc8"><code>Poison.decode</code> のエラーの返り値のタプルサイズが変わった</a></li>
-<li><a href="https://github.com/elixir-lang/elixir/pull/7838"><code>[ &quot;hoge&quot;: 123 ]</code> こういう形式のキーワードハッシュは警告が出るようになった</a></li>
-</ul>
-<p>パターンマッチしてたタプルのサイズが変わるのはきつい．</p>
-<h3 id="mix-format">mix format</h3>
-<p>Elixir 1.6 からフォーマッターがエコシステムに入った． なので <code>mix format</code> をかけてみる．</p>
-<p><code>mix format</code> をかけるには設定ファイル <code>.formatter.exs</code> を置かないと動作しないようだ（珍しい）． なので，公式ドキュメントにあったものをそのまま<a href="https://github.com/matsubara0507/thank-you-stars/commit/700910b927ff1abbd5701a177c83e0671ddffe29">コピペして <code>mix format</code> をかけた</a>．</p>
-<h2 id="github-actions">GitHub Actions</h2>
-<p>最近流行りだからね．</p>
-<ul>
-<li><a href="https://github.com/matsubara0507/thank-you-stars/pull/1">Add GitHub Actions config by matsubara0507 · Pull Request #1 · matsubara0507/thank-you-stars</a></li>
-</ul>
-<p>Elixir や Erlang/OTP のセットアップには <a href="https://github.com/actions/setup-elixir"><code>actions/setup-elixir</code></a> を使う． 色々と試して，最終的なジョブの設定はこんな感じ:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1"></a><span class="co"># ほんとんど actions/elixir-setup の例のまんま</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="fu">jobs</span><span class="kw">:</span></span>
-<span id="cb2-3"><a href="#cb2-3"></a><span class="at">  </span><span class="fu">build</span><span class="kw">:</span></span>
-<span id="cb2-4"><a href="#cb2-4"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-16.04</span></span>
-<span id="cb2-5"><a href="#cb2-5"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> OTP ${{matrix.otp}} / Elixir ${{matrix.elixir}}</span></span>
-<span id="cb2-6"><a href="#cb2-6"></a></span>
-<span id="cb2-7"><a href="#cb2-7"></a><span class="at">    </span><span class="fu">strategy</span><span class="kw">:</span></span>
-<span id="cb2-8"><a href="#cb2-8"></a><span class="at">      </span><span class="fu">matrix</span><span class="kw">:</span></span>
-<span id="cb2-9"><a href="#cb2-9"></a><span class="at">        </span><span class="fu">otp</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">21.x</span><span class="kw">,</span><span class="at"> 22.x</span><span class="kw">]</span><span class="co">      # 20.x は ubuntu 16,18 には無い様子</span></span>
-<span id="cb2-10"><a href="#cb2-10"></a><span class="at">        </span><span class="fu">elixir</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">1.8.x</span><span class="kw">,</span><span class="at"> 1.9.x</span><span class="kw">]</span></span>
-<span id="cb2-11"><a href="#cb2-11"></a><span class="at">      </span><span class="fu">fail-fast</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co">         # マトリックスのどれかのジョブが落ちても他のジョブは実行をやめない</span></span>
-<span id="cb2-12"><a href="#cb2-12"></a></span>
-<span id="cb2-13"><a href="#cb2-13"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
-<span id="cb2-14"><a href="#cb2-14"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v1.0.0</span></span>
-<span id="cb2-15"><a href="#cb2-15"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
-<span id="cb2-16"><a href="#cb2-16"></a><span class="at">        </span><span class="fu">fetch-depth</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span id="cb2-17"><a href="#cb2-17"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/setup-elixir@v1.0.0</span></span>
-<span id="cb2-18"><a href="#cb2-18"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
-<span id="cb2-19"><a href="#cb2-19"></a><span class="at">        </span><span class="fu">otp-version</span><span class="kw">:</span><span class="at"> ${{matrix.otp}}</span></span>
-<span id="cb2-20"><a href="#cb2-20"></a><span class="at">        </span><span class="fu">elixir-version</span><span class="kw">:</span><span class="at"> ${{matrix.elixir}}</span></span>
-<span id="cb2-21"><a href="#cb2-21"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> mix deps.get</span></span>
-<span id="cb2-22"><a href="#cb2-22"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> mix test</span></span></code></pre></div>
-<p><code>mix.exs</code> でどうやって複数の Elixir のバージョンを許容するんだ？と結構調べたけど，単純にボトムのバージョンを <code>elixir: ~&gt; ...</code> で指定すればいいだけだった（普通 <code>&gt;=</code> じゃ無いの．．．）．</p>
-<p>キャッシュの導入も考えたが，たかが数分に入れてもしょうがないなってなってやめた．</p>
-<h2 id="おまけ-依存パケージを減らす大作戦">おまけ: 依存パケージを減らす大作戦</h2>
-<p>依存パッケージがなくなると <code>mix archive.install</code> で入れることができるはず． なので，もともと依存パッケージを無くしてみたかった． 今回，バージョンアップを追うのも大変だったし，せっかくのなので可能な限り減らしてみた:</p>
-<ul>
-<li><a href="https://github.com/matsubara0507/thank-you-stars/pull/2">Remove OK library by matsubara0507 · Pull Request #2 · matsubara0507/thank-you-stars</a></li>
-<li><a href="https://github.com/matsubara0507/thank-you-stars/pull/3">Remove tentacat library by matsubara0507 · Pull Request #3 · matsubara0507/thank-you-stars</a></li>
-<li><a href="https://github.com/matsubara0507/thank-you-stars/pull/4">Remove poison library by matsubara0507 · Pull Request #4 · matsubara0507/thank-you-stars</a></li>
-</ul>
-<p>3/4 減らせました． 残るは鬼門 <code>httpoison</code> だけ． 果たしてできるのか．</p>
-<h3 id="vs.-ok">vs. <code>ok</code></h3>
-<p><code>ok</code> パッケージはいわゆる <code>Either</code> モナドだ． <code>{:ok, hoge} | {:error, fuga}</code> のような型を簡単に扱うためのマクロを提供している．</p>
-<p>これらの型の場合，Elixir の特徴であるパイプ演算子をうまく連結できない． なので，Elm 流に <code>and_then</code> 関数を用意して，それで賄うようにした:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb3-1"><a href="#cb3-1"></a>  <span class="co"># Result a -&gt; (a -&gt; Result b) -&gt; Result b</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a>  <span class="co"># ただし Result a = {:ok, a} | {:error, e}</span></span>
-<span id="cb3-3"><a href="#cb3-3"></a>  <span class="kw">defp</span> and_then({<span class="va">:ok</span>, v}, f), <span class="kw">do</span>: f<span class="op">.</span>(v)</span>
-<span id="cb3-4"><a href="#cb3-4"></a>  <span class="kw">defp</span> and_then(err <span class="op">=</span> {<span class="va">:error</span>, _}, _), <span class="kw">do</span>: err</span>
-<span id="cb3-5"><a href="#cb3-5"></a></span>
-<span id="cb3-6"><a href="#cb3-6"></a>  <span class="co"># 使用例</span></span>
-<span id="cb3-7"><a href="#cb3-7"></a>  <span class="kw">def</span> star_package(package_name, client) <span class="kw">do</span></span>
-<span id="cb3-8"><a href="#cb3-8"></a>    fetch_package_github_url(package_name)</span>
-<span id="cb3-9"><a href="#cb3-9"></a>    <span class="op">|&gt;</span> and_then(<span class="op">&amp;</span>star_github_package(<span class="op">&amp;</span><span class="dv">1</span>, client)) <span class="co"># ココ</span></span>
-<span id="cb3-10"><a href="#cb3-10"></a>    <span class="op">|&gt;</span> <span class="kw">case</span> <span class="kw">do</span></span>
-<span id="cb3-11"><a href="#cb3-11"></a>      {<span class="va">:ok</span>, url} <span class="op">-&gt;</span> <span class="st">&quot;Starred! </span><span class="ot">#{</span>url<span class="ot">}</span><span class="st">&quot;</span></span>
-<span id="cb3-12"><a href="#cb3-12"></a>      {<span class="va">:error</span>, url} <span class="op">-&gt;</span> <span class="st">&quot;Error    </span><span class="ot">#{</span>url<span class="ot">}</span><span class="st">&quot;</span></span>
-<span id="cb3-13"><a href="#cb3-13"></a>    <span class="kw">end</span></span>
-<span id="cb3-14"><a href="#cb3-14"></a>  <span class="kw">end</span></span></code></pre></div>
-<h3 id="vs.-tentacat">vs. <code>tentacat</code></h3>
-<p>単純に HTTP リクエストの PUT を認証付きでしているだけなので，<code>httpoison</code> に書き直した． まぁ面倒を後に丸投げてるだけだが笑</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb4-1"><a href="#cb4-1"></a>  <span class="kw">def</span> star_github_package(url, token) <span class="kw">do</span></span>
-<span id="cb4-2"><a href="#cb4-2"></a>    <span class="cn">URI</span><span class="op">.</span>parse(url)</span>
-<span id="cb4-3"><a href="#cb4-3"></a>    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="va">:path</span>, <span class="st">&quot;&quot;</span>)</span>
-<span id="cb4-4"><a href="#cb4-4"></a>    <span class="op">|&gt;</span> (<span class="op">&amp;</span>put_github_api(<span class="st">&quot;user/starred</span><span class="ot">#{</span><span class="op">&amp;</span><span class="dv">1</span><span class="ot">}</span><span class="st">&quot;</span>, token))<span class="op">.</span>()</span>
-<span id="cb4-5"><a href="#cb4-5"></a>    <span class="op">|&gt;</span> and_then(<span class="op">&amp;</span>map_get_with_ok(<span class="op">&amp;</span><span class="dv">1</span>, <span class="va">:status_code</span>))</span>
-<span id="cb4-6"><a href="#cb4-6"></a>    <span class="op">|&gt;</span> <span class="kw">case</span> <span class="kw">do</span></span>
-<span id="cb4-7"><a href="#cb4-7"></a>      {<span class="va">:ok</span>, <span class="dv">204</span>} <span class="op">-&gt;</span> {<span class="va">:ok</span>, url} <span class="co"># もちろん返り値も変わる</span></span>
-<span id="cb4-8"><a href="#cb4-8"></a>      _ <span class="op">-&gt;</span> {<span class="va">:error</span>, url}</span>
-<span id="cb4-9"><a href="#cb4-9"></a>    <span class="kw">end</span></span>
-<span id="cb4-10"><a href="#cb4-10"></a>  <span class="kw">end</span></span>
-<span id="cb4-11"><a href="#cb4-11"></a></span>
-<span id="cb4-12"><a href="#cb4-12"></a>  <span class="kw">defp</span> put_github_api(path, token) <span class="kw">do</span></span>
-<span id="cb4-13"><a href="#cb4-13"></a>    headers <span class="op">=</span> [{<span class="st">&quot;Authorization&quot;</span>, <span class="st">&quot;token </span><span class="ot">#{</span>token<span class="ot">}</span><span class="st">&quot;</span>}]</span>
-<span id="cb4-14"><a href="#cb4-14"></a>    <span class="cn">HTTPoison</span><span class="op">.</span>put(<span class="st">&quot;https://api.github.com/</span><span class="ot">#{</span>path<span class="ot">}</span><span class="st">&quot;</span>, <span class="st">&quot;&quot;</span>, headers)</span>
-<span id="cb4-15"><a href="#cb4-15"></a>  <span class="kw">end</span></span></code></pre></div>
-<h3 id="vs.-poison">vs. <code>poison</code></h3>
-<p><code>poison</code> は JSON デコーダー・エンコーダーだ． GitHub トークンを設定(JSON)から取得したり，Hex から取得したライブラリの設定(JSON)をパースするのに使う．</p>
-<p>これを無くすにはどうするか．簡単ですね． <strong>JSON パーサーを自作すればいいのです</strong>．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">defmodule</span> <span class="cn">ThankYouStars</span><span class="op">.</span><span class="cn">JSON</span> <span class="kw">do</span></span>
-<span id="cb5-2"><a href="#cb5-2"></a>  <span class="im">alias</span> <span class="cn">ThankYouStars</span><span class="op">.</span><span class="cn">Result</span>, <span class="va">as:</span> <span class="cn">Result</span></span>
-<span id="cb5-3"><a href="#cb5-3"></a></span>
-<span id="cb5-4"><a href="#cb5-4"></a>  <span class="co"># String をもらって JSON として Map や Bool，List などを返す</span></span>
-<span id="cb5-5"><a href="#cb5-5"></a>  <span class="kw">def</span> decode(str) <span class="kw">do</span></span>
-<span id="cb5-6"><a href="#cb5-6"></a>    match_value(%{<span class="va">rest:</span> <span class="cn">String</span><span class="op">.</span>trim(str), <span class="va">result:</span> %{}})</span>
-<span id="cb5-7"><a href="#cb5-7"></a>    <span class="op">|&gt;</span> <span class="kw">case</span> <span class="kw">do</span></span>
-<span id="cb5-8"><a href="#cb5-8"></a>      {<span class="va">:ok</span>, %{<span class="va">rest:</span> <span class="st">&quot;&quot;</span>, <span class="va">result:</span> result}} <span class="op">-&gt;</span> <span class="cn">Result</span><span class="op">.</span>success(result)</span>
-<span id="cb5-9"><a href="#cb5-9"></a>      {_, %{<span class="va">rest:</span> rest}} <span class="op">-&gt;</span> <span class="cn">Result</span><span class="op">.</span>failure(rest)</span>
-<span id="cb5-10"><a href="#cb5-10"></a>    <span class="kw">end</span></span>
-<span id="cb5-11"><a href="#cb5-11"></a>  <span class="kw">end</span></span>
-<span id="cb5-12"><a href="#cb5-12"></a></span>
-<span id="cb5-13"><a href="#cb5-13"></a>  <span class="kw">defp</span> match_value(stat) <span class="kw">do</span></span>
-<span id="cb5-14"><a href="#cb5-14"></a>    trim_leading(stat)</span>
-<span id="cb5-15"><a href="#cb5-15"></a>    <span class="op">|&gt;</span> match_value_body()</span>
-<span id="cb5-16"><a href="#cb5-16"></a>    <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>map(<span class="op">&amp;</span>trim_leading(<span class="op">&amp;</span><span class="dv">1</span>))</span>
-<span id="cb5-17"><a href="#cb5-17"></a>  <span class="kw">end</span></span>
-<span id="cb5-18"><a href="#cb5-18"></a></span>
-<span id="cb5-19"><a href="#cb5-19"></a>  <span class="co"># 無駄にパターンマッチとパイプを使ってみることにした(Elixir っぽい？)</span></span>
-<span id="cb5-20"><a href="#cb5-20"></a>  <span class="kw">defp</span> match_value_body(stat <span class="op">=</span> %{<span class="va">rest:</span> <span class="st">&quot;true&quot;</span> <span class="op">&lt;&gt;</span> rest}) <span class="kw">do</span></span>
-<span id="cb5-21"><a href="#cb5-21"></a>    <span class="cn">Map</span><span class="op">.</span>put(stat, <span class="va">:result</span>, <span class="cn">true</span>)</span>
-<span id="cb5-22"><a href="#cb5-22"></a>    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>put(<span class="va">:rest</span>, rest)</span>
-<span id="cb5-23"><a href="#cb5-23"></a>    <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>success()</span>
-<span id="cb5-24"><a href="#cb5-24"></a>  <span class="kw">end</span></span>
-<span id="cb5-25"><a href="#cb5-25"></a></span>
-<span id="cb5-26"><a href="#cb5-26"></a>  <span class="op">...</span></span></code></pre></div>
-<p>JSON パーサーは比較的簡単だ(細かいところに目をつぶれば)． なんせ構文の定義が <a href="https://www.json.org/json-en.html">json.org</a> というサイトに書いてあるから． また，テストスイートも <a href="https://github.com/nst/JSONTestSuite">nst/JSONTestSuite</a> というところに置いてある．</p>
-<h1 id="section-1"></h1>
-<p>今回はガッっと一晩で雑に作ったので浮動小数点の <code>e</code> 記法やユニコードのエスケープ記法 <code>\u</code> なんかの実装は無視した（まぁ多分すぐできるけど）． また，Elixir ということで積極的にパターンマッチングとパイプを利用して実装している． 興味がある人は PR を見てください（汚いのでリファクタリングしたい）．</p>
-<p>もう少し細かい紹介は気が向いたらするやもしれない．</p>
-<h2 id="おしまい">おしまい</h2>
-<p><code>httpoison</code> も無くしたいなぁ．</p>
   </div>]]></summary>
 </entry>
 
