@@ -8,8 +8,319 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2020-12-02T00:00:00Z</updated>
+    <updated>2020-12-07T00:00:00Z</updated>
     <entry>
+    <title>Elm で Featherweight Go を書いてみた（その１）</title>
+    <link href="https://matsubara0507.github.io/posts/2020-12-07-fg-with-elm-part1.html" />
+    <id>https://matsubara0507.github.io/posts/2020-12-07-fg-with-elm-part1.html</id>
+    <published>2020-12-07T00:00:00Z</published>
+    <updated>2020-12-07T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
+    <p>タイトルの通り，Elm で Featherweight Go を作って遊んでました． 本記事はそのメモ書きです．</p>
+<h1 id="section"></h1>
+<p>あとこれは <a href="https://qiita.com/advent-calendar/2020/elm">Elm Advent Calendar 2020</a> の7日目の記事です．</p>
+<h2 id="featherweight-go">Featherweight Go</h2>
+<p>Go にジェネリクスを導入するために考案された，極めてミニマムな Go 処理系（の形式的な定義）． そのまんま「<a href="https://arxiv.org/abs/2005.11710">Featherweight Go</a>」という論文が出てる． 前に，ざっくり日本語でまとめました：</p>
+<ul>
+<li><a href="https://matsubara0507.github.io/posts/2020-07-02-read-featherweight-go.html">Featherweight Go を読んでみた - ひげメモ</a></li>
+</ul>
+<p>論文では Featherweight Go（以下 FG）と，それにジェネリクスを追加した Featherweight Generics Go の構文規則・評価規則・型付け規則などが定義されており，型安全性が証明されている． 今回は，Featherweight Go のパーサーと型検査器を論文の定義に則って Elm で実装した話．</p>
+<p>ちなみに評価の方は実装しないです．</p>
+<h2 id="elm">Elm</h2>
+<p>Elm は JavaScript へとトランスパイルされる Web フロントエンドに特化した純粋関数型プログラミング言語． 構文は Haskell に似ているが，言語機能自体は Haskell のように多彩ではなく，極めてコンパクトである．</p>
+<p>今回 Elm を使う理由は2つあって：</p>
+<ol type="1">
+<li>Elm でプログラミング言語作る人がほとんど居ないから</li>
+<li>簡単に Web ビュー側を作れるから</li>
+</ol>
+<p>です．</p>
+<h3 id="elm-でパーサーを作るには">Elm でパーサーを作るには</h3>
+<p>Elm でパーサーを記述するには <a href="https://package.elm-lang.org/packages/elm/parser">elm/parser</a> という公式が提供しているパーサーコンビネーターライブラリを使う．</p>
+<h2 id="fgのパーサーを作る">FGのパーサーを作る</h2>
+<p>構文規則は次の通り：</p>
+<p><img src="/assets/read-featherweight-go/fg.jpg"></img></p>
+<p>これを Elm でひたすら実装していく．</p>
+<h3 id="構文の型を定義">構文の型を定義</h3>
+<p>まずは，構文を表現する型を定義しよう． ひたすら予約語にあたる部分を排除するだけだ：</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">module</span> <span class="dt">Go</span><span class="op">.</span><span class="dt">Featherweight</span><span class="op">.</span><span class="dt">Syntax</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
+<span id="cb1-2"><a href="#cb1-2"></a></span>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Program</span> <span class="op">=</span></span>
+<span id="cb1-4"><a href="#cb1-4"></a>    { <span class="fu">decls</span> : <span class="dt">List</span> <span class="dt">Declaration</span><span class="op">,</span> <span class="fu">exp</span> : <span class="dt">Expression</span> }</span>
+<span id="cb1-5"><a href="#cb1-5"></a></span>
+<span id="cb1-6"><a href="#cb1-6"></a><span class="kw">type</span> <span class="dt">Declaration</span></span>
+<span id="cb1-7"><a href="#cb1-7"></a>    <span class="op">=</span> <span class="dt">TDecl</span></span>
+<span id="cb1-8"><a href="#cb1-8"></a>        { <span class="fu">name</span> : <span class="dt">TypeName</span></span>
+<span id="cb1-9"><a href="#cb1-9"></a>        <span class="op">,</span> <span class="fu">literal</span> : <span class="dt">TypeLiteral</span></span>
+<span id="cb1-10"><a href="#cb1-10"></a>        }</span>
+<span id="cb1-11"><a href="#cb1-11"></a>    <span class="op">|</span> <span class="dt">MDecl</span></span>
+<span id="cb1-12"><a href="#cb1-12"></a>        { <span class="fu">recv</span> : ( <span class="dt">VarName</span><span class="op">,</span> <span class="dt">TypeName</span> )</span>
+<span id="cb1-13"><a href="#cb1-13"></a>        <span class="op">,</span> <span class="fu">name</span> : <span class="dt">MethodName</span></span>
+<span id="cb1-14"><a href="#cb1-14"></a>        <span class="op">,</span> <span class="fu">sign</span> : <span class="dt">MethodSignature</span></span>
+<span id="cb1-15"><a href="#cb1-15"></a>        <span class="op">,</span> <span class="fu">retv</span> : <span class="dt">Expression</span></span>
+<span id="cb1-16"><a href="#cb1-16"></a>        }</span>
+<span id="cb1-17"><a href="#cb1-17"></a></span>
+<span id="cb1-18"><a href="#cb1-18"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">TypeName</span> <span class="op">=</span> <span class="dt">String</span></span>
+<span id="cb1-19"><a href="#cb1-19"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">VarName</span> <span class="op">=</span> <span class="dt">String</span></span>
+<span id="cb1-20"><a href="#cb1-20"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">MethodName</span> <span class="op">=</span> <span class="dt">String</span></span>
+<span id="cb1-21"><a href="#cb1-21"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">FieldName</span> <span class="op">=</span> <span class="dt">String</span></span>
+<span id="cb1-22"><a href="#cb1-22"></a></span>
+<span id="cb1-23"><a href="#cb1-23"></a><span class="kw">type</span> <span class="dt">TypeLiteral</span></span>
+<span id="cb1-24"><a href="#cb1-24"></a>    <span class="op">=</span> <span class="dt">Structure</span> (<span class="dt">List</span> ( <span class="dt">FieldName</span><span class="op">,</span> <span class="dt">TypeName</span> ))</span>
+<span id="cb1-25"><a href="#cb1-25"></a>    <span class="op">|</span> <span class="dt">Interface</span> (<span class="dt">List</span> <span class="dt">MethodSpecific</span>)</span>
+<span id="cb1-26"><a href="#cb1-26"></a></span>
+<span id="cb1-27"><a href="#cb1-27"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">MethodSpecific</span> <span class="op">=</span></span>
+<span id="cb1-28"><a href="#cb1-28"></a>    { <span class="fu">name</span> : <span class="dt">MethodName</span><span class="op">,</span> <span class="fu">sign</span> : <span class="dt">MethodSignature</span> }</span>
+<span id="cb1-29"><a href="#cb1-29"></a></span>
+<span id="cb1-30"><a href="#cb1-30"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">MethodSignature</span> <span class="op">=</span></span>
+<span id="cb1-31"><a href="#cb1-31"></a>    { <span class="fu">args</span> : <span class="dt">List</span> ( <span class="dt">VarName</span><span class="op">,</span> <span class="dt">TypeName</span> )<span class="op">,</span> <span class="fu">rett</span> : <span class="dt">TypeName</span> }</span>
+<span id="cb1-32"><a href="#cb1-32"></a></span>
+<span id="cb1-33"><a href="#cb1-33"></a><span class="kw">type</span> <span class="dt">Expression</span></span>
+<span id="cb1-34"><a href="#cb1-34"></a>    <span class="op">=</span> <span class="dt">Var</span> <span class="dt">VarName</span></span>
+<span id="cb1-35"><a href="#cb1-35"></a>    <span class="op">|</span> <span class="dt">MethodCall</span></span>
+<span id="cb1-36"><a href="#cb1-36"></a>        { <span class="fu">exp</span> : <span class="dt">Expression</span></span>
+<span id="cb1-37"><a href="#cb1-37"></a>        <span class="op">,</span> <span class="fu">method</span> : <span class="dt">MethodName</span></span>
+<span id="cb1-38"><a href="#cb1-38"></a>        <span class="op">,</span> <span class="fu">args</span> : <span class="dt">List</span> <span class="dt">Expression</span></span>
+<span id="cb1-39"><a href="#cb1-39"></a>        }</span>
+<span id="cb1-40"><a href="#cb1-40"></a>    <span class="op">|</span> <span class="dt">StructLiteral</span></span>
+<span id="cb1-41"><a href="#cb1-41"></a>        { <span class="fu">struct</span> : <span class="dt">TypeName</span></span>
+<span id="cb1-42"><a href="#cb1-42"></a>        <span class="op">,</span> <span class="fu">args</span> : <span class="dt">List</span> <span class="dt">Expression</span></span>
+<span id="cb1-43"><a href="#cb1-43"></a>        }</span>
+<span id="cb1-44"><a href="#cb1-44"></a>    <span class="op">|</span> <span class="dt">SelectField</span></span>
+<span id="cb1-45"><a href="#cb1-45"></a>        { <span class="fu">exp</span> : <span class="dt">Expression</span></span>
+<span id="cb1-46"><a href="#cb1-46"></a>        <span class="op">,</span> <span class="fu">field</span> : <span class="dt">FieldName</span></span>
+<span id="cb1-47"><a href="#cb1-47"></a>        }</span>
+<span id="cb1-48"><a href="#cb1-48"></a>    <span class="op">|</span> <span class="dt">TypeAssertion</span></span>
+<span id="cb1-49"><a href="#cb1-49"></a>        { <span class="fu">exp</span> : <span class="dt">Expression</span></span>
+<span id="cb1-50"><a href="#cb1-50"></a>        <span class="op">,</span> <span class="fu">ty</span> : <span class="dt">TypeName</span></span>
+<span id="cb1-51"><a href="#cb1-51"></a>        }</span></code></pre></div>
+<h3 id="パーサーを書く">パーサーを書く</h3>
+<p>先に，FG のパーサーを記述する上で便利なヘルパー関数をいくつか定義しておく：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">module</span> <span class="dt">Go</span><span class="op">.</span><span class="dt">Parser</span><span class="op">.</span><span class="dt">Helper</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
+<span id="cb2-2"><a href="#cb2-2"></a></span>
+<span id="cb2-3"><a href="#cb2-3"></a><span class="fu">newlineSequence</span> : <span class="dt">Parser</span> () <span class="op">-&gt;</span> <span class="dt">Parser</span> <span class="fu">a</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> (<span class="dt">List</span> <span class="fu">a</span>)</span>
+<span id="cb2-4"><a href="#cb2-4"></a><span class="fu">newlineSequence</span> <span class="fu">end</span> <span class="fu">p</span> <span class="op">=</span> <span class="op">...</span></span>
+<span id="cb2-5"><a href="#cb2-5"></a></span>
+<span id="cb2-6"><a href="#cb2-6"></a><span class="fu">blockWith</span> : ( <span class="dt">String</span><span class="op">,</span> <span class="dt">String</span> ) <span class="op">-&gt;</span> <span class="dt">Parser</span> <span class="fu">a</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> (<span class="dt">List</span> <span class="fu">a</span>)</span>
+<span id="cb2-7"><a href="#cb2-7"></a><span class="fu">blockWith</span> ( <span class="fu">start</span><span class="op">,</span> <span class="fu">end</span> ) <span class="fu">p</span> <span class="op">=</span> <span class="op">...</span></span>
+<span id="cb2-8"><a href="#cb2-8"></a></span>
+<span id="cb2-9"><a href="#cb2-9"></a><span class="fu">whitespaces</span> : <span class="dt">Parser</span> ()</span>
+<span id="cb2-10"><a href="#cb2-10"></a><span class="fu">whitespaces</span> <span class="op">=</span> <span class="op">...</span></span>
+<span id="cb2-11"><a href="#cb2-11"></a></span>
+<span id="cb2-12"><a href="#cb2-12"></a><span class="fu">newlines</span> : <span class="dt">Parser</span> ()</span>
+<span id="cb2-13"><a href="#cb2-13"></a><span class="fu">newlines</span> <span class="op">=</span> <span class="op">...</span></span></code></pre></div>
+<p><a href="https://github.com/matsubara0507/featherweight-go/blob/4ce84918c80b0852b4c32989bdbfe29331ab1fe9/src/Go/Parser/Helper.elm">実装はこの辺りを見てください</a>． <code>newlineSequence</code> は改行区切りで引数のパーサーを実行してくれる． 例えば，構造体のフィールドを改行区切りで列挙するのをパースするのに役立つ． <code>blockWith</code> は，1引数目で与えた開始文字列と終端文字列で囲まれてかつ，2引数目のパーサーをカンマ区切りで実行してくれる． 関数定義の引数のパースなどに役立つ． <code>whitespaces</code> は1つ以上の空白を，<code>newlines</code> は1つ以上の改行をパースする．</p>
+<p>で，まずは「プログラム」の部分のパーサーだ． プログラムは次のようなのをパースしたい：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">package</span> main</span>
+<span id="cb3-2"><a href="#cb3-2"></a></span>
+<span id="cb3-3"><a href="#cb3-3"></a><span class="co">// 構造体や関数の定義</span></span>
+<span id="cb3-4"><a href="#cb3-4"></a></span>
+<span id="cb3-5"><a href="#cb3-5"></a><span class="kw">func</span> main() {</span>
+<span id="cb3-6"><a href="#cb3-6"></a>    _ = .. <span class="co">// なんらかの式</span></span>
+<span id="cb3-7"><a href="#cb3-7"></a>}</span></code></pre></div>
+<p>とりあえず，式や構造体の定義のパーサーはあるものと仮定して実装する：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">import</span> <span class="dt">Parser</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
+<span id="cb4-2"><a href="#cb4-2"></a><span class="kw">import</span> <span class="dt">Go</span><span class="op">.</span><span class="dt">Parser</span><span class="op">.</span><span class="dt">Helper</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
+<span id="cb4-3"><a href="#cb4-3"></a></span>
+<span id="cb4-4"><a href="#cb4-4"></a><span class="fu">parser</span> : <span class="dt">Parser</span> <span class="dt">Program</span></span>
+<span id="cb4-5"><a href="#cb4-5"></a><span class="fu">parser</span> <span class="op">=</span></span>
+<span id="cb4-6"><a href="#cb4-6"></a>    <span class="kw">let</span></span>
+<span id="cb4-7"><a href="#cb4-7"></a>        <span class="fu">parseMainPackage</span> <span class="op">=</span> <span class="co">-- package main の部分</span></span>
+<span id="cb4-8"><a href="#cb4-8"></a>            <span class="fu">succeed</span> ()</span>
+<span id="cb4-9"><a href="#cb4-9"></a>                <span class="op">|.</span> <span class="fu">keyword</span> <span class="st">&quot;package&quot;</span></span>
+<span id="cb4-10"><a href="#cb4-10"></a>                <span class="op">|.</span> <span class="fu">whitespaces</span></span>
+<span id="cb4-11"><a href="#cb4-11"></a>                <span class="op">|.</span> <span class="fu">keyword</span> <span class="st">&quot;main&quot;</span></span>
+<span id="cb4-12"><a href="#cb4-12"></a></span>
+<span id="cb4-13"><a href="#cb4-13"></a>        <span class="fu">parseMainFunc</span> <span class="op">=</span> <span class="co">-- func main() の部分</span></span>
+<span id="cb4-14"><a href="#cb4-14"></a>            <span class="fu">succeed</span> ()</span>
+<span id="cb4-15"><a href="#cb4-15"></a>                <span class="op">|.</span> <span class="fu">backtrackable</span> (<span class="fu">keyword</span> <span class="st">&quot;func&quot;</span>)</span>
+<span id="cb4-16"><a href="#cb4-16"></a>                <span class="op">|.</span> <span class="fu">backtrackable</span> <span class="fu">whitespaces</span></span>
+<span id="cb4-17"><a href="#cb4-17"></a>                <span class="op">|.</span> <span class="fu">keyword</span> <span class="st">&quot;main()&quot;</span></span>
+<span id="cb4-18"><a href="#cb4-18"></a></span>
+<span id="cb4-19"><a href="#cb4-19"></a>        <span class="fu">parseMainExp</span> <span class="op">=</span> <span class="co">-- _ = e の部分</span></span>
+<span id="cb4-20"><a href="#cb4-20"></a>            <span class="fu">succeed</span> <span class="fu">identity</span></span>
+<span id="cb4-21"><a href="#cb4-21"></a>                <span class="op">|.</span> <span class="fu">symbol</span> <span class="st">&quot;_&quot;</span></span>
+<span id="cb4-22"><a href="#cb4-22"></a>                <span class="op">|.</span> <span class="fu">whitespaces</span></span>
+<span id="cb4-23"><a href="#cb4-23"></a>                <span class="op">|.</span> <span class="fu">symbol</span> <span class="st">&quot;=&quot;</span></span>
+<span id="cb4-24"><a href="#cb4-24"></a>                <span class="op">|.</span> <span class="fu">whitespaces</span></span>
+<span id="cb4-25"><a href="#cb4-25"></a>                <span class="op">|=</span> <span class="fu">expParser</span></span>
+<span id="cb4-26"><a href="#cb4-26"></a>    <span class="kw">in</span></span>
+<span id="cb4-27"><a href="#cb4-27"></a>    <span class="fu">succeed</span> <span class="dt">Program</span></span>
+<span id="cb4-28"><a href="#cb4-28"></a>        <span class="op">|.</span> <span class="fu">parseMainPackage</span></span>
+<span id="cb4-29"><a href="#cb4-29"></a>        <span class="op">|.</span> <span class="fu">newlines</span></span>
+<span id="cb4-30"><a href="#cb4-30"></a>        <span class="op">|=</span> <span class="fu">newlineSequence</span> <span class="fu">parseMainFunc</span> <span class="fu">declParser</span></span>
+<span id="cb4-31"><a href="#cb4-31"></a>        <span class="op">|.</span> <span class="fu">spaces</span></span>
+<span id="cb4-32"><a href="#cb4-32"></a>        <span class="op">|.</span> <span class="fu">symbol</span> <span class="st">&quot;{&quot;</span></span>
+<span id="cb4-33"><a href="#cb4-33"></a>        <span class="op">|.</span> <span class="fu">spaces</span></span>
+<span id="cb4-34"><a href="#cb4-34"></a>        <span class="op">|=</span> <span class="fu">parseMainExp</span></span>
+<span id="cb4-35"><a href="#cb4-35"></a>        <span class="op">|.</span> <span class="fu">spaces</span></span>
+<span id="cb4-36"><a href="#cb4-36"></a>        <span class="op">|.</span> <span class="fu">symbol</span> <span class="st">&quot;}&quot;</span></span>
+<span id="cb4-37"><a href="#cb4-37"></a>        <span class="op">|.</span> <span class="fu">spaces</span></span>
+<span id="cb4-38"><a href="#cb4-38"></a>        <span class="op">|.</span> <span class="dt">Parser</span><span class="op">.</span><span class="fu">end</span></span>
+<span id="cb4-39"><a href="#cb4-39"></a></span>
+<span id="cb4-40"><a href="#cb4-40"></a><span class="fu">declParser</span> : <span class="dt">Parser</span> <span class="dt">Declaration</span></span>
+<span id="cb4-41"><a href="#cb4-41"></a><span class="fu">declParser</span> <span class="op">=</span> <span class="dt">Debug</span><span class="op">.</span><span class="fu">todo</span> <span class="st">&quot;Decl Parser&quot;</span></span>
+<span id="cb4-42"><a href="#cb4-42"></a></span>
+<span id="cb4-43"><a href="#cb4-43"></a><span class="fu">expParser</span> : <span class="dt">Parser</span> <span class="dt">Expression</span></span>
+<span id="cb4-44"><a href="#cb4-44"></a><span class="fu">expParser</span> <span class="op">=</span> <span class="dt">Debug</span><span class="op">.</span><span class="fu">todo</span> <span class="st">&quot;Exp Parser&quot;</span></span></code></pre></div>
+<p>基本的に <code>declParser</code> や <code>expParser</code> も同じように構文定義を見ながら実装していくだけなので割愛する（<a href="https://github.com/matsubara0507/featherweight-go/blob/4ce84918c80b0852b4c32989bdbfe29331ab1fe9/tests/Test/Go/Featherweight/Syntax.elm">コード</a>）． 1つだけ，なんらかの変数をパースするパーサーだけは書いておく． elm/parser には <code>variable</code> というまさにこれをやるパーサーコンビネーターがあるのでこれを利用する：</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb5-1"><a href="#cb5-1"></a><span class="fu">nameParser</span> : <span class="dt">Parser</span> <span class="dt">String</span></span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="fu">nameParser</span> <span class="op">=</span></span>
+<span id="cb5-3"><a href="#cb5-3"></a>    <span class="fu">variable</span></span>
+<span id="cb5-4"><a href="#cb5-4"></a>        { <span class="fu">start</span> <span class="op">=</span> <span class="dt">Char</span><span class="op">.</span><span class="fu">isAlphaNum</span> <span class="co">-- 先頭文字，小文字や数字を含まないとかできる</span></span>
+<span id="cb5-5"><a href="#cb5-5"></a>        <span class="op">,</span> <span class="fu">inner</span> <span class="op">=</span> \<span class="fu">c</span> <span class="op">-&gt;</span> <span class="dt">Char</span><span class="op">.</span><span class="fu">isAlphaNum</span> <span class="fu">c</span> <span class="op">||</span> <span class="fu">c</span> <span class="op">==</span> <span class="ch">&#39;_&#39;</span></span>
+<span id="cb5-6"><a href="#cb5-6"></a>        <span class="op">,</span> <span class="fu">reserved</span> <span class="op">=</span> <span class="fu">keywords</span>     <span class="co">-- 変数にはならない予約を列挙する</span></span>
+<span id="cb5-7"><a href="#cb5-7"></a>        }</span>
+<span id="cb5-8"><a href="#cb5-8"></a></span>
+<span id="cb5-9"><a href="#cb5-9"></a><span class="fu">keywords</span> : <span class="dt">Set</span> <span class="dt">String</span></span>
+<span id="cb5-10"><a href="#cb5-10"></a><span class="fu">keywords</span> <span class="op">=</span></span>
+<span id="cb5-11"><a href="#cb5-11"></a>    <span class="dt">Set</span><span class="op">.</span><span class="fu">fromList</span></span>
+<span id="cb5-12"><a href="#cb5-12"></a>        [ <span class="st">&quot;package&quot;</span></span>
+<span id="cb5-13"><a href="#cb5-13"></a>        <span class="op">,</span> <span class="st">&quot;main&quot;</span></span>
+<span id="cb5-14"><a href="#cb5-14"></a>        <span class="op">,</span> <span class="st">&quot;func&quot;</span></span>
+<span id="cb5-15"><a href="#cb5-15"></a>        <span class="op">,</span> <span class="st">&quot;struct&quot;</span></span>
+<span id="cb5-16"><a href="#cb5-16"></a>        <span class="op">,</span> <span class="st">&quot;interface&quot;</span></span>
+<span id="cb5-17"><a href="#cb5-17"></a>        <span class="op">,</span> <span class="st">&quot;type&quot;</span></span>
+<span id="cb5-18"><a href="#cb5-18"></a>        <span class="op">,</span> <span class="st">&quot;return&quot;</span></span>
+<span id="cb5-19"><a href="#cb5-19"></a>        ]</span></code></pre></div>
+<h3 id="テスト">テスト</h3>
+<p>とりあえず簡単に，FGの論文にあるサンプルコードが動作するかのテストだけを書いた：</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">module</span> <span class="dt">Test</span><span class="op">.</span><span class="dt">Go</span><span class="op">.</span><span class="dt">Featherweight</span><span class="op">.</span><span class="dt">Syntax</span> <span class="kw">exposing</span> (<span class="fu">suite</span>)</span>
+<span id="cb6-2"><a href="#cb6-2"></a></span>
+<span id="cb6-3"><a href="#cb6-3"></a><span class="kw">import</span> <span class="dt">Go</span><span class="op">.</span><span class="dt">Featherweight</span><span class="op">.</span><span class="dt">Syntax</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
+<span id="cb6-4"><a href="#cb6-4"></a><span class="kw">import</span> <span class="dt">Parser</span></span>
+<span id="cb6-5"><a href="#cb6-5"></a><span class="kw">import</span> <span class="dt">Test</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
+<span id="cb6-6"><a href="#cb6-6"></a></span>
+<span id="cb6-7"><a href="#cb6-7"></a><span class="fu">suite</span> : <span class="dt">Test</span></span>
+<span id="cb6-8"><a href="#cb6-8"></a><span class="fu">suite</span> <span class="op">=</span></span>
+<span id="cb6-9"><a href="#cb6-9"></a>    <span class="fu">describe</span> <span class="st">&quot;module Go.Featherweight.Syntax&quot;</span></span>
+<span id="cb6-10"><a href="#cb6-10"></a>        [ <span class="fu">describe</span> <span class="st">&quot;parser&quot;</span></span>
+<span id="cb6-11"><a href="#cb6-11"></a>            [ <span class="fu">test</span> <span class="st">&quot;parse sample FG code&quot;</span> <span class="op">&lt;|</span></span>
+<span id="cb6-12"><a href="#cb6-12"></a>                \<span class="fu">_</span> <span class="op">-&gt;</span></span>
+<span id="cb6-13"><a href="#cb6-13"></a>                    <span class="dt">Parser</span><span class="op">.</span><span class="fu">run</span> <span class="fu">parser</span> <span class="fu">sample</span></span>
+<span id="cb6-14"><a href="#cb6-14"></a>                        <span class="op">|&gt;</span> <span class="dt">Expect</span><span class="op">.</span><span class="fu">equal</span> (<span class="dt">Ok</span> <span class="op">&lt;|</span> { <span class="fu">decls</span> <span class="op">=</span> <span class="op">...,</span> <span class="fu">exp</span> <span class="op">=</span> <span class="op">...</span> }</span>
+<span id="cb6-15"><a href="#cb6-15"></a></span>
+<span id="cb6-16"><a href="#cb6-16"></a><span class="fu">sample</span> : <span class="dt">String</span></span>
+<span id="cb6-17"><a href="#cb6-17"></a><span class="fu">sample</span> <span class="op">=</span></span>
+<span id="cb6-18"><a href="#cb6-18"></a>    <span class="dt">String</span><span class="op">.</span><span class="fu">dropLeft</span> <span class="dv">1</span></span>
+<span id="cb6-19"><a href="#cb6-19"></a>        <span class="st">&quot;&quot;&quot;</span></span>
+<span id="cb6-20"><a href="#cb6-20"></a><span class="st">package main</span></span>
+<span id="cb6-21"><a href="#cb6-21"></a><span class="st">type Any interface {}</span></span>
+<span id="cb6-22"><a href="#cb6-22"></a><span class="st">type Function interface {</span></span>
+<span id="cb6-23"><a href="#cb6-23"></a><span class="st">    Apply(x Any) Any</span></span>
+<span id="cb6-24"><a href="#cb6-24"></a><span class="st">}</span></span>
+<span id="cb6-25"><a href="#cb6-25"></a><span class="st">type incr struct { n int }</span></span>
+<span id="cb6-26"><a href="#cb6-26"></a><span class="st">func (this incr) Apply(x Any) Any {</span></span>
+<span id="cb6-27"><a href="#cb6-27"></a><span class="st">    return this.n.add(x.(int))</span></span>
+<span id="cb6-28"><a href="#cb6-28"></a><span class="st">}</span></span>
+<span id="cb6-29"><a href="#cb6-29"></a><span class="st">type pos struct {}</span></span>
+<span id="cb6-30"><a href="#cb6-30"></a><span class="st">func (this pos) Apply(x Any) Any {</span></span>
+<span id="cb6-31"><a href="#cb6-31"></a><span class="st">    return x.(int).lt(zero)</span></span>
+<span id="cb6-32"><a href="#cb6-32"></a><span class="st">}</span></span>
+<span id="cb6-33"><a href="#cb6-33"></a><span class="st">type compose struct {</span></span>
+<span id="cb6-34"><a href="#cb6-34"></a><span class="st">    f Function</span></span>
+<span id="cb6-35"><a href="#cb6-35"></a><span class="st">    g Function</span></span>
+<span id="cb6-36"><a href="#cb6-36"></a><span class="st">}</span></span>
+<span id="cb6-37"><a href="#cb6-37"></a><span class="st">func (this compose) Apply(x Any) Any {</span></span>
+<span id="cb6-38"><a href="#cb6-38"></a><span class="st">    return this.g.Apply(this.f.Apply(x))</span></span>
+<span id="cb6-39"><a href="#cb6-39"></a><span class="st">}</span></span>
+<span id="cb6-40"><a href="#cb6-40"></a><span class="st">func main(){</span></span>
+<span id="cb6-41"><a href="#cb6-41"></a><span class="st">    _ = compose{incr{x}, pos{}}.Apply(y).(bool)</span></span>
+<span id="cb6-42"><a href="#cb6-42"></a><span class="st">}</span></span>
+<span id="cb6-43"><a href="#cb6-43"></a><span class="st">&quot;&quot;&quot;</span></span></code></pre></div>
+<h2 id="fgの型検査器を作る">FGの型検査器を作る</h2>
+<p>型検査器を作るにはとりあえず，論文の型付け規則（3.3節の図11）をそのまんま実装していけばいい． まぁまぁ量があるので型付け規則自体は載せません（論文を見て）．</p>
+<h3 id="例プログラムの型付け規則">例：プログラムの型付け規則</h3>
+<p>全部載せると膨大なので，「プログラム」の型付け規則とその実装だけ． 型付け規則は次のようになっている：</p>
+<pre><code>distinct(tdecls(seq(D)))
+distinct(mdecls(seq(D)))
+seq(D ok)
+[] |- e : t
+---------------------------------------------
+package main; seq(D) func main { _ = e } ok</code></pre>
+<p>数式で書くの大変なので，だいぶ本来の記法と離れちゃってますが雰囲気として，<code>---</code> より上が全て成り立てば下が成り立つという感じ． 下の <code>... ok</code> というのは「プログラム」が正しく型付けされていることを意味しており，上のそれぞれは：</p>
+<ul>
+<li><code>D</code> というのは型（構造体・インターフェース）の宣言かメソッドの宣言</li>
+<li><code>seq(D)</code> は <code>D</code> のリスト（シーケンス）</li>
+<li><code>tdecls(seq(D))</code> は <code>seq(D)</code> のうち型の宣言だけを集めたもの</li>
+<li><code>mdecls(seq(D))</code> は <code>seq(D)</code> のうちメソッドの宣言だけを集めたもの</li>
+<li><code>distinct(xs)</code> は <code>xs</code> 内に重複がないことを意味する（つまり，型やメソッドが重複してたらダメ）</li>
+<li><code>D ok</code> は宣言 <code>D</code> が正しく型付けされていることを意味する</li>
+<li><code>seq(D ok)</code> は <code>seq(D)</code> の全ての宣言が正しく型付けされていることを意味する</li>
+<li><code>[] |- e : t</code> は式 <code>e</code> がなんらかの型 <code>t</code> で型付けされていることを意味する</li>
+</ul>
+<p>最後ので <code>[]</code> は空の型環境を意味している． 型環境はある式がどの型になるかの辞書だ． つまり，Elm で実装するとこんな感じ：</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">module</span> <span class="dt">Go</span><span class="op">.</span><span class="dt">Featherweight</span><span class="op">.</span><span class="dt">Type</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
+<span id="cb8-2"><a href="#cb8-2"></a></span>
+<span id="cb8-3"><a href="#cb8-3"></a><span class="kw">import</span> <span class="dt">Dict</span> <span class="kw">exposing</span> (<span class="dt">Dict</span>)</span>
+<span id="cb8-4"><a href="#cb8-4"></a><span class="kw">import</span> <span class="dt">Go</span><span class="op">.</span><span class="dt">Featherweight</span><span class="op">.</span><span class="dt">Syntax</span> <span class="kw">as</span> <span class="dt">FG</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
+<span id="cb8-5"><a href="#cb8-5"></a></span>
+<span id="cb8-6"><a href="#cb8-6"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Gamma</span> <span class="op">=</span></span>
+<span id="cb8-7"><a href="#cb8-7"></a>    <span class="dt">Dict</span> <span class="dt">VarName</span> <span class="dt">TypeName</span></span></code></pre></div>
+<p>また，型検査をするには <code>seq(D)</code> で宣言されている型やメソッドの情報が必要だ． 論文の数理論理学的な定義では，情報が必要になるたびに <code>seq(D)</code> から引っ張ってきている． しかし，実際のプログラムでそれをやると効率が悪いので，事前にそのような辞書を環境（<code>Env</code>）として定義しておく：</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Env</span> <span class="op">=</span></span>
+<span id="cb9-2"><a href="#cb9-2"></a>    ( <span class="dt">Gamma</span><span class="op">,</span> <span class="dt">DeclMap</span> )</span>
+<span id="cb9-3"><a href="#cb9-3"></a></span>
+<span id="cb9-4"><a href="#cb9-4"></a><span class="co">-- 型名をキー</span></span>
+<span id="cb9-5"><a href="#cb9-5"></a><span class="co">-- 型の情報（`TypeLiteral`）とメソッドの情報（`MethodSpecific`）が値</span></span>
+<span id="cb9-6"><a href="#cb9-6"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">DeclMap</span> <span class="op">=</span></span>
+<span id="cb9-7"><a href="#cb9-7"></a>    <span class="dt">Dict</span> <span class="dt">TypeName</span> ( <span class="dt">TypeLiteral</span><span class="op">,</span> <span class="dt">List</span> <span class="dt">MethodSpecific</span> )</span>
+<span id="cb9-8"><a href="#cb9-8"></a></span>
+<span id="cb9-9"><a href="#cb9-9"></a><span class="fu">newEnv</span> : <span class="dt">List</span> <span class="dt">Declaration</span> <span class="op">-&gt;</span> <span class="dt">Env</span></span>
+<span id="cb9-10"><a href="#cb9-10"></a><span class="fu">newEnv</span> <span class="fu">decls</span> <span class="op">=</span></span>
+<span id="cb9-11"><a href="#cb9-11"></a>    ( <span class="dt">Dict</span><span class="op">.</span><span class="fu">empty</span><span class="op">,</span> <span class="fu">mkDeclMap</span> <span class="fu">decls</span> )</span>
+<span id="cb9-12"><a href="#cb9-12"></a></span>
+<span id="cb9-13"><a href="#cb9-13"></a><span class="fu">mkDeclMap</span> : <span class="dt">List</span> <span class="dt">Declaration</span> <span class="op">-&gt;</span> <span class="dt">DeclMap</span></span>
+<span id="cb9-14"><a href="#cb9-14"></a><span class="fu">mkDeclMap</span> <span class="fu">decls</span> <span class="op">=</span> <span class="op">...</span> <span class="co">-- ちょっと複雑なので割愛</span></span></code></pre></div>
+<p>で，「プログラム」の型付け規則をそのまんま実装すると次のようになる：</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">module</span> <span class="dt">Go</span><span class="op">.</span><span class="dt">Featherweight</span><span class="op">.</span><span class="dt">Type</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
+<span id="cb10-2"><a href="#cb10-2"></a></span>
+<span id="cb10-3"><a href="#cb10-3"></a><span class="fu">check</span> : <span class="dt">FG</span><span class="op">.</span><span class="dt">Program</span> <span class="op">-&gt;</span> <span class="dt">Result</span> <span class="dt">TypeError</span> ()</span>
+<span id="cb10-4"><a href="#cb10-4"></a><span class="fu">check</span> <span class="fu">p</span> <span class="op">=</span></span>
+<span id="cb10-5"><a href="#cb10-5"></a>    <span class="kw">let</span></span>
+<span id="cb10-6"><a href="#cb10-6"></a>        <span class="fu">env</span> <span class="op">=</span></span>
+<span id="cb10-7"><a href="#cb10-7"></a>            <span class="fu">newEnv</span> <span class="fu">p</span><span class="op">.</span><span class="fu">decls</span></span>
+<span id="cb10-8"><a href="#cb10-8"></a>        <span class="fu">dmap</span> <span class="op">=</span></span>
+<span id="cb10-9"><a href="#cb10-9"></a>            <span class="dt">Tuple</span><span class="op">.</span><span class="fu">second</span> <span class="fu">env</span></span>
+<span id="cb10-10"><a href="#cb10-10"></a>    <span class="kw">in</span></span>
+<span id="cb10-11"><a href="#cb10-11"></a>    <span class="fu">combine_</span></span>
+<span id="cb10-12"><a href="#cb10-12"></a>        [ <span class="fu">distinct</span> (<span class="fu">tdecls</span> <span class="fu">p</span><span class="op">.</span><span class="fu">decls</span>)</span>
+<span id="cb10-13"><a href="#cb10-13"></a>            <span class="op">|&gt;</span> <span class="dt">Result</span><span class="op">.</span><span class="fu">mapError</span> (<span class="dt">DuplicatedDefinition</span> <span class="st">&quot;type&quot;</span>)</span>
+<span id="cb10-14"><a href="#cb10-14"></a>        <span class="op">,</span> <span class="fu">distinct</span> (<span class="fu">mdecls</span> <span class="fu">p</span><span class="op">.</span><span class="fu">decls</span>)</span>
+<span id="cb10-15"><a href="#cb10-15"></a>            <span class="op">|&gt;</span> <span class="dt">Result</span><span class="op">.</span><span class="fu">mapError</span> (\( <span class="fu">x</span><span class="op">,</span> <span class="fu">y</span> ) <span class="op">-&gt;</span> <span class="dt">DuplicatedDefinition</span> <span class="st">&quot;method&quot;</span> (<span class="fu">x</span> <span class="op">++</span> <span class="st">&quot;.&quot;</span> <span class="op">++</span> <span class="fu">y</span>))</span>
+<span id="cb10-16"><a href="#cb10-16"></a>        <span class="op">,</span> <span class="fu">combine_</span> (<span class="dt">List</span><span class="op">.</span><span class="fu">map</span> (<span class="fu">checkDeclWith</span> <span class="fu">dmap</span>) <span class="fu">p</span><span class="op">.</span><span class="fu">decls</span>)</span>
+<span id="cb10-17"><a href="#cb10-17"></a>        <span class="op">,</span> <span class="fu">typeInferWith</span> <span class="fu">env</span> <span class="fu">p</span><span class="op">.</span><span class="fu">exp</span></span>
+<span id="cb10-18"><a href="#cb10-18"></a>            <span class="op">|&gt;</span> <span class="dt">Result</span><span class="op">.</span><span class="fu">map</span> (<span class="fu">always</span> ())</span>
+<span id="cb10-19"><a href="#cb10-19"></a>        ]</span>
+<span id="cb10-20"><a href="#cb10-20"></a></span>
+<span id="cb10-21"><a href="#cb10-21"></a><span class="co">-- `Result.combine` は `Result e a` を返すが</span></span>
+<span id="cb10-22"><a href="#cb10-22"></a><span class="co">-- `Result e ()` を返す関数が欲しかった</span></span>
+<span id="cb10-23"><a href="#cb10-23"></a><span class="fu">combine_</span> : <span class="dt">List</span> (<span class="dt">Result</span> <span class="fu">e</span> <span class="fu">a</span>) <span class="op">-&gt;</span> <span class="dt">Result</span> <span class="fu">e</span> ()</span>
+<span id="cb10-24"><a href="#cb10-24"></a><span class="fu">combine_</span> <span class="op">=</span></span>
+<span id="cb10-25"><a href="#cb10-25"></a>    <span class="dt">Result</span><span class="op">.</span><span class="fu">map</span> (<span class="fu">always</span> ()) <span class="op">&lt;&lt;</span> <span class="dt">Result</span><span class="op">.</span><span class="fu">combine</span></span>
+<span id="cb10-26"><a href="#cb10-26"></a></span>
+<span id="cb10-27"><a href="#cb10-27"></a><span class="co">-- 重複のチェックは</span></span>
+<span id="cb10-28"><a href="#cb10-28"></a><span class="co">-- 型の場合は型名が重複してないかどうか</span></span>
+<span id="cb10-29"><a href="#cb10-29"></a><span class="co">-- メソッドの場合は型名+メソッド名が重複してないかどうか</span></span>
+<span id="cb10-30"><a href="#cb10-30"></a><span class="fu">distinct</span> : <span class="dt">List</span> <span class="fu">comparable</span> <span class="op">-&gt;</span> <span class="dt">Result</span> <span class="fu">comparable</span> ()</span>
+<span id="cb10-31"><a href="#cb10-31"></a><span class="fu">tdecls</span> : <span class="dt">List</span> <span class="dt">Declaration</span> <span class="op">-&gt;</span> <span class="dt">List</span> <span class="dt">TypeName</span></span>
+<span id="cb10-32"><a href="#cb10-32"></a><span class="fu">mdecls</span> : <span class="dt">List</span> <span class="dt">Declaration</span> <span class="op">-&gt;</span> <span class="dt">List</span> ( <span class="dt">TypeName</span><span class="op">,</span> <span class="dt">MethodName</span> )</span>
+<span id="cb10-33"><a href="#cb10-33"></a></span>
+<span id="cb10-34"><a href="#cb10-34"></a><span class="fu">checkDeclWith</span> : <span class="dt">DeclMap</span> <span class="op">-&gt;</span> <span class="dt">Declaration</span> <span class="op">-&gt;</span> <span class="dt">Result</span> <span class="dt">TypeError</span> ()</span>
+<span id="cb10-35"><a href="#cb10-35"></a><span class="fu">checkDeclWith</span> <span class="fu">dmap</span> <span class="fu">d</span> <span class="op">=</span> <span class="op">...</span></span>
+<span id="cb10-36"><a href="#cb10-36"></a></span>
+<span id="cb10-37"><a href="#cb10-37"></a><span class="fu">typeInferWith</span> : <span class="dt">Env</span> <span class="op">-&gt;</span> <span class="dt">Expression</span> <span class="op">-&gt;</span> <span class="dt">Result</span> <span class="dt">TypeError</span> <span class="dt">TypeName</span></span>
+<span id="cb10-38"><a href="#cb10-38"></a><span class="fu">typeInferWith</span> <span class="fu">env</span> <span class="fu">exp</span> <span class="op">=</span> <span class="op">...</span></span></code></pre></div>
+<p><code>checkDeclWith</code> は与えた宣言（<code>Declaration</code>）が正しく型付けされているかどうかをチェックする． つまり <code>D ok</code> にあたる． <code>typeInferWith</code> は2引数目の式（<code>Expression</code>）の型を推論して返す関数だ． 推論できない場合は <code>TypeError</code> を返し，推論できた場合はその型名を返す． 「プログラム」の <code>e</code> の場合，どんな型に推論されても問題ないので <code>Result.map (always ())</code> で結果を破棄している．</p>
+<p>これを型付け規則分作らないといけない． まぁまぁしんどかった．</p>
+<h2 id="webページを作る">Webページを作る</h2>
+<p>Elm なので，FGのコードを書くと型検査してくれるページを作った：</p>
+<p><img src="/assets/fg-with-elm/fg-parser-page.jpg"></img></p>
+<p>やっていることは簡単で，テキストエリアの文字列を <code>Go.Featherweight.Syntax.parser</code> でパースして <code>Program</code> 型の値を作り，それをそのまま <code>Go.Featherweight.Type.check</code> しているだけ． そして，結果がエラーだったらそのエラーメッセージを出力して，エラーでなければ「OK」って出しているだけ．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>作ってから時間が経ってしまったので，記事が結構雑だ．．． その２では Featherweight Generics Go のパーサーと型検査器です．</p>
+  </div>]]></summary>
+</entry>
+<entry>
     <title>Haskell Stack プロジェクトを Bazel でビルドしてみる</title>
     <link href="https://matsubara0507.github.io/posts/2020-12-02-build-haskell-stack-project-using-bazel.html" />
     <id>https://matsubara0507.github.io/posts/2020-12-02-build-haskell-stack-project-using-bazel.html</id>
@@ -2140,462 +2451,6 @@ $ docker run -it --rm -w /work -v `pwd`/example:/work matsubara0507/hamler run
 <p>servant-elm は elmap.hs というのでラップしてるのでそっちのアップデートも行った． こっちには生成コードのテストも追加してあるので<a href="https://github.com/matsubara0507/elmap.hs/pull/1/files#diff-3e612857d13f467c108121bba96a6232">差分がわかりやすい</a>．</p>
 <h2 id="おしまい">おしまい</h2>
 <p>他にも CI/CD を GitHub Actions にしたりした．</p>
-  </div>]]></summary>
-</entry>
-<entry>
-    <title>Elm + GitHub OAuth 2.0 (Firebase) のサンプルプログラムを書いてみた</title>
-    <link href="https://matsubara0507.github.io/posts/2020-02-10-elm-github-oauth2-sample.html" />
-    <id>https://matsubara0507.github.io/posts/2020-02-10-elm-github-oauth2-sample.html</id>
-    <published>2020-02-10T00:00:00Z</published>
-    <updated>2020-02-10T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
-    <p>とあるアプリケーションに Elm + GitHub OAuth 2.0 を使ってみたいなと思い，その練習用のアプリケーションを作ってみました：</p>
-<ul>
-<li><a href="https://github.com/matsubara0507/elm-github-oauth2-sample">matsubara0507/elm-github-oauth2-sample - GitHub</a></li>
-</ul>
-<p>サンプルのために認可用のサーバーを用意するのがめんどくさかったので，近年話題の Firebase の Authorization 機能を利用することにしました．</p>
-<h2 id="作ったアプリケーション">作ったアプリケーション</h2>
-<p>作成した SPA は <a href="https://matsubara0507.github.io/elm-github-oauth2-sample">GitHub Pages</a> に置いてある． ログインっぽいボタンを押すと Firebase Authorization を介して，GitHub OAuth 2.0 での認可がされる． もちろん，もともと試したかったことはここまでだが，認可しておしまいだと味気がない． なので：</p>
-<ol type="1">
-<li>認可時に GitHub OAuth トークンを取得</li>
-<li>トークンを使ってログインしたユーザーの公開リポジトリの情報を取得</li>
-<li>リポジトリのスター数を使ってユーザーのステータスをリッチに描写する</li>
-</ol>
-<p>色々試して最終的にこんな感じ：</p>
-<p><img src="/assets/elm-github-oauth2-sample/page.jpg"></img></p>
-<p>ちょっとやりすぎた．</p>
-<h2 id="実装する">実装する</h2>
-<p>やったことは3ステップ</p>
-<ol type="1">
-<li>Elm と Firebase を繋ぐ</li>
-<li>リポジトリを取得（GraphQL）</li>
-<li>円グラフを描写</li>
-</ol>
-<p>2と3は完全におまけですね．</p>
-<h3 id="elm-と-firebase">Elm と Firebase</h3>
-<p>まずは Firebase を準備する． <a href="https://firebase.google.com/docs/auth/web/github-auth?hl=ja">公式サイトの手順</a>がしっかりしてるので，それに習って準備する（GitHub App の設定とか）． プロバイダ（今回は GitHub）の設定と JavaScript のアプリの設定をすると「コレをコピペしてね」っていう設定とかが出てくる． コレを index.html と index.js に書いておく：</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb1-1"><a href="#cb1-1"></a><span class="co">&lt;!-- index.html --&gt;</span></span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="dt">&lt;!doctype </span>html<span class="dt">&gt;</span></span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="kw">&lt;html&gt;</span></span>
-<span id="cb1-4"><a href="#cb1-4"></a><span class="kw">&lt;head&gt;</span></span>
-<span id="cb1-5"><a href="#cb1-5"></a>  <span class="kw">&lt;meta</span><span class="ot"> http-equiv=</span><span class="st">&quot;content-type&quot;</span><span class="ot"> charset=</span><span class="st">&quot;utf-8&quot;</span><span class="kw">&gt;</span></span>
-<span id="cb1-6"><a href="#cb1-6"></a>  <span class="kw">&lt;link</span><span class="ot"> rel=</span><span class="st">&quot;stylesheet&quot;</span><span class="ot"> href=</span><span class="st">&quot;https://unpkg.com/@primer/css@14.2.0/dist/primer.css&quot;</span><span class="kw">&gt;</span></span>
-<span id="cb1-7"><a href="#cb1-7"></a><span class="kw">&lt;/head&gt;</span></span>
-<span id="cb1-8"><a href="#cb1-8"></a><span class="kw">&lt;body&gt;</span></span>
-<span id="cb1-9"><a href="#cb1-9"></a>  <span class="kw">&lt;div</span><span class="ot"> id=</span><span class="st">&quot;elm-node&quot;</span><span class="kw">&gt;&lt;/div&gt;</span></span>
-<span id="cb1-10"><a href="#cb1-10"></a>  <span class="co">&lt;!-- firebase-app と firebase-auth が必要 --&gt;</span></span>
-<span id="cb1-11"><a href="#cb1-11"></a>  <span class="kw">&lt;script</span><span class="ot"> src=</span><span class="st">&quot;https://www.gstatic.com/firebasejs/7.8.1/firebase-app.js&quot;</span><span class="kw">&gt;&lt;/script&gt;</span></span>
-<span id="cb1-12"><a href="#cb1-12"></a>  <span class="kw">&lt;script</span><span class="ot"> src=</span><span class="st">&quot;https://www.gstatic.com/firebasejs/7.8.1/firebase-auth.js&quot;</span><span class="kw">&gt;&lt;/script&gt;</span></span>
-<span id="cb1-13"><a href="#cb1-13"></a>  <span class="co">&lt;!-- static/main.js は Elm からあとで生成する --&gt;</span></span>
-<span id="cb1-14"><a href="#cb1-14"></a>  <span class="kw">&lt;script</span><span class="ot"> src=</span><span class="st">&quot;static/main.js&quot;</span><span class="kw">&gt;&lt;/script&gt;</span></span>
-<span id="cb1-15"><a href="#cb1-15"></a>  <span class="co">&lt;!-- static/index.js は下記 --&gt;</span></span>
-<span id="cb1-16"><a href="#cb1-16"></a>  <span class="kw">&lt;script</span><span class="ot"> src=</span><span class="st">&quot;static/index.js&quot;</span><span class="kw">&gt;&lt;/script&gt;</span></span>
-<span id="cb1-17"><a href="#cb1-17"></a><span class="kw">&lt;/body&gt;</span></span>
-<span id="cb1-18"><a href="#cb1-18"></a><span class="kw">&lt;/html&gt;</span></span></code></pre></div>
-<div class="sourceCode" id="cb2"><pre class="sourceCode js"><code class="sourceCode javascript"><span id="cb2-1"><a href="#cb2-1"></a><span class="co">// static/index.js</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="st">&#39;use strict&#39;</span><span class="op">;</span></span>
-<span id="cb2-3"><a href="#cb2-3"></a></span>
-<span id="cb2-4"><a href="#cb2-4"></a><span class="co">// コレらの設定は公開してもいいらしいけど</span></span>
-<span id="cb2-5"><a href="#cb2-5"></a><span class="kw">var</span> firebaseConfig <span class="op">=</span> {</span>
-<span id="cb2-6"><a href="#cb2-6"></a>  <span class="dt">apiKey</span><span class="op">:</span> <span class="st">&quot;...&quot;</span><span class="op">,</span></span>
-<span id="cb2-7"><a href="#cb2-7"></a>  <span class="dt">authDomain</span><span class="op">:</span> <span class="st">&quot;...&quot;</span><span class="op">,</span></span>
-<span id="cb2-8"><a href="#cb2-8"></a>  <span class="dt">databaseURL</span><span class="op">:</span> <span class="st">&quot;...&quot;</span><span class="op">,</span></span>
-<span id="cb2-9"><a href="#cb2-9"></a>  <span class="dt">projectId</span><span class="op">:</span> <span class="st">&quot;...&quot;</span><span class="op">,</span></span>
-<span id="cb2-10"><a href="#cb2-10"></a>  <span class="dt">storageBucket</span><span class="op">:</span> <span class="st">&quot;...&quot;</span><span class="op">,</span></span>
-<span id="cb2-11"><a href="#cb2-11"></a>  <span class="dt">messagingSenderId</span><span class="op">:</span> <span class="st">&quot;...&quot;</span><span class="op">,</span></span>
-<span id="cb2-12"><a href="#cb2-12"></a>  <span class="dt">appId</span><span class="op">:</span> <span class="st">&quot;...&quot;</span></span>
-<span id="cb2-13"><a href="#cb2-13"></a>}<span class="op">;</span></span>
-<span id="cb2-14"><a href="#cb2-14"></a></span>
-<span id="cb2-15"><a href="#cb2-15"></a>firebase<span class="op">.</span><span class="fu">initializeApp</span>(firebaseConfig)<span class="op">;</span></span>
-<span id="cb2-16"><a href="#cb2-16"></a><span class="kw">const</span> provider <span class="op">=</span> <span class="kw">new</span> firebase<span class="op">.</span><span class="at">auth</span><span class="op">.</span><span class="fu">GithubAuthProvider</span>()<span class="op">;</span></span></code></pre></div>
-<p>あとは Elm から Firebase のメソッドを呼び出す． 基本的にコレを参考にした：</p>
-<ul>
-<li><a href="https://qiita.com/ababup1192/items/f27f9af282d9fa642eb5">Elm portsでFirebase Firestoreを触ろう！ - Qiita</a></li>
-</ul>
-<p>Elm 用の Firebase パッケージ的なのはないので，Elm のポート機能を使って繋ぎ込む：</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">port</span> <span class="kw">module</span> <span class="dt">Firebase</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
-<span id="cb3-2"><a href="#cb3-2"></a></span>
-<span id="cb3-3"><a href="#cb3-3"></a><span class="kw">import</span> <span class="dt">Json</span><span class="op">.</span><span class="dt">Encode</span> <span class="kw">as</span> <span class="dt">E</span></span>
-<span id="cb3-4"><a href="#cb3-4"></a></span>
-<span id="cb3-5"><a href="#cb3-5"></a><span class="kw">port</span> <span class="fu">signIn</span> : () <span class="op">-&gt;</span> <span class="dt">Cmd</span> <span class="fu">msg</span></span>
-<span id="cb3-6"><a href="#cb3-6"></a><span class="kw">port</span> <span class="fu">getSignInResult</span> : () <span class="op">-&gt;</span> <span class="dt">Cmd</span> <span class="fu">msg</span></span>
-<span id="cb3-7"><a href="#cb3-7"></a><span class="kw">port</span> <span class="fu">signedIn</span> : (<span class="dt">E</span><span class="op">.</span><span class="dt">Value</span> <span class="op">-&gt;</span> <span class="fu">msg</span>) <span class="op">-&gt;</span> <span class="dt">Sub</span> <span class="fu">msg</span></span></code></pre></div>
-<div class="sourceCode" id="cb4"><pre class="sourceCode js"><code class="sourceCode javascript"><span id="cb4-1"><a href="#cb4-1"></a><span class="co">// static/index.js</span></span>
-<span id="cb4-2"><a href="#cb4-2"></a><span class="op">...</span></span>
-<span id="cb4-3"><a href="#cb4-3"></a></span>
-<span id="cb4-4"><a href="#cb4-4"></a><span class="kw">const</span> app <span class="op">=</span> Elm<span class="op">.</span><span class="at">Main</span><span class="op">.</span><span class="fu">init</span>(</span>
-<span id="cb4-5"><a href="#cb4-5"></a>  { <span class="dt">node</span><span class="op">:</span> <span class="bu">document</span><span class="op">.</span><span class="fu">getElementById</span>(<span class="st">&#39;main&#39;</span>)</span>
-<span id="cb4-6"><a href="#cb4-6"></a>  <span class="op">,</span> <span class="dt">flags</span><span class="op">:</span> {}</span>
-<span id="cb4-7"><a href="#cb4-7"></a>  }</span>
-<span id="cb4-8"><a href="#cb4-8"></a>)<span class="op">;</span></span>
-<span id="cb4-9"><a href="#cb4-9"></a></span>
-<span id="cb4-10"><a href="#cb4-10"></a>app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">signIn</span><span class="op">.</span><span class="fu">subscribe</span>(_ <span class="kw">=&gt;</span> {</span>
-<span id="cb4-11"><a href="#cb4-11"></a>  <span class="co">// popup の方はモバイル系でうまく動作しなかったのでこっちを使う</span></span>
-<span id="cb4-12"><a href="#cb4-12"></a>  firebase<span class="op">.</span><span class="fu">auth</span>()<span class="op">.</span><span class="fu">signInWithRedirect</span>(provider)<span class="op">;</span></span>
-<span id="cb4-13"><a href="#cb4-13"></a>})<span class="op">;</span></span>
-<span id="cb4-14"><a href="#cb4-14"></a></span>
-<span id="cb4-15"><a href="#cb4-15"></a>app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">getSignInResult</span><span class="op">.</span><span class="fu">subscribe</span>(_ <span class="kw">=&gt;</span> {</span>
-<span id="cb4-16"><a href="#cb4-16"></a>  firebase<span class="op">.</span><span class="fu">auth</span>()<span class="op">.</span><span class="fu">getRedirectResult</span>()<span class="op">.</span><span class="fu">then</span>(<span class="kw">function</span>(result) {</span>
-<span id="cb4-17"><a href="#cb4-17"></a>    <span class="cf">if</span> (result<span class="op">.</span><span class="at">credential</span>) {</span>
-<span id="cb4-18"><a href="#cb4-18"></a>      app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">signedIn</span><span class="op">.</span><span class="fu">send</span>(result)<span class="op">;</span></span>
-<span id="cb4-19"><a href="#cb4-19"></a>    }</span>
-<span id="cb4-20"><a href="#cb4-20"></a>  })<span class="op">.</span><span class="fu">catch</span>(<span class="kw">function</span>(error) {</span>
-<span id="cb4-21"><a href="#cb4-21"></a>    app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">failSignIn</span><span class="op">.</span><span class="fu">send</span>(error)</span>
-<span id="cb4-22"><a href="#cb4-22"></a>  })<span class="op">;</span></span>
-<span id="cb4-23"><a href="#cb4-23"></a>})<span class="op">;</span></span></code></pre></div>
-<p>繋ぎ込みはできた． サクッとトークンだけもらって，GitHub API v3 からユーザー名を取得する部分を実装する：</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">module</span> <span class="dt">GitHub</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
-<span id="cb5-2"><a href="#cb5-2"></a></span>
-<span id="cb5-3"><a href="#cb5-3"></a><span class="kw">import</span> <span class="dt">Http</span></span>
-<span id="cb5-4"><a href="#cb5-4"></a><span class="kw">import</span> <span class="dt">Json</span><span class="op">.</span><span class="dt">Decode</span> <span class="kw">as</span> <span class="dt">D</span> <span class="kw">exposing</span> (<span class="dt">Decoder</span>)</span>
-<span id="cb5-5"><a href="#cb5-5"></a><span class="kw">import</span> <span class="dt">Json</span><span class="op">.</span><span class="dt">Encode</span> <span class="kw">as</span> <span class="dt">E</span></span>
-<span id="cb5-6"><a href="#cb5-6"></a></span>
-<span id="cb5-7"><a href="#cb5-7"></a><span class="kw">type</span> <span class="dt">Token</span> <span class="op">=</span> <span class="dt">Token</span> <span class="dt">String</span></span>
-<span id="cb5-8"><a href="#cb5-8"></a></span>
-<span id="cb5-9"><a href="#cb5-9"></a><span class="fu">tokenDecoder</span> : <span class="dt">Decoder</span> <span class="dt">Token</span></span>
-<span id="cb5-10"><a href="#cb5-10"></a><span class="fu">tokenDecoder</span> <span class="op">=</span> <span class="dt">D</span><span class="op">.</span><span class="fu">map</span> <span class="dt">Token</span> <span class="dt">D</span><span class="op">.</span><span class="fu">string</span></span>
-<span id="cb5-11"><a href="#cb5-11"></a></span>
-<span id="cb5-12"><a href="#cb5-12"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">User</span> <span class="op">=</span></span>
-<span id="cb5-13"><a href="#cb5-13"></a>    { <span class="fu">login</span> : <span class="dt">String</span></span>
-<span id="cb5-14"><a href="#cb5-14"></a>    <span class="op">,</span> <span class="fu">name</span> : <span class="dt">String</span></span>
-<span id="cb5-15"><a href="#cb5-15"></a>    }</span>
-<span id="cb5-16"><a href="#cb5-16"></a></span>
-<span id="cb5-17"><a href="#cb5-17"></a><span class="fu">getUserInfo</span> : (<span class="dt">Result</span> <span class="dt">Http</span><span class="op">.</span><span class="dt">Error</span> <span class="dt">User</span> <span class="op">-&gt;</span> <span class="fu">msg</span>) <span class="op">-&gt;</span> <span class="dt">Token</span> <span class="op">-&gt;</span> <span class="dt">Cmd</span> <span class="fu">msg</span></span>
-<span id="cb5-18"><a href="#cb5-18"></a><span class="fu">getUserInfo</span> <span class="fu">msg</span> (<span class="dt">Token</span> <span class="fu">t</span>) <span class="op">=</span> <span class="op">...</span> <span class="co">-- 割愛</span></span></code></pre></div>
-<div class="sourceCode" id="cb6"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">port</span> <span class="kw">module</span> <span class="dt">Firebase</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
-<span id="cb6-2"><a href="#cb6-2"></a></span>
-<span id="cb6-3"><a href="#cb6-3"></a><span class="kw">import</span> <span class="dt">GitHub</span></span>
-<span id="cb6-4"><a href="#cb6-4"></a><span class="kw">import</span> <span class="dt">Json</span><span class="op">.</span><span class="dt">Decode</span> <span class="kw">as</span> <span class="dt">D</span> <span class="kw">exposing</span> (<span class="dt">Decoder</span>)</span>
-<span id="cb6-5"><a href="#cb6-5"></a></span>
-<span id="cb6-6"><a href="#cb6-6"></a><span class="fu">decoder</span> : <span class="dt">Decoder</span> <span class="dt">GitHub</span><span class="op">.</span><span class="dt">Token</span></span>
-<span id="cb6-7"><a href="#cb6-7"></a><span class="fu">decoder</span> <span class="op">=</span> <span class="dt">D</span><span class="op">.</span><span class="fu">map</span> <span class="fu">identity</span> (<span class="dt">D</span><span class="op">.</span><span class="fu">at</span> [ <span class="st">&quot;credential&quot;</span><span class="op">,</span> <span class="st">&quot;accessToken&quot;</span> ] <span class="dt">GitHub</span><span class="op">.</span><span class="fu">tokenDecoder</span>)</span>
-<span id="cb6-8"><a href="#cb6-8"></a></span>
-<span id="cb6-9"><a href="#cb6-9"></a><span class="fu">signedInWithDecode</span> : (<span class="dt">Result</span> <span class="dt">D</span><span class="op">.</span><span class="dt">Error</span> <span class="dt">GitHub</span><span class="op">.</span><span class="dt">Token</span> <span class="op">-&gt;</span> <span class="fu">msg</span>) <span class="op">-&gt;</span> <span class="dt">Sub</span> <span class="fu">msg</span></span>
-<span id="cb6-10"><a href="#cb6-10"></a><span class="fu">signedInWithDecode</span> <span class="fu">msg</span> <span class="op">=</span> <span class="fu">signedIn</span> (<span class="fu">msg</span> <span class="op">&lt;&lt;</span> <span class="dt">D</span><span class="op">.</span><span class="fu">decodeValue</span> <span class="fu">decoder</span>)</span></code></pre></div>
-<p>あとは適当に <code>Main</code> から呼び出すだけ：</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">exposing</span> (<span class="fu">main</span>)</span>
-<span id="cb7-2"><a href="#cb7-2"></a><span class="co">-- import は割愛</span></span>
-<span id="cb7-3"><a href="#cb7-3"></a></span>
-<span id="cb7-4"><a href="#cb7-4"></a><span class="fu">main</span> : <span class="dt">Program</span> () <span class="dt">Model</span> <span class="dt">Msg</span></span>
-<span id="cb7-5"><a href="#cb7-5"></a><span class="fu">main</span> <span class="op">=</span></span>
-<span id="cb7-6"><a href="#cb7-6"></a>    <span class="dt">Browser</span><span class="op">.</span><span class="fu">application</span></span>
-<span id="cb7-7"><a href="#cb7-7"></a>        { <span class="fu">init</span> <span class="op">=</span> <span class="fu">init</span></span>
-<span id="cb7-8"><a href="#cb7-8"></a>        <span class="op">,</span> <span class="fu">view</span> <span class="op">=</span> <span class="fu">view</span></span>
-<span id="cb7-9"><a href="#cb7-9"></a>        <span class="op">,</span> <span class="fu">update</span> <span class="op">=</span> <span class="fu">update</span></span>
-<span id="cb7-10"><a href="#cb7-10"></a>        <span class="op">,</span> <span class="fu">subscriptions</span> <span class="op">=</span> <span class="dt">Firebase</span><span class="op">.</span><span class="fu">signedInWithDecode</span> <span class="dt">SignedIn</span></span>
-<span id="cb7-11"><a href="#cb7-11"></a>        <span class="op">,</span> <span class="fu">onUrlRequest</span> <span class="op">=</span> <span class="dt">LinkClicked</span></span>
-<span id="cb7-12"><a href="#cb7-12"></a>        <span class="op">,</span> <span class="fu">onUrlChange</span> <span class="op">=</span> <span class="dt">UrlChanged</span></span>
-<span id="cb7-13"><a href="#cb7-13"></a>        }</span>
-<span id="cb7-14"><a href="#cb7-14"></a></span>
-<span id="cb7-15"><a href="#cb7-15"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Model</span> <span class="op">=</span></span>
-<span id="cb7-16"><a href="#cb7-16"></a>    { <span class="fu">token</span> : <span class="dt">Maybe</span> <span class="dt">GitHub</span><span class="op">.</span><span class="dt">Token</span></span>
-<span id="cb7-17"><a href="#cb7-17"></a>    <span class="op">,</span> <span class="fu">user</span> : <span class="dt">Maybe</span> <span class="dt">GitHub</span><span class="op">.</span><span class="dt">User</span></span>
-<span id="cb7-18"><a href="#cb7-18"></a>    <span class="op">,</span> <span class="fu">error</span> : <span class="dt">Maybe</span> <span class="dt">String</span></span>
-<span id="cb7-19"><a href="#cb7-19"></a>    <span class="op">,</span> <span class="fu">key</span> : <span class="dt">Nav</span><span class="op">.</span><span class="dt">Key</span></span>
-<span id="cb7-20"><a href="#cb7-20"></a>    }</span>
-<span id="cb7-21"><a href="#cb7-21"></a></span>
-<span id="cb7-22"><a href="#cb7-22"></a><span class="kw">type</span> <span class="dt">Msg</span></span>
-<span id="cb7-23"><a href="#cb7-23"></a>    <span class="op">=</span> <span class="dt">LinkClicked</span> <span class="dt">Browser</span><span class="op">.</span><span class="dt">UrlRequest</span></span>
-<span id="cb7-24"><a href="#cb7-24"></a>    <span class="op">|</span> <span class="dt">UrlChanged</span> <span class="dt">Url</span></span>
-<span id="cb7-25"><a href="#cb7-25"></a>    <span class="op">|</span> <span class="dt">SignIn</span></span>
-<span id="cb7-26"><a href="#cb7-26"></a>    <span class="op">|</span> <span class="dt">SignedIn</span> (<span class="dt">Result</span> <span class="dt">Json</span><span class="op">.</span><span class="dt">Error</span> <span class="dt">GitHub</span><span class="op">.</span><span class="dt">Token</span>)</span>
-<span id="cb7-27"><a href="#cb7-27"></a>    <span class="op">|</span> <span class="dt">FetchUser</span> (<span class="dt">Result</span> <span class="dt">Http</span><span class="op">.</span><span class="dt">Error</span> <span class="dt">GitHub</span><span class="op">.</span><span class="dt">User</span>)</span>
-<span id="cb7-28"><a href="#cb7-28"></a></span>
-<span id="cb7-29"><a href="#cb7-29"></a><span class="fu">init</span> : () <span class="op">-&gt;</span> <span class="dt">Url</span> <span class="op">-&gt;</span> <span class="dt">Nav</span><span class="op">.</span><span class="dt">Key</span> <span class="op">-&gt;</span> ( <span class="dt">Model</span><span class="op">,</span> <span class="dt">Cmd</span> <span class="dt">Msg</span> )</span>
-<span id="cb7-30"><a href="#cb7-30"></a><span class="fu">init</span> <span class="fu">_</span> <span class="fu">_</span> <span class="fu">key</span> <span class="op">=</span> ( <span class="dt">Model</span> <span class="dt">Nothing</span> <span class="dt">Nothing</span> <span class="dt">Nothing</span> <span class="fu">key</span><span class="op">,</span> <span class="dt">Firebase</span><span class="op">.</span><span class="fu">getSignInResult</span> () )</span>
-<span id="cb7-31"><a href="#cb7-31"></a></span>
-<span id="cb7-32"><a href="#cb7-32"></a><span class="fu">update</span> : <span class="dt">Msg</span> <span class="op">-&gt;</span> <span class="dt">Model</span> <span class="op">-&gt;</span> ( <span class="dt">Model</span><span class="op">,</span> <span class="dt">Cmd</span> <span class="dt">Msg</span> )</span>
-<span id="cb7-33"><a href="#cb7-33"></a><span class="fu">update</span> <span class="fu">msg</span> <span class="fu">model</span> <span class="op">=</span></span>
-<span id="cb7-34"><a href="#cb7-34"></a>    <span class="cf">case</span> <span class="fu">msg</span> <span class="cf">of</span></span>
-<span id="cb7-35"><a href="#cb7-35"></a>        <span class="op">...</span> <span class="co">-- URL 系は割愛</span></span>
-<span id="cb7-36"><a href="#cb7-36"></a>        <span class="dt">SignIn</span> <span class="op">-&gt;</span></span>
-<span id="cb7-37"><a href="#cb7-37"></a>            ( <span class="fu">model</span><span class="op">,</span> <span class="dt">Firebase</span><span class="op">.</span><span class="fu">signIn</span> () )</span>
-<span id="cb7-38"><a href="#cb7-38"></a>        <span class="dt">SignedIn</span> (<span class="dt">Ok</span> <span class="fu">token</span>) <span class="op">-&gt;</span></span>
-<span id="cb7-39"><a href="#cb7-39"></a>            ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">token</span> <span class="op">=</span> <span class="dt">Just</span> <span class="fu">token</span><span class="op">,</span> <span class="fu">error</span> <span class="op">=</span> <span class="dt">Nothing</span> }<span class="op">,</span> <span class="dt">GitHub</span><span class="op">.</span><span class="fu">getUserInfo</span> <span class="dt">FetchUser</span> <span class="fu">token</span> )</span>
-<span id="cb7-40"><a href="#cb7-40"></a>        <span class="dt">SignedIn</span> (<span class="dt">Err</span> <span class="fu">err</span>) <span class="op">-&gt;</span></span>
-<span id="cb7-41"><a href="#cb7-41"></a>            ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">error</span> <span class="op">=</span> <span class="dt">Just</span> (<span class="dt">Json</span><span class="op">.</span><span class="fu">errorToString</span> <span class="fu">err</span>) }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span> )</span>
-<span id="cb7-42"><a href="#cb7-42"></a>        <span class="dt">FetchUser</span> (<span class="dt">Ok</span> <span class="fu">user</span>) <span class="op">-&gt;</span></span>
-<span id="cb7-43"><a href="#cb7-43"></a>            ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">user</span> <span class="op">=</span> <span class="dt">Just</span> <span class="fu">user</span><span class="op">,</span> <span class="fu">error</span> <span class="op">=</span> <span class="dt">Nothing</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span> )</span>
-<span id="cb7-44"><a href="#cb7-44"></a>        <span class="dt">FetchUser</span> (<span class="dt">Err</span> <span class="fu">_</span>) <span class="op">-&gt;</span></span>
-<span id="cb7-45"><a href="#cb7-45"></a>            ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">error</span> <span class="op">=</span> <span class="dt">Just</span> <span class="st">&quot;fetch github user error&quot;</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span> )</span>
-<span id="cb7-46"><a href="#cb7-46"></a></span>
-<span id="cb7-47"><a href="#cb7-47"></a><span class="fu">view</span> : <span class="dt">Model</span> <span class="op">-&gt;</span> <span class="dt">Browser</span><span class="op">.</span><span class="dt">Document</span> <span class="dt">Msg</span></span>
-<span id="cb7-48"><a href="#cb7-48"></a><span class="fu">view</span> <span class="fu">model</span> <span class="op">=</span> { <span class="fu">title</span> <span class="op">=</span> <span class="st">&quot;Elm GitHub OAuth 2.0 Sample&quot;</span><span class="op">,</span> <span class="fu">body</span> <span class="op">=</span> [ <span class="fu">viewBody</span> <span class="fu">model</span> ] }</span>
-<span id="cb7-49"><a href="#cb7-49"></a></span>
-<span id="cb7-50"><a href="#cb7-50"></a><span class="fu">viewBody</span> : <span class="dt">Model</span> <span class="op">-&gt;</span> <span class="dt">Html</span> <span class="dt">Msg</span></span>
-<span id="cb7-51"><a href="#cb7-51"></a><span class="fu">viewBody</span> <span class="fu">model</span> <span class="op">=</span></span>
-<span id="cb7-52"><a href="#cb7-52"></a>    <span class="dt">Html</span><span class="op">.</span><span class="fu">div</span> [ <span class="dt">Attr</span><span class="op">.</span><span class="fu">class</span> <span class="st">&quot;position-relative text-center&quot;</span> ]</span>
-<span id="cb7-53"><a href="#cb7-53"></a>        [ <span class="cf">case</span> ( <span class="fu">model</span><span class="op">.</span><span class="fu">error</span><span class="op">,</span> <span class="fu">model</span><span class="op">.</span><span class="fu">user</span> ) <span class="cf">of</span></span>
-<span id="cb7-54"><a href="#cb7-54"></a>            ( <span class="dt">Just</span> <span class="fu">err</span><span class="op">,</span> <span class="fu">_</span> ) <span class="op">-&gt;</span></span>
-<span id="cb7-55"><a href="#cb7-55"></a>                <span class="fu">text</span> <span class="fu">err</span></span>
-<span id="cb7-56"><a href="#cb7-56"></a>            ( <span class="fu">_</span><span class="op">,</span> <span class="dt">Just</span> <span class="fu">user</span> ) <span class="op">-&gt;</span></span>
-<span id="cb7-57"><a href="#cb7-57"></a>                <span class="fu">viewUser</span> <span class="fu">user</span></span>
-<span id="cb7-58"><a href="#cb7-58"></a>            <span class="fu">_</span> <span class="op">-&gt;</span></span>
-<span id="cb7-59"><a href="#cb7-59"></a>                <span class="fu">signinButton</span> <span class="fu">model</span></span>
-<span id="cb7-60"><a href="#cb7-60"></a>        ]</span>
-<span id="cb7-61"><a href="#cb7-61"></a></span>
-<span id="cb7-62"><a href="#cb7-62"></a><span class="fu">signinButton</span> : <span class="dt">Model</span> <span class="op">-&gt;</span> <span class="dt">Html</span> <span class="dt">Msg</span></span>
-<span id="cb7-63"><a href="#cb7-63"></a><span class="fu">signinButton</span> <span class="fu">model</span> <span class="op">=</span></span>
-<span id="cb7-64"><a href="#cb7-64"></a>    <span class="fu">div</span> [ <span class="dt">Attr</span><span class="op">.</span><span class="fu">class</span> <span class="st">&quot;f3 mt-3&quot;</span> ]</span>
-<span id="cb7-65"><a href="#cb7-65"></a>        [ <span class="fu">button</span></span>
-<span id="cb7-66"><a href="#cb7-66"></a>            [ <span class="dt">Event</span><span class="op">.</span><span class="fu">onClick</span> <span class="dt">SignIn</span></span>
-<span id="cb7-67"><a href="#cb7-67"></a>            <span class="op">,</span> <span class="op">...</span> <span class="co">-- 割愛</span></span>
-<span id="cb7-68"><a href="#cb7-68"></a>            ]</span>
-<span id="cb7-69"><a href="#cb7-69"></a>            [ <span class="fu">text</span> <span class="st">&quot;Sign in with GitHub&quot;</span> ]</span>
-<span id="cb7-70"><a href="#cb7-70"></a>        ]</span>
-<span id="cb7-71"><a href="#cb7-71"></a></span>
-<span id="cb7-72"><a href="#cb7-72"></a><span class="fu">viewUser</span> : <span class="dt">GitHub</span><span class="op">.</span><span class="dt">User</span> <span class="op">-&gt;</span> <span class="dt">Html</span> <span class="fu">msg</span></span>
-<span id="cb7-73"><a href="#cb7-73"></a><span class="fu">viewUser</span> <span class="fu">user</span> <span class="op">=</span> <span class="fu">text</span> (<span class="st">&quot;Hi &quot;</span> <span class="op">++</span> <span class="fu">user</span><span class="op">.</span><span class="fu">login</span> <span class="op">++</span> <span class="st">&quot;!&quot;</span>)</span></code></pre></div>
-<p>コレを</p>
-<pre><code>$ elm make --output=docs/static/main.js src/Main.elm --optimize</code></pre>
-<p>とビルドして <code>elm reactor</code> で <code>docs/index.html</code> にアクセスすると、サインインボタンがあってサインインすると <code>Hi matsubara0507!</code> って感じのメッセージが出るだけの SPA ができた．</p>
-<h3 id="リポジトリを取得">リポジトリを取得</h3>
-<p>こっからは完全におまけ． リポジトリのスターをなんかステータスっぽく表示するようにしたい．</p>
-<p>リポジトリ一覧は GitHub の個別ユーザーページをモバイル版でみたときの感じにすることにした：</p>
-<p><img src="/assets/elm-github-oauth2-sample/mobile.jpg"></img></p>
-<p>必要なリポジトリの情報は名前とリンクと総スター数． GitHub API v3 は無駄な情報が多いので，GraphQL を使って一気に取得してみる． GraphQL のクエリの動作確認は<a href="https://developer.github.com/v4/explorer/">ココ</a>で行える：</p>
-<p><img src="/assets/elm-github-oauth2-sample/graphql.jpg"></img></p>
-<p>最終的に出来上がったクエリはこんな感じ：</p>
-<pre class="graphql"><code>query {
-  viewer {
-    login
-    name
-    repositories(first: 100, orderBy: {field: STARGAZERS, direction: DESC}, ownerAffiliations: [OWNER], isFork: false) {
-      nodes {
-        name
-        url
-        stargazers { totalCount }
-      }
-    }
-  }
-}</code></pre>
-<p>クエリの <code>viewer {..}</code> は渡したトークンのユーザー情報を指す． <code>viewer</code> 内で <code>login</code> や <code>name</code> を指定することで，さっきまで v3 で取得していたユーザー情報も取得できる． <code>repositories</code> で一気に所得できるリポジトリ数は100件が上限（<code>first:300</code> は怒られる）． <code>orderBy:{..}</code> でスターの多い順に並び替えて，<code>ownerAffiliations:[OWNER]</code> と <code>isFork:false</code> を指定することで自身のリポジトリだけを返してる． リポジトリのスター数は <code>stargazers { totalCount }</code> で取得できる．</p>
-<h1 id="section"></h1>
-<p>あとはクエリを叩くだけ． Elm の GraphQL パッケージに良さげのものがなかったのでそのまま <code>elm/http</code> を使うことにした：</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">module</span> <span class="dt">GitHub</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
-<span id="cb10-2"><a href="#cb10-2"></a></span>
-<span id="cb10-3"><a href="#cb10-3"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">User</span> <span class="op">=</span></span>
-<span id="cb10-4"><a href="#cb10-4"></a>    { <span class="fu">login</span> : <span class="dt">String</span></span>
-<span id="cb10-5"><a href="#cb10-5"></a>    <span class="op">,</span> <span class="fu">name</span> : <span class="dt">String</span></span>
-<span id="cb10-6"><a href="#cb10-6"></a>    <span class="op">,</span> <span class="fu">repos</span> : <span class="dt">List</span> <span class="dt">Repository</span></span>
-<span id="cb10-7"><a href="#cb10-7"></a>    }</span>
-<span id="cb10-8"><a href="#cb10-8"></a></span>
-<span id="cb10-9"><a href="#cb10-9"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Repository</span> <span class="op">=</span></span>
-<span id="cb10-10"><a href="#cb10-10"></a>    { <span class="fu">name</span> : <span class="dt">String</span></span>
-<span id="cb10-11"><a href="#cb10-11"></a>    <span class="op">,</span> <span class="fu">url</span> : <span class="dt">String</span></span>
-<span id="cb10-12"><a href="#cb10-12"></a>    <span class="op">,</span> <span class="fu">star</span> : <span class="dt">Int</span></span>
-<span id="cb10-13"><a href="#cb10-13"></a>    }</span>
-<span id="cb10-14"><a href="#cb10-14"></a></span>
-<span id="cb10-15"><a href="#cb10-15"></a><span class="fu">userDecoder</span> : <span class="dt">Decoder</span> <span class="dt">User</span></span>
-<span id="cb10-16"><a href="#cb10-16"></a><span class="fu">userDecoder</span> <span class="op">=</span></span>
-<span id="cb10-17"><a href="#cb10-17"></a>    <span class="dt">D</span><span class="op">.</span><span class="fu">map3</span> <span class="dt">User</span></span>
-<span id="cb10-18"><a href="#cb10-18"></a>        (<span class="dt">D</span><span class="op">.</span><span class="fu">field</span> <span class="st">&quot;login&quot;</span> <span class="dt">D</span><span class="op">.</span><span class="fu">string</span>)</span>
-<span id="cb10-19"><a href="#cb10-19"></a>        (<span class="dt">D</span><span class="op">.</span><span class="fu">field</span> <span class="st">&quot;name&quot;</span> <span class="dt">D</span><span class="op">.</span><span class="fu">string</span>)</span>
-<span id="cb10-20"><a href="#cb10-20"></a>        (<span class="dt">D</span><span class="op">.</span><span class="fu">at</span> [ <span class="st">&quot;repositories&quot;</span><span class="op">,</span> <span class="st">&quot;nodes&quot;</span> ] (<span class="dt">D</span><span class="op">.</span><span class="fu">list</span> <span class="fu">repoDecoder</span>))</span>
-<span id="cb10-21"><a href="#cb10-21"></a></span>
-<span id="cb10-22"><a href="#cb10-22"></a><span class="fu">repoDecoder</span> : <span class="dt">Decoder</span> <span class="dt">Repository</span></span>
-<span id="cb10-23"><a href="#cb10-23"></a><span class="fu">repoDecoder</span> <span class="op">=</span></span>
-<span id="cb10-24"><a href="#cb10-24"></a>    <span class="dt">D</span><span class="op">.</span><span class="fu">map3</span> <span class="dt">Repository</span></span>
-<span id="cb10-25"><a href="#cb10-25"></a>        (<span class="dt">D</span><span class="op">.</span><span class="fu">field</span> <span class="st">&quot;name&quot;</span> <span class="dt">D</span><span class="op">.</span><span class="fu">string</span>)</span>
-<span id="cb10-26"><a href="#cb10-26"></a>        (<span class="dt">D</span><span class="op">.</span><span class="fu">field</span> <span class="st">&quot;url&quot;</span> <span class="dt">D</span><span class="op">.</span><span class="fu">string</span>)</span>
-<span id="cb10-27"><a href="#cb10-27"></a>        (<span class="dt">D</span><span class="op">.</span><span class="fu">at</span> [ <span class="st">&quot;stargazers&quot;</span><span class="op">,</span> <span class="st">&quot;totalCount&quot;</span> ] <span class="dt">D</span><span class="op">.</span><span class="fu">int</span>)</span>
-<span id="cb10-28"><a href="#cb10-28"></a></span>
-<span id="cb10-29"><a href="#cb10-29"></a><span class="fu">getUserInfo</span> : (<span class="dt">Result</span> <span class="dt">Http</span><span class="op">.</span><span class="dt">Error</span> <span class="dt">User</span> <span class="op">-&gt;</span> <span class="fu">msg</span>) <span class="op">-&gt;</span> <span class="dt">Token</span> <span class="op">-&gt;</span> <span class="dt">Cmd</span> <span class="fu">msg</span></span>
-<span id="cb10-30"><a href="#cb10-30"></a><span class="fu">getUserInfo</span> <span class="fu">msg</span> (<span class="dt">Token</span> <span class="fu">t</span>) <span class="op">=</span></span>
-<span id="cb10-31"><a href="#cb10-31"></a>    <span class="kw">let</span></span>
-<span id="cb10-32"><a href="#cb10-32"></a>        <span class="fu">query</span> <span class="op">=</span> <span class="op">...</span> <span class="co">-- さっきのクエリをヒアドキュメントとかで</span></span>
-<span id="cb10-33"><a href="#cb10-33"></a>        <span class="fu">decoder</span> <span class="op">=</span> <span class="dt">D</span><span class="op">.</span><span class="fu">map</span> <span class="fu">identity</span> (<span class="dt">D</span><span class="op">.</span><span class="fu">at</span> [ <span class="st">&quot;data&quot;</span><span class="op">,</span> <span class="st">&quot;viewer&quot;</span> ] <span class="fu">userDecoder</span>)</span>
-<span id="cb10-34"><a href="#cb10-34"></a>    <span class="kw">in</span></span>
-<span id="cb10-35"><a href="#cb10-35"></a>    <span class="dt">Http</span><span class="op">.</span><span class="fu">request</span></span>
-<span id="cb10-36"><a href="#cb10-36"></a>        { <span class="fu">method</span> <span class="op">=</span> <span class="st">&quot;POST&quot;</span></span>
-<span id="cb10-37"><a href="#cb10-37"></a>        <span class="op">,</span> <span class="fu">headers</span> <span class="op">=</span> [ <span class="dt">Http</span><span class="op">.</span><span class="fu">header</span> <span class="st">&quot;Authorization&quot;</span> (<span class="st">&quot;token &quot;</span> <span class="op">++</span> <span class="fu">t</span>) ]</span>
-<span id="cb10-38"><a href="#cb10-38"></a>        <span class="op">,</span> <span class="fu">url</span> <span class="op">=</span> <span class="st">&quot;https://api.github.com/graphql&quot;</span></span>
-<span id="cb10-39"><a href="#cb10-39"></a>        <span class="op">,</span> <span class="fu">body</span> <span class="op">=</span> <span class="dt">Http</span><span class="op">.</span><span class="fu">jsonBody</span> (<span class="dt">E</span><span class="op">.</span><span class="fu">object</span> [ ( <span class="st">&quot;query&quot;</span><span class="op">,</span> <span class="dt">E</span><span class="op">.</span><span class="fu">string</span> <span class="fu">query</span> ) ])</span>
-<span id="cb10-40"><a href="#cb10-40"></a>        <span class="op">,</span> <span class="fu">expect</span> <span class="op">=</span> <span class="dt">Http</span><span class="op">.</span><span class="fu">expectJson</span> <span class="fu">msg</span> <span class="fu">decoder</span></span>
-<span id="cb10-41"><a href="#cb10-41"></a>        <span class="op">,</span> <span class="fu">timeout</span> <span class="op">=</span> <span class="dt">Nothing</span></span>
-<span id="cb10-42"><a href="#cb10-42"></a>        <span class="op">,</span> <span class="fu">tracker</span> <span class="op">=</span> <span class="dt">Nothing</span></span>
-<span id="cb10-43"><a href="#cb10-43"></a>        }</span></code></pre></div>
-<p>インターフェースは全く変えてないので <code>Main</code> でいじるのは <code>view</code> だけ：</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb11-1"><a href="#cb11-1"></a><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">exposing</span> (<span class="fu">main</span>)</span>
-<span id="cb11-2"><a href="#cb11-2"></a></span>
-<span id="cb11-3"><a href="#cb11-3"></a><span class="op">...</span></span>
-<span id="cb11-4"><a href="#cb11-4"></a></span>
-<span id="cb11-5"><a href="#cb11-5"></a><span class="fu">viewUser</span> : <span class="dt">GitHub</span><span class="op">.</span><span class="dt">User</span> <span class="op">-&gt;</span> <span class="dt">Html</span> <span class="fu">msg</span></span>
-<span id="cb11-6"><a href="#cb11-6"></a><span class="fu">viewUser</span> <span class="fu">user</span> <span class="op">=</span></span>
-<span id="cb11-7"><a href="#cb11-7"></a>    <span class="kw">let</span></span>
-<span id="cb11-8"><a href="#cb11-8"></a>        <span class="fu">total</span> <span class="op">=</span> <span class="dt">String</span><span class="op">.</span><span class="fu">fromInt</span> (<span class="dt">List</span><span class="op">.</span><span class="fu">sum</span> (<span class="dt">List</span><span class="op">.</span><span class="fu">map</span> <span class="op">.</span><span class="fu">star</span> <span class="fu">user</span><span class="op">.</span><span class="fu">repos</span>))</span>
-<span id="cb11-9"><a href="#cb11-9"></a>    <span class="kw">in</span></span>
-<span id="cb11-10"><a href="#cb11-10"></a>    <span class="fu">div</span> [ <span class="dt">Attr</span><span class="op">.</span><span class="fu">class</span> <span class="st">&quot;container-sm my-3&quot;</span> ]</span>
-<span id="cb11-11"><a href="#cb11-11"></a>        [ <span class="fu">h3</span> [ <span class="dt">Attr</span><span class="op">.</span><span class="fu">class</span> <span class="st">&quot;my-2&quot;</span> ] [ <span class="fu">text</span> (<span class="fu">user</span><span class="op">.</span><span class="fu">login</span> <span class="op">++</span> <span class="st">&quot;&#39;s points: &quot;</span> <span class="op">++</span> <span class="fu">total</span>) ]</span>
-<span id="cb11-12"><a href="#cb11-12"></a>        <span class="op">,</span> <span class="fu">viewRepositories</span> <span class="fu">user</span></span>
-<span id="cb11-13"><a href="#cb11-13"></a>        ]</span>
-<span id="cb11-14"><a href="#cb11-14"></a></span>
-<span id="cb11-15"><a href="#cb11-15"></a><span class="fu">viewRepositories</span> : <span class="dt">GitHub</span><span class="op">.</span><span class="dt">User</span> <span class="op">-&gt;</span> <span class="dt">Html</span> <span class="fu">msg</span></span>
-<span id="cb11-16"><a href="#cb11-16"></a><span class="fu">viewRepositories</span> <span class="fu">user</span> <span class="op">=</span></span>
-<span id="cb11-17"><a href="#cb11-17"></a>    <span class="kw">let</span></span>
-<span id="cb11-18"><a href="#cb11-18"></a>        <span class="fu">viewRepository</span> <span class="fu">repo</span> <span class="op">=</span></span>
-<span id="cb11-19"><a href="#cb11-19"></a>            <span class="fu">li</span> [ <span class="dt">Attr</span><span class="op">.</span><span class="fu">class</span> <span class="st">&quot;Box-row mb-3&quot;</span> ]</span>
-<span id="cb11-20"><a href="#cb11-20"></a>                [ <span class="fu">div</span> [ <span class="dt">Attr</span><span class="op">.</span><span class="fu">class</span> <span class="st">&quot;float-left&quot;</span> ]</span>
-<span id="cb11-21"><a href="#cb11-21"></a>                    [ <span class="dt">Octicons</span><span class="op">.</span><span class="fu">repo</span> <span class="dt">Octicons</span><span class="op">.</span><span class="fu">defaultOptions</span></span>
-<span id="cb11-22"><a href="#cb11-22"></a>                    <span class="op">,</span> <span class="fu">a</span> [ <span class="dt">Attr</span><span class="op">.</span><span class="fu">href</span> <span class="fu">repo</span><span class="op">.</span><span class="fu">url</span><span class="op">,</span> <span class="dt">Attr</span><span class="op">.</span><span class="fu">class</span> <span class="st">&quot;ml-1&quot;</span> ]</span>
-<span id="cb11-23"><a href="#cb11-23"></a>                        [ <span class="fu">text</span> (<span class="fu">user</span><span class="op">.</span><span class="fu">login</span> <span class="op">++</span> <span class="st">&quot;/&quot;</span> <span class="op">++</span> <span class="fu">repo</span><span class="op">.</span><span class="fu">name</span>) ]</span>
-<span id="cb11-24"><a href="#cb11-24"></a>                    ]</span>
-<span id="cb11-25"><a href="#cb11-25"></a>                <span class="op">,</span> <span class="fu">div</span> [ <span class="dt">Attr</span><span class="op">.</span><span class="fu">class</span> <span class="st">&quot;float-right&quot;</span> ]</span>
-<span id="cb11-26"><a href="#cb11-26"></a>                    [ <span class="fu">text</span> (<span class="dt">String</span><span class="op">.</span><span class="fu">fromInt</span> <span class="fu">repo</span><span class="op">.</span><span class="fu">star</span>)</span>
-<span id="cb11-27"><a href="#cb11-27"></a>                    <span class="op">,</span> <span class="dt">Octicons</span><span class="op">.</span><span class="fu">star</span> <span class="dt">Octicons</span><span class="op">.</span><span class="fu">defaultOptions</span></span>
-<span id="cb11-28"><a href="#cb11-28"></a>                    ]</span>
-<span id="cb11-29"><a href="#cb11-29"></a>                ]</span>
-<span id="cb11-30"><a href="#cb11-30"></a>    <span class="kw">in</span></span>
-<span id="cb11-31"><a href="#cb11-31"></a>    <span class="fu">div</span> [ <span class="dt">Attr</span><span class="op">.</span><span class="fu">class</span> <span class="st">&quot;Box&quot;</span> ]</span>
-<span id="cb11-32"><a href="#cb11-32"></a>        [ <span class="fu">ul</span> [] (<span class="dt">List</span><span class="op">.</span><span class="fu">map</span> <span class="fu">viewRepository</span> <span class="fu">user</span><span class="op">.</span><span class="fu">repos</span>) ]</span></code></pre></div>
-<h3 id="elm-で円グラフ">Elm で円グラフ</h3>
-<p>なんかこう，リポジトリのプライマリ言語ごとに円グラフにしたら面白いなっていう欲がでてきたのでそうしてみることにした． まずはリポジトリのプライマリ言語を返すようにクエリをいじる：</p>
-<pre><code>query {
-  viewer {
-    ...
-    repositories(...) {
-      nodes {
-        ...
-        primaryLanguage {
-          name
-          color
-        }
-      }
-    }
-  }
-}</code></pre>
-<p>データ構造も書き足す：</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb13-1"><a href="#cb13-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Repository</span> <span class="op">=</span></span>
-<span id="cb13-2"><a href="#cb13-2"></a>    { <span class="op">...</span> <span class="co">-- 割愛</span></span>
-<span id="cb13-3"><a href="#cb13-3"></a>    <span class="op">,</span> <span class="fu">language</span> : <span class="dt">Maybe</span> <span class="dt">Language</span></span>
-<span id="cb13-4"><a href="#cb13-4"></a>    }</span>
-<span id="cb13-5"><a href="#cb13-5"></a></span>
-<span id="cb13-6"><a href="#cb13-6"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Language</span> <span class="op">=</span></span>
-<span id="cb13-7"><a href="#cb13-7"></a>    { <span class="fu">name</span> : <span class="dt">String</span></span>
-<span id="cb13-8"><a href="#cb13-8"></a>    <span class="op">,</span> <span class="fu">color</span> : <span class="dt">String</span></span>
-<span id="cb13-9"><a href="#cb13-9"></a>    }</span>
-<span id="cb13-10"><a href="#cb13-10"></a></span>
-<span id="cb13-11"><a href="#cb13-11"></a><span class="fu">repoDecoder</span> : <span class="dt">Decoder</span> <span class="dt">Repository</span></span>
-<span id="cb13-12"><a href="#cb13-12"></a><span class="fu">repoDecoder</span> <span class="op">=</span></span>
-<span id="cb13-13"><a href="#cb13-13"></a>    <span class="dt">D</span><span class="op">.</span><span class="fu">map4</span> <span class="dt">Repository</span></span>
-<span id="cb13-14"><a href="#cb13-14"></a>        <span class="op">...</span> <span class="co">-- 割愛</span></span>
-<span id="cb13-15"><a href="#cb13-15"></a>        (<span class="dt">D</span><span class="op">.</span><span class="fu">field</span> <span class="st">&quot;primaryLanguage&quot;</span> <span class="op">&lt;|</span> <span class="dt">D</span><span class="op">.</span><span class="fu">nullable</span> <span class="fu">languageDecoder</span>)</span>
-<span id="cb13-16"><a href="#cb13-16"></a></span>
-<span id="cb13-17"><a href="#cb13-17"></a></span>
-<span id="cb13-18"><a href="#cb13-18"></a><span class="fu">languageDecoder</span> : <span class="dt">Decoder</span> <span class="dt">Language</span></span>
-<span id="cb13-19"><a href="#cb13-19"></a><span class="fu">languageDecoder</span> <span class="op">=</span></span>
-<span id="cb13-20"><a href="#cb13-20"></a>    <span class="dt">D</span><span class="op">.</span><span class="fu">map2</span> <span class="dt">Language</span></span>
-<span id="cb13-21"><a href="#cb13-21"></a>        (<span class="dt">D</span><span class="op">.</span><span class="fu">field</span> <span class="st">&quot;name&quot;</span> <span class="dt">D</span><span class="op">.</span><span class="fu">string</span>)</span>
-<span id="cb13-22"><a href="#cb13-22"></a>        (<span class="dt">D</span><span class="op">.</span><span class="fu">field</span> <span class="st">&quot;color&quot;</span> <span class="dt">D</span><span class="op">.</span><span class="fu">string</span>)</span></code></pre></div>
-<p>プライマリ言語の情報は <code>null</code> が返ってくる可能性があるので、<code>Maybe</code> でラップしている．</p>
-<p>データは揃ったので，あとは円グラフを描くだけ． 円グラフの描写には <a href="https://package.elm-lang.org/packages/gampleman/elm-visualization/2.1.1"><code>gampleman/elm-visualization</code></a> を使うことにする． example 集にある「<a href="https://elm-visualization.netlify.com/custompiechart">Custom Pie Chart</a>」をベースにすることにした． コピペしてよしなに書き換える：</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb14-1"><a href="#cb14-1"></a><span class="kw">module</span> <span class="dt">Pie</span> <span class="kw">exposing</span> (<span class="fu">view</span>)</span>
-<span id="cb14-2"><a href="#cb14-2"></a><span class="co">-- import は割愛</span></span>
-<span id="cb14-3"><a href="#cb14-3"></a></span>
-<span id="cb14-4"><a href="#cb14-4"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Data</span> <span class="op">=</span></span>
-<span id="cb14-5"><a href="#cb14-5"></a>    { <span class="fu">label</span> : <span class="dt">String</span> <span class="co">-- 言語名</span></span>
-<span id="cb14-6"><a href="#cb14-6"></a>    <span class="op">,</span> <span class="fu">data</span> : <span class="dt">Float</span>   <span class="co">-- 総スター数</span></span>
-<span id="cb14-7"><a href="#cb14-7"></a>    <span class="op">,</span> <span class="fu">color</span> : <span class="dt">Color</span>  <span class="co">-- GitHub 側で設定されてる言語の色</span></span>
-<span id="cb14-8"><a href="#cb14-8"></a>    }</span>
-<span id="cb14-9"><a href="#cb14-9"></a></span>
-<span id="cb14-10"><a href="#cb14-10"></a><span class="fu">w</span> : <span class="dt">Float</span></span>
-<span id="cb14-11"><a href="#cb14-11"></a><span class="fu">w</span> <span class="op">=</span> <span class="dv">990</span></span>
-<span id="cb14-12"><a href="#cb14-12"></a></span>
-<span id="cb14-13"><a href="#cb14-13"></a><span class="fu">h</span> : <span class="dt">Float</span></span>
-<span id="cb14-14"><a href="#cb14-14"></a><span class="fu">h</span> <span class="op">=</span> <span class="dv">504</span></span>
-<span id="cb14-15"><a href="#cb14-15"></a></span>
-<span id="cb14-16"><a href="#cb14-16"></a><span class="fu">radius</span> : <span class="dt">Float</span></span>
-<span id="cb14-17"><a href="#cb14-17"></a><span class="fu">radius</span> <span class="op">=</span> <span class="fu">min</span> <span class="fu">w</span> <span class="fu">h</span> <span class="op">/</span> <span class="dv">2</span></span>
-<span id="cb14-18"><a href="#cb14-18"></a></span>
-<span id="cb14-19"><a href="#cb14-19"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">ChartConfig</span> <span class="op">=</span></span>
-<span id="cb14-20"><a href="#cb14-20"></a>    { <span class="fu">outerRadius</span> : <span class="dt">Float</span></span>
-<span id="cb14-21"><a href="#cb14-21"></a>    <span class="op">,</span> <span class="fu">innerRadius</span> : <span class="dt">Float</span></span>
-<span id="cb14-22"><a href="#cb14-22"></a>    <span class="op">,</span> <span class="fu">padAngle</span> : <span class="dt">Float</span></span>
-<span id="cb14-23"><a href="#cb14-23"></a>    <span class="op">,</span> <span class="fu">cornerRadius</span> : <span class="dt">Float</span></span>
-<span id="cb14-24"><a href="#cb14-24"></a>    <span class="op">,</span> <span class="fu">labelPosition</span> : <span class="dt">Float</span></span>
-<span id="cb14-25"><a href="#cb14-25"></a>    }</span>
-<span id="cb14-26"><a href="#cb14-26"></a></span>
-<span id="cb14-27"><a href="#cb14-27"></a><span class="fu">drawChart</span> : <span class="dt">ChartConfig</span> <span class="op">-&gt;</span> <span class="dt">List</span> <span class="dt">Data</span> <span class="op">-&gt;</span> <span class="dt">Svg</span> <span class="fu">msg</span></span>
-<span id="cb14-28"><a href="#cb14-28"></a><span class="fu">drawChart</span> <span class="fu">config</span> <span class="fu">model</span> <span class="op">=</span></span>
-<span id="cb14-29"><a href="#cb14-29"></a>    <span class="kw">let</span></span>
-<span id="cb14-30"><a href="#cb14-30"></a>        <span class="fu">pieData</span> <span class="op">=</span></span>
-<span id="cb14-31"><a href="#cb14-31"></a>            <span class="dt">List</span><span class="op">.</span><span class="fu">map</span> <span class="op">.</span><span class="fu">data</span> <span class="fu">model</span></span>
-<span id="cb14-32"><a href="#cb14-32"></a>                <span class="op">|&gt;</span> <span class="dt">Shape</span><span class="op">.</span><span class="fu">pie</span></span>
-<span id="cb14-33"><a href="#cb14-33"></a>                    { <span class="fu">defaultPieConfig</span></span>
-<span id="cb14-34"><a href="#cb14-34"></a>                        <span class="op">|</span> <span class="fu">innerRadius</span> <span class="op">=</span> <span class="fu">config</span><span class="op">.</span><span class="fu">innerRadius</span></span>
-<span id="cb14-35"><a href="#cb14-35"></a>                        <span class="op">,</span> <span class="fu">outerRadius</span> <span class="op">=</span> <span class="fu">config</span><span class="op">.</span><span class="fu">outerRadius</span></span>
-<span id="cb14-36"><a href="#cb14-36"></a>                        <span class="op">,</span> <span class="fu">padAngle</span> <span class="op">=</span> <span class="fu">config</span><span class="op">.</span><span class="fu">padAngle</span></span>
-<span id="cb14-37"><a href="#cb14-37"></a>                        <span class="op">,</span> <span class="fu">cornerRadius</span> <span class="op">=</span> <span class="fu">config</span><span class="op">.</span><span class="fu">cornerRadius</span></span>
-<span id="cb14-38"><a href="#cb14-38"></a>                        <span class="op">,</span> <span class="fu">sortingFn</span> <span class="op">=</span> \<span class="fu">_</span> <span class="fu">_</span> <span class="op">-&gt;</span> <span class="dt">EQ</span></span>
-<span id="cb14-39"><a href="#cb14-39"></a>                    }</span>
-<span id="cb14-40"><a href="#cb14-40"></a></span>
-<span id="cb14-41"><a href="#cb14-41"></a>        <span class="fu">makeSlice</span> <span class="fu">pieDatum</span> <span class="fu">datum</span> <span class="op">=</span></span>
-<span id="cb14-42"><a href="#cb14-42"></a>            <span class="dt">Path</span><span class="op">.</span><span class="fu">element</span> (<span class="dt">Shape</span><span class="op">.</span><span class="fu">arc</span> <span class="fu">pieDatum</span>) [ <span class="dt">Attr</span><span class="op">.</span><span class="fu">fill</span> (<span class="dt">Paint</span> <span class="fu">datum</span><span class="op">.</span><span class="fu">color</span>) ]</span>
-<span id="cb14-43"><a href="#cb14-43"></a></span>
-<span id="cb14-44"><a href="#cb14-44"></a>        <span class="fu">makeLabel</span> <span class="fu">pieDatum</span> <span class="fu">datum</span> <span class="op">=</span></span>
-<span id="cb14-45"><a href="#cb14-45"></a>            <span class="kw">let</span></span>
-<span id="cb14-46"><a href="#cb14-46"></a>                ( <span class="fu">x</span><span class="op">,</span> <span class="fu">y</span> ) <span class="op">=</span></span>
-<span id="cb14-47"><a href="#cb14-47"></a>                    <span class="dt">Shape</span><span class="op">.</span><span class="fu">centroid</span></span>
-<span id="cb14-48"><a href="#cb14-48"></a>                        { <span class="fu">pieDatum</span></span>
-<span id="cb14-49"><a href="#cb14-49"></a>                            <span class="op">|</span> <span class="fu">innerRadius</span> <span class="op">=</span> <span class="fu">config</span><span class="op">.</span><span class="fu">labelPosition</span></span>
-<span id="cb14-50"><a href="#cb14-50"></a>                            <span class="op">,</span> <span class="fu">outerRadius</span> <span class="op">=</span> <span class="fu">config</span><span class="op">.</span><span class="fu">labelPosition</span></span>
-<span id="cb14-51"><a href="#cb14-51"></a>                        }</span>
-<span id="cb14-52"><a href="#cb14-52"></a>            <span class="kw">in</span></span>
-<span id="cb14-53"><a href="#cb14-53"></a>            <span class="fu">text_</span></span>
-<span id="cb14-54"><a href="#cb14-54"></a>                [ <span class="dt">Attr</span><span class="op">.</span><span class="fu">transform</span> [ <span class="dt">Translate</span> <span class="fu">x</span> <span class="fu">y</span> ]</span>
-<span id="cb14-55"><a href="#cb14-55"></a>                <span class="op">,</span> <span class="dt">Attr</span><span class="op">.</span><span class="fu">dy</span> (<span class="fu">em</span> <span class="dv">0</span><span class="op">.</span><span class="dv">35</span>)</span>
-<span id="cb14-56"><a href="#cb14-56"></a>                <span class="op">,</span> <span class="dt">Attr</span><span class="op">.</span><span class="fu">textAnchor</span> <span class="dt">AnchorMiddle</span></span>
-<span id="cb14-57"><a href="#cb14-57"></a>                ]</span>
-<span id="cb14-58"><a href="#cb14-58"></a>                [ <span class="fu">text</span> <span class="fu">datum</span><span class="op">.</span><span class="fu">label</span> ]</span>
-<span id="cb14-59"><a href="#cb14-59"></a>    <span class="kw">in</span></span>
-<span id="cb14-60"><a href="#cb14-60"></a>    <span class="fu">svg</span> [ <span class="fu">width</span> (<span class="fu">radius</span> <span class="op">*</span> <span class="dv">2</span>)<span class="op">,</span> <span class="fu">height</span> (<span class="fu">radius</span> <span class="op">*</span> <span class="dv">2</span>) ]</span>
-<span id="cb14-61"><a href="#cb14-61"></a>        [ <span class="fu">g</span> [ <span class="dt">Attr</span><span class="op">.</span><span class="fu">transform</span> [ <span class="dt">Translate</span> <span class="fu">radius</span> <span class="fu">radius</span> ] ]</span>
-<span id="cb14-62"><a href="#cb14-62"></a>            [ <span class="fu">g</span> [] <span class="op">&lt;|</span> <span class="dt">List</span><span class="op">.</span><span class="fu">map2</span> <span class="fu">makeSlice</span> <span class="fu">pieData</span> <span class="fu">model</span></span>
-<span id="cb14-63"><a href="#cb14-63"></a>            <span class="op">,</span> <span class="fu">g</span> [] <span class="op">&lt;|</span> <span class="dt">List</span><span class="op">.</span><span class="fu">map2</span> <span class="fu">makeLabel</span> <span class="fu">pieData</span> <span class="fu">model</span></span>
-<span id="cb14-64"><a href="#cb14-64"></a>            ]</span>
-<span id="cb14-65"><a href="#cb14-65"></a>        ]</span></code></pre></div>
-<p>主に書き換えたのは色の部分． example では <code>colors</code> 的な色リストを利用してたが，リポジトリのプログラミング言語には GitHub 側で色が設定してあるので，それをモデルに持たせて引用することにした． あとは <code>Repository</code> 型から <code>Data</code> 型を組み立てる部分を書くだけ：</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb15-1"><a href="#cb15-1"></a><span class="kw">module</span> <span class="dt">Pie</span> <span class="kw">exposing</span> (<span class="fu">view</span>)</span>
-<span id="cb15-2"><a href="#cb15-2"></a></span>
-<span id="cb15-3"><a href="#cb15-3"></a><span class="op">...</span> <span class="co">-- 割愛</span></span>
-<span id="cb15-4"><a href="#cb15-4"></a></span>
-<span id="cb15-5"><a href="#cb15-5"></a><span class="fu">fromRepo</span> : <span class="dt">GitHub</span><span class="op">.</span><span class="dt">Repository</span> <span class="op">-&gt;</span> <span class="dt">Data</span></span>
-<span id="cb15-6"><a href="#cb15-6"></a><span class="fu">fromRepo</span> <span class="fu">repo</span> <span class="op">=</span></span>
-<span id="cb15-7"><a href="#cb15-7"></a>    <span class="cf">case</span> <span class="fu">repo</span><span class="op">.</span><span class="fu">language</span> <span class="cf">of</span></span>
-<span id="cb15-8"><a href="#cb15-8"></a>        <span class="dt">Nothing</span> <span class="op">-&gt;</span></span>
-<span id="cb15-9"><a href="#cb15-9"></a>            <span class="dt">Data</span> <span class="st">&quot;none&quot;</span> (<span class="fu">toFloat</span> <span class="fu">repo</span><span class="op">.</span><span class="fu">star</span>) <span class="dt">Color</span><span class="op">.</span><span class="fu">black</span></span>
-<span id="cb15-10"><a href="#cb15-10"></a>        <span class="dt">Just</span> <span class="fu">lang</span> <span class="op">-&gt;</span></span>
-<span id="cb15-11"><a href="#cb15-11"></a>            <span class="cf">case</span> <span class="fu">hexToColor</span> <span class="fu">lang</span><span class="op">.</span><span class="fu">color</span> <span class="cf">of</span></span>
-<span id="cb15-12"><a href="#cb15-12"></a>                <span class="dt">Ok</span> <span class="fu">c</span> <span class="op">-&gt;</span></span>
-<span id="cb15-13"><a href="#cb15-13"></a>                    <span class="dt">Data</span> <span class="fu">lang</span><span class="op">.</span><span class="fu">name</span> (<span class="fu">toFloat</span> <span class="fu">repo</span><span class="op">.</span><span class="fu">star</span>) <span class="fu">c</span></span>
-<span id="cb15-14"><a href="#cb15-14"></a>                <span class="fu">_</span> <span class="op">-&gt;</span></span>
-<span id="cb15-15"><a href="#cb15-15"></a>                    <span class="dt">Data</span> <span class="st">&quot;none&quot;</span> (<span class="fu">toFloat</span> <span class="fu">repo</span><span class="op">.</span><span class="fu">star</span>) <span class="dt">Color</span><span class="op">.</span><span class="fu">black</span></span>
-<span id="cb15-16"><a href="#cb15-16"></a></span>
-<span id="cb15-17"><a href="#cb15-17"></a><span class="fu">view</span> : <span class="dt">GitHub</span><span class="op">.</span><span class="dt">User</span> <span class="op">-&gt;</span> <span class="dt">Html</span> <span class="fu">msg</span></span>
-<span id="cb15-18"><a href="#cb15-18"></a><span class="fu">view</span> <span class="fu">user</span> <span class="op">=</span></span>
-<span id="cb15-19"><a href="#cb15-19"></a>    <span class="kw">let</span></span>
-<span id="cb15-20"><a href="#cb15-20"></a>        <span class="fu">config</span> <span class="op">=</span> <span class="op">...</span> <span class="co">-- 割愛</span></span>
-<span id="cb15-21"><a href="#cb15-21"></a></span>
-<span id="cb15-22"><a href="#cb15-22"></a>        <span class="fu">updateBy</span> <span class="fu">d</span> <span class="fu">value</span> <span class="op">=</span></span>
-<span id="cb15-23"><a href="#cb15-23"></a>            <span class="cf">case</span> <span class="fu">value</span> <span class="cf">of</span></span>
-<span id="cb15-24"><a href="#cb15-24"></a>                <span class="dt">Nothing</span> <span class="op">-&gt;</span></span>
-<span id="cb15-25"><a href="#cb15-25"></a>                    <span class="dt">Just</span> <span class="fu">d</span></span>
-<span id="cb15-26"><a href="#cb15-26"></a></span>
-<span id="cb15-27"><a href="#cb15-27"></a>                <span class="dt">Just</span> <span class="fu">v</span> <span class="op">-&gt;</span></span>
-<span id="cb15-28"><a href="#cb15-28"></a>                    <span class="dt">Just</span> { <span class="fu">v</span> <span class="op">|</span> <span class="fu">data</span> <span class="op">=</span> <span class="fu">v</span><span class="op">.</span><span class="fu">data</span> <span class="op">+</span> <span class="fu">d</span><span class="op">.</span><span class="fu">data</span> }</span>
-<span id="cb15-29"><a href="#cb15-29"></a></span>
-<span id="cb15-30"><a href="#cb15-30"></a>        <span class="fu">model</span> <span class="op">=</span></span>
-<span id="cb15-31"><a href="#cb15-31"></a>            <span class="dt">List</span><span class="op">.</span><span class="fu">map</span> <span class="fu">fromRepo</span> <span class="fu">user</span><span class="op">.</span><span class="fu">repos</span></span>
-<span id="cb15-32"><a href="#cb15-32"></a>                <span class="op">|&gt;</span> <span class="dt">List</span><span class="op">.</span><span class="fu">foldl</span> (\<span class="fu">d</span> <span class="op">-&gt;</span> <span class="dt">Dict</span><span class="op">.</span><span class="fu">update</span> <span class="fu">d</span><span class="op">.</span><span class="fu">label</span> (<span class="fu">updateBy</span> <span class="fu">d</span>)) <span class="dt">Dict</span><span class="op">.</span><span class="fu">empty</span></span>
-<span id="cb15-33"><a href="#cb15-33"></a>                <span class="op">|&gt;</span> <span class="dt">Dict</span><span class="op">.</span><span class="fu">filter</span> (\<span class="fu">_</span> <span class="fu">v</span> <span class="op">-&gt;</span> <span class="fu">v</span><span class="op">.</span><span class="fu">data</span> <span class="op">/=</span> <span class="dv">0</span>)</span>
-<span id="cb15-34"><a href="#cb15-34"></a>    <span class="kw">in</span></span>
-<span id="cb15-35"><a href="#cb15-35"></a>    <span class="fu">div</span> [ <span class="fu">class</span> <span class="st">&quot;position-relative&quot;</span> ]</span>
-<span id="cb15-36"><a href="#cb15-36"></a>        [ <span class="fu">drawChart</span> <span class="fu">config</span> (<span class="dt">Dict</span><span class="op">.</span><span class="fu">values</span> <span class="fu">model</span>)</span>
-<span id="cb15-37"><a href="#cb15-37"></a>        ]</span></code></pre></div>
-<p>色々考えた結果，いったん各 <code>Repository</code> を <code>Data</code> に変換して，そのあと言語名をキーにした <code>Dict</code> へと畳み込んでいる（<code>.data</code> の部分だけ足し合わせてる）． あとは <code>Pie.view user</code> を <code>Main.view</code> で呼び出すだけ．</p>
-<p>あ、ちなみに真ん中にアバター画像出したしてるのは割愛（ただ単にアバター画像を GraphQL で取ってきて，<code>Pie.view</code> で重ねてるだけ）．</p>
-<h2 id="おしまい">おしまい</h2>
-<p>Firebase 便利ですね．</p>
   </div>]]></summary>
 </entry>
 
