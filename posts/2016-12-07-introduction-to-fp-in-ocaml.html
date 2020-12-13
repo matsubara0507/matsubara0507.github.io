@@ -150,15 +150,15 @@
 <p>これが一番難しくて，二日分ぐらいかかった．</p>
 <p>原因は <strong><em>Stack Overflow</em></strong> で，一瞬諦めようかと考えたぐらいだ．</p>
 <p>Stack Overflow とは，ようするにメモリリークで，プログラム用に用意されたメモリ(スタック)を使い切ってしまったのである． 原因の一つは関数型プログラミングでよくある再帰の呼びすぎである． 関数呼び出しをすると，その前の状態(変数の割り当てや呼び出された場所など)をスタックに積む． 関数型プログラミングには <code>for</code> 文などの繰り返し構文は無く，関数が自分自身を再度呼び出すこと(これを再帰呼び出しいう)で手続きを繰り返す． 数学の漸化式みたいなものだ．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1"></a><span class="ot">factorial ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
-<span id="cb1-2"><a href="#cb1-2"></a>factorial <span class="dv">0</span> <span class="ot">=</span> <span class="dv">1</span></span>
-<span id="cb1-3"><a href="#cb1-3"></a>factorial n <span class="ot">=</span> n <span class="op">*</span> factorial (n <span class="op">-</span> <span class="dv">1</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="ot">factorial ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>factorial <span class="dv">0</span> <span class="ot">=</span> <span class="dv">1</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a>factorial n <span class="ot">=</span> n <span class="op">*</span> factorial (n <span class="op">-</span> <span class="dv">1</span>)</span></code></pre></div>
 <p>解決方法は，これを末尾再帰の形に変更する事である． 末尾再帰とは，再帰呼び出しする場合は必ずそれだけで返すような再帰のことである． 要するにこんな感じ．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1"></a><span class="ot">factorial ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a>factorial n <span class="ot">=</span> loop <span class="dv">1</span> n</span>
-<span id="cb2-3"><a href="#cb2-3"></a>  <span class="kw">where</span></span>
-<span id="cb2-4"><a href="#cb2-4"></a>    loop acc <span class="dv">0</span> <span class="ot">=</span> acc</span>
-<span id="cb2-5"><a href="#cb2-5"></a>    loop acc n <span class="ot">=</span> loop (acc <span class="op">*</span> n) (n <span class="op">-</span> <span class="dv">1</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="ot">factorial ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a>factorial n <span class="ot">=</span> loop <span class="dv">1</span> n</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>  <span class="kw">where</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>    loop acc <span class="dv">0</span> <span class="ot">=</span> acc</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a>    loop acc n <span class="ot">=</span> loop (acc <span class="op">*</span> n) (n <span class="op">-</span> <span class="dv">1</span>)</span></code></pre></div>
 <p>こうしておくと，前の状態を保持しておく必要が無いので自動で最適化されて Stack Overflow が起きなくなる．</p>
 <p>Haskell の影響で，基本的に自分は，ミュータブルな配列ではなくイミュータブルなリストを使ってしまう．</p>
 <p><a href="http://ocaml.jp/archive/ocaml-manual-3.06-ja/libref/List.html">リストの API</a> を見る <strong>この関数は末尾再帰になっていません</strong> と書かれている関数がある． これを何個か使っていた(<code>map</code> とかね…)ので，全部末尾再帰のものに置き換えた．</p>
@@ -166,63 +166,63 @@
 <p>イロイロと出力させてみたとこと，要するに原因は組み合わせ爆発だった．</p>
 <p>結局のところ，この(手順通りに作ったはずの)アルゴリズムは単純な幅優先全探索しかしていない． ただ，少しだけ工夫されていて，同じ配置にならないように，一度通った配置を記憶し，同じになった場合は残りを省略している．</p>
 <p>(課題に沿って)配置(ピース)の等価性を次のように定義していた．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">let</span> compare_piece p1 p2 =</span>
-<span id="cb3-2"><a href="#cb3-2"></a>  <span class="kw">match</span> (p1,p2) <span class="kw">with</span></span>
-<span id="cb3-3"><a href="#cb3-3"></a>  | ((k1,n1),(k2,n2)) <span class="kw">when</span> k1 = k2 -&gt; <span class="dt">compare</span> n1 n2</span>
-<span id="cb3-4"><a href="#cb3-4"></a>  | ((S,_), _) -&gt; <span class="dv">1</span></span>
-<span id="cb3-5"><a href="#cb3-5"></a>  | ((H,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S -&gt; <span class="dv">1</span></span>
-<span id="cb3-6"><a href="#cb3-6"></a>  | ((C,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H -&gt; <span class="dv">1</span></span>
-<span id="cb3-7"><a href="#cb3-7"></a>  | ((V,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H &amp;&amp; k &lt;&gt; C -&gt; <span class="dv">1</span></span>
-<span id="cb3-8"><a href="#cb3-8"></a>  | _ -&gt; <span class="dv">-1</span></span>
-<span id="cb3-9"><a href="#cb3-9"></a>;;</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="kw">let</span> compare_piece p1 p2 =</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a>  <span class="kw">match</span> (p1,p2) <span class="kw">with</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>  | ((k1,n1),(k2,n2)) <span class="kw">when</span> k1 = k2 -&gt; <span class="dt">compare</span> n1 n2</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>  | ((S,_), _) -&gt; <span class="dv">1</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a>  | ((H,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S -&gt; <span class="dv">1</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a>  | ((C,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H -&gt; <span class="dv">1</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a>  | ((V,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H &amp;&amp; k &lt;&gt; C -&gt; <span class="dv">1</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a>  | _ -&gt; <span class="dv">-1</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a>;;</span></code></pre></div>
 <p>ピース自体はこんな型定義．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">type</span> piece_kind = S | H | V | C | X</span>
-<span id="cb4-2"><a href="#cb4-2"></a><span class="kw">type</span> piece = piece_kind * <span class="dt">int</span></span>
-<span id="cb4-3"><a href="#cb4-3"></a><span class="kw">let</span> x = (X, <span class="dv">0</span>) <span class="kw">and</span> s = (S, <span class="dv">0</span>) <span class="kw">and</span> h = (H, <span class="dv">0</span>)</span>
-<span id="cb4-4"><a href="#cb4-4"></a><span class="kw">let</span> (c0, c1, c2, c3) = ((C, <span class="dv">0</span>), (C, <span class="dv">1</span>), (C, <span class="dv">2</span>), (C, <span class="dv">3</span>))</span>
-<span id="cb4-5"><a href="#cb4-5"></a><span class="kw">let</span> (v0, v1, v2, v3) = ((V, <span class="dv">0</span>), (V, <span class="dv">1</span>), (V, <span class="dv">2</span>), (V, <span class="dv">3</span>))</span>
-<span id="cb4-6"><a href="#cb4-6"></a><span class="kw">let</span> all_pieces : piece <span class="dt">list</span> = [ s; h; c0; c1; c2; c3; v0; v1; v2; v3 ]</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="kw">type</span> piece_kind = S | H | V | C | X</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a><span class="kw">type</span> piece = piece_kind * <span class="dt">int</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a><span class="kw">let</span> x = (X, <span class="dv">0</span>) <span class="kw">and</span> s = (S, <span class="dv">0</span>) <span class="kw">and</span> h = (H, <span class="dv">0</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a><span class="kw">let</span> (c0, c1, c2, c3) = ((C, <span class="dv">0</span>), (C, <span class="dv">1</span>), (C, <span class="dv">2</span>), (C, <span class="dv">3</span>))</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a><span class="kw">let</span> (v0, v1, v2, v3) = ((V, <span class="dv">0</span>), (V, <span class="dv">1</span>), (V, <span class="dv">2</span>), (V, <span class="dv">3</span>))</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a><span class="kw">let</span> all_pieces : piece <span class="dt">list</span> = [ s; h; c0; c1; c2; c3; v0; v1; v2; v3 ]</span></code></pre></div>
 <p>要するに，<strong>同じ形のピースも全て区別している</strong> のである． こんな必要はない…</p>
 <p>なので，区別しない形に書き換えた．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">let</span> compare_piece p1 p2 =</span>
-<span id="cb5-2"><a href="#cb5-2"></a>  <span class="kw">match</span> (p1,p2) <span class="kw">with</span></span>
-<span id="cb5-3"><a href="#cb5-3"></a>  | ((k1,n1),(k2,n2)) <span class="kw">when</span> k1 = k2 -&gt; <span class="dv">0</span></span>
-<span id="cb5-4"><a href="#cb5-4"></a>  | ((S,_), _) -&gt; <span class="dv">1</span></span>
-<span id="cb5-5"><a href="#cb5-5"></a>  | ((H,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S -&gt; <span class="dv">1</span></span>
-<span id="cb5-6"><a href="#cb5-6"></a>  | ((C,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H -&gt; <span class="dv">1</span></span>
-<span id="cb5-7"><a href="#cb5-7"></a>  | ((V,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H &amp;&amp; k &lt;&gt; C -&gt; <span class="dv">1</span></span>
-<span id="cb5-8"><a href="#cb5-8"></a>  | _ -&gt; <span class="dv">-1</span></span>
-<span id="cb5-9"><a href="#cb5-9"></a>;;</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="kw">let</span> compare_piece p1 p2 =</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a>  <span class="kw">match</span> (p1,p2) <span class="kw">with</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a>  | ((k1,n1),(k2,n2)) <span class="kw">when</span> k1 = k2 -&gt; <span class="dv">0</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a>  | ((S,_), _) -&gt; <span class="dv">1</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a>  | ((H,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S -&gt; <span class="dv">1</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a>  | ((C,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H -&gt; <span class="dv">1</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true"></a>  | ((V,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H &amp;&amp; k &lt;&gt; C -&gt; <span class="dv">1</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true"></a>  | _ -&gt; <span class="dv">-1</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true"></a>;;</span></code></pre></div>
 <p>区別した場合で正解の問題があるのため，素直に書き換えてしまうとダメでして… しょうがないから，ローカル関数として上書きした．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">let</span> solve_klotski initial_board =</span>
-<span id="cb6-2"><a href="#cb6-2"></a>  <span class="kw">let</span> compare_piece p1 p2 =</span>
-<span id="cb6-3"><a href="#cb6-3"></a>    <span class="kw">match</span> (p1,p2) <span class="kw">with</span></span>
-<span id="cb6-4"><a href="#cb6-4"></a>    | ((k1,n1),(k2,n2)) <span class="kw">when</span> k1 = k2 -&gt; <span class="dv">0</span></span>
-<span id="cb6-5"><a href="#cb6-5"></a>    | ((S,_), _) -&gt; <span class="dv">1</span></span>
-<span id="cb6-6"><a href="#cb6-6"></a>    | ((H,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S -&gt; <span class="dv">1</span></span>
-<span id="cb6-7"><a href="#cb6-7"></a>    | ((C,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H -&gt; <span class="dv">1</span></span>
-<span id="cb6-8"><a href="#cb6-8"></a>    | ((V,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H &amp;&amp; k &lt;&gt; C -&gt; <span class="dv">1</span></span>
-<span id="cb6-9"><a href="#cb6-9"></a>    | _ -&gt; <span class="dv">-1</span> <span class="kw">in</span></span>
-<span id="cb6-10"><a href="#cb6-10"></a>  <span class="kw">let</span> <span class="kw">module</span> BoardSet = <span class="dt">Set</span>.Make (<span class="kw">struct</span></span>
-<span id="cb6-11"><a href="#cb6-11"></a>      <span class="kw">type</span> t = board</span>
-<span id="cb6-12"><a href="#cb6-12"></a>      <span class="kw">let</span> <span class="dt">compare</span> b1 b2 =</span>
-<span id="cb6-13"><a href="#cb6-13"></a>        loop (<span class="kw">fun</span> (_,_,_,_,_,fin) -&gt; fin)</span>
-<span id="cb6-14"><a href="#cb6-14"></a>          (<span class="kw">fun</span> (i,j,r1,r2,ans,fin) -&gt; <span class="kw">match</span> (i,j) <span class="kw">with</span></span>
-<span id="cb6-15"><a href="#cb6-15"></a>            | (x,y) <span class="kw">when</span> (x+<span class="dv">1</span>) &gt; <span class="dv">4</span> &amp;&amp; y &gt; <span class="dv">3</span> -&gt; (i,j,r1,r2,ans,<span class="kw">true</span>)</span>
-<span id="cb6-16"><a href="#cb6-16"></a>            | (_,y) <span class="kw">when</span> y &gt; <span class="dv">3</span>              -&gt; (i+<span class="dv">1</span>,<span class="dv">0</span>,b1.(i+<span class="dv">1</span>),b2.(i+<span class="dv">1</span>),ans,fin)</span>
-<span id="cb6-17"><a href="#cb6-17"></a>            | _ -&gt; <span class="kw">let</span> n = compare_piece r1.(j) r2.(j) <span class="kw">in</span></span>
-<span id="cb6-18"><a href="#cb6-18"></a>                     <span class="kw">if</span> n &lt;&gt; <span class="dv">0</span> <span class="kw">then</span> (i,j,r1,r2,n,<span class="kw">true</span>) <span class="kw">else</span> (i,j+<span class="dv">1</span>,r1,r2,ans,fin)</span>
-<span id="cb6-19"><a href="#cb6-19"></a>          ) (<span class="dv">0</span>,<span class="dv">0</span>,b1.(<span class="dv">0</span>),b2.(<span class="dv">0</span>),<span class="dv">0</span>,<span class="kw">false</span>) |&gt; (<span class="kw">fun</span> (_,_,_,_,ans,_) -&gt; ans)</span>
-<span id="cb6-20"><a href="#cb6-20"></a>      ;;</span>
-<span id="cb6-21"><a href="#cb6-21"></a>    <span class="kw">end</span>) <span class="kw">in</span></span>
-<span id="cb6-22"><a href="#cb6-22"></a>  <span class="kw">let</span> p = { move = (<span class="kw">fun</span> _ (Move (_,_,b)) -&gt; b) ;</span>
-<span id="cb6-23"><a href="#cb6-23"></a>            possible_moves = possible_moves ;</span>
-<span id="cb6-24"><a href="#cb6-24"></a>            final = final } <span class="kw">in</span></span>
-<span id="cb6-25"><a href="#cb6-25"></a>  <span class="kw">let</span> opset = { empty = BoardSet.add initial_board BoardSet.empty ;</span>
-<span id="cb6-26"><a href="#cb6-26"></a>                mem = (<span class="kw">fun</span> al s -&gt; BoardSet.mem (<span class="dt">List</span>.hd al) s) ;</span>
-<span id="cb6-27"><a href="#cb6-27"></a>                add = (<span class="kw">fun</span> al s -&gt; BoardSet.add (<span class="dt">List</span>.hd al) s) } <span class="kw">in</span></span>
-<span id="cb6-28"><a href="#cb6-28"></a>  solve_puzzle p opset initial_board</span>
-<span id="cb6-29"><a href="#cb6-29"></a>;;</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="kw">let</span> solve_klotski initial_board =</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a>  <span class="kw">let</span> compare_piece p1 p2 =</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a>    <span class="kw">match</span> (p1,p2) <span class="kw">with</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a>    | ((k1,n1),(k2,n2)) <span class="kw">when</span> k1 = k2 -&gt; <span class="dv">0</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a>    | ((S,_), _) -&gt; <span class="dv">1</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a>    | ((H,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S -&gt; <span class="dv">1</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true"></a>    | ((C,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H -&gt; <span class="dv">1</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true"></a>    | ((V,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H &amp;&amp; k &lt;&gt; C -&gt; <span class="dv">1</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true"></a>    | _ -&gt; <span class="dv">-1</span> <span class="kw">in</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true"></a>  <span class="kw">let</span> <span class="kw">module</span> BoardSet = <span class="dt">Set</span>.Make (<span class="kw">struct</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true"></a>      <span class="kw">type</span> t = board</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true"></a>      <span class="kw">let</span> <span class="dt">compare</span> b1 b2 =</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true"></a>        loop (<span class="kw">fun</span> (_,_,_,_,_,fin) -&gt; fin)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true"></a>          (<span class="kw">fun</span> (i,j,r1,r2,ans,fin) -&gt; <span class="kw">match</span> (i,j) <span class="kw">with</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true"></a>            | (x,y) <span class="kw">when</span> (x+<span class="dv">1</span>) &gt; <span class="dv">4</span> &amp;&amp; y &gt; <span class="dv">3</span> -&gt; (i,j,r1,r2,ans,<span class="kw">true</span>)</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true"></a>            | (_,y) <span class="kw">when</span> y &gt; <span class="dv">3</span>              -&gt; (i+<span class="dv">1</span>,<span class="dv">0</span>,b1.(i+<span class="dv">1</span>),b2.(i+<span class="dv">1</span>),ans,fin)</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true"></a>            | _ -&gt; <span class="kw">let</span> n = compare_piece r1.(j) r2.(j) <span class="kw">in</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true"></a>                     <span class="kw">if</span> n &lt;&gt; <span class="dv">0</span> <span class="kw">then</span> (i,j,r1,r2,n,<span class="kw">true</span>) <span class="kw">else</span> (i,j+<span class="dv">1</span>,r1,r2,ans,fin)</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true"></a>          ) (<span class="dv">0</span>,<span class="dv">0</span>,b1.(<span class="dv">0</span>),b2.(<span class="dv">0</span>),<span class="dv">0</span>,<span class="kw">false</span>) |&gt; (<span class="kw">fun</span> (_,_,_,_,ans,_) -&gt; ans)</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true"></a>      ;;</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true"></a>    <span class="kw">end</span>) <span class="kw">in</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true"></a>  <span class="kw">let</span> p = { move = (<span class="kw">fun</span> _ (Move (_,_,b)) -&gt; b) ;</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true"></a>            possible_moves = possible_moves ;</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true"></a>            final = final } <span class="kw">in</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true"></a>  <span class="kw">let</span> opset = { empty = BoardSet.add initial_board BoardSet.empty ;</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true"></a>                mem = (<span class="kw">fun</span> al s -&gt; BoardSet.mem (<span class="dt">List</span>.hd al) s) ;</span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true"></a>                add = (<span class="kw">fun</span> al s -&gt; BoardSet.add (<span class="dt">List</span>.hd al) s) } <span class="kw">in</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true"></a>  solve_puzzle p opset initial_board</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true"></a>;;</span></code></pre></div>
 <p>で、できた…</p>
 <figure>
 <img src="../assets/introduction-to-fp-in-ocaml/solve.gif" alt /><figcaption>無駄にリッチ</figcaption>

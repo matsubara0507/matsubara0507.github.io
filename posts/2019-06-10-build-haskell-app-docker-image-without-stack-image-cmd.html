@@ -95,13 +95,13 @@
 <h2 id="stack-image-コマンド">stack image コマンド</h2>
 <p>簡単に今は亡き <code>stack image</code> コマンドを説明する． このコマンドは <code>stack image container</code> というサブコマンドにより，stack.yaml の設定を元にして実行ファイルだけを含んだ Docker イメージを作ってくれる． <code>docker</code> コマンドで普通にイメージを作るのと違い，<code>.stack-work</code> のビルドキャッシュをホストマシンのローカルに保存し，利用してくれる． そのおかげで2回目以降のビルドも高速に行える(<code>stack</code> による初回ビルドはとても時間がかかる…)．</p>
 <p>使い方は簡単で，次のようなのを stack.yaml に記述し <code>stack --docker image container</code> とするだけ:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">docker</span><span class="kw">:</span></span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="at">  </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> fpco/stack-build</span></span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="at">  </span><span class="fu">enable</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span id="cb1-4"><a href="#cb1-4"></a><span class="fu">image</span><span class="kw">:</span></span>
-<span id="cb1-5"><a href="#cb1-5"></a><span class="at">  </span><span class="fu">container</span><span class="kw">:</span></span>
-<span id="cb1-6"><a href="#cb1-6"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> matsubara0507/whoami</span></span>
-<span id="cb1-7"><a href="#cb1-7"></a><span class="at">    </span><span class="fu">base</span><span class="kw">:</span><span class="at"> matsubara0507/ubuntu-for-haskell:git</span></span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="fu">docker</span><span class="kw">:</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="at">  </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> fpco/stack-build</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="at">  </span><span class="fu">enable</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a><span class="fu">image</span><span class="kw">:</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a><span class="at">  </span><span class="fu">container</span><span class="kw">:</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> matsubara0507/whoami</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a><span class="at">    </span><span class="fu">base</span><span class="kw">:</span><span class="at"> matsubara0507/ubuntu-for-haskell:git</span></span></code></pre></div>
 <p><code>docker</code> の方の設定は Docker Integration と呼ばれるもので，<code>repo</code> で設定したイメージのコンテナ内で stack のビルドをしてくれる(こいつがローカルの <code>.stack-work</code> を利用する)． <code>image</code> の方の設定が <code>stack image</code> の設定で，<code>base</code> が作成するイメージのベースイメージだ． やってることは実行ファイルを <code>.stack-work</code> からコピーしてくるだけで，ベースイメージが Docker Integration のイメージと同じ OS であればちゃんと動作する．</p>
 <h2 id="section"></h2>
 <p>さて，冒頭に書いた通り，<a href="https://github.com/commercialhaskell/stack/blob/c0c6510741a0f3e2f687a4fecf9b0ae625fca12a/ChangeLog.md#v2101-release-candidate"><strong>この機能は stack の新しいバージョンでは無くなってしまう</strong></a>．</p>
@@ -111,16 +111,16 @@
 <p>マルチステージビルドができたし，あんまりこれもう便利じゃないよね，とのこと． 代わりに「<a href="https://www.fpcomplete.com/blog/2017/12/building-haskell-apps-with-docker/">Building Haskell Apps with Docker</a>」という記事を読むと良いらしい．</p>
 <h2 id="マルチステージビルドする">マルチステージビルドする</h2>
 <p>上記リンクではマルチステージビルドを使えと書いてある． 多分こんな感じ(試してない):</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">FROM</span> fpco/stack-build:lts-13.21 as bin</span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="kw">RUN</span> mkdir -p /root/work</span>
-<span id="cb2-3"><a href="#cb2-3"></a><span class="kw">COPY</span> . /root/work</span>
-<span id="cb2-4"><a href="#cb2-4"></a><span class="kw">RUN</span> cd /root/work &amp;&amp; stack install --system-ghc</span>
-<span id="cb2-5"><a href="#cb2-5"></a></span>
-<span id="cb2-6"><a href="#cb2-6"></a><span class="kw">FROM</span> matsubara0507/ubuntu-for-haskell</span>
-<span id="cb2-7"><a href="#cb2-7"></a><span class="kw">RUN</span> mkdir -p /root/.local/bin &amp;&amp; mkdir -p /root/work</span>
-<span id="cb2-8"><a href="#cb2-8"></a><span class="kw">ENV</span> PATH /root/.local/bin:$PATH</span>
-<span id="cb2-9"><a href="#cb2-9"></a><span class="kw">WORKDIR</span> /root/work</span>
-<span id="cb2-10"><a href="#cb2-10"></a><span class="kw">COPY</span> --from=bin /root/.local/bin /root/.local/bin</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="kw">FROM</span> fpco/stack-build:lts-13.21 as bin</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="kw">RUN</span> mkdir -p /root/work</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a><span class="kw">COPY</span> . /root/work</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a><span class="kw">RUN</span> cd /root/work &amp;&amp; stack install --system-ghc</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a><span class="kw">FROM</span> matsubara0507/ubuntu-for-haskell</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a><span class="kw">RUN</span> mkdir -p /root/.local/bin &amp;&amp; mkdir -p /root/work</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a><span class="kw">ENV</span> PATH /root/.local/bin:$PATH</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a><span class="kw">WORKDIR</span> /root/work</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a><span class="kw">COPY</span> --from=bin /root/.local/bin /root/.local/bin</span></code></pre></div>
 <p>stack の Docker Integration は残ってるので <code>stack --docker build</code> とすることで Docker コンテナ内でのビルド自体は実行される(これによってローカルにキャッシュが作られる)． 一つ目のステージでは <code>stack install</code> により <code>.stack-work</code> 内の実行ファイルを <code>/root/.local/bin</code> にコピーし，二つ目のステージではさらにこの実行ファイルだけを最終的に作られるイメージにコピーしている． ちなみに，<code>/root/.local/bin</code> は stack が決めてるローカル実行ファイルを置くパスで，<code>stack path</code> で確認できる(OS によって違うはず)．</p>
 <p>でもこれ一つ欠点があって． <code>docker build</code> するときに，肥大化しがちな <code>.stack-work</code> をいちいち上げる必要があるので，だんだん <code>docker build</code> の時間が長くなる(最近作ってたアプリケーションは4GBになってしまって…)． <code>.dockerignore</code> で無視できれば良いのだが，それだと <code>stack insatll</code> できない(<code>.stack-work</code> 内の実行ファイルのパスは resolver や GHC のバージョンなどで変わるので，これをイチイチ <code>.dockerignore</code> に書くのはめんどくさい)．</p>
 <h2 id="local-bin-path-オプション">local-bin-path オプション</h2>
@@ -129,12 +129,12 @@
 <li><a href="https://github.com/commercialhaskell/stack/issues/730">Specify local-bin-path · Issue #730 · commercialhaskell/stack · GitHub</a></li>
 </ul>
 <p><code>stack --local-bin-path=any_path install</code> とすることで任意のパスに実行ファイルをコピーできる！ 知らなかった． あとはここから <code>docker build</code> で実行ファイルコピーしてくるように Dockerfile を書くだけ:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">FROM</span> matsubara0507/ubuntu-for-haskell</span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">ARG</span> local_bin_path</span>
-<span id="cb3-3"><a href="#cb3-3"></a><span class="kw">RUN</span> mkdir -p /root/.local/bin &amp;&amp; mkdir -p /root/work</span>
-<span id="cb3-4"><a href="#cb3-4"></a><span class="kw">ENV</span> PATH /root/.local/bin:$PATH</span>
-<span id="cb3-5"><a href="#cb3-5"></a><span class="kw">WORKDIR</span> /root/work</span>
-<span id="cb3-6"><a href="#cb3-6"></a><span class="kw">COPY</span> ${local_bin_path} /root/.local/bin</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="kw">FROM</span> matsubara0507/ubuntu-for-haskell</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="kw">ARG</span> local_bin_path</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a><span class="kw">RUN</span> mkdir -p /root/.local/bin &amp;&amp; mkdir -p /root/work</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a><span class="kw">ENV</span> PATH /root/.local/bin:$PATH</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a><span class="kw">WORKDIR</span> /root/work</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a><span class="kw">COPY</span> ${local_bin_path} /root/.local/bin</span></code></pre></div>
 <p><code>ARG</code> を使ったので次のように <code>docker build</code> コマンドのオプションで指定する:</p>
 <pre><code>$ stack --local-bin-path=./bin --docker install
 $ docker build -t matsubara0507/whoami . --build-arg local_bin_path=./bin</code></pre>

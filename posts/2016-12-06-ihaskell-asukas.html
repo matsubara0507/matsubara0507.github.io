@@ -88,13 +88,13 @@
 
   <div class="post-content" itemprop="articleBody">
     <p><a href="http://www.adventar.org/calendars/1572">IGGG アドベントカレンダー 2016</a> 6日目の記事です．</p>
-<p>やっと手に入れた <a href="https://arukas.io/">Arukas</a> のアカウント使って簡易的なテストをしました．</p>
+<p>やっと手に入れた Arukas のアカウント使って簡易的なテストをしました（注意：Arukas はサービス終了してサイトも無くなっています）．</p>
 <p>タイトル通り，使ったコンテナは <a href="https://github.com/gibiansky/IHaskell">IHaskell</a> です．</p>
 <p>結論を先に言うと，結局 Arukas ではうまくいってません． しかし，ローカルで試したところうまく行きました． サービスが重いせいかもしれませんが，今後うまくいったら追記します．</p>
 <h2 id="arukas">Arukas</h2>
 <p>Arukas とはさくらインターネットさんが運営する Web サービスの一つで，Docker コンテナ専用のホスティングサービスです．</p>
 <p>Docker とは任意の用途に特化させた軽量な仮想環境(コンテナ)という感じのモノです． 自分も触り始めたばっかでちっっっとも詳しくないので自分でググって調べてください．</p>
-<p>現在 Arukas はまだ試験運用中(β版)であり，そのため<a href="https://arukas.io/terms/terms-arukas/">3月</a>までコンテナを10個まで無償で作成できます．</p>
+<p>現在 Arukas はまだ試験運用中(β版)であり，そのため3月までコンテナを10個まで無償で作成できます．</p>
 <p>10月中旬位に登録ユーザーが予想以上になったため，<a href="https://twitter.com/arukas_io/status/788314127684898817">一時的に新規ユーザー登録を停止</a>していましたが，11月末日に再開始されました．</p>
 <p>どうやら，以前にも停止していた(ニュースのリンクを張っていたがリンク切れになった…)みたいなので，新規登録はお早めに．</p>
 <h2 id="ihaskell">IHaskell</h2>
@@ -113,14 +113,14 @@
 <h2 id="テスト">テスト</h2>
 <p>適当に有名な <a href="https://ja.wikipedia.org/wiki/Fizz_Buzz">FizzBuzz</a> プログラムでも実行してみます．</p>
 <p>全体のコードはこんな感じ．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">import</span> <span class="dt">Control.Monad</span> (guard)</span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">import</span> <span class="dt">Data.Maybe</span> (fromMaybe)</span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="kw">import</span> <span class="dt">Data.Monoid</span> ((&lt;&gt;))</span>
-<span id="cb1-4"><a href="#cb1-4"></a></span>
-<span id="cb1-5"><a href="#cb1-5"></a><span class="ot">fizzbuzz ::</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">String</span></span>
-<span id="cb1-6"><a href="#cb1-6"></a>fizzbuzz <span class="ot">=</span> fromMaybe <span class="op">.</span> <span class="fu">show</span> <span class="op">&lt;*&gt;</span> <span class="dv">3</span> <span class="op">~&gt;</span> <span class="st">&quot;Fizz&quot;</span> <span class="op">&lt;&gt;</span> <span class="dv">5</span> <span class="op">~&gt;</span> <span class="st">&quot;Buzz&quot;</span></span>
-<span id="cb1-7"><a href="#cb1-7"></a>  <span class="kw">where</span></span>
-<span id="cb1-8"><a href="#cb1-8"></a>    (d <span class="op">~&gt;</span> s) n <span class="ot">=</span> s <span class="op">&lt;$</span> guard (n <span class="ot">`mod`</span> d <span class="op">==</span> <span class="dv">0</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Control.Monad</span> (guard)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Data.Maybe</span> (fromMaybe)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Data.Monoid</span> ((&lt;&gt;))</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a><span class="ot">fizzbuzz ::</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">String</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a>fizzbuzz <span class="ot">=</span> fromMaybe <span class="op">.</span> <span class="fu">show</span> <span class="op">&lt;*&gt;</span> <span class="dv">3</span> <span class="op">~&gt;</span> <span class="st">&quot;Fizz&quot;</span> <span class="op">&lt;&gt;</span> <span class="dv">5</span> <span class="op">~&gt;</span> <span class="st">&quot;Buzz&quot;</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a>  <span class="kw">where</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>    (d <span class="op">~&gt;</span> s) n <span class="ot">=</span> s <span class="op">&lt;$</span> guard (n <span class="ot">`mod`</span> d <span class="op">==</span> <span class="dv">0</span>)</span></code></pre></div>
 <p><a href="https://www.reddit.com/r/haskell/comments/2cum9p/i_did_a_haskell_fizzbuzz/">ココ</a>より参照した(自分は解説しません)．</p>
 <p>これを Jupyter に書き加えて実行．</p>
 <p><img src="../assets/ihaskell-arukas/error.jpg" /></p>

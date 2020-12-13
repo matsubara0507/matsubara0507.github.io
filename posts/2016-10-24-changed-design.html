@@ -95,68 +95,68 @@
 <h2 id="移植">移植</h2>
 <h3 id="jekyll-と-hakyll">Jekyll と Hakyll</h3>
 <p>Jekyll も Hakyll も HTML に HTML を挿入したり，環境変数みたいのを使えたり，<code>if</code> や <code>for</code> の制御構文が使えたり，かなり共通項が多い． 以下に対応を書いてみた．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb1-1"><a href="#cb1-1"></a><span class="co">&lt;!-- 比較 : 上 Jekyll 下 Hakyll --&gt;</span></span>
-<span id="cb1-2"><a href="#cb1-2"></a></span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="co">&lt;!-- HTMLの挿入 --&gt;</span></span>
-<span id="cb1-4"><a href="#cb1-4"></a></span>
-<span id="cb1-5"><a href="#cb1-5"></a>{% include header.html %}</span>
-<span id="cb1-6"><a href="#cb1-6"></a></span>
-<span id="cb1-7"><a href="#cb1-7"></a>$partial(&quot;includes/header.html&quot;)$</span>
-<span id="cb1-8"><a href="#cb1-8"></a></span>
-<span id="cb1-9"><a href="#cb1-9"></a><span class="co">&lt;!-- 制御構文 if --&gt;</span></span>
-<span id="cb1-10"><a href="#cb1-10"></a>{% if page.title %}</span>
-<span id="cb1-11"><a href="#cb1-11"></a>  {{ page.title | escape }}</span>
-<span id="cb1-12"><a href="#cb1-12"></a>{% else %}</span>
-<span id="cb1-13"><a href="#cb1-13"></a>  {{ site.title | escape }}</span>
-<span id="cb1-14"><a href="#cb1-14"></a>{% endif %}</span>
-<span id="cb1-15"><a href="#cb1-15"></a></span>
-<span id="cb1-16"><a href="#cb1-16"></a>$if(title)$</span>
-<span id="cb1-17"><a href="#cb1-17"></a>  $title$</span>
-<span id="cb1-18"><a href="#cb1-18"></a>$else$</span>
-<span id="cb1-19"><a href="#cb1-19"></a>  $site_title$</span>
-<span id="cb1-20"><a href="#cb1-20"></a>$endif$</span>
-<span id="cb1-21"><a href="#cb1-21"></a></span>
-<span id="cb1-22"><a href="#cb1-22"></a><span class="co">&lt;!-- 制御構文 for --&gt;</span></span>
-<span id="cb1-23"><a href="#cb1-23"></a></span>
-<span id="cb1-24"><a href="#cb1-24"></a>{% for post in site.posts %}</span>
-<span id="cb1-25"><a href="#cb1-25"></a>  <span class="kw">&lt;li&gt;</span></span>
-<span id="cb1-26"><a href="#cb1-26"></a>    <span class="kw">&lt;span</span><span class="ot"> class=</span><span class="st">&quot;post-meta&quot;</span><span class="kw">&gt;</span>{{ post.date | date: &quot;%b %-d, %Y&quot; }}<span class="kw">&lt;/span&gt;</span></span>
-<span id="cb1-27"><a href="#cb1-27"></a>    <span class="kw">&lt;a</span><span class="ot"> class=</span><span class="st">&quot;post-link&quot;</span><span class="ot"> href=</span><span class="st">&quot;{{ post.url | prepend: site.baseurl }}&quot;</span><span class="kw">&gt;</span>{{ post.title }}<span class="kw">&lt;/a&gt;</span>            </span>
-<span id="cb1-28"><a href="#cb1-28"></a>  <span class="kw">&lt;/li&gt;</span></span>
-<span id="cb1-29"><a href="#cb1-29"></a>{% endfor %}</span>
-<span id="cb1-30"><a href="#cb1-30"></a></span>
-<span id="cb1-31"><a href="#cb1-31"></a>$for(posts)$</span>
-<span id="cb1-32"><a href="#cb1-32"></a>  <span class="kw">&lt;li&gt;</span></span>
-<span id="cb1-33"><a href="#cb1-33"></a>    <span class="kw">&lt;span</span><span class="ot"> class=</span><span class="st">&quot;post-meta&quot;</span><span class="kw">&gt;</span>$date$<span class="kw">&lt;/span&gt;</span></span>
-<span id="cb1-34"><a href="#cb1-34"></a>    <span class="kw">&lt;a</span><span class="ot"> class=</span><span class="st">&quot;post-link&quot;</span><span class="ot"> href=</span><span class="st">&quot;$url$&quot;</span><span class="kw">&gt;</span>$title$<span class="kw">&lt;/a&gt;</span></span>
-<span id="cb1-35"><a href="#cb1-35"></a>  <span class="kw">&lt;/li&gt;</span></span>
-<span id="cb1-36"><a href="#cb1-36"></a>$endfor$</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="co">&lt;!-- 比較 : 上 Jekyll 下 Hakyll --&gt;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="co">&lt;!-- HTMLの挿入 --&gt;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a>{% include header.html %}</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a>$partial(&quot;includes/header.html&quot;)$</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a><span class="co">&lt;!-- 制御構文 if --&gt;</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a>{% if page.title %}</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true"></a>  {{ page.title | escape }}</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true"></a>{% else %}</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true"></a>  {{ site.title | escape }}</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true"></a>{% endif %}</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true"></a>$if(title)$</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true"></a>  $title$</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true"></a>$else$</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true"></a>  $site_title$</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true"></a>$endif$</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true"></a></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true"></a><span class="co">&lt;!-- 制御構文 for --&gt;</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true"></a></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true"></a>{% for post in site.posts %}</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true"></a>  <span class="kw">&lt;li&gt;</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true"></a>    <span class="kw">&lt;span</span><span class="ot"> class=</span><span class="st">&quot;post-meta&quot;</span><span class="kw">&gt;</span>{{ post.date | date: &quot;%b %-d, %Y&quot; }}<span class="kw">&lt;/span&gt;</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true"></a>    <span class="kw">&lt;a</span><span class="ot"> class=</span><span class="st">&quot;post-link&quot;</span><span class="ot"> href=</span><span class="st">&quot;{{ post.url | prepend: site.baseurl }}&quot;</span><span class="kw">&gt;</span>{{ post.title }}<span class="kw">&lt;/a&gt;</span>            </span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true"></a>  <span class="kw">&lt;/li&gt;</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true"></a>{% endfor %}</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true"></a></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true"></a>$for(posts)$</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true"></a>  <span class="kw">&lt;li&gt;</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true"></a>    <span class="kw">&lt;span</span><span class="ot"> class=</span><span class="st">&quot;post-meta&quot;</span><span class="kw">&gt;</span>$date$<span class="kw">&lt;/span&gt;</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true"></a>    <span class="kw">&lt;a</span><span class="ot"> class=</span><span class="st">&quot;post-link&quot;</span><span class="ot"> href=</span><span class="st">&quot;$url$&quot;</span><span class="kw">&gt;</span>$title$<span class="kw">&lt;/a&gt;</span></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true"></a>  <span class="kw">&lt;/li&gt;</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true"></a>$endfor$</span></code></pre></div>
 <p>基本的に <code>{{ ... }}</code> や <code>{% ... %}</code> が <code>$ ... $</code> に変わっただけのように見える．</p>
 <p>実は環境変数(みたいなの)の設定に関する点で大きく異なる．</p>
 <p>Jekyll の場合，環境変数はディレクトリやファイルから自動で設定される． 対して Hakyll は Haskell プログロムを書いて，自分で設定する必要がある．</p>
 <p>例えば，for 文の <code>posts</code> という変数には，Jekyll の場合 <code>_posts</code> ディレクトリがそのまま対応している． 対して，Hakyll の場合，<code>posts</code> ディレクトリが対応することを次のように <code>site.hs</code> に<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>書いてやる必要がある．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1"></a>create [<span class="st">&quot;archive.html&quot;</span>] <span class="op">$</span> <span class="kw">do</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a>  route idRoute</span>
-<span id="cb2-3"><a href="#cb2-3"></a>  compile <span class="op">$</span> <span class="kw">do</span></span>
-<span id="cb2-4"><a href="#cb2-4"></a>      posts <span class="ot">&lt;-</span> recentFirst <span class="op">=&lt;&lt;</span> loadAll <span class="st">&quot;posts/*&quot;</span> <span class="co">-- ココと</span></span>
-<span id="cb2-5"><a href="#cb2-5"></a>      <span class="kw">let</span> archiveCtx <span class="ot">=</span></span>
-<span id="cb2-6"><a href="#cb2-6"></a>            listField <span class="st">&quot;posts&quot;</span> postCtx (<span class="fu">return</span> posts) <span class="ot">`mappend`</span> <span class="co">-- ココ</span></span>
-<span id="cb2-7"><a href="#cb2-7"></a>            constField <span class="st">&quot;title&quot;</span> <span class="st">&quot;Archives&quot;</span> <span class="ot">`mappend`</span></span>
-<span id="cb2-8"><a href="#cb2-8"></a>            siteCtx <span class="ot">`mappend`</span></span>
-<span id="cb2-9"><a href="#cb2-9"></a>            defaultContext</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a>create [<span class="st">&quot;archive.html&quot;</span>] <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a>  route idRoute</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>  compile <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>      posts <span class="ot">&lt;-</span> recentFirst <span class="op">=&lt;&lt;</span> loadAll <span class="st">&quot;posts/*&quot;</span> <span class="co">-- ココと</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a>      <span class="kw">let</span> archiveCtx <span class="ot">=</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a>            listField <span class="st">&quot;posts&quot;</span> postCtx (<span class="fu">return</span> posts) <span class="ot">`mappend`</span> <span class="co">-- ココ</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a>            constField <span class="st">&quot;title&quot;</span> <span class="st">&quot;Archives&quot;</span> <span class="ot">`mappend`</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a>            siteCtx <span class="ot">`mappend`</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a>            defaultContext</span></code></pre></div>
 <p>要するに，Hakyll の方が面倒だが自由度が高いのだ．</p>
 <p>なので，この違いを手作業で食ってやる必要があった．</p>
 <h3 id="環境変数を定義">環境変数を定義</h3>
 <p>上述した通り，Hakyll の場合はどこでどんな環境変数を使えるかを自前で全部定義してあげる必要がある．</p>
 <p>Hakyll では <code>match</code> や <code>create</code> という関数を用いることで，HTML ファイルの <code>$ ... $</code> 中身を置き換えたり，ファイル自体を生成したりできる． 例えば，次のようなコードを書ける．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1"></a>match <span class="st">&quot;about.md&quot;</span> <span class="op">$</span> <span class="kw">do</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a>  route   <span class="op">$</span> setExtension <span class="st">&quot;html&quot;</span>                       <span class="co">-- (1)</span></span>
-<span id="cb3-3"><a href="#cb3-3"></a>  compile <span class="op">$</span> pandocCompiler                            <span class="co">-- (2)</span></span>
-<span id="cb3-4"><a href="#cb3-4"></a>    <span class="op">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/page.html&quot;</span>     </span>
-<span id="cb3-5"><a href="#cb3-5"></a>                (siteCtx <span class="ot">`mappend`</span> defaultContext)    <span class="co">-- (3)</span></span>
-<span id="cb3-6"><a href="#cb3-6"></a>    <span class="op">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/default.html&quot;</span></span>
-<span id="cb3-7"><a href="#cb3-7"></a>                (siteCtx <span class="ot">`mappend`</span> defaultContext)    <span class="co">-- (4)</span></span>
-<span id="cb3-8"><a href="#cb3-8"></a>    <span class="op">&gt;&gt;=</span> relativizeUrls                                <span class="co">-- (5)</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a>match <span class="st">&quot;about.md&quot;</span> <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a>  route   <span class="op">$</span> setExtension <span class="st">&quot;html&quot;</span>                       <span class="co">-- (1)</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>  compile <span class="op">$</span> pandocCompiler                            <span class="co">-- (2)</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>    <span class="op">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/page.html&quot;</span>     </span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a>                (siteCtx <span class="ot">`mappend`</span> defaultContext)    <span class="co">-- (3)</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a>    <span class="op">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/default.html&quot;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a>                (siteCtx <span class="ot">`mappend`</span> defaultContext)    <span class="co">-- (4)</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a>    <span class="op">&gt;&gt;=</span> relativizeUrls                                <span class="co">-- (5)</span></span></code></pre></div>
 <p>これは，<code>about.md</code> ファイルを使って <code>about.html</code> ファイルを生成している． 各手続きを説明すると</p>
 <ol type="1">
 <li>拡張子を <code>html</code> に変更</li>
@@ -169,10 +169,10 @@
 <li>の “変換した <code>about.html</code>” とは，pandoc でコンパイルまでしたものを指し，(4) のは (3) の挿入までのものを指している．</li>
 </ol>
 <p>ココでの，<code>siteCtx</code> や <code>defaultContext</code> が定義された環境変数のリストである． 例えば次のようなものが書ける．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1"></a><span class="ot">siteCtx ::</span> <span class="dt">Context</span> <span class="dt">String</span></span>
-<span id="cb4-2"><a href="#cb4-2"></a>siteCtx <span class="ot">=</span></span>
-<span id="cb4-3"><a href="#cb4-3"></a>  dateField <span class="st">&quot;site_title&quot;</span> <span class="st">&quot;My Haskell Blog&quot;</span> <span class="ot">`mappend`</span></span>
-<span id="cb4-4"><a href="#cb4-4"></a>  dateField <span class="st">&quot;github_account&quot;</span> <span class="st">&quot;ilovehaskell&quot;</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="ot">siteCtx ::</span> <span class="dt">Context</span> <span class="dt">String</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a>siteCtx <span class="ot">=</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a>  dateField <span class="st">&quot;site_title&quot;</span> <span class="st">&quot;My Haskell Blog&quot;</span> <span class="ot">`mappend`</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a>  dateField <span class="st">&quot;github_account&quot;</span> <span class="st">&quot;ilovehaskell&quot;</span></span></code></pre></div>
 <p>このような <code>siteCtx</code> を定義して，上記した <code>match "about.md" $ do ...</code> を実行すると，<code>page.html</code> や <code>default.html</code> 内の <code>$site_title$</code> が “My Haskell Blog” に置き換えられる．</p>
 <p>基本的にはこの点をチマチマと書き換えてた．</p>
 <h3 id="sass">sass</h3>
@@ -181,47 +181,47 @@
 <p>そのうち自動化したい．</p>
 <h3 id="日付と時間">日付と時間</h3>
 <p>Jekyll の場合，与えた環境変数(みたいなの)のフォーマットを後から指定できる．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">&lt;p</span><span class="ot"> class=</span><span class="st">&quot;post-meta&quot;</span><span class="kw">&gt;</span></span>
-<span id="cb5-2"><a href="#cb5-2"></a>  <span class="kw">&lt;time</span><span class="ot"> datetime=</span><span class="st">&quot;{{ page.date | date_to_xmlschema }}&quot;</span><span class="ot"> itemprop=</span><span class="st">&quot;datePublished&quot;</span><span class="kw">&gt;</span></span>
-<span id="cb5-3"><a href="#cb5-3"></a>    {{ page.date | date: &quot;%b %-d, %Y&quot; }}</span>
-<span id="cb5-4"><a href="#cb5-4"></a>  <span class="kw">&lt;/time&gt;</span></span>
-<span id="cb5-5"><a href="#cb5-5"></a>  ...</span>
-<span id="cb5-6"><a href="#cb5-6"></a><span class="kw">&lt;/p&gt;</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="kw">&lt;p</span><span class="ot"> class=</span><span class="st">&quot;post-meta&quot;</span><span class="kw">&gt;</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a>  <span class="kw">&lt;time</span><span class="ot"> datetime=</span><span class="st">&quot;{{ page.date | date_to_xmlschema }}&quot;</span><span class="ot"> itemprop=</span><span class="st">&quot;datePublished&quot;</span><span class="kw">&gt;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a>    {{ page.date | date: &quot;%b %-d, %Y&quot; }}</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a>  <span class="kw">&lt;/time&gt;</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a>  ...</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a><span class="kw">&lt;/p&gt;</span></span></code></pre></div>
 <p>2行目と3行目の <code>page.date</code> 形式を別々に指定している． Hakyll ではこれができない…(ちゃんと調べてないのでもしかしたらできるかも…)．</p>
 <p>フォーマットは <code>COntext String</code> を作ったときに指定する必要がある． そのため，今回は別々の変数を与えることにした．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1"></a><span class="ot">postCtx ::</span> <span class="dt">Context</span> <span class="dt">String</span></span>
-<span id="cb6-2"><a href="#cb6-2"></a>postCtx <span class="ot">=</span></span>
-<span id="cb6-3"><a href="#cb6-3"></a>  dateField <span class="st">&quot;time&quot;</span> <span class="st">&quot;%Y-%m-%dT%H:%M:%S%Z&quot;</span> <span class="ot">`mappend`</span></span>
-<span id="cb6-4"><a href="#cb6-4"></a>  dateField <span class="st">&quot;date&quot;</span> <span class="st">&quot;%b %-d, %Y&quot;</span> <span class="ot">`mappend`</span></span>
-<span id="cb6-5"><a href="#cb6-5"></a>  defaultContext</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="ot">postCtx ::</span> <span class="dt">Context</span> <span class="dt">String</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a>postCtx <span class="ot">=</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a>  dateField <span class="st">&quot;time&quot;</span> <span class="st">&quot;%Y-%m-%dT%H:%M:%S%Z&quot;</span> <span class="ot">`mappend`</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a>  dateField <span class="st">&quot;date&quot;</span> <span class="st">&quot;%b %-d, %Y&quot;</span> <span class="ot">`mappend`</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a>  defaultContext</span></code></pre></div>
 <h3 id="シンタックスハイライト">シンタックスハイライト</h3>
 <p>Jekyll のシンタックスハイライトを Haskell では使うことができなかった． たぶん Jekyll と Haskell の MD から HTML へのトランスレータが違うせいだろう． 現に，Jekyll の場合，下記のようにコードを書く．</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb7-1"><a href="#cb7-1"></a>{% highlight ruby %}</span>
-<span id="cb7-2"><a href="#cb7-2"></a>def print_hi(name)</span>
-<span id="cb7-3"><a href="#cb7-3"></a>  puts &quot;Hi, #{name}&quot;</span>
-<span id="cb7-4"><a href="#cb7-4"></a>end</span>
-<span id="cb7-5"><a href="#cb7-5"></a>print_hi('Tom')</span>
-<span id="cb7-6"><a href="#cb7-6"></a>#=&gt; prints 'Hi, Tom' to STDOUT.</span>
-<span id="cb7-7"><a href="#cb7-7"></a>{% endhighlight %}</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a>{% highlight ruby %}</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a>def print_hi(name)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a>  puts &quot;Hi, #{name}&quot;</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true"></a>end</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true"></a>print_hi('Tom')</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true"></a>#=&gt; prints 'Hi, Tom' to STDOUT.</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true"></a>{% endhighlight %}</span></code></pre></div>
 <p>仕方がないので， パッケージを使うことにした． このやり方は <del>このページ</del> を参照した． 残念ながら参考先のリンクが切れてしまった…</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1"></a>create [<span class="st">&quot;css/highlight.css&quot;</span>] <span class="op">$</span> <span class="kw">do</span></span>
-<span id="cb8-2"><a href="#cb8-2"></a>  route   idRoute</span>
-<span id="cb8-3"><a href="#cb8-3"></a>  compile <span class="op">$</span> makeItem (compressCss <span class="op">$</span> styleToCss pygments)</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a>create [<span class="st">&quot;css/highlight.css&quot;</span>] <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a>  route   idRoute</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a>  compile <span class="op">$</span> makeItem (compressCss <span class="op">$</span> styleToCss pygments)</span></code></pre></div>
 <p>こうすることで，Hakyll でも使える <code>highlight.css</code> を作れる．</p>
 <h3 id="config-ファイル">Config ファイル</h3>
 <p>Jekyll は <code>_config.yml</code> で書いた環境変数(みたいなの)を取り込むことができる．</p>
 <p>Hakyll も新しいバージョンでは <code>meta.html</code> でできんことも無いみたいだけど，良くわからないかったので，自前で組み込んだ．</p>
 <p>Haskell の Yaml パッケージは <a href="https://hackage.haskell.org/package/yaml">yaml</a> が有名だが，これは既に決まっている構造の Yaml ファイル読み込むことはできるが，構造が決まってない Yaml を文字列の連想配列みたいのに落とすことはできない． それを行うには <a href="http://hackage.haskell.org/package/HsSyck">HsSync</a> というパッケージをラップした <a href="https://hackage.haskell.org/package/yaml-light">yaml-light</a> を使う．</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb9-2"><a href="#cb9-2"></a>  configYaml <span class="ot">&lt;-</span> parseYamlFile <span class="st">&quot;config.yaml&quot;</span></span>
-<span id="cb9-3"><a href="#cb9-3"></a>  <span class="kw">let</span> siteCtx <span class="ot">=</span> mkSiteCtx configYaml</span>
-<span id="cb9-4"><a href="#cb9-4"></a>  hakyllWith config <span class="op">$</span> <span class="kw">do</span> <span class="op">...</span></span>
-<span id="cb9-5"><a href="#cb9-5"></a></span>
-<span id="cb9-6"><a href="#cb9-6"></a><span class="ot">mkSiteCtx ::</span> <span class="dt">YamlLight</span> <span class="ot">-&gt;</span> <span class="dt">Context</span> <span class="dt">String</span></span>
-<span id="cb9-7"><a href="#cb9-7"></a>mkSiteCtx <span class="ot">=</span> <span class="fu">mconcat</span> <span class="op">.</span> <span class="fu">fmap</span> mkSiteCtx' <span class="op">.</span> getTerminalsKeys</span>
-<span id="cb9-8"><a href="#cb9-8"></a>  <span class="kw">where</span></span>
-<span id="cb9-9"><a href="#cb9-9"></a>    mkSiteCtx' (val, [<span class="dt">YStr</span> key]) <span class="ot">=</span> constField (toString key) (toString val)</span>
-<span id="cb9-10"><a href="#cb9-10"></a>    mkSiteCtx' _ <span class="ot">=</span> <span class="fu">mempty</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a>  configYaml <span class="ot">&lt;-</span> parseYamlFile <span class="st">&quot;config.yaml&quot;</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true"></a>  <span class="kw">let</span> siteCtx <span class="ot">=</span> mkSiteCtx configYaml</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true"></a>  hakyllWith config <span class="op">$</span> <span class="kw">do</span> <span class="op">...</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true"></a><span class="ot">mkSiteCtx ::</span> <span class="dt">YamlLight</span> <span class="ot">-&gt;</span> <span class="dt">Context</span> <span class="dt">String</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true"></a>mkSiteCtx <span class="ot">=</span> <span class="fu">mconcat</span> <span class="op">.</span> <span class="fu">fmap</span> mkSiteCtx' <span class="op">.</span> getTerminalsKeys</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true"></a>  <span class="kw">where</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true"></a>    mkSiteCtx' (val, [<span class="dt">YStr</span> key]) <span class="ot">=</span> constField (toString key) (toString val)</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true"></a>    mkSiteCtx' _ <span class="ot">=</span> <span class="fu">mempty</span></span></code></pre></div>
 <h2 id="今後の展望">今後の展望</h2>
 <p>当分はこのデザインで使っていこうと思う． しかし，このデザインではタグやカテゴリによる管理ができないので対応させるか，対応した Jekyll のテーマをまた移植したい．</p>
 <h2 id="おしまい">おしまい</h2>

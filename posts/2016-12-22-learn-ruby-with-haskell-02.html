@@ -98,48 +98,48 @@
 <h3 id="型">型</h3>
 <p>まずは最も重要な型から．</p>
 <p>構文解析というのは文字列(<code>String</code>) から構文木に変換するもの． その１ではめんどくさくて文字列の木(<code>Tree String</code> ，<code>Tree</code> は <a href="https://hackage.haskell.org/package/containers">containers</a> から)を使ったが，後々に論理演算を使うためにも，ちゃんと和型を定義してく．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">data</span> <span class="dt">Value</span> <span class="ot">=</span> <span class="dt">SVal</span> {<span class="ot"> getString ::</span> <span class="dt">String</span> }</span>
-<span id="cb1-2"><a href="#cb1-2"></a>           <span class="op">|</span> <span class="dt">IVal</span> {<span class="ot"> getInt ::</span> <span class="dt">Int</span> }</span>
-<span id="cb1-3"><a href="#cb1-3"></a>           <span class="op">|</span> <span class="dt">BVal</span> {<span class="ot"> getBool ::</span> <span class="dt">Bool</span> }</span>
-<span id="cb1-4"><a href="#cb1-4"></a>           <span class="op">|</span> <span class="dt">UVal</span> ()</span>
-<span id="cb1-5"><a href="#cb1-5"></a>           <span class="kw">deriving</span> (<span class="dt">Eq</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">data</span> <span class="dt">Value</span> <span class="ot">=</span> <span class="dt">SVal</span> {<span class="ot"> getString ::</span> <span class="dt">String</span> }</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>           <span class="op">|</span> <span class="dt">IVal</span> {<span class="ot"> getInt ::</span> <span class="dt">Int</span> }</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a>           <span class="op">|</span> <span class="dt">BVal</span> {<span class="ot"> getBool ::</span> <span class="dt">Bool</span> }</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a>           <span class="op">|</span> <span class="dt">UVal</span> ()</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a>           <span class="kw">deriving</span> (<span class="dt">Eq</span>)</span></code></pre></div>
 <p>Ruby の場合は，このあたりをへテロリストで，なんも気にせず返せるのズルい．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb2-1"><a href="#cb2-1"></a>p(minruby_parse(<span class="st">&quot;4 * (56 / 7 + 8 + 9)&quot;</span>))</span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="co">#=&gt; [&quot;*&quot;, [[&quot;lit&quot;, 4], [&quot;+&quot;, [&quot;+&quot;, [&quot;/&quot;, [&quot;lit&quot;, 56], [&quot;lit&quot;, 7]], [&quot;lit&quot;, 8]], [&quot;lit&quot;, 9]]]]</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a>p(minruby_parse(<span class="st">&quot;4 * (56 / 7 + 8 + 9)&quot;</span>))</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="co">#=&gt; [&quot;*&quot;, [[&quot;lit&quot;, 4], [&quot;+&quot;, [&quot;+&quot;, [&quot;/&quot;, [&quot;lit&quot;, 56], [&quot;lit&quot;, 7]], [&quot;lit&quot;, 8]], [&quot;lit&quot;, 9]]]]</span></span></code></pre></div>
 <p>こっちは <code>Tree Value</code> 型を返す(イロイロ省略してる)．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1"></a><span class="op">&gt;</span> minrubyParse()</span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="dt">Node</span> <span class="st">&quot;*&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">4</span> []], <span class="dt">Node</span> <span class="st">&quot;+&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;/&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">56</span> []], <span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">7</span> []]], <span class="dt">Node</span> <span class="st">&quot;+&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">8</span> []], <span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">9</span> []]]]]</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="op">&gt;</span> minrubyParse()</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="dt">Node</span> <span class="st">&quot;*&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">4</span> []], <span class="dt">Node</span> <span class="st">&quot;+&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;/&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">56</span> []], <span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">7</span> []]], <span class="dt">Node</span> <span class="st">&quot;+&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">8</span> []], <span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">9</span> []]]]]</span></code></pre></div>
 <h3 id="パーサー">パーサー</h3>
 <p>長くなるので今回は割愛．</p>
 <h3 id="整数演算">整数演算</h3>
 <p>連載の方は第4回目で電卓を作り始めた(その前の回は Ruby 入門的なの)．</p>
 <p>自分もまずはそこから．</p>
 <p>意味解析はこんな感じ．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">import</span> <span class="dt">MinRuby</span> (<span class="dt">Value</span>(..), minrubyParse)</span>
-<span id="cb4-2"><a href="#cb4-2"></a><span class="kw">import</span> <span class="dt">Data.Tree</span> (<span class="dt">Tree</span>(..))</span>
-<span id="cb4-3"><a href="#cb4-3"></a></span>
-<span id="cb4-4"><a href="#cb4-4"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
-<span id="cb4-5"><a href="#cb4-5"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb4-6"><a href="#cb4-6"></a>  input <span class="ot">&lt;-</span> <span class="fu">getLine</span></span>
-<span id="cb4-7"><a href="#cb4-7"></a>  <span class="kw">let</span> tree <span class="ot">=</span> minrubyParse input</span>
-<span id="cb4-8"><a href="#cb4-8"></a>  <span class="fu">print</span> <span class="op">$</span> evaluate tree</span>
-<span id="cb4-9"><a href="#cb4-9"></a></span>
-<span id="cb4-10"><a href="#cb4-10"></a><span class="ot">evaluate ::</span> <span class="dt">Tree</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span></span>
-<span id="cb4-11"><a href="#cb4-11"></a>evaluate (<span class="dt">Node</span> v ls) <span class="ot">=</span></span>
-<span id="cb4-12"><a href="#cb4-12"></a>  <span class="kw">if</span> <span class="fu">null</span> ls <span class="kw">then</span> v <span class="kw">else</span></span>
-<span id="cb4-13"><a href="#cb4-13"></a>  <span class="kw">case</span> getString v <span class="kw">of</span></span>
-<span id="cb4-14"><a href="#cb4-14"></a>    <span class="st">&quot;lit&quot;</span> <span class="ot">-&gt;</span> evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span></span>
-<span id="cb4-15"><a href="#cb4-15"></a>    <span class="st">&quot;+&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="op">+</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb4-16"><a href="#cb4-16"></a>    <span class="st">&quot;-&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="op">-</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb4-17"><a href="#cb4-17"></a>    <span class="st">&quot;*&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="op">*</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb4-18"><a href="#cb4-18"></a>    <span class="st">&quot;/&quot;</span>   <span class="ot">-&gt;</span> intOp <span class="fu">div</span> (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb4-19"><a href="#cb4-19"></a>    <span class="st">&quot;%&quot;</span>   <span class="ot">-&gt;</span> intOp <span class="fu">mod</span> (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb4-20"><a href="#cb4-20"></a>    <span class="st">&quot;**&quot;</span>  <span class="ot">-&gt;</span> intOp (<span class="op">^</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb4-21"><a href="#cb4-21"></a>    _     <span class="ot">-&gt;</span> <span class="fu">error</span> (<span class="st">&quot;undefined : &quot;</span> <span class="ot">`mappend`</span> <span class="fu">show</span> v)</span>
-<span id="cb4-22"><a href="#cb4-22"></a></span>
-<span id="cb4-23"><a href="#cb4-23"></a><span class="ot">intOp ::</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span></span>
-<span id="cb4-24"><a href="#cb4-24"></a>intOp f (<span class="dt">IVal</span> v1) (<span class="dt">IVal</span> v2) <span class="ot">=</span> <span class="dt">IVal</span> <span class="op">$</span> f v1 v2</span>
-<span id="cb4-25"><a href="#cb4-25"></a>intOp f v1 v2 <span class="ot">=</span> <span class="fu">error</span> <span class="op">$</span> <span class="st">&quot;unmatch type &quot;</span> <span class="ot">`mappend`</span> <span class="fu">concatMap</span> <span class="fu">show</span> [v1,v2]</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">MinRuby</span> (<span class="dt">Value</span>(..), minrubyParse)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Data.Tree</span> (<span class="dt">Tree</span>(..))</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a>  input <span class="ot">&lt;-</span> <span class="fu">getLine</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a>  <span class="kw">let</span> tree <span class="ot">=</span> minrubyParse input</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a>  <span class="fu">print</span> <span class="op">$</span> evaluate tree</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true"></a><span class="ot">evaluate ::</span> <span class="dt">Tree</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true"></a>evaluate (<span class="dt">Node</span> v ls) <span class="ot">=</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true"></a>  <span class="kw">if</span> <span class="fu">null</span> ls <span class="kw">then</span> v <span class="kw">else</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true"></a>  <span class="kw">case</span> getString v <span class="kw">of</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true"></a>    <span class="st">&quot;lit&quot;</span> <span class="ot">-&gt;</span> evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true"></a>    <span class="st">&quot;+&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="op">+</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true"></a>    <span class="st">&quot;-&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="op">-</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true"></a>    <span class="st">&quot;*&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="op">*</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true"></a>    <span class="st">&quot;/&quot;</span>   <span class="ot">-&gt;</span> intOp <span class="fu">div</span> (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true"></a>    <span class="st">&quot;%&quot;</span>   <span class="ot">-&gt;</span> intOp <span class="fu">mod</span> (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true"></a>    <span class="st">&quot;**&quot;</span>  <span class="ot">-&gt;</span> intOp (<span class="op">^</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true"></a>    _     <span class="ot">-&gt;</span> <span class="fu">error</span> (<span class="st">&quot;undefined : &quot;</span> <span class="ot">`mappend`</span> <span class="fu">show</span> v)</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true"></a></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true"></a><span class="ot">intOp ::</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>) <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true"></a>intOp f (<span class="dt">IVal</span> v1) (<span class="dt">IVal</span> v2) <span class="ot">=</span> <span class="dt">IVal</span> <span class="op">$</span> f v1 v2</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true"></a>intOp f v1 v2 <span class="ot">=</span> <span class="fu">error</span> <span class="op">$</span> <span class="st">&quot;unmatch type &quot;</span> <span class="ot">`mappend`</span> <span class="fu">concatMap</span> <span class="fu">show</span> [v1,v2]</span></code></pre></div>
 <pre><code>$ stack exec -- interp
 4 * (56 / 7 + 8 + 9)
 100</code></pre>
@@ -147,130 +147,130 @@
 <p>ここからがめんどい．</p>
 <p>論理演算の型が多相的だからだ．</p>
 <p>今回は単純に型の差分を食ってくれる関数を書いた．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1"></a><span class="ot">{-# LANGUAGE Rank2Types #-}</span></span>
-<span id="cb6-2"><a href="#cb6-2"></a></span>
-<span id="cb6-3"><a href="#cb6-3"></a><span class="ot">boolOp ::</span> (<span class="kw">forall</span> a <span class="op">.</span> <span class="dt">Ord</span> a <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Bool</span>) <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span></span>
-<span id="cb6-4"><a href="#cb6-4"></a>boolOp f (<span class="dt">SVal</span> v1) (<span class="dt">SVal</span> v2) <span class="ot">=</span> <span class="dt">BVal</span> <span class="op">$</span> f v1 v2</span>
-<span id="cb6-5"><a href="#cb6-5"></a>boolOp f (<span class="dt">IVal</span> v1) (<span class="dt">IVal</span> v2) <span class="ot">=</span> <span class="dt">BVal</span> <span class="op">$</span> f v1 v2</span>
-<span id="cb6-6"><a href="#cb6-6"></a>boolOp f (<span class="dt">BVal</span> v1) (<span class="dt">BVal</span> v2) <span class="ot">=</span> <span class="dt">BVal</span> <span class="op">$</span> f v1 v2</span>
-<span id="cb6-7"><a href="#cb6-7"></a>boolOp _ _ _ <span class="ot">=</span> <span class="dt">BVal</span> <span class="dt">False</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="ot">{-# LANGUAGE Rank2Types #-}</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a><span class="ot">boolOp ::</span> (<span class="kw">forall</span> a <span class="op">.</span> <span class="dt">Ord</span> a <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Bool</span>) <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a>boolOp f (<span class="dt">SVal</span> v1) (<span class="dt">SVal</span> v2) <span class="ot">=</span> <span class="dt">BVal</span> <span class="op">$</span> f v1 v2</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a>boolOp f (<span class="dt">IVal</span> v1) (<span class="dt">IVal</span> v2) <span class="ot">=</span> <span class="dt">BVal</span> <span class="op">$</span> f v1 v2</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a>boolOp f (<span class="dt">BVal</span> v1) (<span class="dt">BVal</span> v2) <span class="ot">=</span> <span class="dt">BVal</span> <span class="op">$</span> f v1 v2</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true"></a>boolOp _ _ _ <span class="ot">=</span> <span class="dt">BVal</span> <span class="dt">False</span></span></code></pre></div>
 <p>勉強不足のため，あんまり詳しくは分かってないので説明は割愛するが，<a href="https://ja.wikibooks.org/wiki/Haskell/%E5%AD%98%E5%9C%A8%E9%87%8F%E5%8C%96%E3%81%95%E3%82%8C%E3%81%9F%E5%9E%8B">このページ</a>の技術を使ってる．</p>
 <p>鍵となるのは1引数目の型 <code>forall a . Ord a =&gt; a -&gt; a -&gt; Bool</code> ． <code>String</code>，<code>Int</code>，<code>Bool</code> に対する別々の型の論理演算を共通の形で利用するためには，このように書いて，いわゆる存在型を使う必要がある．</p>
 <p>で，これを使って <code>evaluate</code> を拡張する．</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1"></a><span class="ot">evaluate ::</span> <span class="dt">Tree</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span></span>
-<span id="cb7-2"><a href="#cb7-2"></a>evaluate (<span class="dt">Node</span> v ls) <span class="ot">=</span></span>
-<span id="cb7-3"><a href="#cb7-3"></a>  <span class="kw">if</span> <span class="fu">null</span> ls <span class="kw">then</span> v <span class="kw">else</span></span>
-<span id="cb7-4"><a href="#cb7-4"></a>  <span class="kw">case</span> getString v <span class="kw">of</span></span>
-<span id="cb7-5"><a href="#cb7-5"></a>    <span class="st">&quot;lit&quot;</span> <span class="ot">-&gt;</span> evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span></span>
-<span id="cb7-6"><a href="#cb7-6"></a>    <span class="st">&quot;+&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="op">+</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb7-7"><a href="#cb7-7"></a>    <span class="st">&quot;-&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="op">-</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb7-8"><a href="#cb7-8"></a>    <span class="st">&quot;*&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="op">*</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb7-9"><a href="#cb7-9"></a>    <span class="st">&quot;/&quot;</span>   <span class="ot">-&gt;</span> intOp <span class="fu">div</span> (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb7-10"><a href="#cb7-10"></a>    <span class="st">&quot;%&quot;</span>   <span class="ot">-&gt;</span> intOp <span class="fu">mod</span> (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb7-11"><a href="#cb7-11"></a>    <span class="st">&quot;**&quot;</span>  <span class="ot">-&gt;</span> intOp (<span class="op">^</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb7-12"><a href="#cb7-12"></a>    <span class="st">&quot;&lt;&quot;</span>   <span class="ot">-&gt;</span> boolOp (<span class="op">&lt;</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb7-13"><a href="#cb7-13"></a>    <span class="st">&quot;&lt;=&quot;</span>  <span class="ot">-&gt;</span> boolOp (<span class="op">&lt;=</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb7-14"><a href="#cb7-14"></a>    <span class="st">&quot;==&quot;</span>  <span class="ot">-&gt;</span> boolOp (<span class="op">==</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb7-15"><a href="#cb7-15"></a>    <span class="st">&quot;!=&quot;</span>  <span class="ot">-&gt;</span> boolOp (<span class="op">/=</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb7-16"><a href="#cb7-16"></a>    <span class="st">&quot;&gt;&quot;</span>   <span class="ot">-&gt;</span> boolOp (<span class="op">&gt;</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb7-17"><a href="#cb7-17"></a>    <span class="st">&quot;&gt;=&quot;</span>  <span class="ot">-&gt;</span> boolOp (<span class="op">&gt;=</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb7-18"><a href="#cb7-18"></a>    _     <span class="ot">-&gt;</span> <span class="fu">error</span> (<span class="st">&quot;undefined : &quot;</span> <span class="ot">`mappend`</span> <span class="fu">show</span> v)</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a><span class="ot">evaluate ::</span> <span class="dt">Tree</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a>evaluate (<span class="dt">Node</span> v ls) <span class="ot">=</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a>  <span class="kw">if</span> <span class="fu">null</span> ls <span class="kw">then</span> v <span class="kw">else</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true"></a>  <span class="kw">case</span> getString v <span class="kw">of</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true"></a>    <span class="st">&quot;lit&quot;</span> <span class="ot">-&gt;</span> evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true"></a>    <span class="st">&quot;+&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="op">+</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true"></a>    <span class="st">&quot;-&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="op">-</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true"></a>    <span class="st">&quot;*&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="op">*</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true"></a>    <span class="st">&quot;/&quot;</span>   <span class="ot">-&gt;</span> intOp <span class="fu">div</span> (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true"></a>    <span class="st">&quot;%&quot;</span>   <span class="ot">-&gt;</span> intOp <span class="fu">mod</span> (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true"></a>    <span class="st">&quot;**&quot;</span>  <span class="ot">-&gt;</span> intOp (<span class="op">^</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true"></a>    <span class="st">&quot;&lt;&quot;</span>   <span class="ot">-&gt;</span> boolOp (<span class="op">&lt;</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true"></a>    <span class="st">&quot;&lt;=&quot;</span>  <span class="ot">-&gt;</span> boolOp (<span class="op">&lt;=</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true"></a>    <span class="st">&quot;==&quot;</span>  <span class="ot">-&gt;</span> boolOp (<span class="op">==</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true"></a>    <span class="st">&quot;!=&quot;</span>  <span class="ot">-&gt;</span> boolOp (<span class="op">/=</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true"></a>    <span class="st">&quot;&gt;&quot;</span>   <span class="ot">-&gt;</span> boolOp (<span class="op">&gt;</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true"></a>    <span class="st">&quot;&gt;=&quot;</span>  <span class="ot">-&gt;</span> boolOp (<span class="op">&gt;=</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span>) (evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true"></a>    _     <span class="ot">-&gt;</span> <span class="fu">error</span> (<span class="st">&quot;undefined : &quot;</span> <span class="ot">`mappend`</span> <span class="fu">show</span> v)</span></code></pre></div>
 <h3 id="複文と標準出力">複文と標準出力</h3>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1"></a><span class="op">&gt;</span> minrubyParse <span class="st">&quot;1+2\n3*4&quot;</span></span>
-<span id="cb8-2"><a href="#cb8-2"></a><span class="dt">Node</span> <span class="st">&quot;stmt&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;+&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">1</span> []], <span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">2</span> []]], <span class="dt">Node</span> <span class="st">&quot;*&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">3</span> []], <span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">4</span> []]]]</span>
-<span id="cb8-3"><a href="#cb8-3"></a><span class="op">&gt;</span> minrubyParse <span class="st">&quot;p(1+2)&quot;</span></span>
-<span id="cb8-4"><a href="#cb8-4"></a><span class="dt">Node</span> <span class="st">&quot;func_call&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;p&quot;</span> [], <span class="dt">Node</span> <span class="st">&quot;+&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">1</span> []], <span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">2</span> []]]]</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a><span class="op">&gt;</span> minrubyParse <span class="st">&quot;1+2\n3*4&quot;</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a><span class="dt">Node</span> <span class="st">&quot;stmt&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;+&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">1</span> []], <span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">2</span> []]], <span class="dt">Node</span> <span class="st">&quot;*&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">3</span> []], <span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">4</span> []]]]</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a><span class="op">&gt;</span> minrubyParse <span class="st">&quot;p(1+2)&quot;</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a><span class="dt">Node</span> <span class="st">&quot;func_call&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;p&quot;</span> [], <span class="dt">Node</span> <span class="st">&quot;+&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">1</span> []], <span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">2</span> []]]]</span></code></pre></div>
 <p>問題は標準出力の方． Haskell は IO がつらい． まぁ，Applicative のおかげで大木は変更しなくてよいのだが．</p>
 <p>明示的に撮り歩かう必要があるので型を変更する．</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">import</span> <span class="dt">MinRuby</span></span>
-<span id="cb9-2"><a href="#cb9-2"></a></span>
-<span id="cb9-3"><a href="#cb9-3"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
-<span id="cb9-4"><a href="#cb9-4"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb9-5"><a href="#cb9-5"></a>  input <span class="ot">&lt;-</span> minrubyLoad</span>
-<span id="cb9-6"><a href="#cb9-6"></a>  <span class="kw">let</span> tree <span class="ot">=</span> minrubyParse input</span>
-<span id="cb9-7"><a href="#cb9-7"></a>  evaluate tree</span>
-<span id="cb9-8"><a href="#cb9-8"></a>  <span class="fu">return</span> ()</span>
-<span id="cb9-9"><a href="#cb9-9"></a></span>
-<span id="cb9-10"><a href="#cb9-10"></a><span class="ot">evaluate ::</span> <span class="dt">Tree</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Value</span></span>
-<span id="cb9-11"><a href="#cb9-11"></a>evaluate (<span class="dt">Node</span> v ls) <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb9-12"><a href="#cb9-12"></a>  <span class="kw">if</span> <span class="fu">null</span> ls <span class="kw">then</span> <span class="fu">return</span> v <span class="kw">else</span></span>
-<span id="cb9-13"><a href="#cb9-13"></a>  <span class="kw">case</span> getString v <span class="kw">of</span></span>
-<span id="cb9-14"><a href="#cb9-14"></a>    <span class="st">&quot;func_call&quot;</span> <span class="ot">-&gt;</span> <span class="dt">UVal</span> <span class="op">&lt;$&gt;</span> (<span class="fu">print</span> <span class="op">=&lt;&lt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">1</span>))</span>
-<span id="cb9-15"><a href="#cb9-15"></a>    <span class="st">&quot;stmt&quot;</span> <span class="ot">-&gt;</span> foldM (<span class="fu">const</span> evaluate) (<span class="dt">UVal</span> ()) ls</span>
-<span id="cb9-16"><a href="#cb9-16"></a>    <span class="st">&quot;lit&quot;</span> <span class="ot">-&gt;</span> evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span></span>
-<span id="cb9-17"><a href="#cb9-17"></a>    <span class="st">&quot;+&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="op">+</span>) <span class="op">&lt;$&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">0</span>) <span class="op">&lt;*&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb9-18"><a href="#cb9-18"></a>    <span class="st">&quot;-&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="op">-</span>) <span class="op">&lt;$&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">0</span>) <span class="op">&lt;*&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb9-19"><a href="#cb9-19"></a>    <span class="op">...</span></span>
-<span id="cb9-20"><a href="#cb9-20"></a>    _     <span class="ot">-&gt;</span> <span class="fu">error</span> (<span class="st">&quot;undefined : &quot;</span> <span class="ot">`mappend`</span> <span class="fu">show</span> v)</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">MinRuby</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true"></a>  input <span class="ot">&lt;-</span> minrubyLoad</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true"></a>  <span class="kw">let</span> tree <span class="ot">=</span> minrubyParse input</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true"></a>  evaluate tree</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true"></a>  <span class="fu">return</span> ()</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true"></a><span class="ot">evaluate ::</span> <span class="dt">Tree</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Value</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true"></a>evaluate (<span class="dt">Node</span> v ls) <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true"></a>  <span class="kw">if</span> <span class="fu">null</span> ls <span class="kw">then</span> <span class="fu">return</span> v <span class="kw">else</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true"></a>  <span class="kw">case</span> getString v <span class="kw">of</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true"></a>    <span class="st">&quot;func_call&quot;</span> <span class="ot">-&gt;</span> <span class="dt">UVal</span> <span class="op">&lt;$&gt;</span> (<span class="fu">print</span> <span class="op">=&lt;&lt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">1</span>))</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true"></a>    <span class="st">&quot;stmt&quot;</span> <span class="ot">-&gt;</span> foldM (<span class="fu">const</span> evaluate) (<span class="dt">UVal</span> ()) ls</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true"></a>    <span class="st">&quot;lit&quot;</span> <span class="ot">-&gt;</span> evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true"></a>    <span class="st">&quot;+&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="op">+</span>) <span class="op">&lt;$&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">0</span>) <span class="op">&lt;*&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true"></a>    <span class="st">&quot;-&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="op">-</span>) <span class="op">&lt;$&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">0</span>) <span class="op">&lt;*&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true"></a>    <span class="op">...</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true"></a>    _     <span class="ot">-&gt;</span> <span class="fu">error</span> (<span class="st">&quot;undefined : &quot;</span> <span class="ot">`mappend`</span> <span class="fu">show</span> v)</span></code></pre></div>
 <p><code>func_call</code> の処理は，連載に習ってとりあえず標準出力にしている．</p>
 <h3 id="変数">変数</h3>
 <p>変数と値をマッピングした，環境(Environment)を定義し，状態として持ちまわす．</p>
 <p>連想配列には <a href="https://hackage.haskell.org/package/hashmap">hashmap</a> ライブラリを，状態型クラスには <a href="https://hackage.haskell.org/package/mtl">mtl</a> を使う．</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">import</span> <span class="dt">Control.Monad.State</span> (<span class="dt">StateT</span>)</span>
-<span id="cb10-2"><a href="#cb10-2"></a><span class="kw">import</span> <span class="dt">Data.HashMap</span> (<span class="dt">Map</span>)</span>
-<span id="cb10-3"><a href="#cb10-3"></a></span>
-<span id="cb10-4"><a href="#cb10-4"></a><span class="kw">type</span> <span class="dt">Env</span> <span class="ot">=</span> <span class="dt">Map</span> <span class="dt">String</span> <span class="dt">Value</span></span>
-<span id="cb10-5"><a href="#cb10-5"></a><span class="kw">type</span> <span class="dt">Eval</span> a <span class="ot">=</span> <span class="dt">StateT</span> <span class="dt">Env</span> <span class="dt">IO</span> a</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Control.Monad.State</span> (<span class="dt">StateT</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Data.HashMap</span> (<span class="dt">Map</span>)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">Env</span> <span class="ot">=</span> <span class="dt">Map</span> <span class="dt">String</span> <span class="dt">Value</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">Eval</span> a <span class="ot">=</span> <span class="dt">StateT</span> <span class="dt">Env</span> <span class="dt">IO</span> a</span></code></pre></div>
 <p>構文木は</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1"></a><span class="op">&gt;</span> minrubyParse <span class="st">&quot;x = 1&quot;</span></span>
-<span id="cb11-2"><a href="#cb11-2"></a><span class="dt">Node</span> <span class="st">&quot;var_assign&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;x&quot;</span> [], <span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">1</span>[]]]</span>
-<span id="cb11-3"><a href="#cb11-3"></a><span class="op">&gt;</span> minrubyParse <span class="st">&quot;x&quot;</span></span>
-<span id="cb11-4"><a href="#cb11-4"></a><span class="dt">Node</span> <span class="st">&quot;var_ref&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;x&quot;</span> []]</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true"></a><span class="op">&gt;</span> minrubyParse <span class="st">&quot;x = 1&quot;</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true"></a><span class="dt">Node</span> <span class="st">&quot;var_assign&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;x&quot;</span> [], <span class="dt">Node</span> <span class="st">&quot;lit&quot;</span> [<span class="dt">Node</span> <span class="dv">1</span>[]]]</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true"></a><span class="op">&gt;</span> minrubyParse <span class="st">&quot;x&quot;</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true"></a><span class="dt">Node</span> <span class="st">&quot;var_ref&quot;</span> [<span class="dt">Node</span> <span class="st">&quot;x&quot;</span> []]</span></code></pre></div>
 <p>もともと IO を使ってたおかげで，あんまりもとのコードは書き換えなくて済む．</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">import</span> <span class="dt">Control.Monad</span> (join, foldM)</span>
-<span id="cb12-2"><a href="#cb12-2"></a><span class="kw">import</span> <span class="dt">Control.Monad.State.Strict</span> (<span class="dt">StateT</span>, evalStateT, modify, gets)</span>
-<span id="cb12-3"><a href="#cb12-3"></a><span class="kw">import</span> <span class="dt">Control.Monad.Trans</span> (lift)</span>
-<span id="cb12-4"><a href="#cb12-4"></a><span class="kw">import</span> <span class="dt">Data.HashMap</span> (<span class="dt">Map</span>, empty, insert, findWithDefault)</span>
-<span id="cb12-5"><a href="#cb12-5"></a></span>
-<span id="cb12-6"><a href="#cb12-6"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
-<span id="cb12-7"><a href="#cb12-7"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb12-8"><a href="#cb12-8"></a>  input <span class="ot">&lt;-</span> minrubyLoad</span>
-<span id="cb12-9"><a href="#cb12-9"></a>  <span class="kw">let</span> tree <span class="ot">=</span> minrubyParse input</span>
-<span id="cb12-10"><a href="#cb12-10"></a>  evalStateT (evaluate tree) empty</span>
-<span id="cb12-11"><a href="#cb12-11"></a>  <span class="fu">return</span> ()</span>
-<span id="cb12-12"><a href="#cb12-12"></a></span>
-<span id="cb12-13"><a href="#cb12-13"></a><span class="ot">evaluate ::</span> <span class="dt">Tree</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Eval</span> <span class="dt">Value</span></span>
-<span id="cb12-14"><a href="#cb12-14"></a>evaluate (<span class="dt">Node</span> v ls) <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb12-15"><a href="#cb12-15"></a>  <span class="kw">if</span> <span class="fu">null</span> ls <span class="kw">then</span> <span class="fu">return</span> v <span class="kw">else</span></span>
-<span id="cb12-16"><a href="#cb12-16"></a>  <span class="kw">case</span> getString v <span class="kw">of</span></span>
-<span id="cb12-17"><a href="#cb12-17"></a>    <span class="st">&quot;var_assign&quot;</span> <span class="ot">-&gt;</span> join <span class="op">$</span> assign <span class="op">&lt;$&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">0</span>) <span class="op">&lt;*&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb12-18"><a href="#cb12-18"></a>    <span class="st">&quot;var_ref&quot;</span> <span class="ot">-&gt;</span> refer <span class="op">=&lt;&lt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">0</span>)</span>
-<span id="cb12-19"><a href="#cb12-19"></a>    <span class="st">&quot;func_call&quot;</span> <span class="ot">-&gt;</span> <span class="dt">UVal</span> <span class="op">&lt;$&gt;</span> (lift <span class="op">.</span> <span class="fu">print</span> <span class="op">=&lt;&lt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">1</span>))</span>
-<span id="cb12-20"><a href="#cb12-20"></a>    <span class="st">&quot;stmt&quot;</span> <span class="ot">-&gt;</span> foldM (<span class="fu">const</span> evaluate) (<span class="dt">UVal</span> ()) ls</span>
-<span id="cb12-21"><a href="#cb12-21"></a>    <span class="st">&quot;lit&quot;</span> <span class="ot">-&gt;</span> evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span></span>
-<span id="cb12-22"><a href="#cb12-22"></a>    <span class="st">&quot;+&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="op">+</span>) <span class="op">&lt;$&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">0</span>) <span class="op">&lt;*&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb12-23"><a href="#cb12-23"></a>    <span class="st">&quot;-&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="op">-</span>) <span class="op">&lt;$&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">0</span>) <span class="op">&lt;*&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">1</span>)</span>
-<span id="cb12-24"><a href="#cb12-24"></a>    <span class="op">...</span></span>
-<span id="cb12-25"><a href="#cb12-25"></a>    _     <span class="ot">-&gt;</span> <span class="fu">error</span> (<span class="st">&quot;undefined : &quot;</span> <span class="ot">`mappend`</span> <span class="fu">show</span> v)</span>
-<span id="cb12-26"><a href="#cb12-26"></a></span>
-<span id="cb12-27"><a href="#cb12-27"></a><span class="ot">assign ::</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Eval</span> <span class="dt">Value</span></span>
-<span id="cb12-28"><a href="#cb12-28"></a>assign k v <span class="ot">=</span> modify (insert (getString k) v) <span class="op">*&gt;</span> <span class="fu">return</span> v</span>
-<span id="cb12-29"><a href="#cb12-29"></a></span>
-<span id="cb12-30"><a href="#cb12-30"></a><span class="ot">refer ::</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Eval</span> <span class="dt">Value</span></span>
-<span id="cb12-31"><a href="#cb12-31"></a>refer k <span class="ot">=</span> gets <span class="op">$</span> findWithDefault emassage (getString k)</span>
-<span id="cb12-32"><a href="#cb12-32"></a>  <span class="kw">where</span></span>
-<span id="cb12-33"><a href="#cb12-33"></a>    emassage <span class="ot">=</span> <span class="fu">error</span> <span class="op">$</span> <span class="st">&quot;undefined : &quot;</span> <span class="ot">`mappend`</span> getString k</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Control.Monad</span> (join, foldM)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Control.Monad.State.Strict</span> (<span class="dt">StateT</span>, evalStateT, modify, gets)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Control.Monad.Trans</span> (lift)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Data.HashMap</span> (<span class="dt">Map</span>, empty, insert, findWithDefault)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true"></a></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true"></a>  input <span class="ot">&lt;-</span> minrubyLoad</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true"></a>  <span class="kw">let</span> tree <span class="ot">=</span> minrubyParse input</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true"></a>  evalStateT (evaluate tree) empty</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true"></a>  <span class="fu">return</span> ()</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true"></a></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true"></a><span class="ot">evaluate ::</span> <span class="dt">Tree</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Eval</span> <span class="dt">Value</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true"></a>evaluate (<span class="dt">Node</span> v ls) <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true"></a>  <span class="kw">if</span> <span class="fu">null</span> ls <span class="kw">then</span> <span class="fu">return</span> v <span class="kw">else</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true"></a>  <span class="kw">case</span> getString v <span class="kw">of</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true"></a>    <span class="st">&quot;var_assign&quot;</span> <span class="ot">-&gt;</span> join <span class="op">$</span> assign <span class="op">&lt;$&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">0</span>) <span class="op">&lt;*&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true"></a>    <span class="st">&quot;var_ref&quot;</span> <span class="ot">-&gt;</span> refer <span class="op">=&lt;&lt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">0</span>)</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true"></a>    <span class="st">&quot;func_call&quot;</span> <span class="ot">-&gt;</span> <span class="dt">UVal</span> <span class="op">&lt;$&gt;</span> (lift <span class="op">.</span> <span class="fu">print</span> <span class="op">=&lt;&lt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">1</span>))</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true"></a>    <span class="st">&quot;stmt&quot;</span> <span class="ot">-&gt;</span> foldM (<span class="fu">const</span> evaluate) (<span class="dt">UVal</span> ()) ls</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true"></a>    <span class="st">&quot;lit&quot;</span> <span class="ot">-&gt;</span> evaluate <span class="op">$</span> ls <span class="op">!!</span> <span class="dv">0</span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true"></a>    <span class="st">&quot;+&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="op">+</span>) <span class="op">&lt;$&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">0</span>) <span class="op">&lt;*&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true"></a>    <span class="st">&quot;-&quot;</span>   <span class="ot">-&gt;</span> intOp (<span class="op">-</span>) <span class="op">&lt;$&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">0</span>) <span class="op">&lt;*&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">1</span>)</span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true"></a>    <span class="op">...</span></span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true"></a>    _     <span class="ot">-&gt;</span> <span class="fu">error</span> (<span class="st">&quot;undefined : &quot;</span> <span class="ot">`mappend`</span> <span class="fu">show</span> v)</span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true"></a></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true"></a><span class="ot">assign ::</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Eval</span> <span class="dt">Value</span></span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true"></a>assign k v <span class="ot">=</span> modify (insert (getString k) v) <span class="op">*&gt;</span> <span class="fu">return</span> v</span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true"></a></span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true"></a><span class="ot">refer ::</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Eval</span> <span class="dt">Value</span></span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true"></a>refer k <span class="ot">=</span> gets <span class="op">$</span> findWithDefault emassage (getString k)</span>
+<span id="cb12-32"><a href="#cb12-32" aria-hidden="true"></a>  <span class="kw">where</span></span>
+<span id="cb12-33"><a href="#cb12-33" aria-hidden="true"></a>    emassage <span class="ot">=</span> <span class="fu">error</span> <span class="op">$</span> <span class="st">&quot;undefined : &quot;</span> <span class="ot">`mappend`</span> getString k</span></code></pre></div>
 <p><code>assign</code> のとこ，<code>join</code> 使って無理やり畳み込んでる． なんかいい方法ないのかしら…</p>
 <h3 id="条件分岐">条件分岐</h3>
 <p>そもそも，パースがうまくいかない． <code>Node "if" [bexp, exp1, exp2]</code> といった感じに返ってくるが，<code>exp1</code> や <code>exp2</code> に複文が書けない． 難しい…</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1"></a><span class="ot">evaluate ::</span> <span class="dt">Tree</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Eval</span> <span class="dt">Value</span></span>
-<span id="cb13-2"><a href="#cb13-2"></a>evaluate (<span class="dt">Node</span> v ls) <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb13-3"><a href="#cb13-3"></a>  <span class="kw">if</span> <span class="fu">null</span> ls <span class="kw">then</span> <span class="fu">return</span> v <span class="kw">else</span></span>
-<span id="cb13-4"><a href="#cb13-4"></a>  <span class="kw">case</span> getString v <span class="kw">of</span></span>
-<span id="cb13-5"><a href="#cb13-5"></a>    <span class="st">&quot;if&quot;</span>   <span class="ot">-&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">0</span>) <span class="op">&gt;&gt;=</span></span>
-<span id="cb13-6"><a href="#cb13-6"></a>                \b <span class="ot">-&gt;</span> evaluate <span class="op">$</span> <span class="kw">if</span> getBool b <span class="kw">then</span> ls <span class="op">!!</span> <span class="dv">1</span> <span class="kw">else</span> ls <span class="op">!!</span> <span class="dv">2</span></span>
-<span id="cb13-7"><a href="#cb13-7"></a>    <span class="op">...</span></span>
-<span id="cb13-8"><a href="#cb13-8"></a>    _     <span class="ot">-&gt;</span> <span class="fu">error</span> (<span class="st">&quot;undefined : &quot;</span> <span class="ot">`mappend`</span> <span class="fu">show</span> v)</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true"></a><span class="ot">evaluate ::</span> <span class="dt">Tree</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Eval</span> <span class="dt">Value</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true"></a>evaluate (<span class="dt">Node</span> v ls) <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true"></a>  <span class="kw">if</span> <span class="fu">null</span> ls <span class="kw">then</span> <span class="fu">return</span> v <span class="kw">else</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true"></a>  <span class="kw">case</span> getString v <span class="kw">of</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true"></a>    <span class="st">&quot;if&quot;</span>   <span class="ot">-&gt;</span> evaluate (ls <span class="op">!!</span> <span class="dv">0</span>) <span class="op">&gt;&gt;=</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true"></a>                \b <span class="ot">-&gt;</span> evaluate <span class="op">$</span> <span class="kw">if</span> getBool b <span class="kw">then</span> ls <span class="op">!!</span> <span class="dv">1</span> <span class="kw">else</span> ls <span class="op">!!</span> <span class="dv">2</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true"></a>    <span class="op">...</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true"></a>    _     <span class="ot">-&gt;</span> <span class="fu">error</span> (<span class="st">&quot;undefined : &quot;</span> <span class="ot">`mappend`</span> <span class="fu">show</span> v)</span></code></pre></div>
 <p>Haskell って，if式を綺麗に書けないんだよなぁ． 参考演算子をデフォで入れてくれればいいのに．</p>
 <h2 id="実行">実行</h2>
 <p>一応，こういう Ruby コードは実行できる．</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb14-1"><a href="#cb14-1"></a>x = <span class="dv">1</span></span>
-<span id="cb14-2"><a href="#cb14-2"></a>y = x + <span class="dv">1</span></span>
-<span id="cb14-3"><a href="#cb14-3"></a><span class="kw">if</span> <span class="dv">0</span> == <span class="dv">0</span></span>
-<span id="cb14-4"><a href="#cb14-4"></a>  p(y)</span>
-<span id="cb14-5"><a href="#cb14-5"></a><span class="kw">else</span></span>
-<span id="cb14-6"><a href="#cb14-6"></a>  p(x)</span>
-<span id="cb14-7"><a href="#cb14-7"></a><span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true"></a>x = <span class="dv">1</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true"></a>y = x + <span class="dv">1</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true"></a><span class="kw">if</span> <span class="dv">0</span> == <span class="dv">0</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true"></a>  p(y)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true"></a><span class="kw">else</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true"></a>  p(x)</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true"></a><span class="kw">end</span></span></code></pre></div>
 <pre><code>&gt;stack exec -- interp test.rb
 2</code></pre>
 <h2 id="おしまい">おしまい</h2>

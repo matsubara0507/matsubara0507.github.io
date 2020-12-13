@@ -107,69 +107,69 @@
 <li><a href="http://qiita.com/soundTricker/items/43267609a870fc9c7453">Slack BotをGASでいい感じで書くためのライブラリを作った - Qiita</a></li>
 </ul>
 <p>こんな感じ</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">function</span> <span class="fu">doPost</span>(e) {</span>
-<span id="cb1-2"><a href="#cb1-2"></a>  <span class="kw">var</span> prop <span class="op">=</span> PropertiesService<span class="op">.</span><span class="fu">getScriptProperties</span>()<span class="op">.</span><span class="fu">getProperties</span>()<span class="op">;</span></span>
-<span id="cb1-3"><a href="#cb1-3"></a></span>
-<span id="cb1-4"><a href="#cb1-4"></a>  <span class="cf">if</span> (prop<span class="op">.</span><span class="at">VERIFY_TOKEN</span> <span class="op">!=</span> e<span class="op">.</span><span class="at">parameter</span><span class="op">.</span><span class="at">token</span>) {</span>
-<span id="cb1-5"><a href="#cb1-5"></a>    <span class="cf">throw</span> <span class="kw">new</span> <span class="bu">Error</span>(<span class="st">'invalid token.'</span>)<span class="op">;</span></span>
-<span id="cb1-6"><a href="#cb1-6"></a>  }</span>
-<span id="cb1-7"><a href="#cb1-7"></a></span>
-<span id="cb1-8"><a href="#cb1-8"></a>  <span class="co">/* for Slack */</span></span>
-<span id="cb1-9"><a href="#cb1-9"></a>  <span class="kw">var</span> slackApp <span class="op">=</span> SlackApp<span class="op">.</span><span class="fu">create</span>(prop<span class="op">.</span><span class="at">SLACK_API_TOKEN</span>)<span class="op">;</span></span>
-<span id="cb1-10"><a href="#cb1-10"></a></span>
-<span id="cb1-11"><a href="#cb1-11"></a>  <span class="kw">const</span> BOT_NAME <span class="op">=</span> <span class="st">'gunmer'</span><span class="op">;</span></span>
-<span id="cb1-12"><a href="#cb1-12"></a>  <span class="kw">const</span> BOT_ICON <span class="op">=</span> <span class="st">'http://drive.google.com/uc?export=view&amp;id='</span> <span class="op">+</span> prop<span class="op">.</span><span class="at">ICON_ID</span><span class="op">;</span></span>
-<span id="cb1-13"><a href="#cb1-13"></a>  <span class="kw">var</span> option <span class="op">=</span> { <span class="dt">username</span> <span class="op">:</span> BOT_NAME<span class="op">,</span> <span class="dt">icon_url</span> <span class="op">:</span> BOT_ICON<span class="op">,</span> <span class="dt">link_names</span> <span class="op">:</span> <span class="dv">1</span> }<span class="op">;</span></span>
-<span id="cb1-14"><a href="#cb1-14"></a>  <span class="kw">var</span> channelName <span class="op">=</span> e<span class="op">.</span><span class="at">parameter</span><span class="op">.</span><span class="at">channel_name</span><span class="op">;</span></span>
-<span id="cb1-15"><a href="#cb1-15"></a></span>
-<span id="cb1-16"><a href="#cb1-16"></a>  Logger<span class="op">.</span><span class="fu">log</span>(slackApp<span class="op">.</span><span class="fu">postMessage</span>(channelName<span class="op">,</span> <span class="st">'just a moment...'</span><span class="op">,</span> option))<span class="op">;</span></span>
-<span id="cb1-17"><a href="#cb1-17"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">function</span> <span class="fu">doPost</span>(e) {</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>  <span class="kw">var</span> prop <span class="op">=</span> PropertiesService<span class="op">.</span><span class="fu">getScriptProperties</span>()<span class="op">.</span><span class="fu">getProperties</span>()<span class="op">;</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a>  <span class="cf">if</span> (prop<span class="op">.</span><span class="at">VERIFY_TOKEN</span> <span class="op">!=</span> e<span class="op">.</span><span class="at">parameter</span><span class="op">.</span><span class="at">token</span>) {</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a>    <span class="cf">throw</span> <span class="kw">new</span> <span class="bu">Error</span>(<span class="st">'invalid token.'</span>)<span class="op">;</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a>  }</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>  <span class="co">/* for Slack */</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a>  <span class="kw">var</span> slackApp <span class="op">=</span> SlackApp<span class="op">.</span><span class="fu">create</span>(prop<span class="op">.</span><span class="at">SLACK_API_TOKEN</span>)<span class="op">;</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true"></a>  <span class="kw">const</span> BOT_NAME <span class="op">=</span> <span class="st">'gunmer'</span><span class="op">;</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true"></a>  <span class="kw">const</span> BOT_ICON <span class="op">=</span> <span class="st">'http://drive.google.com/uc?export=view&amp;id='</span> <span class="op">+</span> prop<span class="op">.</span><span class="at">ICON_ID</span><span class="op">;</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true"></a>  <span class="kw">var</span> option <span class="op">=</span> { <span class="dt">username</span> <span class="op">:</span> BOT_NAME<span class="op">,</span> <span class="dt">icon_url</span> <span class="op">:</span> BOT_ICON<span class="op">,</span> <span class="dt">link_names</span> <span class="op">:</span> <span class="dv">1</span> }<span class="op">;</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true"></a>  <span class="kw">var</span> channelName <span class="op">=</span> e<span class="op">.</span><span class="at">parameter</span><span class="op">.</span><span class="at">channel_name</span><span class="op">;</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true"></a>  Logger<span class="op">.</span><span class="fu">log</span>(slackApp<span class="op">.</span><span class="fu">postMessage</span>(channelName<span class="op">,</span> <span class="st">'just a moment...'</span><span class="op">,</span> option))<span class="op">;</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true"></a>}</span></code></pre></div>
 <p>ちなみに，<code>doPost</code> 関数を呼び出す関数を用意して，テストではそいつを実行するとデバッグがはかどる．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">function</span> <span class="fu">test</span>() {</span>
-<span id="cb2-2"><a href="#cb2-2"></a>  <span class="kw">var</span> prop <span class="op">=</span> PropertiesService<span class="op">.</span><span class="fu">getScriptProperties</span>()<span class="op">.</span><span class="fu">getProperties</span>()<span class="op">;</span></span>
-<span id="cb2-3"><a href="#cb2-3"></a>  <span class="kw">var</span> e <span class="op">=</span> {</span>
-<span id="cb2-4"><a href="#cb2-4"></a>    <span class="dt">parameter</span><span class="op">:</span> {</span>
-<span id="cb2-5"><a href="#cb2-5"></a>      <span class="dt">token</span><span class="op">:</span> prop<span class="op">.</span><span class="at">VERIFY_TOKEN</span><span class="op">,</span></span>
-<span id="cb2-6"><a href="#cb2-6"></a>      <span class="dt">text</span><span class="op">:</span> <span class="st">'update?'</span><span class="op">,</span></span>
-<span id="cb2-7"><a href="#cb2-7"></a>      <span class="dt">channel_name</span><span class="op">:</span> <span class="st">'bot-test'</span></span>
-<span id="cb2-8"><a href="#cb2-8"></a>    }</span>
-<span id="cb2-9"><a href="#cb2-9"></a>  }</span>
-<span id="cb2-10"><a href="#cb2-10"></a>  doPost(e)<span class="op">;</span></span>
-<span id="cb2-11"><a href="#cb2-11"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="kw">function</span> <span class="fu">test</span>() {</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a>  <span class="kw">var</span> prop <span class="op">=</span> PropertiesService<span class="op">.</span><span class="fu">getScriptProperties</span>()<span class="op">.</span><span class="fu">getProperties</span>()<span class="op">;</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>  <span class="kw">var</span> e <span class="op">=</span> {</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>    <span class="dt">parameter</span><span class="op">:</span> {</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a>      <span class="dt">token</span><span class="op">:</span> prop<span class="op">.</span><span class="at">VERIFY_TOKEN</span><span class="op">,</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a>      <span class="dt">text</span><span class="op">:</span> <span class="st">'update?'</span><span class="op">,</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a>      <span class="dt">channel_name</span><span class="op">:</span> <span class="st">'bot-test'</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a>    }</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a>  }</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a>  <span class="fu">doPost</span>(e)<span class="op">;</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a>}</span></code></pre></div>
 <h3 id="gas-で-github-api">GAS で GitHub API</h3>
 <p>GitHub に任意のコミットを出すためには，GitHub API の <a href="https://developer.github.com/v3/git">Git Data</a> を使う．</p>
 <p>GitHub API を GAS で簡単に扱うために昔作った<a href="https://github.com/matsubara0507/gasdump/tree/githubapi/GitHubAPI">ライブラリ</a>があるので，コレを使えば良い(ググったら他にも<a href="https://github.com/soundTricker/gas-github">あった</a>けど，Git Data は未実装っぽい)． 昔のオレ Good job !</p>
 <p>使い方については<a href="https://matsubara0507.github.io/posts/2017-05-03-make-githubapi-lib-for-gas.html">昔書いた記事</a>を参考にして．</p>
 <p>取りあえずは，こんな感じにすれば準備OK．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">function</span> <span class="fu">doPost</span>(e) {</span>
-<span id="cb3-2"><a href="#cb3-2"></a>  <span class="kw">var</span> prop <span class="op">=</span> PropertiesService<span class="op">.</span><span class="fu">getScriptProperties</span>()<span class="op">.</span><span class="fu">getProperties</span>()<span class="op">;</span></span>
-<span id="cb3-3"><a href="#cb3-3"></a></span>
-<span id="cb3-4"><a href="#cb3-4"></a>  <span class="cf">if</span> (prop<span class="op">.</span><span class="at">VERIFY_TOKEN</span> <span class="op">!=</span> e<span class="op">.</span><span class="at">parameter</span><span class="op">.</span><span class="at">token</span>) {</span>
-<span id="cb3-5"><a href="#cb3-5"></a>    <span class="cf">throw</span> <span class="kw">new</span> <span class="bu">Error</span>(<span class="st">'invalid token.'</span>)<span class="op">;</span></span>
-<span id="cb3-6"><a href="#cb3-6"></a>  }</span>
-<span id="cb3-7"><a href="#cb3-7"></a></span>
-<span id="cb3-8"><a href="#cb3-8"></a>  <span class="co">/* push empty commit */</span>  </span>
-<span id="cb3-9"><a href="#cb3-9"></a>  <span class="kw">var</span> option <span class="op">=</span> { <span class="dt">name</span><span class="op">:</span> prop<span class="op">.</span><span class="at">NAME</span><span class="op">,</span> <span class="dt">email</span><span class="op">:</span> prop<span class="op">.</span><span class="at">EMAIL</span> }<span class="op">;</span></span>
-<span id="cb3-10"><a href="#cb3-10"></a>  <span class="kw">var</span> github <span class="op">=</span> <span class="kw">new</span> GitHubAPI<span class="op">.</span><span class="fu">GitHubAPI</span>(prop<span class="op">.</span><span class="at">GITHUB_USERNAME</span><span class="op">,</span> prop<span class="op">.</span><span class="at">GITHUB_REPO</span><span class="op">,</span> prop<span class="op">.</span><span class="at">GITHUB_TOKEN</span><span class="op">,</span> option)<span class="op">;</span></span>
-<span id="cb3-11"><a href="#cb3-11"></a></span>
-<span id="cb3-12"><a href="#cb3-12"></a>  <span class="op">...</span></span>
-<span id="cb3-13"><a href="#cb3-13"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="kw">function</span> <span class="fu">doPost</span>(e) {</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a>  <span class="kw">var</span> prop <span class="op">=</span> PropertiesService<span class="op">.</span><span class="fu">getScriptProperties</span>()<span class="op">.</span><span class="fu">getProperties</span>()<span class="op">;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>  <span class="cf">if</span> (prop<span class="op">.</span><span class="at">VERIFY_TOKEN</span> <span class="op">!=</span> e<span class="op">.</span><span class="at">parameter</span><span class="op">.</span><span class="at">token</span>) {</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a>    <span class="cf">throw</span> <span class="kw">new</span> <span class="bu">Error</span>(<span class="st">'invalid token.'</span>)<span class="op">;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a>  }</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a>  <span class="co">/* push empty commit */</span>  </span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a>  <span class="kw">var</span> option <span class="op">=</span> { <span class="dt">name</span><span class="op">:</span> prop<span class="op">.</span><span class="at">NAME</span><span class="op">,</span> <span class="dt">email</span><span class="op">:</span> prop<span class="op">.</span><span class="at">EMAIL</span> }<span class="op">;</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a>  <span class="kw">var</span> github <span class="op">=</span> <span class="kw">new</span> GitHubAPI<span class="op">.</span><span class="fu">GitHubAPI</span>(prop<span class="op">.</span><span class="at">GITHUB_USERNAME</span><span class="op">,</span> prop<span class="op">.</span><span class="at">GITHUB_REPO</span><span class="op">,</span> prop<span class="op">.</span><span class="at">GITHUB_TOKEN</span><span class="op">,</span> option)<span class="op">;</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a>  <span class="op">...</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a>}</span></code></pre></div>
 <p>Commit 用の名前(<code>prop.NAME</code>)とメールアドレス(<code>prop.EMAIL</code>)に，API を叩くためのトークン(<code>prop.GITHUB_TOKEN</code>)と，API を叩く先のアカウント(<code>prop.GITHUB_USERNAME</code>)とリポジトリ(<code>prop.GITHUB_REPO</code>)をスクリプトのプロパティに定義してある(直接書いたって良い)．</p>
 <h3 id="空コミットを出す">空コミットを出す</h3>
 <p>Git は <code>blob</code>, <code>tree</code>, <code>commit</code>， <code>tag</code> の4つのオブジェクト(ファイル)を使って過去のデータなどを管理している． <code>blob</code> はファイルそのもの，<code>tree</code> はディレクトリ構造，<code>commit</code> と <code>tag</code> は名前の通りコミットとタグを表している． また，どの種類のオブジェクトも SHA-1 ハッシュ値で名前付けされている．</p>
 <p>コミットを出すには，<code>commit</code> オブジェクトを作る必要があり，その中には親コミットと <code>tree</code> オブジェクトの SHA-1 が書かれている． では空コミットの場合はどうなるのか． 簡単だ，<strong>親コミットと同じ <code>tree</code> オブジェクトを中に書けばよい</strong> ．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">function</span> <span class="fu">doPost</span>(e) {</span>
-<span id="cb4-2"><a href="#cb4-2"></a>  <span class="op">...</span></span>
-<span id="cb4-3"><a href="#cb4-3"></a>  <span class="kw">var</span> github <span class="op">=</span> <span class="kw">new</span> GitHubAPI<span class="op">.</span><span class="fu">GitHubAPI</span>(prop<span class="op">.</span><span class="at">GITHUB_USERNAME</span><span class="op">,</span> prop<span class="op">.</span><span class="at">GITHUB_REPO</span><span class="op">,</span> prop<span class="op">.</span><span class="at">GITHUB_TOKEN</span><span class="op">,</span> option)<span class="op">;</span></span>
-<span id="cb4-4"><a href="#cb4-4"></a></span>
-<span id="cb4-5"><a href="#cb4-5"></a>  <span class="kw">var</span> branch <span class="op">=</span> github<span class="op">.</span><span class="fu">getBranch</span>(prop<span class="op">.</span><span class="at">GITHUB_BRANCH</span>)<span class="op">;</span></span>
-<span id="cb4-6"><a href="#cb4-6"></a>  <span class="kw">var</span> pcommit <span class="op">=</span> branch[<span class="st">'commit'</span>][<span class="st">'sha'</span>]<span class="op">;</span></span>
-<span id="cb4-7"><a href="#cb4-7"></a>  <span class="kw">var</span> ptree <span class="op">=</span> branch[<span class="st">'commit'</span>][<span class="st">'commit'</span>][<span class="st">'tree'</span>][<span class="st">'sha'</span>]<span class="op">;</span></span>
-<span id="cb4-8"><a href="#cb4-8"></a>  <span class="kw">var</span> commit <span class="op">=</span> github<span class="op">.</span><span class="fu">createCommit</span>(<span class="st">'empty!'</span><span class="op">,</span> ptree<span class="op">,</span> pcommit)<span class="op">;</span></span>
-<span id="cb4-9"><a href="#cb4-9"></a>  github<span class="op">.</span><span class="fu">updateReference</span>(prop<span class="op">.</span><span class="at">GITHUB_BRANCH</span><span class="op">,</span> commit[<span class="st">'sha'</span>])</span>
-<span id="cb4-10"><a href="#cb4-10"></a></span>
-<span id="cb4-11"><a href="#cb4-11"></a>  <span class="op">...</span></span>
-<span id="cb4-12"><a href="#cb4-12"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="kw">function</span> <span class="fu">doPost</span>(e) {</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a>  <span class="op">...</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a>  <span class="kw">var</span> github <span class="op">=</span> <span class="kw">new</span> GitHubAPI<span class="op">.</span><span class="fu">GitHubAPI</span>(prop<span class="op">.</span><span class="at">GITHUB_USERNAME</span><span class="op">,</span> prop<span class="op">.</span><span class="at">GITHUB_REPO</span><span class="op">,</span> prop<span class="op">.</span><span class="at">GITHUB_TOKEN</span><span class="op">,</span> option)<span class="op">;</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a>  <span class="kw">var</span> branch <span class="op">=</span> github<span class="op">.</span><span class="fu">getBranch</span>(prop<span class="op">.</span><span class="at">GITHUB_BRANCH</span>)<span class="op">;</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a>  <span class="kw">var</span> pcommit <span class="op">=</span> branch[<span class="st">'commit'</span>][<span class="st">'sha'</span>]<span class="op">;</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a>  <span class="kw">var</span> ptree <span class="op">=</span> branch[<span class="st">'commit'</span>][<span class="st">'commit'</span>][<span class="st">'tree'</span>][<span class="st">'sha'</span>]<span class="op">;</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a>  <span class="kw">var</span> commit <span class="op">=</span> github<span class="op">.</span><span class="fu">createCommit</span>(<span class="st">'empty!'</span><span class="op">,</span> ptree<span class="op">,</span> pcommit)<span class="op">;</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a>  github<span class="op">.</span><span class="fu">updateReference</span>(prop<span class="op">.</span><span class="at">GITHUB_BRANCH</span><span class="op">,</span> commit[<span class="st">'sha'</span>])</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true"></a></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true"></a>  <span class="op">...</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true"></a>}</span></code></pre></div>
 <p>最後にしてるのは，ブランチ指しているコミットの更新である．</p>
 <h2 id="完成">完成</h2>
 <p><img src="../assets/re-adventar-slack-bot/adventar-bot-2.jpg" /></p>

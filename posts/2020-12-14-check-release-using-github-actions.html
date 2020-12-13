@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="外部ツールのバージョンアップを GitHub Actions で検知する" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+    <meta property="og:image" content="/assets/check-release-using-github-actions/pr.jpg" />
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        外部ツールのバージョンアップを GitHub Actions で検知する
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">外部ツールのバージョンアップを GitHub Actions で検知する</h1>
+    <p class="post-meta">
+      <time datetime="2020-12-14" itemprop="datePublished">
+        Dec 14, 2020
+      </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="../tags/GitHub-Actions.html">GitHub-Actions</a>
+      </div>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>GitHub Actions のアクションや Bazel ルールを書いたりすると，外部のアプリケーションのアップデートを検知したいときがしばしばあります． いろいろ試行錯誤した結果，GitHub Actions を使って実現することにしたので，本記事はそのメモ書きです．</p>
+<h1 id="section"></h1>
+<p>ちなみに，本記事は「<a href="https://qiita.com/advent-calendar/2020/github-actions">GitHub Actions Advent Calendar 2020</a>」の14日目の記事です．</p>
+<h2 id="github-actions-を設定する">GitHub Actions を設定する</h2>
+<p>実際に導入した PR がこちら：</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/rules_yq/pull/1">Add GitHub Action to check new yq version by matsubara0507 · Pull Request #1 · matsubara0507/rules_yq</a></li>
+</ul>
+<p><a href="https://github.com/mikefarah/yq">yq</a> と言うツールのリリースを検知しようとしている． ちなみに，最新のバージョンは中の処理のデフォルト値として利用している．</p>
+<h3 id="デフォルト値を取り出す">デフォルト値を取り出す</h3>
+<p>まずは，現在のデフォルトのバージョンを参照しやすいように別ファイル（yq/default.bzl）にしておく：</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a>YQ_DEFAULT_VERSION <span class="op">=</span> <span class="st">&quot;3.4.1&quot;</span></span></code></pre></div>
+<p>これを sed でいい感じに取り出して GitHub Actions の output に入れていく：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="at">  </span><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Build new version commit</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a><span class="at">    </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a><span class="at">      </span><span class="fu">DEFAULT_FILE_PATH</span><span class="kw">:</span><span class="at"> yq/default.bzl</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a><span class="at">    ...</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Set default version</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a><span class="at">      </span><span class="fu">id</span><span class="kw">:</span><span class="at"> default</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a><span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> echo &quot;::set-output name=version::$(sed -e s/YQ_DEFAULT_VERSION\ =\ //g $DEFAULT_FILE_PATH | sed -e s/\&quot;//g)&quot;</span></span></code></pre></div>
+<p><code>::set-output</code> というのは GitHub Actions の記法で， step 毎の結果を同じ job 間で共有するために使う．以降の step で <code>steps.default.outputs.version</code> という形で <code>sed</code> の結果を参照できるようになる．</p>
+<h3 id="最新のリリースバージョンを取り出す">最新のリリースバージョンを取り出す</h3>
+<p>最新のリリースは <a href="https://docs.github.com/en/free-pro-team@latest/rest/reference/repos#get-the-latest-release">GitHub のリリースから API</a> を使って取得する． API のレスポンスからバージョンの情報を <code>jq</code> でいい感じに取り出して，また output に入れておく：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="at">  </span><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Build new version commit</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a><span class="at">    </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a><span class="at">      </span><span class="fu">DEFAULT_FILE_PATH</span><span class="kw">:</span><span class="at"> yq/default.bzl</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a><span class="at">      </span><span class="fu">LATEST_LINK</span><span class="kw">:</span><span class="at"> https://api.github.com/repos/mikefarah/yq/releases/latest</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a><span class="at">    ...</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Set latest version</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a><span class="at">      </span><span class="fu">id</span><span class="kw">:</span><span class="at"> latest</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a><span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> echo &quot;::set-output name=version::$(curl -s $LATEST_LINK | jq .tag_name | sed -e s/\&quot;//g)&quot;</span></span></code></pre></div>
+<p>以降の step で <code>steps.latest.outputs.version</code> という形で <code>jq</code> の結果を参照できるようになる．</p>
+<h3 id="デフォルト値を更新する">デフォルト値を更新する</h3>
+<p>これら2つのバージョンが異なるときにだけデフォルト値を更新するようにする：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a><span class="at">  </span><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Build new version commit</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a><span class="at">    </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a><span class="at">      </span><span class="fu">DEFAULT_FILE_PATH</span><span class="kw">:</span><span class="at"> yq/default.bzl</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a><span class="at">      </span><span class="fu">LATEST_LINK</span><span class="kw">:</span><span class="at"> https://api.github.com/repos/mikefarah/yq/releases/latest</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a><span class="at">    ...</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Update new version default.bzl</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true"></a><span class="at">      </span><span class="fu">if</span><span class="kw">:</span><span class="at"> ${{ steps.latest.outputs.version != steps.default.outputs.version }}</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true"></a><span class="at">      </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true"></a><span class="at">        </span><span class="fu">NEW_VERSION</span><span class="kw">:</span><span class="at"> ${{ steps.latest.outputs.version }}</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true"></a><span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> echo &quot;YQ_DEFAULT_VERSION = \&quot;$NEW_VERSION\&quot;&quot; &gt; $DEFAULT_FILE_PATH    </span></span></code></pre></div>
+<p>ただ切り出しておいたファイルを上書きしているだけ．</p>
+<h3 id="prを作成する">PRを作成する</h3>
+<p><a href="https://github.com/peter-evans/create-pull-request">peter-evans/create-pull-request</a> という GitHub Actions を利用する：</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a><span class="at">  </span><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Build new version commit</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a><span class="at">    </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a><span class="at">      </span><span class="fu">DEFAULT_FILE_PATH</span><span class="kw">:</span><span class="at"> yq/default.bzl</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true"></a><span class="at">      </span><span class="fu">LATEST_LINK</span><span class="kw">:</span><span class="at"> https://api.github.com/repos/mikefarah/yq/releases/latest</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true"></a><span class="at">    ...</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Create Pull Request</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true"></a><span class="at">      </span><span class="fu">if</span><span class="kw">:</span><span class="at"> ${{ steps.latest.outputs.version != steps.default.outputs.version }}</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true"></a><span class="at">      </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> peter-evans/create-pull-request@v3.5.1</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true"></a><span class="at">        </span><span class="fu">token</span><span class="kw">:</span><span class="at"> ${{ secrets.GITHUB_TOKEN }}</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true"></a><span class="at">        </span><span class="fu">commit-message</span><span class="kw">:</span><span class="at"> </span><span class="st">'Feat: update default yq version'</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true"></a><span class="at">        </span><span class="fu">title</span><span class="kw">:</span><span class="at"> Release new yq version ${{ steps.latest.outputs.version }}</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true"></a><span class="fu">        body</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true"></a>         @matsubara0507</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true"></a>         - [x] update default version in yq</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true"></a>         - [ ] add new checksums to yq/toolchain.bzl</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true"></a>         - [ ] update documents (README, actions.yml)</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true"></a>         - [ ] update sample workflow</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true"></a><span class="at">        </span><span class="fu">labels</span><span class="kw">:</span><span class="at"> New yq Version</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true"></a><span class="at">        </span><span class="fu">branch</span><span class="kw">:</span><span class="at"> yq-version-${{ steps.latest.outputs.version }}</span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true"></a><span class="at">        </span><span class="fu">base</span><span class="kw">:</span><span class="at"> main</span><span class="co">  # 最近作ったリポジトリなので main がデフォルトブランチ</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true"></a><span class="at">        </span><span class="fu">draft</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co"> # ドラフトPRにしてくれる</span></span></code></pre></div>
+<p><code>body</code> のところに自分の GitHub アカウントをメンションしておくと，GitHub のスマホアプリとかで通知されて気付きやすい． こんな感じの PR が出来上がる：</p>
+<p><img src="../assets/check-release-using-github-actions/pr.jpg" /></p>
+<p>ちなみに，すでにブランチがある場合は PR が作成されない． また，PR を放置しているうちに新しいバージョンがリリースされた場合は，新しい PR がもう一個でき上がる．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>結構便利です．</p>
+  </div>
+
+  <footer class="post-footer">
+    <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button" data-show-count="false">Tweet</a>
+    <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+  </footer>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+  <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+    <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+      <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+    </a>
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>

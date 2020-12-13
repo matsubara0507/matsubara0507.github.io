@@ -91,55 +91,55 @@
 <p>で，別に本番導入したわけじゃ無いんですけど，とあるイベントで Drone CI を使いたかったので GCE 上に立てました． 本記事はそのメモ書きです．</p>
 <h2 id="drone-ci">Drone CI</h2>
 <p>Jenkins のような OSS な CI/CD プラットフォーム． 使い勝手的には TravisCI や CircleCI に近く、<code>.drone.yml</code> という設定ファイルにパイプラインを使って記述する:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> pipeline</span></span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="fu">steps</span><span class="kw">:</span></span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test</span></span>
-<span id="cb1-4"><a href="#cb1-4"></a><span class="at">  </span><span class="fu">image</span><span class="kw">:</span><span class="at"> node</span></span>
-<span id="cb1-5"><a href="#cb1-5"></a><span class="at">  </span><span class="fu">commands</span><span class="kw">:</span></span>
-<span id="cb1-6"><a href="#cb1-6"></a><span class="at">  </span><span class="kw">-</span><span class="at"> npm install</span></span>
-<span id="cb1-7"><a href="#cb1-7"></a><span class="at">  </span><span class="kw">-</span><span class="at"> npm test</span></span>
-<span id="cb1-8"><a href="#cb1-8"></a><span class="fu">services</span><span class="kw">:</span></span>
-<span id="cb1-9"><a href="#cb1-9"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> database</span></span>
-<span id="cb1-10"><a href="#cb1-10"></a><span class="at">  </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span id="cb1-11"><a href="#cb1-11"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span id="cb1-12"><a href="#cb1-12"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="dv">3306</span></span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> pipeline</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a><span class="at">  </span><span class="fu">image</span><span class="kw">:</span><span class="at"> node</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a><span class="at">  </span><span class="fu">commands</span><span class="kw">:</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a><span class="at">  </span><span class="kw">-</span><span class="at"> npm install</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a><span class="at">  </span><span class="kw">-</span><span class="at"> npm test</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> database</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a><span class="at">  </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="dv">3306</span></span></code></pre></div>
 <p>Go言語製で，Docker との親和性がかなり高いという特徴を持っている． また，<a href="https://cloud.drone.io/">Drone Cloud</a> というクラウドサービスも提供されているので，とりあえず試したい人はぜひ．</p>
 <h2 id="drone-on-gcp">Drone on GCP</h2>
 <p>Drone 自体は Docker で起動できる(<a href="https://docs.drone.io/installation">公式ドキュメント</a>)． docker-compose を次のように記述することで簡単に起動可能だ:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">'2'</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a></span>
-<span id="cb2-3"><a href="#cb2-3"></a><span class="fu">services</span><span class="kw">:</span></span>
-<span id="cb2-4"><a href="#cb2-4"></a><span class="at">  </span><span class="fu">drone</span><span class="kw">:</span></span>
-<span id="cb2-5"><a href="#cb2-5"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> drone/drone:1</span></span>
-<span id="cb2-6"><a href="#cb2-6"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span id="cb2-7"><a href="#cb2-7"></a><span class="at">      </span><span class="kw">-</span><span class="at"> 8000:80</span></span>
-<span id="cb2-8"><a href="#cb2-8"></a><span class="at">      </span><span class="kw">-</span><span class="at"> 443:443</span></span>
-<span id="cb2-9"><a href="#cb2-9"></a><span class="at">    </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span id="cb2-10"><a href="#cb2-10"></a><span class="at">      </span><span class="kw">-</span><span class="at"> /var/run/docker.sock:/var/run/docker.sock</span></span>
-<span id="cb2-11"><a href="#cb2-11"></a><span class="at">      </span><span class="kw">-</span><span class="at"> /var/lib/drone:/data</span></span>
-<span id="cb2-12"><a href="#cb2-12"></a><span class="at">    </span><span class="fu">restart</span><span class="kw">:</span><span class="at"> always</span></span>
-<span id="cb2-13"><a href="#cb2-13"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
-<span id="cb2-14"><a href="#cb2-14"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_GITHUB_SERVER=https://github.com</span></span>
-<span id="cb2-15"><a href="#cb2-15"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_GITHUB_CLIENT_ID=${DRONE_GITHUB_CLIENT}</span></span>
-<span id="cb2-16"><a href="#cb2-16"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_GITHUB_CLIENT_SECRET=${DRONE_GITHUB_SECRET}</span></span>
-<span id="cb2-17"><a href="#cb2-17"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_AGENTS_ENABLED=true</span></span>
-<span id="cb2-18"><a href="#cb2-18"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_RPC_SECRET=${DRONE_SECRET}</span></span>
-<span id="cb2-19"><a href="#cb2-19"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_SERVER_HOST=${DRONE_HOST}</span></span>
-<span id="cb2-20"><a href="#cb2-20"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_SERVER_PROTO=https</span></span>
-<span id="cb2-21"><a href="#cb2-21"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_TLS_AUTOCERT=true</span></span>
-<span id="cb2-22"><a href="#cb2-22"></a></span>
-<span id="cb2-23"><a href="#cb2-23"></a><span class="at">  </span><span class="fu">agent</span><span class="kw">:</span></span>
-<span id="cb2-24"><a href="#cb2-24"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> drone/agent:1</span></span>
-<span id="cb2-25"><a href="#cb2-25"></a><span class="at">    </span><span class="fu">restart</span><span class="kw">:</span><span class="at"> always</span></span>
-<span id="cb2-26"><a href="#cb2-26"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
-<span id="cb2-27"><a href="#cb2-27"></a><span class="at">      </span><span class="kw">-</span><span class="at"> drone</span></span>
-<span id="cb2-28"><a href="#cb2-28"></a><span class="at">    </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span id="cb2-29"><a href="#cb2-29"></a><span class="at">      </span><span class="kw">-</span><span class="at"> /var/run/docker.sock:/var/run/docker.sock</span></span>
-<span id="cb2-30"><a href="#cb2-30"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
-<span id="cb2-31"><a href="#cb2-31"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_RPC_SERVER=http://drone</span></span>
-<span id="cb2-32"><a href="#cb2-32"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_RPC_SECRET=${DRONE_SECRET}</span></span>
-<span id="cb2-33"><a href="#cb2-33"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_RUNNER_CAPACITY=2</span></span>
-<span id="cb2-34"><a href="#cb2-34"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_RUNNER_NAME=${HOSTNAME}</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">'2'</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a><span class="at">  </span><span class="fu">drone</span><span class="kw">:</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> drone/drone:1</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a><span class="at">      </span><span class="kw">-</span><span class="at"> 8000:80</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a><span class="at">      </span><span class="kw">-</span><span class="at"> 443:443</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a><span class="at">    </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a><span class="at">      </span><span class="kw">-</span><span class="at"> /var/run/docker.sock:/var/run/docker.sock</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a><span class="at">      </span><span class="kw">-</span><span class="at"> /var/lib/drone:/data</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true"></a><span class="at">    </span><span class="fu">restart</span><span class="kw">:</span><span class="at"> always</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_GITHUB_SERVER=https://github.com</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_GITHUB_CLIENT_ID=${DRONE_GITHUB_CLIENT}</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_GITHUB_CLIENT_SECRET=${DRONE_GITHUB_SECRET}</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_AGENTS_ENABLED=true</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_RPC_SECRET=${DRONE_SECRET}</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_SERVER_HOST=${DRONE_HOST}</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_SERVER_PROTO=https</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_TLS_AUTOCERT=true</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true"></a></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true"></a><span class="at">  </span><span class="fu">agent</span><span class="kw">:</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> drone/agent:1</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true"></a><span class="at">    </span><span class="fu">restart</span><span class="kw">:</span><span class="at"> always</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true"></a><span class="at">      </span><span class="kw">-</span><span class="at"> drone</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true"></a><span class="at">    </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true"></a><span class="at">      </span><span class="kw">-</span><span class="at"> /var/run/docker.sock:/var/run/docker.sock</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_RPC_SERVER=http://drone</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_RPC_SECRET=${DRONE_SECRET}</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_RUNNER_CAPACITY=2</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DRONE_RUNNER_NAME=${HOSTNAME}</span></span></code></pre></div>
 <p>(<a href="../posts/2019-01-05-docker-compose-up-drone-1-0.html">ローカルで試す話は前に書いた</a>)</p>
 <p>今回はこれを GCE 上でやることにした(GKE を試そうとも思ったが，まだ時期尚早って感じだったのでやめた)．</p>
 <h3 id="gcpでの準備">GCPでの準備</h3>

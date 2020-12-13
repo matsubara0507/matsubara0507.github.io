@@ -124,151 +124,151 @@
 <p>現に，OCaml ではファイル一枚を一つのモジュールにするらしい． つまり， <code>hoge.ml</code> というファイルは自動的に <code>Hoge</code> というモジュールになるらしい．</p>
 <p>その，モジュールの中にはモジュールも定義でき，それをサブモジュールと言うらしい．</p>
 <p>サブモジュールの定義の仕方と使い方は</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb1-1"><a href="#cb1-1"></a># <span class="kw">module</span> Hello = <span class="kw">struct</span></span>
-<span id="cb1-2"><a href="#cb1-2"></a>    <span class="kw">let</span> message = <span class="st">&quot;Hello&quot;</span></span>
-<span id="cb1-3"><a href="#cb1-3"></a>    <span class="kw">let</span> hello () = <span class="dt">print_endline</span> message</span>
-<span id="cb1-4"><a href="#cb1-4"></a>  <span class="kw">end</span> ;;</span>
-<span id="cb1-5"><a href="#cb1-5"></a><span class="kw">module</span> Hello : <span class="kw">sig</span> <span class="kw">val</span> message : <span class="dt">string</span> <span class="kw">val</span> hello : <span class="dt">unit</span> -&gt; <span class="dt">unit</span> <span class="kw">end</span></span>
-<span id="cb1-6"><a href="#cb1-6"></a></span>
-<span id="cb1-7"><a href="#cb1-7"></a># Hello.message ;;</span>
-<span id="cb1-8"><a href="#cb1-8"></a>- : <span class="dt">string</span> = <span class="st">&quot;Hello&quot;</span></span>
-<span id="cb1-9"><a href="#cb1-9"></a></span>
-<span id="cb1-10"><a href="#cb1-10"></a># Hello.hello () ;;</span>
-<span id="cb1-11"><a href="#cb1-11"></a>Hello</span>
-<span id="cb1-12"><a href="#cb1-12"></a>- : <span class="dt">unit</span> = ()</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a># <span class="kw">module</span> Hello = <span class="kw">struct</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>    <span class="kw">let</span> message = <span class="st">&quot;Hello&quot;</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a>    <span class="kw">let</span> hello () = <span class="dt">print_endline</span> message</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a>  <span class="kw">end</span> ;;</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a><span class="kw">module</span> Hello : <span class="kw">sig</span> <span class="kw">val</span> message : <span class="dt">string</span> <span class="kw">val</span> hello : <span class="dt">unit</span> -&gt; <span class="dt">unit</span> <span class="kw">end</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a># Hello.message ;;</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>- : <span class="dt">string</span> = <span class="st">&quot;Hello&quot;</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a># Hello.hello () ;;</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true"></a>Hello</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true"></a>- : <span class="dt">unit</span> = ()</span></code></pre></div>
 <h3 id="インターフェースによる使用記述部品化">インターフェースによる使用記述・部品化</h3>
 <p>2番のインターフェースはこんな感じに書ける．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb2-1"><a href="#cb2-1"></a># <span class="kw">module</span> Hello : <span class="kw">sig</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a>    <span class="kw">val</span> hello : <span class="dt">unit</span> -&gt; <span class="dt">unit</span></span>
-<span id="cb2-3"><a href="#cb2-3"></a>  <span class="kw">end</span> =</span>
-<span id="cb2-4"><a href="#cb2-4"></a>  <span class="kw">struct</span></span>
-<span id="cb2-5"><a href="#cb2-5"></a>    <span class="kw">let</span> message = <span class="st">&quot;Hello&quot;</span></span>
-<span id="cb2-6"><a href="#cb2-6"></a>    <span class="kw">let</span> hello () = <span class="dt">print_endline</span> message</span>
-<span id="cb2-7"><a href="#cb2-7"></a>  <span class="kw">end</span></span>
-<span id="cb2-8"><a href="#cb2-8"></a><span class="kw">module</span> Hello : <span class="kw">sig</span> <span class="kw">val</span> hello : <span class="dt">unit</span> -&gt; <span class="dt">unit</span> <span class="kw">end</span></span>
-<span id="cb2-9"><a href="#cb2-9"></a></span>
-<span id="cb2-10"><a href="#cb2-10"></a># Hello.hello () ;;</span>
-<span id="cb2-11"><a href="#cb2-11"></a>Hello</span>
-<span id="cb2-12"><a href="#cb2-12"></a>- : <span class="dt">unit</span> = ()</span>
-<span id="cb2-13"><a href="#cb2-13"></a></span>
-<span id="cb2-14"><a href="#cb2-14"></a># Hello.message ;;</span>
-<span id="cb2-15"><a href="#cb2-15"></a>Characters <span class="dv">0-13</span>:</span>
-<span id="cb2-16"><a href="#cb2-16"></a>  Hello.message ;;</span>
-<span id="cb2-17"><a href="#cb2-17"></a>  ^^^^^^^^^^^^^</span>
-<span id="cb2-18"><a href="#cb2-18"></a>Error: Unbound value Hello.message</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a># <span class="kw">module</span> Hello : <span class="kw">sig</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a>    <span class="kw">val</span> hello : <span class="dt">unit</span> -&gt; <span class="dt">unit</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>  <span class="kw">end</span> =</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>  <span class="kw">struct</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a>    <span class="kw">let</span> message = <span class="st">&quot;Hello&quot;</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a>    <span class="kw">let</span> hello () = <span class="dt">print_endline</span> message</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a>  <span class="kw">end</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a><span class="kw">module</span> Hello : <span class="kw">sig</span> <span class="kw">val</span> hello : <span class="dt">unit</span> -&gt; <span class="dt">unit</span> <span class="kw">end</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a># Hello.hello () ;;</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a>Hello</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true"></a>- : <span class="dt">unit</span> = ()</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true"></a># Hello.message ;;</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true"></a>Characters <span class="dv">0-13</span>:</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true"></a>  Hello.message ;;</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true"></a>  ^^^^^^^^^^^^^</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true"></a>Error: Unbound value Hello.message</span></code></pre></div>
 <p>上のようにインターフェースと実装を分けて書いたときインターフェースに書いた実装しか呼ぶことができない．</p>
 <h3 id="抽象型プライベート型-による隠蔽">抽象型・プライベート型(?) による隠蔽</h3>
 <p>モジュールのインターフェースには型も定義できる．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb3-1"><a href="#cb3-1"></a># <span class="kw">module</span> Nat : <span class="kw">sig</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a>    <span class="kw">type</span> t</span>
-<span id="cb3-3"><a href="#cb3-3"></a>    <span class="kw">val</span> zero : t</span>
-<span id="cb3-4"><a href="#cb3-4"></a>    <span class="kw">val</span> <span class="dt">succ</span> : t -&gt; t</span>
-<span id="cb3-5"><a href="#cb3-5"></a>  <span class="kw">end</span> =</span>
-<span id="cb3-6"><a href="#cb3-6"></a>  <span class="kw">struct</span></span>
-<span id="cb3-7"><a href="#cb3-7"></a>    <span class="kw">type</span> t = <span class="dt">int</span></span>
-<span id="cb3-8"><a href="#cb3-8"></a>    <span class="kw">let</span> zero = <span class="dv">0</span></span>
-<span id="cb3-9"><a href="#cb3-9"></a>    <span class="kw">let</span> <span class="dt">succ</span> n = n + <span class="dv">1</span></span>
-<span id="cb3-10"><a href="#cb3-10"></a>  <span class="kw">end</span></span>
-<span id="cb3-11"><a href="#cb3-11"></a><span class="kw">module</span> Nat : <span class="kw">sig</span> <span class="kw">type</span> t <span class="kw">val</span> zero : t <span class="kw">val</span> <span class="dt">succ</span> : t -&gt; t <span class="kw">end</span></span>
-<span id="cb3-12"><a href="#cb3-12"></a></span>
-<span id="cb3-13"><a href="#cb3-13"></a># Nat.zero ;;</span>
-<span id="cb3-14"><a href="#cb3-14"></a>- : Nat.t = &lt;abstr&gt;</span>
-<span id="cb3-15"><a href="#cb3-15"></a></span>
-<span id="cb3-16"><a href="#cb3-16"></a># Nat.<span class="dt">succ</span> Nat.zero ;;</span>
-<span id="cb3-17"><a href="#cb3-17"></a>- : Nat.t = &lt;abstr&gt;</span>
-<span id="cb3-18"><a href="#cb3-18"></a></span>
-<span id="cb3-19"><a href="#cb3-19"></a># Nat.<span class="dt">succ</span> <span class="dv">0</span> ;;</span>
-<span id="cb3-20"><a href="#cb3-20"></a>Characters <span class="dv">9-10</span>:</span>
-<span id="cb3-21"><a href="#cb3-21"></a>  Nat.<span class="dt">succ</span> <span class="dv">0</span> ;;</span>
-<span id="cb3-22"><a href="#cb3-22"></a>           ^</span>
-<span id="cb3-23"><a href="#cb3-23"></a>Error: This expression has <span class="kw">type</span> <span class="dt">int</span> but an expression was expected <span class="kw">of</span> <span class="kw">type</span></span>
-<span id="cb3-24"><a href="#cb3-24"></a>         Nat.t</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a># <span class="kw">module</span> Nat : <span class="kw">sig</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a>    <span class="kw">type</span> t</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>    <span class="kw">val</span> zero : t</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>    <span class="kw">val</span> <span class="dt">succ</span> : t -&gt; t</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a>  <span class="kw">end</span> =</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a>  <span class="kw">struct</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a>    <span class="kw">type</span> t = <span class="dt">int</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a>    <span class="kw">let</span> zero = <span class="dv">0</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a>    <span class="kw">let</span> <span class="dt">succ</span> n = n + <span class="dv">1</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a>  <span class="kw">end</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a><span class="kw">module</span> Nat : <span class="kw">sig</span> <span class="kw">type</span> t <span class="kw">val</span> zero : t <span class="kw">val</span> <span class="dt">succ</span> : t -&gt; t <span class="kw">end</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a># Nat.zero ;;</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true"></a>- : Nat.t = &lt;abstr&gt;</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true"></a></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true"></a># Nat.<span class="dt">succ</span> Nat.zero ;;</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true"></a>- : Nat.t = &lt;abstr&gt;</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true"></a></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true"></a># Nat.<span class="dt">succ</span> <span class="dv">0</span> ;;</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true"></a>Characters <span class="dv">9-10</span>:</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true"></a>  Nat.<span class="dt">succ</span> <span class="dv">0</span> ;;</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true"></a>           ^</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true"></a>Error: This expression has <span class="kw">type</span> <span class="dt">int</span> but an expression was expected <span class="kw">of</span> <span class="kw">type</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true"></a>         Nat.t</span></code></pre></div>
 <p>型 <code>t</code> の実装は完全に隠蔽されるため，実装的にはタダの <code>int</code> に過ぎないが，その互換性はなくなる． このときの型 <code>t</code> を抽象型とか存在型とか(プライベート型とか？)と言う．</p>
 <p>また，<code>module type</code> を使えば，続けて書く必要はない</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb4-1"><a href="#cb4-1"></a># <span class="kw">module</span> <span class="kw">type</span> Nat = <span class="kw">sig</span></span>
-<span id="cb4-2"><a href="#cb4-2"></a>    <span class="kw">type</span> t</span>
-<span id="cb4-3"><a href="#cb4-3"></a>    <span class="kw">val</span> zero : t</span>
-<span id="cb4-4"><a href="#cb4-4"></a>    <span class="kw">val</span> <span class="dt">succ</span> : t -&gt; t</span>
-<span id="cb4-5"><a href="#cb4-5"></a>  <span class="kw">end</span></span>
-<span id="cb4-6"><a href="#cb4-6"></a><span class="kw">module</span> <span class="kw">type</span> Nat = <span class="kw">sig</span> <span class="kw">type</span> t <span class="kw">val</span> zero : t <span class="kw">val</span> <span class="dt">succ</span> : t -&gt; t <span class="kw">end</span></span>
-<span id="cb4-7"><a href="#cb4-7"></a></span>
-<span id="cb4-8"><a href="#cb4-8"></a># <span class="kw">module</span> Nat : Nat = <span class="kw">struct</span></span>
-<span id="cb4-9"><a href="#cb4-9"></a>    <span class="kw">type</span> t = <span class="dt">int</span></span>
-<span id="cb4-10"><a href="#cb4-10"></a>    <span class="kw">let</span> zero = <span class="dv">0</span></span>
-<span id="cb4-11"><a href="#cb4-11"></a>    <span class="kw">let</span> <span class="dt">succ</span> n = n + <span class="dv">1</span></span>
-<span id="cb4-12"><a href="#cb4-12"></a>  <span class="kw">end</span></span>
-<span id="cb4-13"><a href="#cb4-13"></a><span class="kw">module</span> Nat : Nat</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a># <span class="kw">module</span> <span class="kw">type</span> Nat = <span class="kw">sig</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a>    <span class="kw">type</span> t</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a>    <span class="kw">val</span> zero : t</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a>    <span class="kw">val</span> <span class="dt">succ</span> : t -&gt; t</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a>  <span class="kw">end</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a><span class="kw">module</span> <span class="kw">type</span> Nat = <span class="kw">sig</span> <span class="kw">type</span> t <span class="kw">val</span> zero : t <span class="kw">val</span> <span class="dt">succ</span> : t -&gt; t <span class="kw">end</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a># <span class="kw">module</span> Nat : Nat = <span class="kw">struct</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a>    <span class="kw">type</span> t = <span class="dt">int</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true"></a>    <span class="kw">let</span> zero = <span class="dv">0</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true"></a>    <span class="kw">let</span> <span class="dt">succ</span> n = n + <span class="dv">1</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true"></a>  <span class="kw">end</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true"></a><span class="kw">module</span> Nat : Nat</span></code></pre></div>
 <h4 id="section"></h4>
 <p>また，これを利用すると幽霊型(ファントム型)を使うことができる．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb5-1"><a href="#cb5-1"></a># <span class="kw">module</span> Money : <span class="kw">sig</span></span>
-<span id="cb5-2"><a href="#cb5-2"></a>    <span class="kw">type</span> 'a t <span class="kw">constraint</span> 'a = [&lt; `Naked | `Taxed]</span>
-<span id="cb5-3"><a href="#cb5-3"></a>    <span class="kw">val</span> make : <span class="dt">float</span> -&gt; [`Naked] t</span>
-<span id="cb5-4"><a href="#cb5-4"></a>    <span class="kw">val</span> get : 'a t -&gt; <span class="dt">float</span></span>
-<span id="cb5-5"><a href="#cb5-5"></a>    <span class="kw">val</span> add : 'a t -&gt; 'a t -&gt; 'a t</span>
-<span id="cb5-6"><a href="#cb5-6"></a>    <span class="kw">val</span> tax : [`Naked] t -&gt; [`Taxed] t</span>
-<span id="cb5-7"><a href="#cb5-7"></a>  <span class="kw">end</span> =</span>
-<span id="cb5-8"><a href="#cb5-8"></a>  <span class="kw">struct</span></span>
-<span id="cb5-9"><a href="#cb5-9"></a>    <span class="kw">type</span> 'a t = <span class="dt">float</span> <span class="kw">constraint</span> 'a = [&lt; `Naked | `Taxed]</span>
-<span id="cb5-10"><a href="#cb5-10"></a>    <span class="kw">let</span> make x = x</span>
-<span id="cb5-11"><a href="#cb5-11"></a>    <span class="kw">let</span> get x = x</span>
-<span id="cb5-12"><a href="#cb5-12"></a>    <span class="kw">let</span> add x y = x +. y</span>
-<span id="cb5-13"><a href="#cb5-13"></a>    <span class="kw">let</span> tax x = x *. <span class="fl">1.08</span></span>
-<span id="cb5-14"><a href="#cb5-14"></a>  <span class="kw">end</span>  </span>
-<span id="cb5-15"><a href="#cb5-15"></a><span class="kw">module</span> Money :</span>
-<span id="cb5-16"><a href="#cb5-16"></a>  <span class="kw">sig</span></span>
-<span id="cb5-17"><a href="#cb5-17"></a>    <span class="kw">type</span> 'a t <span class="kw">constraint</span> 'a = [&lt; `Naked | `Taxed ]</span>
-<span id="cb5-18"><a href="#cb5-18"></a>    <span class="kw">val</span> make : <span class="dt">float</span> -&gt; [ `Naked ] t</span>
-<span id="cb5-19"><a href="#cb5-19"></a>    <span class="kw">val</span> get : [&lt; `Naked | `Taxed ] t -&gt; <span class="dt">float</span></span>
-<span id="cb5-20"><a href="#cb5-20"></a>    <span class="kw">val</span> add : ([&lt; `Naked | `Taxed ] <span class="kw">as</span> 'a) t -&gt; 'a t -&gt; 'a t</span>
-<span id="cb5-21"><a href="#cb5-21"></a>    <span class="kw">val</span> tax : [ `Naked ] t -&gt; [ `Taxed ] t</span>
-<span id="cb5-22"><a href="#cb5-22"></a>  <span class="kw">end</span></span>
-<span id="cb5-23"><a href="#cb5-23"></a></span>
-<span id="cb5-24"><a href="#cb5-24"></a># Money.add (Money.make <span class="fl">3.0</span>) (Money.make <span class="fl">4.0</span>) |&gt; Money.get ;;</span>
-<span id="cb5-25"><a href="#cb5-25"></a>- : <span class="dt">float</span> = <span class="dv">7</span>.</span>
-<span id="cb5-26"><a href="#cb5-26"></a></span>
-<span id="cb5-27"><a href="#cb5-27"></a># Money.add (Money.tax @@ Money.make <span class="fl">3.0</span>) (Money.tax @@ Money.make <span class="fl">4.0</span>) |&gt; Money.get ;;</span>
-<span id="cb5-28"><a href="#cb5-28"></a>- : <span class="dt">float</span> = <span class="fl">7.5600000000000005</span></span>
-<span id="cb5-29"><a href="#cb5-29"></a></span>
-<span id="cb5-30"><a href="#cb5-30"></a># Money.add (Money.tax @@ Money.make <span class="fl">3.0</span>) (Money.make <span class="fl">4.0</span>) |&gt; Money.get ;;</span>
-<span id="cb5-31"><a href="#cb5-31"></a>Characters <span class="dv">40-56</span>:</span>
-<span id="cb5-32"><a href="#cb5-32"></a>  Money.add (Money.tax @@ Money.make <span class="fl">3.0</span>) (Money.make <span class="fl">4.0</span>) |&gt; Money.get ;;</span>
-<span id="cb5-33"><a href="#cb5-33"></a>                                          ^^^^^^^^^^^^^^^^</span>
-<span id="cb5-34"><a href="#cb5-34"></a>Error: This expression has <span class="kw">type</span> [ `Naked ] Money.t</span>
-<span id="cb5-35"><a href="#cb5-35"></a>       but an expression was expected <span class="kw">of</span> <span class="kw">type</span> [ `Taxed ] Money.t</span>
-<span id="cb5-36"><a href="#cb5-36"></a>       These two variant types have no intersection</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a># <span class="kw">module</span> Money : <span class="kw">sig</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a>    <span class="kw">type</span> 'a t <span class="kw">constraint</span> 'a = [&lt; `Naked | `Taxed]</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a>    <span class="kw">val</span> make : <span class="dt">float</span> -&gt; [`Naked] t</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a>    <span class="kw">val</span> get : 'a t -&gt; <span class="dt">float</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a>    <span class="kw">val</span> add : 'a t -&gt; 'a t -&gt; 'a t</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a>    <span class="kw">val</span> tax : [`Naked] t -&gt; [`Taxed] t</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true"></a>  <span class="kw">end</span> =</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true"></a>  <span class="kw">struct</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true"></a>    <span class="kw">type</span> 'a t = <span class="dt">float</span> <span class="kw">constraint</span> 'a = [&lt; `Naked | `Taxed]</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true"></a>    <span class="kw">let</span> make x = x</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true"></a>    <span class="kw">let</span> get x = x</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true"></a>    <span class="kw">let</span> add x y = x +. y</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true"></a>    <span class="kw">let</span> tax x = x *. <span class="fl">1.08</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true"></a>  <span class="kw">end</span>  </span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true"></a><span class="kw">module</span> Money :</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true"></a>  <span class="kw">sig</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true"></a>    <span class="kw">type</span> 'a t <span class="kw">constraint</span> 'a = [&lt; `Naked | `Taxed ]</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true"></a>    <span class="kw">val</span> make : <span class="dt">float</span> -&gt; [ `Naked ] t</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true"></a>    <span class="kw">val</span> get : [&lt; `Naked | `Taxed ] t -&gt; <span class="dt">float</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true"></a>    <span class="kw">val</span> add : ([&lt; `Naked | `Taxed ] <span class="kw">as</span> 'a) t -&gt; 'a t -&gt; 'a t</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true"></a>    <span class="kw">val</span> tax : [ `Naked ] t -&gt; [ `Taxed ] t</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true"></a>  <span class="kw">end</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true"></a></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true"></a># Money.add (Money.make <span class="fl">3.0</span>) (Money.make <span class="fl">4.0</span>) |&gt; Money.get ;;</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true"></a>- : <span class="dt">float</span> = <span class="dv">7</span>.</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true"></a></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true"></a># Money.add (Money.tax @@ Money.make <span class="fl">3.0</span>) (Money.tax @@ Money.make <span class="fl">4.0</span>) |&gt; Money.get ;;</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true"></a>- : <span class="dt">float</span> = <span class="fl">7.5600000000000005</span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true"></a></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true"></a># Money.add (Money.tax @@ Money.make <span class="fl">3.0</span>) (Money.make <span class="fl">4.0</span>) |&gt; Money.get ;;</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true"></a>Characters <span class="dv">40-56</span>:</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true"></a>  Money.add (Money.tax @@ Money.make <span class="fl">3.0</span>) (Money.make <span class="fl">4.0</span>) |&gt; Money.get ;;</span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true"></a>                                          ^^^^^^^^^^^^^^^^</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true"></a>Error: This expression has <span class="kw">type</span> [ `Naked ] Money.t</span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true"></a>       but an expression was expected <span class="kw">of</span> <span class="kw">type</span> [ `Taxed ] Money.t</span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true"></a>       These two variant types have no intersection</span></code></pre></div>
 <p>これは，税込み (<code>Taxed</code>) かそうでないかを分けて型付けされたモジュールである 結果を見てわかるように，中身はどちらも同じ <code>float</code> だが，<code>Taxed</code> と <code>Naked</code> が違う場合は加算できない． ちなみに <code>constraint</code> とは全称型 <code>'a</code> に対して制約を与えている．</p>
 <p><code>struct</code> 内部での型の実装を与えているところ <code>type 'a t = float</code> で全称型 <code>'a</code> が右辺に出てこないような型のことを幽霊型と言う．</p>
 <h3 id="ファンクターによる抽象化">ファンクターによる抽象化</h3>
 <p>ファンクターを用いると，特定のモジュールをベースにして，モジュールを生成できる． (元ネタは圏論のファンクターなはずで，それは圏から圏への写像だと思ってる)</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">module</span> <span class="kw">type</span> Nat_base = <span class="kw">sig</span></span>
-<span id="cb6-2"><a href="#cb6-2"></a>  <span class="kw">type</span> t</span>
-<span id="cb6-3"><a href="#cb6-3"></a>  <span class="kw">val</span> zero : t</span>
-<span id="cb6-4"><a href="#cb6-4"></a>  <span class="kw">val</span> <span class="dt">succ</span> : t -&gt; t</span>
-<span id="cb6-5"><a href="#cb6-5"></a><span class="kw">end</span></span>
-<span id="cb6-6"><a href="#cb6-6"></a></span>
-<span id="cb6-7"><a href="#cb6-7"></a><span class="kw">module</span> <span class="kw">type</span> Nat = <span class="kw">sig</span></span>
-<span id="cb6-8"><a href="#cb6-8"></a>  <span class="kw">type</span> t</span>
-<span id="cb6-9"><a href="#cb6-9"></a>  <span class="kw">include</span> Nat_base <span class="kw">with</span> <span class="kw">type</span> t := t</span>
-<span id="cb6-10"><a href="#cb6-10"></a>  <span class="kw">val</span> is_zero : t -&gt; <span class="dt">bool</span></span>
-<span id="cb6-11"><a href="#cb6-11"></a>  <span class="kw">val</span> add : t -&gt; t -&gt; t</span>
-<span id="cb6-12"><a href="#cb6-12"></a><span class="kw">end</span></span>
-<span id="cb6-13"><a href="#cb6-13"></a></span>
-<span id="cb6-14"><a href="#cb6-14"></a><span class="kw">module</span> Make_Nat (N : Nat_base) : Nat = <span class="kw">struct</span></span>
-<span id="cb6-15"><a href="#cb6-15"></a>  <span class="kw">include</span> N</span>
-<span id="cb6-16"><a href="#cb6-16"></a>  <span class="kw">let</span> is_zero n = n = N.zero</span>
-<span id="cb6-17"><a href="#cb6-17"></a>  <span class="kw">let</span> add n m =</span>
-<span id="cb6-18"><a href="#cb6-18"></a>    <span class="kw">let</span> <span class="kw">rec</span> add' i x = <span class="kw">if</span> i = n <span class="kw">then</span> x <span class="kw">else</span> add' (N.<span class="dt">succ</span> i) (N.<span class="dt">succ</span> x)</span>
-<span id="cb6-19"><a href="#cb6-19"></a>    <span class="kw">in</span> add' N.zero m</span>
-<span id="cb6-20"><a href="#cb6-20"></a><span class="kw">end</span>  </span>
-<span id="cb6-21"><a href="#cb6-21"></a></span>
-<span id="cb6-22"><a href="#cb6-22"></a><span class="kw">module</span> NatI =</span>
-<span id="cb6-23"><a href="#cb6-23"></a>  Make_Nat (<span class="kw">struct</span></span>
-<span id="cb6-24"><a href="#cb6-24"></a>    <span class="kw">type</span> t = <span class="dt">int</span></span>
-<span id="cb6-25"><a href="#cb6-25"></a>    <span class="kw">let</span> zero = <span class="dv">0</span></span>
-<span id="cb6-26"><a href="#cb6-26"></a>    <span class="kw">let</span> <span class="dt">succ</span> x = x + <span class="dv">1</span></span>
-<span id="cb6-27"><a href="#cb6-27"></a>  <span class="kw">end</span>)</span></code></pre></div>
-<div class="sourceCode" id="cb7"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb7-1"><a href="#cb7-1"></a># NatI.add (NatI.<span class="dt">succ</span> NatI.zero) (NatI.<span class="dt">succ</span> NatI.zero) = NatI.<span class="dt">succ</span> (NatI.<span class="dt">succ</span> NatI.zero) ;;</span>
-<span id="cb7-2"><a href="#cb7-2"></a>- : <span class="dt">bool</span> = <span class="kw">true</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="kw">module</span> <span class="kw">type</span> Nat_base = <span class="kw">sig</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a>  <span class="kw">type</span> t</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a>  <span class="kw">val</span> zero : t</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a>  <span class="kw">val</span> <span class="dt">succ</span> : t -&gt; t</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a><span class="kw">end</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true"></a><span class="kw">module</span> <span class="kw">type</span> Nat = <span class="kw">sig</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true"></a>  <span class="kw">type</span> t</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true"></a>  <span class="kw">include</span> Nat_base <span class="kw">with</span> <span class="kw">type</span> t := t</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true"></a>  <span class="kw">val</span> is_zero : t -&gt; <span class="dt">bool</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true"></a>  <span class="kw">val</span> add : t -&gt; t -&gt; t</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true"></a><span class="kw">end</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true"></a></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true"></a><span class="kw">module</span> Make_Nat (N : Nat_base) : Nat = <span class="kw">struct</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true"></a>  <span class="kw">include</span> N</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true"></a>  <span class="kw">let</span> is_zero n = n = N.zero</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true"></a>  <span class="kw">let</span> add n m =</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true"></a>    <span class="kw">let</span> <span class="kw">rec</span> add' i x = <span class="kw">if</span> i = n <span class="kw">then</span> x <span class="kw">else</span> add' (N.<span class="dt">succ</span> i) (N.<span class="dt">succ</span> x)</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true"></a>    <span class="kw">in</span> add' N.zero m</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true"></a><span class="kw">end</span>  </span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true"></a></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true"></a><span class="kw">module</span> NatI =</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true"></a>  Make_Nat (<span class="kw">struct</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true"></a>    <span class="kw">type</span> t = <span class="dt">int</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true"></a>    <span class="kw">let</span> zero = <span class="dv">0</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true"></a>    <span class="kw">let</span> <span class="dt">succ</span> x = x + <span class="dv">1</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true"></a>  <span class="kw">end</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a># NatI.add (NatI.<span class="dt">succ</span> NatI.zero) (NatI.<span class="dt">succ</span> NatI.zero) = NatI.<span class="dt">succ</span> (NatI.<span class="dt">succ</span> NatI.zero) ;;</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a>- : <span class="dt">bool</span> = <span class="kw">true</span></span></code></pre></div>
 <p>このときの <code>Make_Nat</code> がファンクターである． これは，<code>Set</code> や <code>Hash</code> などの標準モジュールでも使われている．</p>
 <h2 id="第一級モジュール">第一級モジュール</h2>
 <p><a href="../posts/2016-12-11-ocaml-module-memo02.html">続く…</a></p>

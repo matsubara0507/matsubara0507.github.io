@@ -91,21 +91,21 @@
 <p>TravisCI のログを見てみる:</p>
 <p><img src="../assets/stack-build-image/ci-log-1.jpg" /></p>
 <p><code>1571.75s</code> もかかってるのは依存パッケージのみをビルドしているステップだ． 現状の主原因は単純に Haskell Stack のビルドがゲキオモなせい(巷でもよく言われてる)． でもこれは初回だけで，Stack v2 からは <a href="https://www.fpcomplete.com/blog/2018/08/pantry-part-3/specifying-dependencies/">Pantry</a> というシステムを導入して効率よく依存パッケージを SQLite にキャッシュしている(2回目以降でキャッシュを使うのは v1 もだったが v2 からは別のプロジェクトでも共有できるようになった)． なので，TravisCI にうまくキャッシュをする設定をすることで CI 中のビルド時間は劇的に改善する:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1"></a><span class="co"># .travis.yml の一部</span></span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="fu">cache</span><span class="kw">:</span></span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="at">  </span><span class="fu">timeout</span><span class="kw">:</span><span class="at"> </span><span class="dv">360</span></span>
-<span id="cb1-4"><a href="#cb1-4"></a><span class="at">  </span><span class="fu">directories</span><span class="kw">:</span></span>
-<span id="cb1-5"><a href="#cb1-5"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;$HOME/.stack/&quot;</span><span class="co">     # Pantry のキャッシュはココ</span></span>
-<span id="cb1-6"><a href="#cb1-6"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;$HOME/.local/bin/&quot;</span><span class="co"> # ココには stack が入る</span></span>
-<span id="cb1-7"><a href="#cb1-7"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;.stack-work/&quot;</span><span class="co">      # プロジェクト固有のキャッシュはココ</span></span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="co"># .travis.yml の一部</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="fu">cache</span><span class="kw">:</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="at">  </span><span class="fu">timeout</span><span class="kw">:</span><span class="at"> </span><span class="dv">360</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a><span class="at">  </span><span class="fu">directories</span><span class="kw">:</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;$HOME/.stack/&quot;</span><span class="co">     # Pantry のキャッシュはココ</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;$HOME/.local/bin/&quot;</span><span class="co"> # ココには stack が入る</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;.stack-work/&quot;</span><span class="co">      # プロジェクト固有のキャッシュはココ</span></span></code></pre></div>
 <p><img src="../assets/stack-build-image/ci-log-2.jpg" /></p>
 <p>さて残りの <code>371.27s</code> はなんと <code>docker pull</code> にかかってる時間だ．</p>
 <h3 id="fpcostack-build">fpco/stack-build</h3>
 <p>Stack の Docker Integration を利用することで指定した Docker Image 内でビルドを実行する． つまり，指定した Docker Image をプルしてくる必要がある． ログからわかるようにこの時点では <a href="https://hub.docker.com/r/fpco/stack-build/"><code>fpco/stack-build</code></a> という Stack の開発チームが提供している公式イメージを使っている:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1"></a><span class="co"># stack.yaml の一部</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="fu">docker</span><span class="kw">:</span></span>
-<span id="cb2-3"><a href="#cb2-3"></a><span class="at">  </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> fpco/stack-build</span></span>
-<span id="cb2-4"><a href="#cb2-4"></a><span class="at">  </span><span class="fu">enable</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="co"># stack.yaml の一部</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="fu">docker</span><span class="kw">:</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a><span class="at">  </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> fpco/stack-build</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a><span class="at">  </span><span class="fu">enable</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span></code></pre></div>
 <p>Docker Hub を見てみるとわかるのだが，なんと3GBもある(<a href="https://github.com/docker/hub-feedback/issues/331#issuecomment-141544523">Docker Hub に書いてあるのは圧縮されたサイズ</a>なので，手元での実際のサイズはなんと8.5GBもある)． もちろんローカルなら同じイメージを何度もプルすることはないので問題ないのだが，残念ながら TravisCI には Docker Image をキャッシュしない． 無理やり固めてキャッシュすることは可能だが，試してみたらそっちの方が時間がかかった(8.5GBもあるからね)．</p>
 <h2 id="軽いイメージを作る">軽いイメージを作る</h2>
 <p>なんでこんなにもあるのかは知らないけど，大きいなら小さくすれば良い． ということで自作することにした:</p>
@@ -113,25 +113,25 @@
 <li><a href="https://hub.docker.com/r/matsubara0507/stack-build">matsubara0507/stack-build - Docker Hub</a></li>
 </ul>
 <p>イメージサイズは125MB(非圧縮サイズは380MB)． とりあえず，必要そうなものだけを <code>apt-get</code> して，自分のプログラムがビルドできるのだけ試した:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">FROM</span> ubuntu:18.04</span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">RUN</span> apt-get update &amp;&amp; apt-get install -y \</span>
-<span id="cb3-3"><a href="#cb3-3"></a>    curl \</span>
-<span id="cb3-4"><a href="#cb3-4"></a>    gcc \</span>
-<span id="cb3-5"><a href="#cb3-5"></a>    g++ \</span>
-<span id="cb3-6"><a href="#cb3-6"></a>    git \</span>
-<span id="cb3-7"><a href="#cb3-7"></a>    gnupg \</span>
-<span id="cb3-8"><a href="#cb3-8"></a>    libc6-dev \</span>
-<span id="cb3-9"><a href="#cb3-9"></a>    libffi-dev \</span>
-<span id="cb3-10"><a href="#cb3-10"></a>    libgmp-dev \</span>
-<span id="cb3-11"><a href="#cb3-11"></a>    make \</span>
-<span id="cb3-12"><a href="#cb3-12"></a>    netbase \</span>
-<span id="cb3-13"><a href="#cb3-13"></a>    xz-utils \</span>
-<span id="cb3-14"><a href="#cb3-14"></a>    zlib1g-dev \</span>
-<span id="cb3-15"><a href="#cb3-15"></a> &amp;&amp; apt-get clean \</span>
-<span id="cb3-16"><a href="#cb3-16"></a> &amp;&amp; rm -rf /var/lib/apt/lists/*</span>
-<span id="cb3-17"><a href="#cb3-17"></a><span class="kw">ENV</span> STACK_VERSION=<span class="st">&quot;2.1.3&quot;</span></span>
-<span id="cb3-18"><a href="#cb3-18"></a><span class="kw">RUN</span> curl -sSL https://get.haskellstack.org/ | sh \</span>
-<span id="cb3-19"><a href="#cb3-19"></a> &amp;&amp; stack upgrade --binary-version=${STACK_VERSION}</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="kw">FROM</span> ubuntu:18.04</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="kw">RUN</span> apt-get update &amp;&amp; apt-get install -y \</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>    curl \</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>    gcc \</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a>    g++ \</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a>    git \</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a>    gnupg \</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a>    libc6-dev \</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a>    libffi-dev \</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a>    libgmp-dev \</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a>    make \</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a>    netbase \</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a>    xz-utils \</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true"></a>    zlib1g-dev \</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true"></a> &amp;&amp; apt-get clean \</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true"></a> &amp;&amp; rm -rf /var/lib/apt/lists/*</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true"></a><span class="kw">ENV</span> STACK_VERSION=<span class="st">&quot;2.1.3&quot;</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true"></a><span class="kw">RUN</span> curl -sSL https://get.haskellstack.org/ | sh \</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true"></a> &amp;&amp; stack upgrade --binary-version=${STACK_VERSION}</span></code></pre></div>
 <p>なので，他の人が使ってもちゃんとビルドできる保証はない． もちろん，これで CI の時間も <code>30s</code> ぐらいに短縮した(キャッシュの解凍・圧縮に3分ぐらいかかっちゃうんだけど)．</p>
 <h2 id="section"></h2>
 <p>ちなみに，一通りできてから気づいたのだが，ちゃんと公式にも小さいイメージができてた(半年ぐらい前からっぽい)．</p>
@@ -141,15 +141,15 @@
 <p>圧縮サイズが390MBなので，自作の方が小さいから自分のをとりあえず困るまでは使うことにします．</p>
 <h3 id="docker-integration-と-resolver">Docker Integration と Resolver</h3>
 <p>Stack はビルド可能なパッケージのバージョンをまとめた Resolver を提供している． Resolver は設定ファイルで指定し，Docker Integration でイメージタグを指定しないと Resolver と同じ名前のタグを自動で利用してくれる．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1"></a><span class="co"># stack.yaml</span></span>
-<span id="cb4-2"><a href="#cb4-2"></a><span class="fu">resolver</span><span class="kw">:</span><span class="at"> lts-14.6</span></span>
-<span id="cb4-3"><a href="#cb4-3"></a><span class="fu">packages</span><span class="kw">:</span></span>
-<span id="cb4-4"><a href="#cb4-4"></a><span class="kw">-</span><span class="at"> .</span></span>
-<span id="cb4-5"><a href="#cb4-5"></a><span class="fu">extra-deps</span><span class="kw">:</span><span class="at"> </span><span class="kw">[]</span></span>
-<span id="cb4-6"><a href="#cb4-6"></a></span>
-<span id="cb4-7"><a href="#cb4-7"></a><span class="fu">docker</span><span class="kw">:</span></span>
-<span id="cb4-8"><a href="#cb4-8"></a><span class="at">  </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> matsubara0507/stack-build</span></span>
-<span id="cb4-9"><a href="#cb4-9"></a><span class="at">  </span><span class="fu">enable</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="co"># stack.yaml</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a><span class="fu">resolver</span><span class="kw">:</span><span class="at"> lts-14.6</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a><span class="fu">packages</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a><span class="kw">-</span><span class="at"> .</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a><span class="fu">extra-deps</span><span class="kw">:</span><span class="at"> </span><span class="kw">[]</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a><span class="fu">docker</span><span class="kw">:</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a><span class="at">  </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> matsubara0507/stack-build</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a><span class="at">  </span><span class="fu">enable</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span></code></pre></div>
 <p>この場合は <code>matsubara0507/stack-build:lts-14.6</code> イメージを利用する． この Resolver の更新頻度は結構高く，Resolver が出るたびに <code>matsubara0507/stack-build</code> のタグを増やさないといけない． 困った．</p>
 <p>(先にネタバレをすると，<code>docker.repo</code> でタグまで指定すれば更新する必要は微塵もなかった)</p>
 <h2 id="どうやって更新するか">どうやって更新するか</h2>
@@ -174,46 +174,46 @@ $ dockwright --tags
 # 設定した `tags` からタグを取得し DockerHub のタグにないものを出力
 # dockwright --new-tags</code></pre>
 <p><code>tags</code> の設定は次のような感じ:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1"></a><span class="co"># .dockwright.yaml の一部</span></span>
-<span id="cb6-2"><a href="#cb6-2"></a><span class="fu">tags</span><span class="kw">:</span></span>
-<span id="cb6-3"><a href="#cb6-3"></a><span class="co"># latest は常に</span></span>
-<span id="cb6-4"><a href="#cb6-4"></a><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> value</span></span>
-<span id="cb6-5"><a href="#cb6-5"></a><span class="at">  </span><span class="fu">keys</span><span class="kw">:</span></span>
-<span id="cb6-6"><a href="#cb6-6"></a><span class="at">  </span><span class="kw">-</span><span class="at"> latest</span></span>
-<span id="cb6-7"><a href="#cb6-7"></a><span class="at">  </span><span class="fu">always</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb6-8"><a href="#cb6-8"></a><span class="co"># 前述した API の返り値 JSON の特定のキーの値</span></span>
-<span id="cb6-9"><a href="#cb6-9"></a><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> refer</span></span>
-<span id="cb6-10"><a href="#cb6-10"></a><span class="at">  </span><span class="fu">ref</span><span class="kw">:</span><span class="at"> https://www.stackage.org/download/snapshots.json</span></span>
-<span id="cb6-11"><a href="#cb6-11"></a><span class="at">  </span><span class="fu">keys</span><span class="kw">:</span></span>
-<span id="cb6-12"><a href="#cb6-12"></a><span class="at">  </span><span class="kw">-</span><span class="at"> nightly</span></span>
-<span id="cb6-13"><a href="#cb6-13"></a><span class="at">  </span><span class="kw">-</span><span class="at"> lts</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="co"># .dockwright.yaml の一部</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a><span class="fu">tags</span><span class="kw">:</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a><span class="co"># latest は常に</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> value</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a><span class="at">  </span><span class="fu">keys</span><span class="kw">:</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a><span class="at">  </span><span class="kw">-</span><span class="at"> latest</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true"></a><span class="at">  </span><span class="fu">always</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true"></a><span class="co"># 前述した API の返り値 JSON の特定のキーの値</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true"></a><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> refer</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true"></a><span class="at">  </span><span class="fu">ref</span><span class="kw">:</span><span class="at"> https://www.stackage.org/download/snapshots.json</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true"></a><span class="at">  </span><span class="fu">keys</span><span class="kw">:</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true"></a><span class="at">  </span><span class="kw">-</span><span class="at"> nightly</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true"></a><span class="at">  </span><span class="kw">-</span><span class="at"> lts</span></span></code></pre></div>
 <p>そして次のような Makefile とシェルスクリプトを書いて更新している:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode makefile"><code class="sourceCode makefile"><span id="cb7-1"><a href="#cb7-1"></a><span class="co"># Makefile</span></span>
-<span id="cb7-2"><a href="#cb7-2"></a><span class="dt">DOCKER_CMD   </span><span class="ch">=</span><span class="st"> docker run --rm</span></span>
-<span id="cb7-3"><a href="#cb7-3"></a><span class="dt">IMAGE        </span><span class="ch">=</span><span class="st"> matsubara0507/dockwright:1.1.0</span></span>
-<span id="cb7-4"><a href="#cb7-4"></a><span class="dt">BUILD_CMD    </span><span class="ch">=</span><span class="st"> dockwright .dockwright.yaml</span></span>
-<span id="cb7-5"><a href="#cb7-5"></a></span>
-<span id="cb7-6"><a href="#cb7-6"></a><span class="dv">tags:</span></span>
-<span id="cb7-7"><a href="#cb7-7"></a>	<span class="ch">${</span><span class="dt">DOCKER_CMD</span><span class="ch">}</span> -v `pwd`/<span class="ch">${</span><span class="kw">dir</span><span class="ch">}</span>:/work <span class="ch">${</span><span class="dt">IMAGE</span><span class="ch">}</span> <span class="ch">${</span><span class="dt">BUILD_CMD</span><span class="ch">}</span> --tags --with-name</span>
-<span id="cb7-8"><a href="#cb7-8"></a></span>
-<span id="cb7-9"><a href="#cb7-9"></a><span class="dv">new-tags:</span></span>
-<span id="cb7-10"><a href="#cb7-10"></a>	<span class="ch">${</span><span class="dt">DOCKER_CMD</span><span class="ch">}</span> -v `pwd`/<span class="ch">${</span><span class="kw">dir</span><span class="ch">}</span>:/work <span class="ch">${</span><span class="dt">IMAGE</span><span class="ch">}</span> <span class="ch">${</span><span class="dt">BUILD_CMD</span><span class="ch">}</span> --new-tags --with-name</span>
-<span id="cb7-11"><a href="#cb7-11"></a></span>
-<span id="cb7-12"><a href="#cb7-12"></a><span class="dv">dockerfile:</span></span>
-<span id="cb7-13"><a href="#cb7-13"></a>	<span class="ch">${</span><span class="dt">DOCKER_CMD</span><span class="ch">}</span> -v `pwd`/<span class="ch">${</span><span class="kw">dir</span><span class="ch">}</span>:/work <span class="ch">${</span><span class="dt">IMAGE</span><span class="ch">}</span> <span class="ch">${</span><span class="dt">BUILD_CMD</span><span class="ch">}</span></span>
-<span id="cb7-14"><a href="#cb7-14"></a></span>
-<span id="cb7-15"><a href="#cb7-15"></a><span class="dv">image:</span></span>
-<span id="cb7-16"><a href="#cb7-16"></a>	docker build -t <span class="ch">${</span><span class="dt">tag</span><span class="ch">}</span> <span class="ch">${</span><span class="kw">dir</span><span class="ch">}</span></span>
-<span id="cb7-17"><a href="#cb7-17"></a></span>
-<span id="cb7-18"><a href="#cb7-18"></a><span class="dv">push:</span><span class="dt"> image</span></span>
-<span id="cb7-19"><a href="#cb7-19"></a>	docker push <span class="ch">${</span><span class="dt">tag</span><span class="ch">}</span></span></code></pre></div>
-<div class="sourceCode" id="cb8"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1"></a><span class="co"># update-image.sh</span></span>
-<span id="cb8-2"><a href="#cb8-2"></a><span class="va">target=$1</span></span>
-<span id="cb8-3"><a href="#cb8-3"></a><span class="fu">make</span> dockerfile dir=<span class="va">${target}</span></span>
-<span id="cb8-4"><a href="#cb8-4"></a><span class="fu">git</span> status</span>
-<span id="cb8-5"><a href="#cb8-5"></a><span class="fu">git</span> add -A <span class="va">${target}</span></span>
-<span id="cb8-6"><a href="#cb8-6"></a><span class="fu">git</span> diff --quiet <span class="kw">&amp;&amp;</span> <span class="fu">git</span> diff --staged --quiet <span class="kw">||</span> <span class="fu">git</span> commit -m <span class="st">&quot;[skip ci] Update </span><span class="va">${target}</span><span class="st"> image&quot;</span></span>
-<span id="cb8-7"><a href="#cb8-7"></a><span class="fu">make</span> -s new-tags dir=<span class="va">${target}</span> <span class="kw">|</span> <span class="fu">xargs</span> -ITAG make push dir=<span class="va">${target}</span> tag=TAG</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode makefile"><code class="sourceCode makefile"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a><span class="co"># Makefile</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a><span class="dt">DOCKER_CMD   </span><span class="ch">=</span><span class="st"> docker run --rm</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a><span class="dt">IMAGE        </span><span class="ch">=</span><span class="st"> matsubara0507/dockwright:1.1.0</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true"></a><span class="dt">BUILD_CMD    </span><span class="ch">=</span><span class="st"> dockwright .dockwright.yaml</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true"></a><span class="dv">tags:</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true"></a>	<span class="ch">${</span><span class="dt">DOCKER_CMD</span><span class="ch">}</span> -v `pwd`/<span class="ch">${</span><span class="kw">dir</span><span class="ch">}</span>:/work <span class="ch">${</span><span class="dt">IMAGE</span><span class="ch">}</span> <span class="ch">${</span><span class="dt">BUILD_CMD</span><span class="ch">}</span> --tags --with-name</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true"></a><span class="dv">new-tags:</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true"></a>	<span class="ch">${</span><span class="dt">DOCKER_CMD</span><span class="ch">}</span> -v `pwd`/<span class="ch">${</span><span class="kw">dir</span><span class="ch">}</span>:/work <span class="ch">${</span><span class="dt">IMAGE</span><span class="ch">}</span> <span class="ch">${</span><span class="dt">BUILD_CMD</span><span class="ch">}</span> --new-tags --with-name</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true"></a></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true"></a><span class="dv">dockerfile:</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true"></a>	<span class="ch">${</span><span class="dt">DOCKER_CMD</span><span class="ch">}</span> -v `pwd`/<span class="ch">${</span><span class="kw">dir</span><span class="ch">}</span>:/work <span class="ch">${</span><span class="dt">IMAGE</span><span class="ch">}</span> <span class="ch">${</span><span class="dt">BUILD_CMD</span><span class="ch">}</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true"></a></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true"></a><span class="dv">image:</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true"></a>	docker build -t <span class="ch">${</span><span class="dt">tag</span><span class="ch">}</span> <span class="ch">${</span><span class="kw">dir</span><span class="ch">}</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true"></a></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true"></a><span class="dv">push:</span><span class="dt"> image</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true"></a>	docker push <span class="ch">${</span><span class="dt">tag</span><span class="ch">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a><span class="co"># update-image.sh</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a><span class="va">target=$1</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a><span class="fu">make</span> dockerfile dir=<span class="va">${target}</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a><span class="fu">git</span> status</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true"></a><span class="fu">git</span> add -A <span class="va">${target}</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true"></a><span class="fu">git</span> diff --quiet <span class="kw">&amp;&amp;</span> <span class="fu">git</span> diff --staged --quiet <span class="kw">||</span> <span class="fu">git</span> commit -m <span class="st">&quot;[skip ci] Update </span><span class="va">${target}</span><span class="st"> image&quot;</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true"></a><span class="fu">make</span> -s new-tags dir=<span class="va">${target}</span> <span class="kw">|</span> <span class="fu">xargs</span> -ITAG make push dir=<span class="va">${target}</span> tag=TAG</span></code></pre></div>
 <p>実際に使っているリポジトリは<a href="https://github.com/matsubara0507/haskell-dockerfiles">コレ</a>．</p>
 <h2 id="おまけ-結局どこが重い">おまけ: 結局どこが重い？</h2>
 <p>なんで <code>fpco/stack-build</code> がこんなに重いのか，調べてみた:</p>

@@ -164,23 +164,23 @@ $ stack exec site build</code></pre>
 <h3 id="ちなみに">ちなみに</h3>
 <p><code>stack exec -- site --help</code> とすると，コマンドに <code>site deploy</code> があるのがわかる． GitHub のソースコードを読んだところ，自分で <code>site.hs</code> に定義しないといけないらしい．</p>
 <p>試しに，定義してみた． <code>site.hs</code> の一番最後に，<code>config</code> を定義して．</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1"></a><span class="ot">config ::</span> <span class="dt">Configuration</span></span>
-<span id="cb9-2"><a href="#cb9-2"></a>config <span class="ot">=</span> defaultConfiguration</span>
-<span id="cb9-3"><a href="#cb9-3"></a>    { deployCommand <span class="ot">=</span> <span class="st">&quot;git checkout source&quot;</span> <span class="ot">`mappend`</span></span>
-<span id="cb9-4"><a href="#cb9-4"></a>                      <span class="st">&quot;&amp;&amp; stack exec site rebuild&quot;</span> <span class="ot">`mappend`</span></span>
-<span id="cb9-5"><a href="#cb9-5"></a>                      <span class="st">&quot;&amp;&amp; git checkout master&quot;</span> <span class="ot">`mappend`</span></span>
-<span id="cb9-6"><a href="#cb9-6"></a>                      <span class="st">&quot;&amp;&amp; rsync -a --filter='P _site/'&quot;</span> <span class="ot">`mappend`</span></span>
-<span id="cb9-7"><a href="#cb9-7"></a>                      <span class="st">&quot; --filter='P _cache/' --filter='P .git/'&quot;</span> <span class="ot">`mappend`</span></span>
-<span id="cb9-8"><a href="#cb9-8"></a>                      <span class="st">&quot; --filter='P .stack-work' --filter='P .gitignore'&quot;</span> <span class="ot">`mappend`</span></span>
-<span id="cb9-9"><a href="#cb9-9"></a>                      <span class="st">&quot; --delete-excluded _site/ .&quot;</span> <span class="ot">`mappend`</span></span>
-<span id="cb9-10"><a href="#cb9-10"></a>                      <span class="st">&quot;&amp;&amp; cp -a _site/. .&quot;</span> <span class="ot">`mappend`</span></span>
-<span id="cb9-11"><a href="#cb9-11"></a>                      <span class="st">&quot;&amp;&amp; git add -A&quot;</span> <span class="ot">`mappend`</span></span>
-<span id="cb9-12"><a href="#cb9-12"></a>                      <span class="st">&quot;&amp;&amp; git commit -m 'Publish'&quot;</span> <span class="ot">`mappend`</span></span>
-<span id="cb9-13"><a href="#cb9-13"></a>                      <span class="st">&quot;&amp;&amp; git checkout source&quot;</span></span>
-<span id="cb9-14"><a href="#cb9-14"></a>    }</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a><span class="ot">config ::</span> <span class="dt">Configuration</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a>config <span class="ot">=</span> defaultConfiguration</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true"></a>    { deployCommand <span class="ot">=</span> <span class="st">&quot;git checkout source&quot;</span> <span class="ot">`mappend`</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true"></a>                      <span class="st">&quot;&amp;&amp; stack exec site rebuild&quot;</span> <span class="ot">`mappend`</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true"></a>                      <span class="st">&quot;&amp;&amp; git checkout master&quot;</span> <span class="ot">`mappend`</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true"></a>                      <span class="st">&quot;&amp;&amp; rsync -a --filter='P _site/'&quot;</span> <span class="ot">`mappend`</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true"></a>                      <span class="st">&quot; --filter='P _cache/' --filter='P .git/'&quot;</span> <span class="ot">`mappend`</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true"></a>                      <span class="st">&quot; --filter='P .stack-work' --filter='P .gitignore'&quot;</span> <span class="ot">`mappend`</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true"></a>                      <span class="st">&quot; --delete-excluded _site/ .&quot;</span> <span class="ot">`mappend`</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true"></a>                      <span class="st">&quot;&amp;&amp; cp -a _site/. .&quot;</span> <span class="ot">`mappend`</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true"></a>                      <span class="st">&quot;&amp;&amp; git add -A&quot;</span> <span class="ot">`mappend`</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true"></a>                      <span class="st">&quot;&amp;&amp; git commit -m 'Publish'&quot;</span> <span class="ot">`mappend`</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true"></a>                      <span class="st">&quot;&amp;&amp; git checkout source&quot;</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true"></a>    }</span></code></pre></div>
 <p><code>main</code> をちょっと変更．</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode diff"><code class="sourceCode diff"><span id="cb10-1"><a href="#cb10-1"></a><span class="st">- main = hakyll $ do</span></span>
-<span id="cb10-2"><a href="#cb10-2"></a><span class="va">+ main = hakyllWith config $ do</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode diff"><code class="sourceCode diff"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a><span class="st">- main = hakyll $ do</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true"></a><span class="va">+ main = hakyllWith config $ do</span></span></code></pre></div>
 <p>デプロイだけど，怖いからプッシュはしないようにしてる． <code>config</code> の中身は各自で適当に．</p>
 <p>こうすると <code>stack exec site deploy</code> で，上で定義したコマンドが実行されるはず．</p>
 <h3 id="展望">展望</h3>

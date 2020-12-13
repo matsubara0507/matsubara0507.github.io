@@ -156,53 +156,53 @@ Turn: White
 <h3 id="関数が呼べない">0. 関数が呼べない</h3>
 <p>ゼロ引数関数は <code>xxx.method</code> はダメで，<code>xxx.method()</code> しなきゃいけないってのが何度もあった(笑) 普段は Haskell を書いているせいですね．</p>
 <h3 id="固定長配列の-map">1. 固定長配列の map</h3>
-<div class="sourceCode" id="cb2"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb2-1"><a href="#cb2-1"></a><span class="co">/// 指定の色の石を指定の位置に置いたとき、指定の方向へひっくり返せる石の数を返す</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="kw">fn</span> get_flip(<span class="op">&amp;</span><span class="kw">self</span><span class="op">,</span> piece<span class="op">:</span> Piece<span class="op">,</span> <span class="kw">mut</span> pos<span class="op">:</span> Coord<span class="op">,</span> dir<span class="op">:</span> Coord) <span class="op">-&gt;</span> <span class="dt">u8</span> <span class="op">{</span></span>
-<span id="cb2-3"><a href="#cb2-3"></a>    <span class="op">...</span></span>
-<span id="cb2-4"><a href="#cb2-4"></a><span class="op">}</span></span>
-<span id="cb2-5"><a href="#cb2-5"></a></span>
-<span id="cb2-6"><a href="#cb2-6"></a><span class="co">/// 指定の色の石を指定の位置に置いたときの `Move` を返す</span></span>
-<span id="cb2-7"><a href="#cb2-7"></a><span class="co">/// 戻り値の `Move` には8方向分の `get_flip` の結果が含まれる</span></span>
-<span id="cb2-8"><a href="#cb2-8"></a><span class="kw">fn</span> get_move(<span class="op">&amp;</span><span class="kw">self</span><span class="op">,</span> piece<span class="op">:</span> Piece<span class="op">,</span> pos<span class="op">:</span> Coord) <span class="op">-&gt;</span> Move <span class="op">{</span></span>
-<span id="cb2-9"><a href="#cb2-9"></a>    <span class="pp">unimplemented!</span>()<span class="op">;</span></span>
-<span id="cb2-10"><a href="#cb2-10"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="co">/// 指定の色の石を指定の位置に置いたとき、指定の方向へひっくり返せる石の数を返す</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="kw">fn</span> get_flip(<span class="op">&amp;</span><span class="kw">self</span><span class="op">,</span> piece<span class="op">:</span> Piece<span class="op">,</span> <span class="kw">mut</span> pos<span class="op">:</span> Coord<span class="op">,</span> dir<span class="op">:</span> Coord) <span class="op">-&gt;</span> <span class="dt">u8</span> <span class="op">{</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>    <span class="op">...</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a><span class="op">}</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a><span class="co">/// 指定の色の石を指定の位置に置いたときの `Move` を返す</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a><span class="co">/// 戻り値の `Move` には8方向分の `get_flip` の結果が含まれる</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a><span class="kw">fn</span> get_move(<span class="op">&amp;</span><span class="kw">self</span><span class="op">,</span> piece<span class="op">:</span> Piece<span class="op">,</span> pos<span class="op">:</span> Coord) <span class="op">-&gt;</span> Move <span class="op">{</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a>    <span class="pp">unimplemented!</span>()<span class="op">;</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a><span class="op">}</span></span></code></pre></div>
 <p>とあり</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">pub</span> <span class="kw">struct</span> Move <span class="op">{</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a>    <span class="kw">pub</span> pos<span class="op">:</span> Coord<span class="op">,</span></span>
-<span id="cb3-3"><a href="#cb3-3"></a>    flips<span class="op">:</span> [<span class="dt">u8</span><span class="op">;</span> <span class="dv">8</span>]<span class="op">,</span></span>
-<span id="cb3-4"><a href="#cb3-4"></a><span class="op">}</span></span>
-<span id="cb3-5"><a href="#cb3-5"></a></span>
-<span id="cb3-6"><a href="#cb3-6"></a><span class="kw">const</span> DIRECTIONS<span class="op">:</span> [Coord<span class="op">;</span> <span class="dv">8</span>] <span class="op">=</span> [</span>
-<span id="cb3-7"><a href="#cb3-7"></a>    Coord(<span class="op">-</span><span class="dv">1</span><span class="op">,</span> <span class="op">-</span><span class="dv">1</span>)<span class="op">,</span> <span class="co">//左上</span></span>
-<span id="cb3-8"><a href="#cb3-8"></a>    Coord(<span class="dv">0</span><span class="op">,</span> <span class="op">-</span><span class="dv">1</span>)<span class="op">,</span>  <span class="co">//真上</span></span>
-<span id="cb3-9"><a href="#cb3-9"></a>    Coord(<span class="dv">1</span><span class="op">,</span> <span class="op">-</span><span class="dv">1</span>)<span class="op">,</span>  <span class="co">//右上</span></span>
-<span id="cb3-10"><a href="#cb3-10"></a>    Coord(<span class="op">-</span><span class="dv">1</span><span class="op">,</span> <span class="dv">0</span>)<span class="op">,</span>  <span class="co">//真左</span></span>
-<span id="cb3-11"><a href="#cb3-11"></a>    Coord(<span class="dv">1</span><span class="op">,</span> <span class="dv">0</span>)<span class="op">,</span>   <span class="co">//真右</span></span>
-<span id="cb3-12"><a href="#cb3-12"></a>    Coord(<span class="op">-</span><span class="dv">1</span><span class="op">,</span> <span class="dv">1</span>)<span class="op">,</span>  <span class="co">//左下</span></span>
-<span id="cb3-13"><a href="#cb3-13"></a>    Coord(<span class="dv">0</span><span class="op">,</span> <span class="dv">1</span>)<span class="op">,</span>   <span class="co">//真下</span></span>
-<span id="cb3-14"><a href="#cb3-14"></a>    Coord(<span class="dv">1</span><span class="op">,</span> <span class="dv">1</span>)<span class="op">,</span>   <span class="co">//右下</span></span>
-<span id="cb3-15"><a href="#cb3-15"></a>]<span class="op">;</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="kw">pub</span> <span class="kw">struct</span> Move <span class="op">{</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a>    <span class="kw">pub</span> pos<span class="op">:</span> Coord<span class="op">,</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>    flips<span class="op">:</span> [<span class="dt">u8</span><span class="op">;</span> <span class="dv">8</span>]<span class="op">,</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a><span class="op">}</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a><span class="kw">const</span> DIRECTIONS<span class="op">:</span> [Coord<span class="op">;</span> <span class="dv">8</span>] <span class="op">=</span> [</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a>    Coord(<span class="op">-</span><span class="dv">1</span><span class="op">,</span> <span class="op">-</span><span class="dv">1</span>)<span class="op">,</span> <span class="co">//左上</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a>    Coord(<span class="dv">0</span><span class="op">,</span> <span class="op">-</span><span class="dv">1</span>)<span class="op">,</span>  <span class="co">//真上</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a>    Coord(<span class="dv">1</span><span class="op">,</span> <span class="op">-</span><span class="dv">1</span>)<span class="op">,</span>  <span class="co">//右上</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a>    Coord(<span class="op">-</span><span class="dv">1</span><span class="op">,</span> <span class="dv">0</span>)<span class="op">,</span>  <span class="co">//真左</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a>    Coord(<span class="dv">1</span><span class="op">,</span> <span class="dv">0</span>)<span class="op">,</span>   <span class="co">//真右</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a>    Coord(<span class="op">-</span><span class="dv">1</span><span class="op">,</span> <span class="dv">1</span>)<span class="op">,</span>  <span class="co">//左下</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a>    Coord(<span class="dv">0</span><span class="op">,</span> <span class="dv">1</span>)<span class="op">,</span>   <span class="co">//真下</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true"></a>    Coord(<span class="dv">1</span><span class="op">,</span> <span class="dv">1</span>)<span class="op">,</span>   <span class="co">//右下</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true"></a>]<span class="op">;</span></span></code></pre></div>
 <p>なので，<code>move.flips = DIRECTIONS.map (|dir| self.get_flip(piece, pos, dir))</code> って具合にいけそうだと思ったのだ． しかし，悲しいことに組み込みでは <strong>固定長配列に対するこのような操作はないようだ</strong>(間違っていたらゴメンナサイ…)． なので結局諦めて for 文を回した…</p>
 <p>何か良い方法があったら教えて欲しい.</p>
 <h3 id="パターンマッチの変数">2. パターンマッチの変数</h3>
 <p>すごい間抜けな話です．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb4-1"><a href="#cb4-1"></a><span class="co">/// 指定の色の石を指定の位置に置いたとき、指定の方向へひっくり返せる石の数を返す</span></span>
-<span id="cb4-2"><a href="#cb4-2"></a><span class="co">///</span></span>
-<span id="cb4-3"><a href="#cb4-3"></a><span class="co">/// * `piece` - 置く石の色</span></span>
-<span id="cb4-4"><a href="#cb4-4"></a><span class="co">/// * `pos` - 石を置く位置</span></span>
-<span id="cb4-5"><a href="#cb4-5"></a><span class="co">/// * `dir` - ひっくり返せる石を探す方向。`DIRECTIONS` の要素のいずれかが渡される</span></span>
-<span id="cb4-6"><a href="#cb4-6"></a><span class="kw">fn</span> get_flip(<span class="op">&amp;</span><span class="kw">self</span><span class="op">,</span> piece<span class="op">:</span> Piece<span class="op">,</span> <span class="kw">mut</span> pos<span class="op">:</span> Coord<span class="op">,</span> dir<span class="op">:</span> Coord) <span class="op">-&gt;</span> <span class="dt">u8</span> <span class="op">{</span></span>
-<span id="cb4-7"><a href="#cb4-7"></a>    <span class="kw">let</span> opponent <span class="op">=</span> piece<span class="op">.</span>opponent()<span class="op">;</span></span>
-<span id="cb4-8"><a href="#cb4-8"></a>    <span class="kw">let</span> <span class="kw">mut</span> cnt <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
-<span id="cb4-9"><a href="#cb4-9"></a>    <span class="kw">loop</span> <span class="op">{</span></span>
-<span id="cb4-10"><a href="#cb4-10"></a>        pos <span class="op">+=</span> dir<span class="op">;</span></span>
-<span id="cb4-11"><a href="#cb4-11"></a>        <span class="kw">match</span> <span class="kw">self</span><span class="op">.</span>matrix[pos] <span class="op">{</span></span>
-<span id="cb4-12"><a href="#cb4-12"></a>            <span class="cn">None</span>           <span class="op">=&gt;</span> <span class="kw">return</span> <span class="dv">0</span><span class="op">,</span></span>
-<span id="cb4-13"><a href="#cb4-13"></a>            <span class="cn">Some</span>(piece)    <span class="op">=&gt;</span> <span class="kw">return</span> cnt<span class="op">,</span></span>
-<span id="cb4-14"><a href="#cb4-14"></a>            <span class="cn">Some</span>(opponent) <span class="op">=&gt;</span> cnt <span class="op">+=</span> <span class="dv">1</span><span class="op">,</span></span>
-<span id="cb4-15"><a href="#cb4-15"></a>        <span class="op">}</span></span>
-<span id="cb4-16"><a href="#cb4-16"></a>    <span class="op">}</span></span>
-<span id="cb4-17"><a href="#cb4-17"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="co">/// 指定の色の石を指定の位置に置いたとき、指定の方向へひっくり返せる石の数を返す</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a><span class="co">///</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a><span class="co">/// * `piece` - 置く石の色</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a><span class="co">/// * `pos` - 石を置く位置</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a><span class="co">/// * `dir` - ひっくり返せる石を探す方向。`DIRECTIONS` の要素のいずれかが渡される</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a><span class="kw">fn</span> get_flip(<span class="op">&amp;</span><span class="kw">self</span><span class="op">,</span> piece<span class="op">:</span> Piece<span class="op">,</span> <span class="kw">mut</span> pos<span class="op">:</span> Coord<span class="op">,</span> dir<span class="op">:</span> Coord) <span class="op">-&gt;</span> <span class="dt">u8</span> <span class="op">{</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a>    <span class="kw">let</span> opponent <span class="op">=</span> piece<span class="op">.</span>opponent()<span class="op">;</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a>    <span class="kw">let</span> <span class="kw">mut</span> cnt <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a>    <span class="kw">loop</span> <span class="op">{</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true"></a>        pos <span class="op">+=</span> dir<span class="op">;</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true"></a>        <span class="kw">match</span> <span class="kw">self</span><span class="op">.</span>matrix[pos] <span class="op">{</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true"></a>            <span class="cn">None</span>           <span class="op">=&gt;</span> <span class="kw">return</span> <span class="dv">0</span><span class="op">,</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true"></a>            <span class="cn">Some</span>(piece)    <span class="op">=&gt;</span> <span class="kw">return</span> cnt<span class="op">,</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true"></a>            <span class="cn">Some</span>(opponent) <span class="op">=&gt;</span> cnt <span class="op">+=</span> <span class="dv">1</span><span class="op">,</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true"></a>        <span class="op">}</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true"></a>    <span class="op">}</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true"></a><span class="op">}</span></span></code></pre></div>
 <p>とか書いていたが，全然テストが通らない． それもそのはずで <strong>パターンマッチの中の変数は代入になる</strong> だけで，<code>if self.matrix[target] == Some(piece) { ... }</code> とは異なる． シャーディングぅぅぅぅぅとか思ったけど，きっと警告出てたよね…</p>
 <pre><code>warning: unreachable pattern
    --&gt; src/board.rs:165:17
@@ -234,22 +234,22 @@ warning: unused variable: `opponent`
 <p>出てたね…</p>
 <h3 id="index-の-x-と-y-が逆">3. index の x と y が逆</h3>
 <p>普段二重配列とかやんないからさ…</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb6-1"><a href="#cb6-1"></a><span class="co">/// ベクトルを表現する構造体</span></span>
-<span id="cb6-2"><a href="#cb6-2"></a><span class="kw">pub</span> <span class="kw">struct</span> Coord(<span class="kw">pub</span> <span class="dt">i8</span><span class="op">,</span> <span class="kw">pub</span> <span class="dt">i8</span>)<span class="op">;</span></span>
-<span id="cb6-3"><a href="#cb6-3"></a></span>
-<span id="cb6-4"><a href="#cb6-4"></a><span class="co">/// `[]` 演算子のオーバーロード</span></span>
-<span id="cb6-5"><a href="#cb6-5"></a><span class="kw">impl</span> <span class="bu">Index</span><span class="op">&lt;</span>Coord<span class="op">&gt;</span> <span class="kw">for</span> Matrix <span class="op">{</span></span>
-<span id="cb6-6"><a href="#cb6-6"></a>    <span class="kw">type</span> Output <span class="op">=</span> <span class="dt">Option</span><span class="op">&lt;</span>Piece<span class="op">&gt;;</span></span>
-<span id="cb6-7"><a href="#cb6-7"></a>    <span class="co">/// 第一引数に与えられた座標の状態を返す</span></span>
-<span id="cb6-8"><a href="#cb6-8"></a>    <span class="co">/// 座標が盤面の範囲外であった場合は None が返る。</span></span>
-<span id="cb6-9"><a href="#cb6-9"></a>    <span class="kw">fn</span> index(<span class="op">&amp;</span><span class="kw">self</span><span class="op">,</span> index<span class="op">:</span> Coord) <span class="op">-&gt;</span> <span class="op">&amp;</span><span class="dt">Self</span><span class="pp">::</span>Output <span class="op">{</span></span>
-<span id="cb6-10"><a href="#cb6-10"></a>        <span class="kw">if</span> <span class="kw">self</span><span class="op">.</span>is_in_range(index) <span class="op">{</span></span>
-<span id="cb6-11"><a href="#cb6-11"></a>            <span class="op">&amp;</span><span class="kw">self</span><span class="op">.</span><span class="dv">0</span>[index<span class="op">.</span><span class="dv">0</span> <span class="kw">as</span> <span class="dt">usize</span>][index<span class="op">.</span><span class="dv">1</span> <span class="kw">as</span> <span class="dt">usize</span>]</span>
-<span id="cb6-12"><a href="#cb6-12"></a>        <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
-<span id="cb6-13"><a href="#cb6-13"></a>            <span class="op">&amp;</span><span class="cn">None</span></span>
-<span id="cb6-14"><a href="#cb6-14"></a>        <span class="op">}</span></span>
-<span id="cb6-15"><a href="#cb6-15"></a>    <span class="op">}</span></span>
-<span id="cb6-16"><a href="#cb6-16"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="co">/// ベクトルを表現する構造体</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a><span class="kw">pub</span> <span class="kw">struct</span> Coord(<span class="kw">pub</span> <span class="dt">i8</span><span class="op">,</span> <span class="kw">pub</span> <span class="dt">i8</span>)<span class="op">;</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a><span class="co">/// `[]` 演算子のオーバーロード</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a><span class="kw">impl</span> <span class="bu">Index</span><span class="op">&lt;</span>Coord<span class="op">&gt;</span> <span class="kw">for</span> Matrix <span class="op">{</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a>    <span class="kw">type</span> Output <span class="op">=</span> <span class="dt">Option</span><span class="op">&lt;</span>Piece<span class="op">&gt;;</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true"></a>    <span class="co">/// 第一引数に与えられた座標の状態を返す</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true"></a>    <span class="co">/// 座標が盤面の範囲外であった場合は None が返る。</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true"></a>    <span class="kw">fn</span> index(<span class="op">&amp;</span><span class="kw">self</span><span class="op">,</span> index<span class="op">:</span> Coord) <span class="op">-&gt;</span> <span class="op">&amp;</span><span class="dt">Self</span><span class="pp">::</span>Output <span class="op">{</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true"></a>        <span class="kw">if</span> <span class="kw">self</span><span class="op">.</span>is_in_range(index) <span class="op">{</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true"></a>            <span class="op">&amp;</span><span class="kw">self</span><span class="op">.</span><span class="dv">0</span>[index<span class="op">.</span><span class="dv">0</span> <span class="kw">as</span> <span class="dt">usize</span>][index<span class="op">.</span><span class="dv">1</span> <span class="kw">as</span> <span class="dt">usize</span>]</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true"></a>        <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true"></a>            <span class="op">&amp;</span><span class="cn">None</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true"></a>        <span class="op">}</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true"></a>    <span class="op">}</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true"></a><span class="op">}</span></span></code></pre></div>
 <p>とか最初書いていた． <code>Coord</code> 型はひとつ目が X 座標でふたつ目が Y 座標． <code>&amp;self.0[index.0 as usize][index.1 as usize]</code> のところが逆ですね…</p>
 <h3 id="既に置いてあるかの検査">4. 既に置いてあるかの検査</h3>
 <p><code>moves</code> のテストが何故かとおらない． <code>moves</code> は盤上の全ての合法手，“手” を表す <code>Move</code> 型は手を打つ場所(<code>Coord</code> 型)と各方向のひっくり返す数を持っている，を列挙する関数．</p>
@@ -283,20 +283,20 @@ test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out</cod
 <p>基本構文を覚えてないので，とりあえず雑に書いてビルドして怒られたら直す，的なことをしながら，静的検査さいこ～とか言いながらやってた(疲れてる)． おかげで <code>&amp;</code> とか <code>*</code> を雑にあつかってて良くないですね． まぁ楽しかったからいいけど．</p>
 <h2 id="おまけ">おまけ</h2>
 <p><code>get_flip</code> 関数のところ，関数型プログラマーらしく(?)再帰にして見た. 速度は変わるんかな？</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">fn</span> get_flip(<span class="op">&amp;</span><span class="kw">self</span><span class="op">,</span> piece<span class="op">:</span> Piece<span class="op">,</span> pos<span class="op">:</span> Coord<span class="op">,</span> dir<span class="op">:</span> Coord) <span class="op">-&gt;</span> <span class="dt">u8</span> <span class="op">{</span></span>
-<span id="cb9-2"><a href="#cb9-2"></a>    <span class="kw">self</span><span class="op">.</span>go_get_flip(piece<span class="op">,</span> pos<span class="op">,</span> dir)<span class="op">.</span>unwrap_or(<span class="dv">0</span>)</span>
-<span id="cb9-3"><a href="#cb9-3"></a><span class="op">}</span></span>
-<span id="cb9-4"><a href="#cb9-4"></a></span>
-<span id="cb9-5"><a href="#cb9-5"></a><span class="kw">fn</span> go_get_flip(<span class="op">&amp;</span><span class="kw">self</span><span class="op">,</span> piece<span class="op">:</span> Piece<span class="op">,</span> pos<span class="op">:</span> Coord<span class="op">,</span> dir<span class="op">:</span> Coord) <span class="op">-&gt;</span> <span class="dt">Option</span><span class="op">&lt;</span><span class="dt">u8</span><span class="op">&gt;</span> <span class="op">{</span></span>
-<span id="cb9-6"><a href="#cb9-6"></a>    <span class="kw">let</span> target <span class="op">=</span> pos <span class="op">+</span> dir<span class="op">;</span></span>
-<span id="cb9-7"><a href="#cb9-7"></a>    <span class="kw">if</span> <span class="kw">self</span><span class="op">.</span>matrix[target] <span class="op">==</span> <span class="cn">Some</span>(piece<span class="op">.</span>opponent()) <span class="op">{</span></span>
-<span id="cb9-8"><a href="#cb9-8"></a>        <span class="kw">self</span><span class="op">.</span>go_get_flip(piece<span class="op">,</span> target<span class="op">,</span> dir)<span class="op">.</span>map(<span class="op">|</span>x<span class="op">|</span> x <span class="op">+</span> <span class="dv">1</span>)</span>
-<span id="cb9-9"><a href="#cb9-9"></a>    <span class="op">}</span> <span class="kw">else</span> <span class="kw">if</span> <span class="kw">self</span><span class="op">.</span>matrix[target] <span class="op">==</span> <span class="cn">Some</span>(piece) <span class="op">{</span></span>
-<span id="cb9-10"><a href="#cb9-10"></a>        <span class="cn">Some</span>(<span class="dv">0</span>)</span>
-<span id="cb9-11"><a href="#cb9-11"></a>    <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
-<span id="cb9-12"><a href="#cb9-12"></a>        <span class="cn">None</span></span>
-<span id="cb9-13"><a href="#cb9-13"></a>    <span class="op">}</span></span>
-<span id="cb9-14"><a href="#cb9-14"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a><span class="kw">fn</span> get_flip(<span class="op">&amp;</span><span class="kw">self</span><span class="op">,</span> piece<span class="op">:</span> Piece<span class="op">,</span> pos<span class="op">:</span> Coord<span class="op">,</span> dir<span class="op">:</span> Coord) <span class="op">-&gt;</span> <span class="dt">u8</span> <span class="op">{</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a>    <span class="kw">self</span><span class="op">.</span>go_get_flip(piece<span class="op">,</span> pos<span class="op">,</span> dir)<span class="op">.</span>unwrap_or(<span class="dv">0</span>)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true"></a><span class="op">}</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true"></a><span class="kw">fn</span> go_get_flip(<span class="op">&amp;</span><span class="kw">self</span><span class="op">,</span> piece<span class="op">:</span> Piece<span class="op">,</span> pos<span class="op">:</span> Coord<span class="op">,</span> dir<span class="op">:</span> Coord) <span class="op">-&gt;</span> <span class="dt">Option</span><span class="op">&lt;</span><span class="dt">u8</span><span class="op">&gt;</span> <span class="op">{</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true"></a>    <span class="kw">let</span> target <span class="op">=</span> pos <span class="op">+</span> dir<span class="op">;</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true"></a>    <span class="kw">if</span> <span class="kw">self</span><span class="op">.</span>matrix[target] <span class="op">==</span> <span class="cn">Some</span>(piece<span class="op">.</span>opponent()) <span class="op">{</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true"></a>        <span class="kw">self</span><span class="op">.</span>go_get_flip(piece<span class="op">,</span> target<span class="op">,</span> dir)<span class="op">.</span>map(<span class="op">|</span>x<span class="op">|</span> x <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true"></a>    <span class="op">}</span> <span class="kw">else</span> <span class="kw">if</span> <span class="kw">self</span><span class="op">.</span>matrix[target] <span class="op">==</span> <span class="cn">Some</span>(piece) <span class="op">{</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true"></a>        <span class="cn">Some</span>(<span class="dv">0</span>)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true"></a>    <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true"></a>        <span class="cn">None</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true"></a>    <span class="op">}</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true"></a><span class="op">}</span></span></code></pre></div>
 <h2 id="おしまい">おしまい</h2>
 <p>Haskell 版でも作ってみようかしらん．</p>
   </div>

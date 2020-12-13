@@ -129,13 +129,13 @@ post success, browse to: https://medium.com/@nobutada/e31f70013b36</code></pre>
 <h2 id="dockerise">Dockerise</h2>
 <p>Haskell Stack には Docker integration というのがある（あんまりドキュメントにまとまっていない機能）． これを使うことで，指定した Docker image 内で Haskell プロジェクトをビルドしたり，ビルドした実行ファイルを突っ込んだ Docker image を作成したりできる．</p>
 <p>今回は次のような設定を書き:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1"></a><span class="fu">docker</span><span class="kw">:</span></span>
-<span id="cb6-2"><a href="#cb6-2"></a><span class="at">  </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> fpco/stack-build</span></span>
-<span id="cb6-3"><a href="#cb6-3"></a><span class="at">  </span><span class="fu">enable</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span id="cb6-4"><a href="#cb6-4"></a><span class="fu">image</span><span class="kw">:</span></span>
-<span id="cb6-5"><a href="#cb6-5"></a><span class="at">  </span><span class="fu">container</span><span class="kw">:</span></span>
-<span id="cb6-6"><a href="#cb6-6"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> matsubara0507/mdium</span></span>
-<span id="cb6-7"><a href="#cb6-7"></a><span class="at">    </span><span class="fu">base</span><span class="kw">:</span><span class="at"> fpco/ubuntu-with-libgmp</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="fu">docker</span><span class="kw">:</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a><span class="at">  </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> fpco/stack-build</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a><span class="at">  </span><span class="fu">enable</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a><span class="fu">image</span><span class="kw">:</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a><span class="at">  </span><span class="fu">container</span><span class="kw">:</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> matsubara0507/mdium</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true"></a><span class="at">    </span><span class="fu">base</span><span class="kw">:</span><span class="at"> fpco/ubuntu-with-libgmp</span></span></code></pre></div>
 <p>次のようなコマンドを実行することで Docker image を作成している:</p>
 <pre><code>$ stack docker pull
 $ stack --docker image container</code></pre>

@@ -99,13 +99,13 @@ g :: X -&gt; (Y -&gt; Z) -- はダメらしい(もちろん Haskell はカッコ
 <h3 id="しんさんきぼうghcのderivingテクノロジー">「しんさんきぼう」GHCのderivingテクノロジー</h3>
 <p><a href="https://github.com/aiya000">aiya000</a> 氏の発表． <a href="https://aiya000.github.io/Maid/haskell-day-2019-deriving/#/">発表資料はこちら</a></p>
 <p>表題の通り，型クラスのインスタンス宣言を容易にしてくれる <code>deriving</code> 機能の最近の話． 標準のを含め，現在 GHC には <code>deriving</code> は4種類もあり，特に <code>DerivingVia</code> GHC 拡張はすごいぞ！って感じです． で，さらに4種類の <code>deriving</code> を整理して綺麗に記述するために <code>DerivingStrategies</code> という GHC 拡張があるとのこと．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1"></a><span class="ot">{-# LANGUAGE DerivingStrategies #-}</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="kw">newtype</span> <span class="dt">SomeBody</span> <span class="ot">=</span> <span class="dt">SomeBody</span> <span class="dt">Person</span></span>
-<span id="cb2-3"><a href="#cb2-3"></a>  <span class="kw">deriving</span>          (<span class="dt">Show</span>)                <span class="co">-- 標準</span></span>
-<span id="cb2-4"><a href="#cb2-4"></a>  <span class="kw">deriving</span> stock    (<span class="dt">Eq</span>)                  <span class="co">-- 標準</span></span>
-<span id="cb2-5"><a href="#cb2-5"></a>  <span class="kw">deriving</span> anyclass (<span class="dt">Visible</span>)             <span class="co">-- DeriveAnyClass</span></span>
-<span id="cb2-6"><a href="#cb2-6"></a>  <span class="kw">deriving</span> <span class="kw">newtype</span>  (<span class="dt">Enum</span>)                <span class="co">-- GeneralizedNewtypeDeriving</span></span>
-<span id="cb2-7"><a href="#cb2-7"></a>  <span class="kw">deriving</span>          (<span class="dt">Bounded</span>) via <span class="dt">Person</span>  <span class="co">-- DerivingVia</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="ot">{-# LANGUAGE DerivingStrategies #-}</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="kw">newtype</span> <span class="dt">SomeBody</span> <span class="ot">=</span> <span class="dt">SomeBody</span> <span class="dt">Person</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>  <span class="kw">deriving</span>          (<span class="dt">Show</span>)                <span class="co">-- 標準</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>  <span class="kw">deriving</span> stock    (<span class="dt">Eq</span>)                  <span class="co">-- 標準</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a>  <span class="kw">deriving</span> anyclass (<span class="dt">Visible</span>)             <span class="co">-- DeriveAnyClass</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a>  <span class="kw">deriving</span> <span class="kw">newtype</span>  (<span class="dt">Enum</span>)                <span class="co">-- GeneralizedNewtypeDeriving</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a>  <span class="kw">deriving</span>          (<span class="dt">Bounded</span>) via <span class="dt">Person</span>  <span class="co">-- DerivingVia</span></span></code></pre></div>
 <p>(発表資料より引用)ここまでのコードは書いたことも見たこともないけど笑</p>
 <p>ちなみに，<code>DerivingVia</code> は僕も前に「<a href="https://speakerdeck.com/konn/ben-dang-hasugoi-newtype">本当はすごい newtype</a>」っていう資料を読んでびっくりした記憶． 今回紹介した git-plantation では CLI の「なんらかの型の ID を列挙する」引数から「なんらかの型」を探す部分の ID 側に <code>DerivingVia</code> を使った． 思うにただの <code>Int</code> や <code>String</code> になりやすい ID 系の型は <code>DerivingVia</code> との相性がいい気がする．</p>
 <h3 id="haskellメタプログラミングによるegisonのパターンマッチの実装">HaskellメタプログラミングによるEgisonのパターンマッチの実装</h3>

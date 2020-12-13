@@ -135,93 +135,93 @@ dlisp&gt;&gt; (+ 1 1)
 <p>基本は Pure Lisp です． 当時は OOP かぶれだったので，継承と多相性を使って，複数の処理をディスパッチしてる． 普通は，もっと単純な仕組みで書けるけど，まぁ良い勉強になった．</p>
 <h2 id="section-2"></h2>
 <p>例えば，こういう抽象クラスを定義して置いて．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode java"><code class="sourceCode java"><span id="cb2-1"><a href="#cb2-1"></a><span class="co">// Exp</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="kw">import</span><span class="im"> Env;</span></span>
-<span id="cb2-3"><a href="#cb2-3"></a></span>
-<span id="cb2-4"><a href="#cb2-4"></a><span class="kw">abstract</span> <span class="kw">class</span> Exp {</span>
-<span id="cb2-5"><a href="#cb2-5"></a>  Exp <span class="fu">eval</span>(Env env);</span>
-<span id="cb2-6"><a href="#cb2-6"></a>  Exp <span class="fu">apply</span>(Exp actuals);</span>
-<span id="cb2-7"><a href="#cb2-7"></a>  <span class="dt">void</span> <span class="fu">print</span>();</span>
-<span id="cb2-8"><a href="#cb2-8"></a></span>
-<span id="cb2-9"><a href="#cb2-9"></a>  Exp <span class="fu">atom</span>();</span>
-<span id="cb2-10"><a href="#cb2-10"></a>  Exp <span class="fu">car</span>();</span>
-<span id="cb2-11"><a href="#cb2-11"></a>  Exp <span class="fu">cdr</span>();</span>
-<span id="cb2-12"><a href="#cb2-12"></a></span>
-<span id="cb2-13"><a href="#cb2-13"></a>  real <span class="fu">value</span>() {</span>
-<span id="cb2-14"><a href="#cb2-14"></a>    <span class="kw">throw</span> <span class="kw">new</span> <span class="bu">Exception</span>(<span class="st">&quot;error: this exp is not number&quot;</span>);</span>
-<span id="cb2-15"><a href="#cb2-15"></a>  }</span>
-<span id="cb2-16"><a href="#cb2-16"></a></span>
-<span id="cb2-17"><a href="#cb2-17"></a>  string <span class="fu">name</span>() {</span>
-<span id="cb2-18"><a href="#cb2-18"></a>    <span class="kw">throw</span> <span class="kw">new</span> <span class="bu">Exception</span>(<span class="st">&quot;error: this exp is not symbol&quot;</span>);</span>
-<span id="cb2-19"><a href="#cb2-19"></a>  }</span>
-<span id="cb2-20"><a href="#cb2-20"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode java"><code class="sourceCode java"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="co">// Exp</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="kw">import</span><span class="im"> Env;</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a><span class="kw">abstract</span> <span class="kw">class</span> Exp {</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a>  Exp <span class="fu">eval</span>(Env env);</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a>  Exp <span class="fu">apply</span>(Exp actuals);</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a>  <span class="dt">void</span> <span class="fu">print</span>();</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a>  Exp <span class="fu">atom</span>();</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a>  Exp <span class="fu">car</span>();</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a>  Exp <span class="fu">cdr</span>();</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true"></a>  real <span class="fu">value</span>() {</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true"></a>    <span class="kw">throw</span> <span class="kw">new</span> <span class="bu">Exception</span>(<span class="st">&quot;error: this exp is not number&quot;</span>);</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true"></a>  }</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true"></a></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true"></a>  string <span class="fu">name</span>() {</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true"></a>    <span class="kw">throw</span> <span class="kw">new</span> <span class="bu">Exception</span>(<span class="st">&quot;error: this exp is not symbol&quot;</span>);</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true"></a>  }</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true"></a>}</span></code></pre></div>
 <p>プリミティブな構成要素ごとに，この抽象クラスを継承して実装を与える．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode java"><code class="sourceCode java"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">import</span><span class="im"> Exp, Nil, True, Env, Syntax;</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a></span>
-<span id="cb3-3"><a href="#cb3-3"></a><span class="kw">class</span> <span class="bu">List</span> : Exp {</span>
-<span id="cb3-4"><a href="#cb3-4"></a><span class="kw">protected</span>:</span>
-<span id="cb3-5"><a href="#cb3-5"></a>  Exp exp1;</span>
-<span id="cb3-6"><a href="#cb3-6"></a>  Exp exp2;</span>
-<span id="cb3-7"><a href="#cb3-7"></a></span>
-<span id="cb3-8"><a href="#cb3-8"></a><span class="kw">private</span>:</span>
-<span id="cb3-9"><a href="#cb3-9"></a>  Exp <span class="fu">make_evlist</span>(Exp exp, Env env)</span>
-<span id="cb3-10"><a href="#cb3-10"></a>  {</span>
-<span id="cb3-11"><a href="#cb3-11"></a>    <span class="kw">if</span> (exp == Nil.<span class="fu">Nil</span>.<span class="fu">gen</span>)</span>
-<span id="cb3-12"><a href="#cb3-12"></a>      <span class="kw">return</span> exp;</span>
-<span id="cb3-13"><a href="#cb3-13"></a>    <span class="kw">else</span></span>
-<span id="cb3-14"><a href="#cb3-14"></a>      <span class="kw">return</span> <span class="kw">new</span> <span class="bu">List</span>(exp.<span class="fu">car</span>.<span class="fu">eval</span>(env), <span class="fu">make_evlist</span>(exp.<span class="fu">cdr</span>, env));</span>
-<span id="cb3-15"><a href="#cb3-15"></a>  }</span>
-<span id="cb3-16"><a href="#cb3-16"></a></span>
-<span id="cb3-17"><a href="#cb3-17"></a><span class="kw">public</span>:</span>
-<span id="cb3-18"><a href="#cb3-18"></a>  <span class="kw">this</span> (Exp e1, Exp e2) {</span>
-<span id="cb3-19"><a href="#cb3-19"></a>    exp1 = e1;</span>
-<span id="cb3-20"><a href="#cb3-20"></a>    exp2 = e2;</span>
-<span id="cb3-21"><a href="#cb3-21"></a>  }</span>
-<span id="cb3-22"><a href="#cb3-22"></a></span>
-<span id="cb3-23"><a href="#cb3-23"></a>  override Exp <span class="fu">eval</span>(Env env)</span>
-<span id="cb3-24"><a href="#cb3-24"></a>  {</span>
-<span id="cb3-25"><a href="#cb3-25"></a>    Exp procedure = exp1.<span class="fu">eval</span>(env);</span>
-<span id="cb3-26"><a href="#cb3-26"></a></span>
-<span id="cb3-27"><a href="#cb3-27"></a>    <span class="kw">if</span> (procedure == Cond.<span class="fu">Cond</span>.<span class="fu">gen</span>)</span>
-<span id="cb3-28"><a href="#cb3-28"></a>      <span class="kw">return</span> Cond.<span class="fu">Cond</span>.<span class="fu">cond</span>(exp2, env);</span>
-<span id="cb3-29"><a href="#cb3-29"></a></span>
-<span id="cb3-30"><a href="#cb3-30"></a>    <span class="kw">if</span> (procedure == Define.<span class="fu">Define</span>.<span class="fu">gen</span>)</span>
-<span id="cb3-31"><a href="#cb3-31"></a>      <span class="kw">return</span> Define.<span class="fu">Define</span>.<span class="fu">define</span>(exp2, env);</span>
-<span id="cb3-32"><a href="#cb3-32"></a></span>
-<span id="cb3-33"><a href="#cb3-33"></a>    <span class="kw">if</span> (procedure == Lambda.<span class="fu">Lambda</span>.<span class="fu">gen</span>)</span>
-<span id="cb3-34"><a href="#cb3-34"></a>      <span class="kw">return</span> Lambda.<span class="fu">Lambda</span>.<span class="fu">lambda</span>(exp2, env);</span>
-<span id="cb3-35"><a href="#cb3-35"></a></span>
-<span id="cb3-36"><a href="#cb3-36"></a>    <span class="kw">if</span> (procedure == Quote.<span class="fu">Quote</span>.<span class="fu">gen</span>)</span>
-<span id="cb3-37"><a href="#cb3-37"></a>      <span class="kw">return</span> Quote.<span class="fu">Quote</span>.<span class="fu">quote</span>(exp2, env);</span>
-<span id="cb3-38"><a href="#cb3-38"></a></span>
-<span id="cb3-39"><a href="#cb3-39"></a>    <span class="kw">return</span> procedure.<span class="fu">apply</span>(<span class="fu">make_evlist</span>(exp2, env));</span>
-<span id="cb3-40"><a href="#cb3-40"></a>  }</span>
-<span id="cb3-41"><a href="#cb3-41"></a></span>
-<span id="cb3-42"><a href="#cb3-42"></a>  override Exp <span class="fu">apply</span>(Exp actuals) {</span>
-<span id="cb3-43"><a href="#cb3-43"></a>    <span class="kw">throw</span> <span class="kw">new</span> <span class="bu">Exception</span>(<span class="st">&quot;error: apply is undefined&quot;</span>);</span>
-<span id="cb3-44"><a href="#cb3-44"></a>  }</span>
-<span id="cb3-45"><a href="#cb3-45"></a></span>
-<span id="cb3-46"><a href="#cb3-46"></a>  override <span class="dt">void</span> <span class="fu">print</span>()</span>
-<span id="cb3-47"><a href="#cb3-47"></a>  {</span>
-<span id="cb3-48"><a href="#cb3-48"></a>    <span class="fu">write</span>(<span class="st">&quot;(&quot;</span>);</span>
-<span id="cb3-49"><a href="#cb3-49"></a>    exp1.<span class="fu">print</span>;</span>
-<span id="cb3-50"><a href="#cb3-50"></a>    <span class="fu">write</span>(<span class="st">&quot; &quot;</span>);</span>
-<span id="cb3-51"><a href="#cb3-51"></a>    exp2.<span class="fu">print</span>;</span>
-<span id="cb3-52"><a href="#cb3-52"></a>    <span class="fu">write</span>(<span class="st">&quot;)&quot;</span>);</span>
-<span id="cb3-53"><a href="#cb3-53"></a>  }</span>
-<span id="cb3-54"><a href="#cb3-54"></a></span>
-<span id="cb3-55"><a href="#cb3-55"></a>  override Exp <span class="fu">atom</span>() {</span>
-<span id="cb3-56"><a href="#cb3-56"></a>    <span class="kw">return</span> Nil.<span class="fu">Nil</span>.<span class="fu">gen</span>;</span>
-<span id="cb3-57"><a href="#cb3-57"></a>  }</span>
-<span id="cb3-58"><a href="#cb3-58"></a></span>
-<span id="cb3-59"><a href="#cb3-59"></a>  override Exp <span class="fu">car</span>() {</span>
-<span id="cb3-60"><a href="#cb3-60"></a>    <span class="kw">return</span> exp1;</span>
-<span id="cb3-61"><a href="#cb3-61"></a>  }</span>
-<span id="cb3-62"><a href="#cb3-62"></a></span>
-<span id="cb3-63"><a href="#cb3-63"></a>  override Exp <span class="fu">cdr</span>() {</span>
-<span id="cb3-64"><a href="#cb3-64"></a>    <span class="kw">return</span> exp2;</span>
-<span id="cb3-65"><a href="#cb3-65"></a>  }</span>
-<span id="cb3-66"><a href="#cb3-66"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode java"><code class="sourceCode java"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="kw">import</span><span class="im"> Exp, Nil, True, Env, Syntax;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a><span class="kw">class</span> <span class="bu">List</span> : Exp {</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a><span class="kw">protected</span>:</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a>  Exp exp1;</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a>  Exp exp2;</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a><span class="kw">private</span>:</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a>  Exp <span class="fu">make_evlist</span>(Exp exp, Env env)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a>  {</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a>    <span class="kw">if</span> (exp == Nil.<span class="fu">Nil</span>.<span class="fu">gen</span>)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a>      <span class="kw">return</span> exp;</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a>    <span class="kw">else</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true"></a>      <span class="kw">return</span> <span class="kw">new</span> <span class="bu">List</span>(exp.<span class="fu">car</span>.<span class="fu">eval</span>(env), <span class="fu">make_evlist</span>(exp.<span class="fu">cdr</span>, env));</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true"></a>  }</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true"></a></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true"></a><span class="kw">public</span>:</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true"></a>  <span class="kw">this</span> (Exp e1, Exp e2) {</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true"></a>    exp1 = e1;</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true"></a>    exp2 = e2;</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true"></a>  }</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true"></a></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true"></a>  override Exp <span class="fu">eval</span>(Env env)</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true"></a>  {</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true"></a>    Exp procedure = exp1.<span class="fu">eval</span>(env);</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true"></a></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true"></a>    <span class="kw">if</span> (procedure == Cond.<span class="fu">Cond</span>.<span class="fu">gen</span>)</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true"></a>      <span class="kw">return</span> Cond.<span class="fu">Cond</span>.<span class="fu">cond</span>(exp2, env);</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true"></a></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true"></a>    <span class="kw">if</span> (procedure == Define.<span class="fu">Define</span>.<span class="fu">gen</span>)</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true"></a>      <span class="kw">return</span> Define.<span class="fu">Define</span>.<span class="fu">define</span>(exp2, env);</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true"></a></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true"></a>    <span class="kw">if</span> (procedure == Lambda.<span class="fu">Lambda</span>.<span class="fu">gen</span>)</span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true"></a>      <span class="kw">return</span> Lambda.<span class="fu">Lambda</span>.<span class="fu">lambda</span>(exp2, env);</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true"></a></span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true"></a>    <span class="kw">if</span> (procedure == Quote.<span class="fu">Quote</span>.<span class="fu">gen</span>)</span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true"></a>      <span class="kw">return</span> Quote.<span class="fu">Quote</span>.<span class="fu">quote</span>(exp2, env);</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true"></a></span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true"></a>    <span class="kw">return</span> procedure.<span class="fu">apply</span>(<span class="fu">make_evlist</span>(exp2, env));</span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true"></a>  }</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true"></a></span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true"></a>  override Exp <span class="fu">apply</span>(Exp actuals) {</span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true"></a>    <span class="kw">throw</span> <span class="kw">new</span> <span class="bu">Exception</span>(<span class="st">&quot;error: apply is undefined&quot;</span>);</span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true"></a>  }</span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true"></a></span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true"></a>  override <span class="dt">void</span> <span class="fu">print</span>()</span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true"></a>  {</span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true"></a>    <span class="fu">write</span>(<span class="st">&quot;(&quot;</span>);</span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true"></a>    exp1.<span class="fu">print</span>;</span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true"></a>    <span class="fu">write</span>(<span class="st">&quot; &quot;</span>);</span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true"></a>    exp2.<span class="fu">print</span>;</span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true"></a>    <span class="fu">write</span>(<span class="st">&quot;)&quot;</span>);</span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true"></a>  }</span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true"></a></span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true"></a>  override Exp <span class="fu">atom</span>() {</span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true"></a>    <span class="kw">return</span> Nil.<span class="fu">Nil</span>.<span class="fu">gen</span>;</span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true"></a>  }</span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true"></a></span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true"></a>  override Exp <span class="fu">car</span>() {</span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true"></a>    <span class="kw">return</span> exp1;</span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true"></a>  }</span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true"></a></span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true"></a>  override Exp <span class="fu">cdr</span>() {</span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true"></a>    <span class="kw">return</span> exp2;</span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true"></a>  }</span>
+<span id="cb3-66"><a href="#cb3-66" aria-hidden="true"></a>}</span></code></pre></div>
 <p>うーーん，今見ると例外とかシングルトンとかを気にせず使ってて，ヤバいなぁ(笑)</p>
 <h2 id="section-3"></h2>
 <p>で，さらに遅延評価を加えた． (たしか) SCIP の最後の方で，正確評価の Lisp に遅延評価を加えるための話が書いてある． しかし，SCIP に習って遅延評価を追加してもうまくいかなかった． どーしてかなぁとイロイロ考えた結果，Pure Lisp にただ記法を加えるだけではダメで，いわゆる Closure が必要だと言うのに気づき実装した． 気づいたときはひとりでずいぶん喜んでた記憶がある(笑)</p>

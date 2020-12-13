@@ -95,84 +95,84 @@
 <p>Docker に Jupyter(Python) と SML/NJ を入れて作業した． SML/NJ のインストールの仕方は，<a href="http://www.smlnj.org/install/index.html">公式サイト</a>と <a href="https://hub.docker.com/r/msgodf/dockerfile-smlnj/~/dockerfile/">Docker Hub にあった Dockerfile</a> を参考にした．</p>
 <p>リポジトリは<a href="https://github.com/matsubara0507/simple-ismlnj">ココ</a>で Dockerイメージは<a href="https://hub.docker.com/r/matsubara0507/simple-ismlnj/">コチラ</a>．</p>
 <p>最終的なカーネルのコードはこんな感じ．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1"></a><span class="im">from</span> ipykernel.kernelbase <span class="im">import</span> Kernel</span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="im">from</span> pexpect <span class="im">import</span> replwrap, EOF</span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="im">from</span> subprocess <span class="im">import</span> check_output</span>
-<span id="cb1-4"><a href="#cb1-4"></a></span>
-<span id="cb1-5"><a href="#cb1-5"></a><span class="im">import</span> re</span>
-<span id="cb1-6"><a href="#cb1-6"></a><span class="im">import</span> signal</span>
-<span id="cb1-7"><a href="#cb1-7"></a></span>
-<span id="cb1-8"><a href="#cb1-8"></a>crlf_pat <span class="op">=</span> re.<span class="bu">compile</span>(<span class="vs">r'[\r\n]+'</span>)</span>
-<span id="cb1-9"><a href="#cb1-9"></a></span>
-<span id="cb1-10"><a href="#cb1-10"></a><span class="kw">class</span> SMLNJKernel(Kernel):</span>
-<span id="cb1-11"><a href="#cb1-11"></a>    implementation <span class="op">=</span> <span class="st">'SML/NJ'</span></span>
-<span id="cb1-12"><a href="#cb1-12"></a>    implementation_version <span class="op">=</span> <span class="st">'0.0.1'</span></span>
-<span id="cb1-13"><a href="#cb1-13"></a></span>
-<span id="cb1-14"><a href="#cb1-14"></a>    language_info <span class="op">=</span> {</span>
-<span id="cb1-15"><a href="#cb1-15"></a>        <span class="st">'name'</span>: <span class="st">'SML/NJ'</span>,</span>
-<span id="cb1-16"><a href="#cb1-16"></a>        <span class="st">'codemirror_mode'</span>: <span class="st">'fsharp'</span>,</span>
-<span id="cb1-17"><a href="#cb1-17"></a>        <span class="st">'mimetype'</span>: <span class="st">'text/plain'</span>,</span>
-<span id="cb1-18"><a href="#cb1-18"></a>        <span class="st">'file_extension'</span>: <span class="st">'.sml'</span></span>
-<span id="cb1-19"><a href="#cb1-19"></a>    }</span>
-<span id="cb1-20"><a href="#cb1-20"></a></span>
-<span id="cb1-21"><a href="#cb1-21"></a>    _language_version <span class="op">=</span> <span class="st">'110.81'</span></span>
-<span id="cb1-22"><a href="#cb1-22"></a></span>
-<span id="cb1-23"><a href="#cb1-23"></a></span>
-<span id="cb1-24"><a href="#cb1-24"></a>    <span class="at">@property</span></span>
-<span id="cb1-25"><a href="#cb1-25"></a>    <span class="kw">def</span> language_version(<span class="va">self</span>):</span>
-<span id="cb1-26"><a href="#cb1-26"></a>        <span class="cf">if</span> <span class="va">self</span>._language_version <span class="kw">is</span> <span class="va">None</span>:</span>
-<span id="cb1-27"><a href="#cb1-27"></a>            <span class="va">self</span>._language_version <span class="op">=</span> check_output([<span class="st">'sml'</span>, <span class="st">''</span>]).decode(<span class="st">'utf-8'</span>)</span>
-<span id="cb1-28"><a href="#cb1-28"></a>        <span class="cf">return</span> <span class="va">self</span>._language_version</span>
-<span id="cb1-29"><a href="#cb1-29"></a></span>
-<span id="cb1-30"><a href="#cb1-30"></a>    <span class="at">@property</span></span>
-<span id="cb1-31"><a href="#cb1-31"></a>    <span class="kw">def</span> banner(<span class="va">self</span>):</span>
-<span id="cb1-32"><a href="#cb1-32"></a>        <span class="cf">return</span> <span class="st">u'Simple SML/NJ Kernel (</span><span class="sc">%s</span><span class="st">)'</span> <span class="op">%</span> <span class="va">self</span>.language_version</span>
-<span id="cb1-33"><a href="#cb1-33"></a></span>
-<span id="cb1-34"><a href="#cb1-34"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, <span class="op">**</span>kwargs):</span>
-<span id="cb1-35"><a href="#cb1-35"></a>        Kernel.<span class="fu">__init__</span>(<span class="va">self</span>, <span class="op">**</span>kwargs)</span>
-<span id="cb1-36"><a href="#cb1-36"></a>        <span class="va">self</span>._start_smlnj()</span>
-<span id="cb1-37"><a href="#cb1-37"></a></span>
-<span id="cb1-38"><a href="#cb1-38"></a>    <span class="kw">def</span> _start_smlnj(<span class="va">self</span>):</span>
-<span id="cb1-39"><a href="#cb1-39"></a>        sig <span class="op">=</span> signal.signal(signal.SIGINT, signal.SIG_DFL)</span>
-<span id="cb1-40"><a href="#cb1-40"></a>        <span class="cf">try</span>:</span>
-<span id="cb1-41"><a href="#cb1-41"></a>            <span class="va">self</span>.smlnjwrapper <span class="op">=</span> replwrap.REPLWrapper(<span class="st">&quot;sml&quot;</span>, <span class="st">&quot;- &quot;</span>, <span class="va">None</span>)</span>
-<span id="cb1-42"><a href="#cb1-42"></a>        <span class="cf">finally</span>:</span>
-<span id="cb1-43"><a href="#cb1-43"></a>            signal.signal(signal.SIGINT, sig)</span>
-<span id="cb1-44"><a href="#cb1-44"></a></span>
-<span id="cb1-45"><a href="#cb1-45"></a>    <span class="kw">def</span> do_execute(<span class="va">self</span>, code, silent, store_history<span class="op">=</span><span class="va">True</span>,</span>
-<span id="cb1-46"><a href="#cb1-46"></a>                   user_expressions<span class="op">=</span><span class="va">None</span>, allow_stdin<span class="op">=</span><span class="va">False</span>):</span>
-<span id="cb1-47"><a href="#cb1-47"></a>        code <span class="op">=</span> crlf_pat.sub(<span class="st">' '</span>, code.strip())</span>
-<span id="cb1-48"><a href="#cb1-48"></a>        <span class="cf">if</span> <span class="kw">not</span> code:</span>
-<span id="cb1-49"><a href="#cb1-49"></a>            <span class="cf">return</span> {<span class="st">'status'</span>: <span class="st">'ok'</span>, <span class="st">'execution_count'</span>: <span class="va">self</span>.execution_count,</span>
-<span id="cb1-50"><a href="#cb1-50"></a>                    <span class="st">'payload'</span>: [], <span class="st">'user_expressions'</span>: {}}</span>
-<span id="cb1-51"><a href="#cb1-51"></a></span>
-<span id="cb1-52"><a href="#cb1-52"></a>        interrupted <span class="op">=</span> <span class="va">False</span></span>
-<span id="cb1-53"><a href="#cb1-53"></a>        <span class="cf">try</span>:</span>
-<span id="cb1-54"><a href="#cb1-54"></a>            output <span class="op">=</span> <span class="va">self</span>.smlnjwrapper.run_command(code, timeout<span class="op">=</span><span class="va">None</span>)</span>
-<span id="cb1-55"><a href="#cb1-55"></a>        <span class="cf">except</span> <span class="pp">KeyboardInterrupt</span>:</span>
-<span id="cb1-56"><a href="#cb1-56"></a>            <span class="va">self</span>.smlnjwrapper.child.sendintr()</span>
-<span id="cb1-57"><a href="#cb1-57"></a>            interrupted <span class="op">=</span> <span class="va">True</span></span>
-<span id="cb1-58"><a href="#cb1-58"></a>            <span class="va">self</span>.smlnjwrapper._expect_prompt()</span>
-<span id="cb1-59"><a href="#cb1-59"></a>            output <span class="op">=</span> <span class="va">self</span>.smlnjwrapper.child.before</span>
-<span id="cb1-60"><a href="#cb1-60"></a>        <span class="cf">except</span> EOF:</span>
-<span id="cb1-61"><a href="#cb1-61"></a>            output <span class="op">=</span> <span class="va">self</span>.smlnjwrapper.child.before <span class="op">+</span> <span class="st">'Restarting SML/NJ'</span></span>
-<span id="cb1-62"><a href="#cb1-62"></a>            <span class="va">self</span>._start_smlnjang()</span>
-<span id="cb1-63"><a href="#cb1-63"></a></span>
-<span id="cb1-64"><a href="#cb1-64"></a>        <span class="cf">if</span> <span class="kw">not</span> silent:</span>
-<span id="cb1-65"><a href="#cb1-65"></a>            <span class="co"># Send standard output</span></span>
-<span id="cb1-66"><a href="#cb1-66"></a>            stream_content <span class="op">=</span> {<span class="st">'name'</span>: <span class="st">'stdout'</span>, <span class="st">'text'</span>: output}</span>
-<span id="cb1-67"><a href="#cb1-67"></a>            <span class="va">self</span>.send_response(<span class="va">self</span>.iopub_socket, <span class="st">'stream'</span>, stream_content)</span>
-<span id="cb1-68"><a href="#cb1-68"></a></span>
-<span id="cb1-69"><a href="#cb1-69"></a>        <span class="cf">if</span> interrupted:</span>
-<span id="cb1-70"><a href="#cb1-70"></a>            <span class="cf">return</span> {<span class="st">'status'</span>: <span class="st">'abort'</span>, <span class="st">'execution_count'</span>: <span class="va">self</span>.execution_count}</span>
-<span id="cb1-71"><a href="#cb1-71"></a></span>
-<span id="cb1-72"><a href="#cb1-72"></a>        <span class="cf">return</span> {<span class="st">'status'</span>: <span class="st">'ok'</span>, <span class="st">'execution_count'</span>: <span class="va">self</span>.execution_count,</span>
-<span id="cb1-73"><a href="#cb1-73"></a>                <span class="st">'payload'</span>: [], <span class="st">'user_expressions'</span>: {}}</span>
-<span id="cb1-74"><a href="#cb1-74"></a></span>
-<span id="cb1-75"><a href="#cb1-75"></a><span class="co"># ===== MAIN =====</span></span>
-<span id="cb1-76"><a href="#cb1-76"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">'__main__'</span>:</span>
-<span id="cb1-77"><a href="#cb1-77"></a>    <span class="im">from</span> IPython.kernel.zmq.kernelapp <span class="im">import</span> IPKernelApp</span>
-<span id="cb1-78"><a href="#cb1-78"></a>    IPKernelApp.launch_instance(kernel_class<span class="op">=</span>SMLNJKernel)</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="im">from</span> ipykernel.kernelbase <span class="im">import</span> Kernel</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="im">from</span> pexpect <span class="im">import</span> replwrap, EOF</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="im">from</span> subprocess <span class="im">import</span> check_output</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a><span class="im">import</span> re</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a><span class="im">import</span> signal</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>crlf_pat <span class="op">=</span> re.<span class="bu">compile</span>(<span class="vs">r'[\r\n]+'</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a><span class="kw">class</span> SMLNJKernel(Kernel):</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true"></a>    implementation <span class="op">=</span> <span class="st">'SML/NJ'</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true"></a>    implementation_version <span class="op">=</span> <span class="st">'0.0.1'</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true"></a>    language_info <span class="op">=</span> {</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true"></a>        <span class="st">'name'</span>: <span class="st">'SML/NJ'</span>,</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true"></a>        <span class="st">'codemirror_mode'</span>: <span class="st">'fsharp'</span>,</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true"></a>        <span class="st">'mimetype'</span>: <span class="st">'text/plain'</span>,</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true"></a>        <span class="st">'file_extension'</span>: <span class="st">'.sml'</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true"></a>    }</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true"></a></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true"></a>    _language_version <span class="op">=</span> <span class="st">'110.81'</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true"></a></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true"></a></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true"></a>    <span class="at">@property</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true"></a>    <span class="kw">def</span> language_version(<span class="va">self</span>):</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true"></a>        <span class="cf">if</span> <span class="va">self</span>._language_version <span class="kw">is</span> <span class="va">None</span>:</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true"></a>            <span class="va">self</span>._language_version <span class="op">=</span> check_output([<span class="st">'sml'</span>, <span class="st">''</span>]).decode(<span class="st">'utf-8'</span>)</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true"></a>        <span class="cf">return</span> <span class="va">self</span>._language_version</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true"></a></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true"></a>    <span class="at">@property</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true"></a>    <span class="kw">def</span> banner(<span class="va">self</span>):</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true"></a>        <span class="cf">return</span> <span class="st">u'Simple SML/NJ Kernel (</span><span class="sc">%s</span><span class="st">)'</span> <span class="op">%</span> <span class="va">self</span>.language_version</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true"></a></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, <span class="op">**</span>kwargs):</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true"></a>        Kernel.<span class="fu">__init__</span>(<span class="va">self</span>, <span class="op">**</span>kwargs)</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true"></a>        <span class="va">self</span>._start_smlnj()</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true"></a></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true"></a>    <span class="kw">def</span> _start_smlnj(<span class="va">self</span>):</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true"></a>        sig <span class="op">=</span> signal.signal(signal.SIGINT, signal.SIG_DFL)</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true"></a>        <span class="cf">try</span>:</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true"></a>            <span class="va">self</span>.smlnjwrapper <span class="op">=</span> replwrap.REPLWrapper(<span class="st">&quot;sml&quot;</span>, <span class="st">&quot;- &quot;</span>, <span class="va">None</span>)</span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true"></a>        <span class="cf">finally</span>:</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true"></a>            signal.signal(signal.SIGINT, sig)</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true"></a></span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true"></a>    <span class="kw">def</span> do_execute(<span class="va">self</span>, code, silent, store_history<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true"></a>                   user_expressions<span class="op">=</span><span class="va">None</span>, allow_stdin<span class="op">=</span><span class="va">False</span>):</span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true"></a>        code <span class="op">=</span> crlf_pat.sub(<span class="st">' '</span>, code.strip())</span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true"></a>        <span class="cf">if</span> <span class="kw">not</span> code:</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true"></a>            <span class="cf">return</span> {<span class="st">'status'</span>: <span class="st">'ok'</span>, <span class="st">'execution_count'</span>: <span class="va">self</span>.execution_count,</span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true"></a>                    <span class="st">'payload'</span>: [], <span class="st">'user_expressions'</span>: {}}</span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true"></a></span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true"></a>        interrupted <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true"></a>        <span class="cf">try</span>:</span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true"></a>            output <span class="op">=</span> <span class="va">self</span>.smlnjwrapper.run_command(code, timeout<span class="op">=</span><span class="va">None</span>)</span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true"></a>        <span class="cf">except</span> <span class="pp">KeyboardInterrupt</span>:</span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true"></a>            <span class="va">self</span>.smlnjwrapper.child.sendintr()</span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true"></a>            interrupted <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true"></a>            <span class="va">self</span>.smlnjwrapper._expect_prompt()</span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true"></a>            output <span class="op">=</span> <span class="va">self</span>.smlnjwrapper.child.before</span>
+<span id="cb1-60"><a href="#cb1-60" aria-hidden="true"></a>        <span class="cf">except</span> EOF:</span>
+<span id="cb1-61"><a href="#cb1-61" aria-hidden="true"></a>            output <span class="op">=</span> <span class="va">self</span>.smlnjwrapper.child.before <span class="op">+</span> <span class="st">'Restarting SML/NJ'</span></span>
+<span id="cb1-62"><a href="#cb1-62" aria-hidden="true"></a>            <span class="va">self</span>._start_smlnjang()</span>
+<span id="cb1-63"><a href="#cb1-63" aria-hidden="true"></a></span>
+<span id="cb1-64"><a href="#cb1-64" aria-hidden="true"></a>        <span class="cf">if</span> <span class="kw">not</span> silent:</span>
+<span id="cb1-65"><a href="#cb1-65" aria-hidden="true"></a>            <span class="co"># Send standard output</span></span>
+<span id="cb1-66"><a href="#cb1-66" aria-hidden="true"></a>            stream_content <span class="op">=</span> {<span class="st">'name'</span>: <span class="st">'stdout'</span>, <span class="st">'text'</span>: output}</span>
+<span id="cb1-67"><a href="#cb1-67" aria-hidden="true"></a>            <span class="va">self</span>.send_response(<span class="va">self</span>.iopub_socket, <span class="st">'stream'</span>, stream_content)</span>
+<span id="cb1-68"><a href="#cb1-68" aria-hidden="true"></a></span>
+<span id="cb1-69"><a href="#cb1-69" aria-hidden="true"></a>        <span class="cf">if</span> interrupted:</span>
+<span id="cb1-70"><a href="#cb1-70" aria-hidden="true"></a>            <span class="cf">return</span> {<span class="st">'status'</span>: <span class="st">'abort'</span>, <span class="st">'execution_count'</span>: <span class="va">self</span>.execution_count}</span>
+<span id="cb1-71"><a href="#cb1-71" aria-hidden="true"></a></span>
+<span id="cb1-72"><a href="#cb1-72" aria-hidden="true"></a>        <span class="cf">return</span> {<span class="st">'status'</span>: <span class="st">'ok'</span>, <span class="st">'execution_count'</span>: <span class="va">self</span>.execution_count,</span>
+<span id="cb1-73"><a href="#cb1-73" aria-hidden="true"></a>                <span class="st">'payload'</span>: [], <span class="st">'user_expressions'</span>: {}}</span>
+<span id="cb1-74"><a href="#cb1-74" aria-hidden="true"></a></span>
+<span id="cb1-75"><a href="#cb1-75" aria-hidden="true"></a><span class="co"># ===== MAIN =====</span></span>
+<span id="cb1-76"><a href="#cb1-76" aria-hidden="true"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">'__main__'</span>:</span>
+<span id="cb1-77"><a href="#cb1-77" aria-hidden="true"></a>    <span class="im">from</span> IPython.kernel.zmq.kernelapp <span class="im">import</span> IPKernelApp</span>
+<span id="cb1-78"><a href="#cb1-78" aria-hidden="true"></a>    IPKernelApp.launch_instance(kernel_class<span class="op">=</span>SMLNJKernel)</span></code></pre></div>
 <p>プロンプトを設定することが出来無そうだったので，そのまま <code>-</code> を指定している． そのため，どこかでおかしくなるかも…</p>
 <p>あと，シンタックスハイライトに F# を使った． Jupyter のシンタックスハイライトの <a href="http://codemirror.net/mode/index.html">CodeMirroe には SML が無かった</a> ので，なんとなく近そうな F# にした(OCaml の方が良いのだろうか？)．</p>
 <h2 id="実行">実行</h2>

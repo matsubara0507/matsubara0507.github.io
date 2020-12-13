@@ -104,75 +104,75 @@
 <p>少しずつ拡張していく．</p>
 <h3 id="electron-化">Electron 化</h3>
 <p>まずは Electron 化する． <a href="https://github.com/matsubara0507/elmdeck/tree/6ff0520f65080c9a94ac85c99fc01e0374ca250e">もともと</a>は次のような構成だった(<code>main.js</code> は Elm ファイル群から生成)．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode txt"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1"></a>/</span>
-<span id="cb1-2"><a href="#cb1-2"></a> |-- elm-package.json</span>
-<span id="cb1-3"><a href="#cb1-3"></a> |-- index.html</span>
-<span id="cb1-4"><a href="#cb1-4"></a> |-- src/</span>
-<span id="cb1-5"><a href="#cb1-5"></a> |    |-- Main.elm</span>
-<span id="cb1-6"><a href="#cb1-6"></a> |    \-- ..</span>
-<span id="cb1-7"><a href="#cb1-7"></a> \-- js/</span>
-<span id="cb1-8"><a href="#cb1-8"></a>      |-- main.js</span>
-<span id="cb1-9"><a href="#cb1-9"></a>      \-- highlight.js</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode txt"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a>/</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a> |-- elm-package.json</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a> |-- index.html</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a> |-- src/</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a> |    |-- Main.elm</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a> |    \-- ..</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a> \-- js/</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>      |-- main.js</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a>      \-- highlight.js</span></code></pre></div>
 <p>これ，elmtrn を参考に次のような構成に変更した．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode txt"><code class="sourceCode default"><span id="cb2-1"><a href="#cb2-1"></a>/</span>
-<span id="cb2-2"><a href="#cb2-2"></a> |-- elm-package.json</span>
-<span id="cb2-3"><a href="#cb2-3"></a> |-- gulpfile.js</span>
-<span id="cb2-4"><a href="#cb2-4"></a> |-- package.json</span>
-<span id="cb2-5"><a href="#cb2-5"></a> \-- app</span>
-<span id="cb2-6"><a href="#cb2-6"></a>      |-- index.html</span>
-<span id="cb2-7"><a href="#cb2-7"></a>      |-- src/</span>
-<span id="cb2-8"><a href="#cb2-8"></a>      |    |-- Main.elm</span>
-<span id="cb2-9"><a href="#cb2-9"></a>      |    \-- ..</span>
-<span id="cb2-10"><a href="#cb2-10"></a>      \-- js/</span>
-<span id="cb2-11"><a href="#cb2-11"></a>           |-- app.js</span>
-<span id="cb2-12"><a href="#cb2-12"></a>           |-- main.js</span>
-<span id="cb2-13"><a href="#cb2-13"></a>           \-- ..</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode txt"><code class="sourceCode default"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a>/</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a> |-- elm-package.json</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a> |-- gulpfile.js</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a> |-- package.json</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a> \-- app</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a>      |-- index.html</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a>      |-- src/</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a>      |    |-- Main.elm</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a>      |    \-- ..</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a>      \-- js/</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a>           |-- app.js</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true"></a>           |-- main.js</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true"></a>           \-- ..</span></code></pre></div>
 <p><a href="https://github.com/matsubara0507/elmdeck/blob/97607bc1c2f069101d7d6012dcd46470d3a2d3fe/package.json">package.json</a> は elmtrn をほぼそのまんま(<code>main</code> の場所だけ違う)． gulp を使って，Elm のコードを監視・コンパイルし，生成した JS コードを Electron から呼び出す． elmtrn の gulpfile.js の設定では，各 Elm ファイルに対しひとつの JS ファイルを生成していたが，自分はひとまとめにした JS を生成したかったので，次のように gulpfile.js を書き換えた．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">const</span> g <span class="op">=</span> <span class="pp">require</span>(<span class="st">'gulp'</span>)<span class="op">;</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">const</span> electron <span class="op">=</span> <span class="pp">require</span>(<span class="st">'electron-connect'</span>)<span class="op">.</span><span class="at">server</span><span class="op">.</span><span class="fu">create</span>()<span class="op">;</span></span>
-<span id="cb3-3"><a href="#cb3-3"></a><span class="kw">const</span> packager <span class="op">=</span> <span class="pp">require</span>(<span class="st">'electron-packager'</span>)<span class="op">;</span></span>
-<span id="cb3-4"><a href="#cb3-4"></a><span class="kw">const</span> $ <span class="op">=</span> <span class="pp">require</span>(<span class="st">'gulp-load-plugins'</span>)()<span class="op">;</span></span>
-<span id="cb3-5"><a href="#cb3-5"></a><span class="kw">const</span> packageJson <span class="op">=</span> <span class="pp">require</span>(<span class="st">'./package.json'</span>)<span class="op">;</span></span>
-<span id="cb3-6"><a href="#cb3-6"></a><span class="kw">const</span> extend <span class="op">=</span> <span class="pp">require</span>(<span class="st">'util'</span>)<span class="op">.</span><span class="at">_extend</span><span class="op">;</span></span>
-<span id="cb3-7"><a href="#cb3-7"></a></span>
-<span id="cb3-8"><a href="#cb3-8"></a>g<span class="op">.</span><span class="fu">task</span>(<span class="st">'watch'</span><span class="op">,</span> () <span class="kw">=&gt;</span> {</span>
-<span id="cb3-9"><a href="#cb3-9"></a>  g<span class="op">.</span><span class="fu">watch</span>([<span class="st">'app/src/**/*.elm'</span>]<span class="op">,</span>[<span class="st">'elm'</span>])<span class="op">;</span></span>
-<span id="cb3-10"><a href="#cb3-10"></a>  electron<span class="op">.</span><span class="fu">start</span>()<span class="op">;</span></span>
-<span id="cb3-11"><a href="#cb3-11"></a>  g<span class="op">.</span><span class="fu">watch</span>([<span class="st">'app/js/*.js'</span><span class="op">,</span> <span class="st">'app/index.html'</span>]<span class="op">,</span> electron<span class="op">.</span><span class="at">restart</span>)<span class="op">;</span></span>
-<span id="cb3-12"><a href="#cb3-12"></a>  g<span class="op">.</span><span class="fu">watch</span>([]<span class="op">,</span> electron<span class="op">.</span><span class="at">reload</span>)<span class="op">;</span></span>
-<span id="cb3-13"><a href="#cb3-13"></a>})</span>
-<span id="cb3-14"><a href="#cb3-14"></a></span>
-<span id="cb3-15"><a href="#cb3-15"></a>g<span class="op">.</span><span class="fu">task</span>(<span class="st">'elm'</span><span class="op">,</span> () <span class="kw">=&gt;</span>{</span>
-<span id="cb3-16"><a href="#cb3-16"></a>  g<span class="op">.</span><span class="fu">src</span>([<span class="st">'app/src/**/*.elm'</span>])</span>
-<span id="cb3-17"><a href="#cb3-17"></a>    <span class="op">.</span><span class="fu">pipe</span>($<span class="op">.</span><span class="fu">logger</span>())</span>
-<span id="cb3-18"><a href="#cb3-18"></a>    <span class="op">.</span><span class="fu">pipe</span>($<span class="op">.</span><span class="fu">plumber</span>())</span>
-<span id="cb3-19"><a href="#cb3-19"></a>    <span class="op">.</span><span class="fu">pipe</span>($<span class="op">.</span><span class="at">elm</span><span class="op">.</span><span class="fu">bundle</span>(<span class="st">'main.js'</span><span class="op">,</span> debug<span class="op">=</span><span class="kw">true</span>))</span>
-<span id="cb3-20"><a href="#cb3-20"></a>    <span class="op">.</span><span class="fu">pipe</span>(g<span class="op">.</span><span class="fu">dest</span>(<span class="st">&quot;app/js&quot;</span>))<span class="op">;</span></span>
-<span id="cb3-21"><a href="#cb3-21"></a>})</span>
-<span id="cb3-22"><a href="#cb3-22"></a></span>
-<span id="cb3-23"><a href="#cb3-23"></a>g<span class="op">.</span><span class="fu">task</span>(<span class="st">'default'</span><span class="op">,</span> [<span class="st">'watch'</span>])</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="kw">const</span> g <span class="op">=</span> <span class="pp">require</span>(<span class="st">'gulp'</span>)<span class="op">;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="kw">const</span> electron <span class="op">=</span> <span class="pp">require</span>(<span class="st">'electron-connect'</span>)<span class="op">.</span><span class="at">server</span><span class="op">.</span><span class="fu">create</span>()<span class="op">;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a><span class="kw">const</span> packager <span class="op">=</span> <span class="pp">require</span>(<span class="st">'electron-packager'</span>)<span class="op">;</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a><span class="kw">const</span> $ <span class="op">=</span> <span class="pp">require</span>(<span class="st">'gulp-load-plugins'</span>)()<span class="op">;</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a><span class="kw">const</span> packageJson <span class="op">=</span> <span class="pp">require</span>(<span class="st">'./package.json'</span>)<span class="op">;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a><span class="kw">const</span> extend <span class="op">=</span> <span class="pp">require</span>(<span class="st">'util'</span>)<span class="op">.</span><span class="at">_extend</span><span class="op">;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a>g<span class="op">.</span><span class="fu">task</span>(<span class="st">'watch'</span><span class="op">,</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a>  g<span class="op">.</span><span class="fu">watch</span>([<span class="st">'app/src/**/*.elm'</span>]<span class="op">,</span>[<span class="st">'elm'</span>])<span class="op">;</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a>  electron<span class="op">.</span><span class="fu">start</span>()<span class="op">;</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a>  g<span class="op">.</span><span class="fu">watch</span>([<span class="st">'app/js/*.js'</span><span class="op">,</span> <span class="st">'app/index.html'</span>]<span class="op">,</span> electron<span class="op">.</span><span class="at">restart</span>)<span class="op">;</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a>  g<span class="op">.</span><span class="fu">watch</span>([]<span class="op">,</span> electron<span class="op">.</span><span class="at">reload</span>)<span class="op">;</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a>})</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true"></a>g<span class="op">.</span><span class="fu">task</span>(<span class="st">'elm'</span><span class="op">,</span> () <span class="kw">=&gt;</span>{</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true"></a>  g<span class="op">.</span><span class="fu">src</span>([<span class="st">'app/src/**/*.elm'</span>])</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true"></a>    <span class="op">.</span><span class="fu">pipe</span>($<span class="op">.</span><span class="fu">logger</span>())</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true"></a>    <span class="op">.</span><span class="fu">pipe</span>($<span class="op">.</span><span class="fu">plumber</span>())</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true"></a>    <span class="op">.</span><span class="fu">pipe</span>($<span class="op">.</span><span class="at">elm</span><span class="op">.</span><span class="fu">bundle</span>(<span class="st">'main.js'</span><span class="op">,</span> debug<span class="op">=</span><span class="kw">true</span>))</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true"></a>    <span class="op">.</span><span class="fu">pipe</span>(g<span class="op">.</span><span class="fu">dest</span>(<span class="st">&quot;app/js&quot;</span>))<span class="op">;</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true"></a>})</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true"></a></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true"></a>g<span class="op">.</span><span class="fu">task</span>(<span class="st">'default'</span><span class="op">,</span> [<span class="st">'watch'</span>])</span></code></pre></div>
 <p><a href="https://github.com/philopon/gulp-elm">philopon/gulp-elm の README</a> が参考になった．</p>
 <h2 id="section-1"></h2>
 <p>あとは，次のように elmtrn の app.js を適当に書き直した．</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">const</span> {app<span class="op">,</span> BrowserWindow} <span class="op">=</span> <span class="pp">require</span>(<span class="st">'electron'</span>)<span class="op">;</span></span>
-<span id="cb4-2"><a href="#cb4-2"></a><span class="kw">var</span> mainWindow <span class="op">=</span> <span class="kw">null</span><span class="op">;</span></span>
-<span id="cb4-3"><a href="#cb4-3"></a></span>
-<span id="cb4-4"><a href="#cb4-4"></a>app<span class="op">.</span><span class="fu">on</span>(<span class="st">'window-all-closed'</span><span class="op">,</span> <span class="kw">function</span>() {</span>
-<span id="cb4-5"><a href="#cb4-5"></a>    app<span class="op">.</span><span class="fu">quit</span>()<span class="op">;</span></span>
-<span id="cb4-6"><a href="#cb4-6"></a>})<span class="op">;</span></span>
-<span id="cb4-7"><a href="#cb4-7"></a></span>
-<span id="cb4-8"><a href="#cb4-8"></a>app<span class="op">.</span><span class="fu">on</span>(<span class="st">'ready'</span><span class="op">,</span> <span class="kw">function</span>() {</span>
-<span id="cb4-9"><a href="#cb4-9"></a>  mainWindow <span class="op">=</span> <span class="kw">new</span> BrowserWindow({</span>
-<span id="cb4-10"><a href="#cb4-10"></a>    <span class="st">&quot;frame&quot;</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span></span>
-<span id="cb4-11"><a href="#cb4-11"></a>    <span class="st">&quot;always-on-top&quot;</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span></span>
-<span id="cb4-12"><a href="#cb4-12"></a>    <span class="st">&quot;resizable&quot;</span><span class="op">:</span> <span class="kw">true</span></span>
-<span id="cb4-13"><a href="#cb4-13"></a>  })<span class="op">;</span></span>
-<span id="cb4-14"><a href="#cb4-14"></a>  mainWindow<span class="op">.</span><span class="fu">maximize</span>()<span class="op">;</span></span>
-<span id="cb4-15"><a href="#cb4-15"></a>  mainWindow<span class="op">.</span><span class="fu">loadURL</span>(<span class="st">'file://'</span> <span class="op">+</span> <span class="bu">__dirname</span> <span class="op">+</span> <span class="st">'/../index.html'</span>)<span class="op">;</span></span>
-<span id="cb4-16"><a href="#cb4-16"></a>  mainWindow<span class="op">.</span><span class="fu">on</span>(<span class="st">'closed'</span><span class="op">,</span> <span class="kw">function</span>() {</span>
-<span id="cb4-17"><a href="#cb4-17"></a>    mainWindow <span class="op">=</span> <span class="kw">null</span><span class="op">;</span></span>
-<span id="cb4-18"><a href="#cb4-18"></a>  })<span class="op">;</span></span>
-<span id="cb4-19"><a href="#cb4-19"></a>})<span class="op">;</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="kw">const</span> {app<span class="op">,</span> BrowserWindow} <span class="op">=</span> <span class="pp">require</span>(<span class="st">'electron'</span>)<span class="op">;</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a><span class="kw">var</span> mainWindow <span class="op">=</span> <span class="kw">null</span><span class="op">;</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a>app<span class="op">.</span><span class="fu">on</span>(<span class="st">'window-all-closed'</span><span class="op">,</span> <span class="kw">function</span>() {</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a>    app<span class="op">.</span><span class="fu">quit</span>()<span class="op">;</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a>})<span class="op">;</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a>app<span class="op">.</span><span class="fu">on</span>(<span class="st">'ready'</span><span class="op">,</span> <span class="kw">function</span>() {</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a>  mainWindow <span class="op">=</span> <span class="kw">new</span> <span class="fu">BrowserWindow</span>({</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true"></a>    <span class="st">&quot;frame&quot;</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true"></a>    <span class="st">&quot;always-on-top&quot;</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true"></a>    <span class="st">&quot;resizable&quot;</span><span class="op">:</span> <span class="kw">true</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true"></a>  })<span class="op">;</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true"></a>  mainWindow<span class="op">.</span><span class="fu">maximize</span>()<span class="op">;</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true"></a>  mainWindow<span class="op">.</span><span class="fu">loadURL</span>(<span class="st">'file://'</span> <span class="op">+</span> <span class="bu">__dirname</span> <span class="op">+</span> <span class="st">'/../index.html'</span>)<span class="op">;</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true"></a>  mainWindow<span class="op">.</span><span class="fu">on</span>(<span class="st">'closed'</span><span class="op">,</span> <span class="kw">function</span>() {</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true"></a>    mainWindow <span class="op">=</span> <span class="kw">null</span><span class="op">;</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true"></a>  })<span class="op">;</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true"></a>})<span class="op">;</span></span></code></pre></div>
 <p>これで <code>gulp</code> を実行すればブラウザ版 elmdeck がそのまんま electron で実行できる． やったぁ．</p>
 <h3 id="ファイルの読み込み">ファイルの読み込み</h3>
 <p>ココからが本番．</p>
@@ -183,113 +183,113 @@
 <li><a href="https://qiita.com/_takwat/items/6544342fd4141345bb19">Electronでファイルやフォルダの選択 - Qiita</a></li>
 </ul>
 <p>Node の fs ライブラリを使えばよいようだ(Electron に限らないハナシかな)． <a href="https://nodejs.org/api/fs.html">fs の公式ドキュメント</a>とにらめっこして <a href="https://nodejs.org/api/fs.html#fs_fs_readfile_path_options_callback"><code>fs.readFile</code></a> を呼び出せば良いみたいなのは分かった． 取りあえず，次のような <code>files.js</code> ファイルを書いた．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb5-1"><a href="#cb5-1"></a><span class="st">'use strict'</span><span class="op">;</span></span>
-<span id="cb5-2"><a href="#cb5-2"></a></span>
-<span id="cb5-3"><a href="#cb5-3"></a><span class="kw">const</span> {remote} <span class="op">=</span> <span class="pp">require</span>(<span class="st">'electron'</span>)<span class="op">;</span></span>
-<span id="cb5-4"><a href="#cb5-4"></a><span class="kw">const</span> {dialog<span class="op">,</span> BrowserWindow} <span class="op">=</span> remote<span class="op">;</span></span>
-<span id="cb5-5"><a href="#cb5-5"></a><span class="kw">const</span> fs <span class="op">=</span> <span class="pp">require</span>(<span class="st">'fs'</span>)<span class="op">;</span></span>
-<span id="cb5-6"><a href="#cb5-6"></a></span>
-<span id="cb5-7"><a href="#cb5-7"></a>module<span class="op">.</span><span class="at">exports</span> <span class="op">=</span> {</span>
-<span id="cb5-8"><a href="#cb5-8"></a>  <span class="dt">readFile</span><span class="op">:</span> <span class="kw">function</span> (app) {</span>
-<span id="cb5-9"><a href="#cb5-9"></a>    dialog<span class="op">.</span><span class="fu">showOpenDialog</span>(<span class="kw">null</span><span class="op">,</span> {</span>
-<span id="cb5-10"><a href="#cb5-10"></a>        <span class="dt">properties</span><span class="op">:</span> [<span class="st">'openFile'</span>]<span class="op">,</span></span>
-<span id="cb5-11"><a href="#cb5-11"></a>        <span class="dt">title</span><span class="op">:</span> <span class="st">'File'</span><span class="op">,</span></span>
-<span id="cb5-12"><a href="#cb5-12"></a>        <span class="dt">defaultPath</span><span class="op">:</span> <span class="st">'.'</span><span class="op">,</span></span>
-<span id="cb5-13"><a href="#cb5-13"></a>        <span class="dt">filters</span><span class="op">:</span> [</span>
-<span id="cb5-14"><a href="#cb5-14"></a>            {<span class="dt">name</span><span class="op">:</span> <span class="st">'マークダウン'</span><span class="op">,</span> <span class="dt">extensions</span><span class="op">:</span> [<span class="st">'md'</span><span class="op">,</span> <span class="st">'markdown'</span>]}<span class="op">,</span></span>
-<span id="cb5-15"><a href="#cb5-15"></a>        ]</span>
-<span id="cb5-16"><a href="#cb5-16"></a>    }<span class="op">,</span> (fileNames) <span class="kw">=&gt;</span> {</span>
-<span id="cb5-17"><a href="#cb5-17"></a>        fs<span class="op">.</span><span class="fu">readFile</span>(fileNames[<span class="dv">0</span>]<span class="op">,</span> <span class="st">'utf8'</span><span class="op">,</span> (err<span class="op">,</span> data) <span class="kw">=&gt;</span> {</span>
-<span id="cb5-18"><a href="#cb5-18"></a>          <span class="cf">if</span> (err) <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(err)<span class="op">;</span></span>
-<span id="cb5-19"><a href="#cb5-19"></a>          <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(data)<span class="op">;</span></span>
-<span id="cb5-20"><a href="#cb5-20"></a>        })</span>
-<span id="cb5-21"><a href="#cb5-21"></a>    })<span class="op">;</span></span>
-<span id="cb5-22"><a href="#cb5-22"></a>  }</span>
-<span id="cb5-23"><a href="#cb5-23"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="st">'use strict'</span><span class="op">;</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a><span class="kw">const</span> {remote} <span class="op">=</span> <span class="pp">require</span>(<span class="st">'electron'</span>)<span class="op">;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a><span class="kw">const</span> {dialog<span class="op">,</span> BrowserWindow} <span class="op">=</span> remote<span class="op">;</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a><span class="kw">const</span> fs <span class="op">=</span> <span class="pp">require</span>(<span class="st">'fs'</span>)<span class="op">;</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true"></a>module<span class="op">.</span><span class="at">exports</span> <span class="op">=</span> {</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true"></a>  <span class="dt">readFile</span><span class="op">:</span> <span class="kw">function</span> (app) {</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true"></a>    dialog<span class="op">.</span><span class="fu">showOpenDialog</span>(<span class="kw">null</span><span class="op">,</span> {</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true"></a>        <span class="dt">properties</span><span class="op">:</span> [<span class="st">'openFile'</span>]<span class="op">,</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true"></a>        <span class="dt">title</span><span class="op">:</span> <span class="st">'File'</span><span class="op">,</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true"></a>        <span class="dt">defaultPath</span><span class="op">:</span> <span class="st">'.'</span><span class="op">,</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true"></a>        <span class="dt">filters</span><span class="op">:</span> [</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true"></a>            {<span class="dt">name</span><span class="op">:</span> <span class="st">'マークダウン'</span><span class="op">,</span> <span class="dt">extensions</span><span class="op">:</span> [<span class="st">'md'</span><span class="op">,</span> <span class="st">'markdown'</span>]}<span class="op">,</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true"></a>        ]</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true"></a>    }<span class="op">,</span> (fileNames) <span class="kw">=&gt;</span> {</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true"></a>        fs<span class="op">.</span><span class="fu">readFile</span>(fileNames[<span class="dv">0</span>]<span class="op">,</span> <span class="st">'utf8'</span><span class="op">,</span> (err<span class="op">,</span> data) <span class="kw">=&gt;</span> {</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true"></a>          <span class="cf">if</span> (err) <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(err)<span class="op">;</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true"></a>          <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(data)<span class="op">;</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true"></a>        })</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true"></a>    })<span class="op">;</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true"></a>  }</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true"></a>}</span></code></pre></div>
 <p>次にこれをメニューバーから呼べるようにする． Electron のメニューバーを拡張するには <a href="https://electronjs.org/docs/api/menu"><code>Menu</code> クラス</a>を使えば良いらしい． サンプルやらを参考にしながらイロイロ試行錯誤してみた結果，次のような <code>menuItems.js</code> ファイルを書き，</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">const</span> {app<span class="op">,</span> Menu<span class="op">,</span> dialog} <span class="op">=</span> <span class="pp">require</span>(<span class="st">'electron'</span>)<span class="op">;</span></span>
-<span id="cb6-2"><a href="#cb6-2"></a></span>
-<span id="cb6-3"><a href="#cb6-3"></a><span class="kw">const</span> template <span class="op">=</span> [</span>
-<span id="cb6-4"><a href="#cb6-4"></a>  {</span>
-<span id="cb6-5"><a href="#cb6-5"></a>    <span class="dt">label</span><span class="op">:</span> <span class="st">'Edit'</span><span class="op">,</span></span>
-<span id="cb6-6"><a href="#cb6-6"></a>    <span class="dt">submenu</span><span class="op">:</span> [</span>
-<span id="cb6-7"><a href="#cb6-7"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'undo'</span>}<span class="op">,</span></span>
-<span id="cb6-8"><a href="#cb6-8"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'redo'</span>}<span class="op">,</span></span>
-<span id="cb6-9"><a href="#cb6-9"></a>      {<span class="dt">type</span><span class="op">:</span> <span class="st">'separator'</span>}<span class="op">,</span></span>
-<span id="cb6-10"><a href="#cb6-10"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'cut'</span>}<span class="op">,</span></span>
-<span id="cb6-11"><a href="#cb6-11"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'copy'</span>}<span class="op">,</span></span>
-<span id="cb6-12"><a href="#cb6-12"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'paste'</span>}<span class="op">,</span></span>
-<span id="cb6-13"><a href="#cb6-13"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'pasteandmatchstyle'</span>}<span class="op">,</span></span>
-<span id="cb6-14"><a href="#cb6-14"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'delete'</span>}<span class="op">,</span></span>
-<span id="cb6-15"><a href="#cb6-15"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'selectall'</span>}</span>
-<span id="cb6-16"><a href="#cb6-16"></a>    ]</span>
-<span id="cb6-17"><a href="#cb6-17"></a>  }<span class="op">,</span></span>
-<span id="cb6-18"><a href="#cb6-18"></a>  {</span>
-<span id="cb6-19"><a href="#cb6-19"></a>    <span class="dt">label</span><span class="op">:</span> <span class="st">'View'</span><span class="op">,</span></span>
-<span id="cb6-20"><a href="#cb6-20"></a>    <span class="dt">submenu</span><span class="op">:</span> [</span>
-<span id="cb6-21"><a href="#cb6-21"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'reload'</span>}<span class="op">,</span></span>
-<span id="cb6-22"><a href="#cb6-22"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'forcereload'</span>}<span class="op">,</span></span>
-<span id="cb6-23"><a href="#cb6-23"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'toggledevtools'</span>}<span class="op">,</span></span>
-<span id="cb6-24"><a href="#cb6-24"></a>      {<span class="dt">type</span><span class="op">:</span> <span class="st">'separator'</span>}<span class="op">,</span></span>
-<span id="cb6-25"><a href="#cb6-25"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'resetzoom'</span>}<span class="op">,</span></span>
-<span id="cb6-26"><a href="#cb6-26"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'zoomin'</span>}<span class="op">,</span></span>
-<span id="cb6-27"><a href="#cb6-27"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'zoomout'</span>}<span class="op">,</span></span>
-<span id="cb6-28"><a href="#cb6-28"></a>      {<span class="dt">type</span><span class="op">:</span> <span class="st">'separator'</span>}<span class="op">,</span></span>
-<span id="cb6-29"><a href="#cb6-29"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'togglefullscreen'</span>}<span class="op">,</span></span>
-<span id="cb6-30"><a href="#cb6-30"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'toggledevtools'</span>}</span>
-<span id="cb6-31"><a href="#cb6-31"></a>    ]</span>
-<span id="cb6-32"><a href="#cb6-32"></a>  }<span class="op">,</span></span>
-<span id="cb6-33"><a href="#cb6-33"></a>  {</span>
-<span id="cb6-34"><a href="#cb6-34"></a>    <span class="dt">role</span><span class="op">:</span> <span class="st">'window'</span><span class="op">,</span></span>
-<span id="cb6-35"><a href="#cb6-35"></a>    <span class="dt">submenu</span><span class="op">:</span> [</span>
-<span id="cb6-36"><a href="#cb6-36"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'minimize'</span>}<span class="op">,</span></span>
-<span id="cb6-37"><a href="#cb6-37"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'close'</span>}</span>
-<span id="cb6-38"><a href="#cb6-38"></a>    ]</span>
-<span id="cb6-39"><a href="#cb6-39"></a>  }<span class="op">,</span></span>
-<span id="cb6-40"><a href="#cb6-40"></a>  {</span>
-<span id="cb6-41"><a href="#cb6-41"></a>    <span class="dt">role</span><span class="op">:</span> <span class="st">'help'</span><span class="op">,</span></span>
-<span id="cb6-42"><a href="#cb6-42"></a>    <span class="dt">submenu</span><span class="op">:</span> [</span>
-<span id="cb6-43"><a href="#cb6-43"></a>      {</span>
-<span id="cb6-44"><a href="#cb6-44"></a>        <span class="dt">label</span><span class="op">:</span> <span class="st">'Learn More'</span><span class="op">,</span></span>
-<span id="cb6-45"><a href="#cb6-45"></a>        click () { <span class="pp">require</span>(<span class="st">'electron'</span>)<span class="op">.</span><span class="at">shell</span><span class="op">.</span><span class="fu">openExternal</span>(<span class="st">'https://electron.atom.io'</span>) }</span>
-<span id="cb6-46"><a href="#cb6-46"></a>      }</span>
-<span id="cb6-47"><a href="#cb6-47"></a>    ]</span>
-<span id="cb6-48"><a href="#cb6-48"></a>  }</span>
-<span id="cb6-49"><a href="#cb6-49"></a>]</span>
-<span id="cb6-50"><a href="#cb6-50"></a></span>
-<span id="cb6-51"><a href="#cb6-51"></a><span class="kw">const</span> items <span class="op">=</span> template<span class="op">.</span><span class="fu">map</span>( option <span class="kw">=&gt;</span> { <span class="cf">return</span> <span class="kw">new</span> MenuItem(option) })<span class="op">;</span></span>
-<span id="cb6-52"><a href="#cb6-52"></a></span>
-<span id="cb6-53"><a href="#cb6-53"></a>module<span class="op">.</span><span class="at">exports</span> <span class="op">=</span> {</span>
-<span id="cb6-54"><a href="#cb6-54"></a>  <span class="dt">get</span><span class="op">:</span> () <span class="kw">=&gt;</span> { <span class="cf">return</span> items<span class="op">;</span> }</span>
-<span id="cb6-55"><a href="#cb6-55"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="kw">const</span> {app<span class="op">,</span> Menu<span class="op">,</span> dialog} <span class="op">=</span> <span class="pp">require</span>(<span class="st">'electron'</span>)<span class="op">;</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a><span class="kw">const</span> template <span class="op">=</span> [</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a>  {</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a>    <span class="dt">label</span><span class="op">:</span> <span class="st">'Edit'</span><span class="op">,</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a>    <span class="dt">submenu</span><span class="op">:</span> [</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'undo'</span>}<span class="op">,</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'redo'</span>}<span class="op">,</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true"></a>      {<span class="dt">type</span><span class="op">:</span> <span class="st">'separator'</span>}<span class="op">,</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'cut'</span>}<span class="op">,</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'copy'</span>}<span class="op">,</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'paste'</span>}<span class="op">,</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'pasteandmatchstyle'</span>}<span class="op">,</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'delete'</span>}<span class="op">,</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'selectall'</span>}</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true"></a>    ]</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true"></a>  }<span class="op">,</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true"></a>  {</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true"></a>    <span class="dt">label</span><span class="op">:</span> <span class="st">'View'</span><span class="op">,</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true"></a>    <span class="dt">submenu</span><span class="op">:</span> [</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'reload'</span>}<span class="op">,</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'forcereload'</span>}<span class="op">,</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'toggledevtools'</span>}<span class="op">,</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true"></a>      {<span class="dt">type</span><span class="op">:</span> <span class="st">'separator'</span>}<span class="op">,</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'resetzoom'</span>}<span class="op">,</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'zoomin'</span>}<span class="op">,</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'zoomout'</span>}<span class="op">,</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true"></a>      {<span class="dt">type</span><span class="op">:</span> <span class="st">'separator'</span>}<span class="op">,</span></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'togglefullscreen'</span>}<span class="op">,</span></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'toggledevtools'</span>}</span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true"></a>    ]</span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true"></a>  }<span class="op">,</span></span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true"></a>  {</span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true"></a>    <span class="dt">role</span><span class="op">:</span> <span class="st">'window'</span><span class="op">,</span></span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true"></a>    <span class="dt">submenu</span><span class="op">:</span> [</span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'minimize'</span>}<span class="op">,</span></span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true"></a>      {<span class="dt">role</span><span class="op">:</span> <span class="st">'close'</span>}</span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true"></a>    ]</span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true"></a>  }<span class="op">,</span></span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true"></a>  {</span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true"></a>    <span class="dt">role</span><span class="op">:</span> <span class="st">'help'</span><span class="op">,</span></span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true"></a>    <span class="dt">submenu</span><span class="op">:</span> [</span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true"></a>      {</span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true"></a>        <span class="dt">label</span><span class="op">:</span> <span class="st">'Learn More'</span><span class="op">,</span></span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true"></a>        <span class="fu">click</span> () { <span class="pp">require</span>(<span class="st">'electron'</span>)<span class="op">.</span><span class="at">shell</span><span class="op">.</span><span class="fu">openExternal</span>(<span class="st">'https://electron.atom.io'</span>) }</span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true"></a>      }</span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true"></a>    ]</span>
+<span id="cb6-48"><a href="#cb6-48" aria-hidden="true"></a>  }</span>
+<span id="cb6-49"><a href="#cb6-49" aria-hidden="true"></a>]</span>
+<span id="cb6-50"><a href="#cb6-50" aria-hidden="true"></a></span>
+<span id="cb6-51"><a href="#cb6-51" aria-hidden="true"></a><span class="kw">const</span> items <span class="op">=</span> template<span class="op">.</span><span class="fu">map</span>( option <span class="kw">=&gt;</span> { <span class="cf">return</span> <span class="kw">new</span> <span class="fu">MenuItem</span>(option) })<span class="op">;</span></span>
+<span id="cb6-52"><a href="#cb6-52" aria-hidden="true"></a></span>
+<span id="cb6-53"><a href="#cb6-53" aria-hidden="true"></a>module<span class="op">.</span><span class="at">exports</span> <span class="op">=</span> {</span>
+<span id="cb6-54"><a href="#cb6-54" aria-hidden="true"></a>  <span class="dt">get</span><span class="op">:</span> () <span class="kw">=&gt;</span> { <span class="cf">return</span> items<span class="op">;</span> }</span>
+<span id="cb6-55"><a href="#cb6-55" aria-hidden="true"></a>}</span></code></pre></div>
 <p>これ(module exports した <code>get</code> 関数のコト)を <code>index.html</code> で次のように呼び出した．</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">&lt;script&gt;</span></span>
-<span id="cb7-2"><a href="#cb7-2"></a>  <span class="kw">const</span> {remote} <span class="op">=</span> <span class="pp">require</span>(<span class="st">'electron'</span>)<span class="op">;</span></span>
-<span id="cb7-3"><a href="#cb7-3"></a>  <span class="kw">const</span> {Menu<span class="op">,</span> MenuItem} <span class="op">=</span> remote<span class="op">;</span></span>
-<span id="cb7-4"><a href="#cb7-4"></a>  <span class="kw">const</span> files <span class="op">=</span> <span class="pp">require</span>(<span class="st">'./js/files'</span>)<span class="op">;</span></span>
-<span id="cb7-5"><a href="#cb7-5"></a>  <span class="kw">const</span> menuItems <span class="op">=</span> <span class="pp">require</span>(<span class="st">'./js/menuItems'</span>)</span>
-<span id="cb7-6"><a href="#cb7-6"></a></span>
-<span id="cb7-7"><a href="#cb7-7"></a>  <span class="kw">var</span> node <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">getElementById</span>(<span class="st">'main'</span>)<span class="op">;</span></span>
-<span id="cb7-8"><a href="#cb7-8"></a>  <span class="cf">while</span> (node<span class="op">.</span><span class="at">firstChild</span>) {</span>
-<span id="cb7-9"><a href="#cb7-9"></a>    node<span class="op">.</span><span class="fu">removeChild</span>(node<span class="op">.</span><span class="at">firstChild</span>)<span class="op">;</span></span>
-<span id="cb7-10"><a href="#cb7-10"></a>  }</span>
-<span id="cb7-11"><a href="#cb7-11"></a>  <span class="kw">var</span> app <span class="op">=</span> module<span class="op">.</span><span class="at">exports</span><span class="op">.</span><span class="at">Main</span><span class="op">.</span><span class="fu">embed</span>(node)<span class="op">;</span></span>
-<span id="cb7-12"><a href="#cb7-12"></a></span>
-<span id="cb7-13"><a href="#cb7-13"></a>  <span class="kw">var</span> menuvar <span class="op">=</span> <span class="kw">new</span> Menu()<span class="op">;</span></span>
-<span id="cb7-14"><a href="#cb7-14"></a>  menuvar<span class="op">.</span><span class="fu">append</span>(<span class="kw">new</span> MenuItem(</span>
-<span id="cb7-15"><a href="#cb7-15"></a>    {</span>
-<span id="cb7-16"><a href="#cb7-16"></a>      <span class="dt">label</span><span class="op">:</span> <span class="st">'File'</span><span class="op">,</span></span>
-<span id="cb7-17"><a href="#cb7-17"></a>      <span class="dt">submenu</span><span class="op">:</span> [</span>
-<span id="cb7-18"><a href="#cb7-18"></a>        {</span>
-<span id="cb7-19"><a href="#cb7-19"></a>          <span class="dt">label</span><span class="op">:</span> <span class="st">'Open'</span><span class="op">,</span></span>
-<span id="cb7-20"><a href="#cb7-20"></a>          click() { files<span class="op">.</span><span class="fu">readFile</span>(app) }</span>
-<span id="cb7-21"><a href="#cb7-21"></a>        }</span>
-<span id="cb7-22"><a href="#cb7-22"></a>      ]</span>
-<span id="cb7-23"><a href="#cb7-23"></a>    }</span>
-<span id="cb7-24"><a href="#cb7-24"></a>  ))<span class="op">;</span></span>
-<span id="cb7-25"><a href="#cb7-25"></a>  menuItems<span class="op">.</span><span class="fu">get</span>()<span class="op">.</span><span class="fu">forEach</span>( item <span class="kw">=&gt;</span> { menuvar<span class="op">.</span><span class="fu">append</span>(item) } )<span class="op">;</span></span>
-<span id="cb7-26"><a href="#cb7-26"></a>  Menu<span class="op">.</span><span class="fu">setApplicationMenu</span>(menuvar)</span>
-<span id="cb7-27"><a href="#cb7-27"></a><span class="kw">&lt;/script&gt;</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a><span class="kw">&lt;script&gt;</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a>  <span class="kw">const</span> {remote} <span class="op">=</span> <span class="pp">require</span>(<span class="st">'electron'</span>)<span class="op">;</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a>  <span class="kw">const</span> {Menu<span class="op">,</span> MenuItem} <span class="op">=</span> remote<span class="op">;</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true"></a>  <span class="kw">const</span> files <span class="op">=</span> <span class="pp">require</span>(<span class="st">'./js/files'</span>)<span class="op">;</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true"></a>  <span class="kw">const</span> menuItems <span class="op">=</span> <span class="pp">require</span>(<span class="st">'./js/menuItems'</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true"></a>  <span class="kw">var</span> node <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">getElementById</span>(<span class="st">'main'</span>)<span class="op">;</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true"></a>  <span class="cf">while</span> (node<span class="op">.</span><span class="at">firstChild</span>) {</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true"></a>    node<span class="op">.</span><span class="fu">removeChild</span>(node<span class="op">.</span><span class="at">firstChild</span>)<span class="op">;</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true"></a>  }</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true"></a>  <span class="kw">var</span> app <span class="op">=</span> module<span class="op">.</span><span class="at">exports</span><span class="op">.</span><span class="at">Main</span><span class="op">.</span><span class="fu">embed</span>(node)<span class="op">;</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true"></a>  <span class="kw">var</span> menuvar <span class="op">=</span> <span class="kw">new</span> <span class="fu">Menu</span>()<span class="op">;</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true"></a>  menuvar<span class="op">.</span><span class="fu">append</span>(<span class="kw">new</span> <span class="fu">MenuItem</span>(</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true"></a>    {</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true"></a>      <span class="dt">label</span><span class="op">:</span> <span class="st">'File'</span><span class="op">,</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true"></a>      <span class="dt">submenu</span><span class="op">:</span> [</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true"></a>        {</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true"></a>          <span class="dt">label</span><span class="op">:</span> <span class="st">'Open'</span><span class="op">,</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true"></a>          <span class="fu">click</span>() { files<span class="op">.</span><span class="fu">readFile</span>(app) }</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true"></a>        }</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true"></a>      ]</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true"></a>    }</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true"></a>  ))<span class="op">;</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true"></a>  menuItems<span class="op">.</span><span class="fu">get</span>()<span class="op">.</span><span class="fu">forEach</span>( item <span class="kw">=&gt;</span> { menuvar<span class="op">.</span><span class="fu">append</span>(item) } )<span class="op">;</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true"></a>  Menu<span class="op">.</span><span class="fu">setApplicationMenu</span>(menuvar)</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true"></a><span class="kw">&lt;/script&gt;</span></span></code></pre></div>
 <p><code>var menuvar = new Menu();</code> 以下からがキモです． どーしても，動的に処理を定義しない部分(<code>Edit</code> とか <code>View</code> とか)を別ファイル(<code>menuItems.js</code>)にまとめたうえで，<code>File</code> を先頭に突っ込みたかったのでこうなった． JS は全然詳しくないのでアンチパターンかもしれないけどね．</p>
 <h4 id="elm-に繋げる">Elm に繋げる</h4>
 <p>ここまでで</p>
@@ -304,43 +304,43 @@
 <li><a href="https://qiita.com/jooex/items/5ff2d3b86563cf5dbd84">ElmのPortでJSを使う。 - Qiita</a></li>
 </ul>
 <p>マークダウンファイルの中身を JS から Elm に投げるので Elm で次のような <code>ports</code> 関数を定義した．</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb8-1"><a href="#cb8-1"></a><span class="co">-- src/Port/FS.elm</span></span>
-<span id="cb8-2"><a href="#cb8-2"></a><span class="kw">port</span> <span class="kw">module</span> <span class="dt">Port</span><span class="op">.</span><span class="dt">FS</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
-<span id="cb8-3"><a href="#cb8-3"></a></span>
-<span id="cb8-4"><a href="#cb8-4"></a><span class="kw">port</span> <span class="fu">readFile</span> : (<span class="dt">String</span> <span class="op">-&gt;</span> <span class="fu">msg</span>) <span class="op">-&gt;</span> <span class="dt">Sub</span> <span class="fu">msg</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a><span class="co">-- src/Port/FS.elm</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a><span class="kw">port</span> <span class="kw">module</span> <span class="dt">Port</span><span class="op">.</span><span class="dt">FS</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a><span class="kw">port</span> <span class="fu">readFile</span> : (<span class="dt">String</span> <span class="op">-&gt;</span> <span class="fu">msg</span>) <span class="op">-&gt;</span> <span class="dt">Sub</span> <span class="fu">msg</span></span></code></pre></div>
 <p>これを <code>Main.elm</code> で次のように呼び出す．</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Model</span> <span class="op">=</span></span>
-<span id="cb9-2"><a href="#cb9-2"></a>  { <span class="fu">textarea</span> : <span class="dt">String</span></span>
-<span id="cb9-3"><a href="#cb9-3"></a>  <span class="op">,</span> <span class="fu">window</span> : <span class="dt">Window</span><span class="op">.</span><span class="dt">Size</span></span>
-<span id="cb9-4"><a href="#cb9-4"></a>  }</span>
-<span id="cb9-5"><a href="#cb9-5"></a></span>
-<span id="cb9-6"><a href="#cb9-6"></a><span class="kw">type</span> <span class="dt">Msg</span></span>
-<span id="cb9-7"><a href="#cb9-7"></a>  <span class="op">=</span> <span class="dt">TextAreaInput</span> <span class="dt">String</span></span>
-<span id="cb9-8"><a href="#cb9-8"></a>  <span class="op">|</span> <span class="dt">SizeUpdated</span> <span class="dt">Window</span><span class="op">.</span><span class="dt">Size</span></span>
-<span id="cb9-9"><a href="#cb9-9"></a></span>
-<span id="cb9-10"><a href="#cb9-10"></a><span class="fu">main</span> : <span class="dt">Program</span> <span class="dt">Never</span> <span class="dt">Model</span> <span class="dt">Msg</span></span>
-<span id="cb9-11"><a href="#cb9-11"></a><span class="fu">main</span> <span class="op">=</span></span>
-<span id="cb9-12"><a href="#cb9-12"></a>  <span class="dt">Html</span><span class="op">.</span><span class="fu">program</span></span>
-<span id="cb9-13"><a href="#cb9-13"></a>    { <span class="fu">init</span> <span class="op">=</span> <span class="fu">init</span> <span class="fu">model</span></span>
-<span id="cb9-14"><a href="#cb9-14"></a>    <span class="op">,</span> <span class="fu">view</span> <span class="op">=</span> <span class="fu">view</span></span>
-<span id="cb9-15"><a href="#cb9-15"></a>    <span class="op">,</span> <span class="fu">update</span> <span class="op">=</span> <span class="fu">update</span></span>
-<span id="cb9-16"><a href="#cb9-16"></a>    <span class="op">,</span> <span class="fu">subscriptions</span> <span class="op">=</span> <span class="fu">subscriptions</span></span>
-<span id="cb9-17"><a href="#cb9-17"></a>    }</span>
-<span id="cb9-18"><a href="#cb9-18"></a></span>
-<span id="cb9-19"><a href="#cb9-19"></a><span class="fu">subscriptions</span> : <span class="dt">Model</span> <span class="op">-&gt;</span> <span class="dt">Sub</span> <span class="dt">Msg</span></span>
-<span id="cb9-20"><a href="#cb9-20"></a><span class="fu">subscriptions</span> <span class="fu">model</span> <span class="op">=</span></span>
-<span id="cb9-21"><a href="#cb9-21"></a>  <span class="dt">Sub</span><span class="op">.</span><span class="fu">batch</span></span>
-<span id="cb9-22"><a href="#cb9-22"></a>    [ <span class="dt">Window</span><span class="op">.</span><span class="fu">resizes</span> <span class="dt">SizeUpdated</span></span>
-<span id="cb9-23"><a href="#cb9-23"></a>    <span class="op">,</span> <span class="dt">FS</span><span class="op">.</span><span class="fu">readFile</span> <span class="dt">TextAreaInput</span></span>
-<span id="cb9-24"><a href="#cb9-24"></a>    ]</span>
-<span id="cb9-25"><a href="#cb9-25"></a></span>
-<span id="cb9-26"><a href="#cb9-26"></a><span class="fu">update</span> : <span class="dt">Msg</span> <span class="op">-&gt;</span> <span class="dt">Model</span> <span class="op">-&gt;</span> ( <span class="dt">Model</span><span class="op">,</span> <span class="dt">Cmd</span> <span class="dt">Msg</span> )</span>
-<span id="cb9-27"><a href="#cb9-27"></a><span class="fu">update</span> <span class="fu">msg</span> <span class="fu">model</span> <span class="op">=</span></span>
-<span id="cb9-28"><a href="#cb9-28"></a>  <span class="cf">case</span> <span class="fu">msg</span> <span class="cf">of</span></span>
-<span id="cb9-29"><a href="#cb9-29"></a>    <span class="dt">TextAreaInput</span> <span class="fu">str</span> <span class="op">-&gt;</span></span>
-<span id="cb9-30"><a href="#cb9-30"></a>      ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">textarea</span> <span class="op">=</span> <span class="fu">str</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span> )</span>
-<span id="cb9-31"><a href="#cb9-31"></a>    <span class="dt">SizeUpdated</span> <span class="fu">size</span> <span class="op">-&gt;</span></span>
-<span id="cb9-32"><a href="#cb9-32"></a>      ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">window</span> <span class="op">=</span> <span class="fu">size</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span> )        </span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Model</span> <span class="op">=</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a>  { <span class="fu">textarea</span> : <span class="dt">String</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true"></a>  <span class="op">,</span> <span class="fu">window</span> : <span class="dt">Window</span><span class="op">.</span><span class="dt">Size</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true"></a>  }</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">Msg</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true"></a>  <span class="op">=</span> <span class="dt">TextAreaInput</span> <span class="dt">String</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true"></a>  <span class="op">|</span> <span class="dt">SizeUpdated</span> <span class="dt">Window</span><span class="op">.</span><span class="dt">Size</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true"></a><span class="fu">main</span> : <span class="dt">Program</span> <span class="dt">Never</span> <span class="dt">Model</span> <span class="dt">Msg</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true"></a><span class="fu">main</span> <span class="op">=</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true"></a>  <span class="dt">Html</span><span class="op">.</span><span class="fu">program</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true"></a>    { <span class="fu">init</span> <span class="op">=</span> <span class="fu">init</span> <span class="fu">model</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true"></a>    <span class="op">,</span> <span class="fu">view</span> <span class="op">=</span> <span class="fu">view</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true"></a>    <span class="op">,</span> <span class="fu">update</span> <span class="op">=</span> <span class="fu">update</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true"></a>    <span class="op">,</span> <span class="fu">subscriptions</span> <span class="op">=</span> <span class="fu">subscriptions</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true"></a>    }</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true"></a></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true"></a><span class="fu">subscriptions</span> : <span class="dt">Model</span> <span class="op">-&gt;</span> <span class="dt">Sub</span> <span class="dt">Msg</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true"></a><span class="fu">subscriptions</span> <span class="fu">model</span> <span class="op">=</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true"></a>  <span class="dt">Sub</span><span class="op">.</span><span class="fu">batch</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true"></a>    [ <span class="dt">Window</span><span class="op">.</span><span class="fu">resizes</span> <span class="dt">SizeUpdated</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true"></a>    <span class="op">,</span> <span class="dt">FS</span><span class="op">.</span><span class="fu">readFile</span> <span class="dt">TextAreaInput</span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true"></a>    ]</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true"></a></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true"></a><span class="fu">update</span> : <span class="dt">Msg</span> <span class="op">-&gt;</span> <span class="dt">Model</span> <span class="op">-&gt;</span> ( <span class="dt">Model</span><span class="op">,</span> <span class="dt">Cmd</span> <span class="dt">Msg</span> )</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true"></a><span class="fu">update</span> <span class="fu">msg</span> <span class="fu">model</span> <span class="op">=</span></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true"></a>  <span class="cf">case</span> <span class="fu">msg</span> <span class="cf">of</span></span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true"></a>    <span class="dt">TextAreaInput</span> <span class="fu">str</span> <span class="op">-&gt;</span></span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true"></a>      ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">textarea</span> <span class="op">=</span> <span class="fu">str</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span> )</span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true"></a>    <span class="dt">SizeUpdated</span> <span class="fu">size</span> <span class="op">-&gt;</span></span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true"></a>      ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">window</span> <span class="op">=</span> <span class="fu">size</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span> )        </span></code></pre></div>
 <p><code>Window.Size</code> とか <code>SizeUpdated</code> はブラウザやアプリのウィンドウサイズに合わせて，スライドのサイズを変更するためのサブスクリプションなので気にしないで． <code>TextAreaInput</code> は input エリアにテキストを書き込んだ時にも使っている． 同じ型なので使いまわした．</p>
 <p>あとは <code>files.js</code> の <code>console.log(data);</code> としていた部分を <code>app.ports.readFile.send(data);</code> と<a href="https://github.com/matsubara0507/elmdeck/blob/a102ae0d82b162a3f219b7d33f9875c080ff6be9/app/js/files.js#L19">書き換える</a>だけ．</p>
 <p><img src="../assets/create-elmdeck/openfile.gif" /></p>
@@ -349,61 +349,61 @@
 <p>さて次はファイルの保存を実装する．</p>
 <h4 id="ファイルパスも投げておく">ファイルパスも投げておく</h4>
 <p>ファイルを保存するには開いてるファイルのファイルパスがあった方が良いだろう(上書き保存とかするなら)． なのでまずは，読み込み時の処理をファイルパスも投げるように書き換える．</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb10-1"><a href="#cb10-1"></a><span class="co">-- src/Port/FS.elm</span></span>
-<span id="cb10-2"><a href="#cb10-2"></a><span class="kw">port</span> <span class="kw">module</span> <span class="dt">Port</span><span class="op">.</span><span class="dt">FS</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
-<span id="cb10-3"><a href="#cb10-3"></a></span>
-<span id="cb10-4"><a href="#cb10-4"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">File</span> <span class="op">=</span></span>
-<span id="cb10-5"><a href="#cb10-5"></a>  { <span class="fu">path</span> : <span class="dt">String</span></span>
-<span id="cb10-6"><a href="#cb10-6"></a>  <span class="op">,</span> <span class="fu">body</span> : <span class="dt">String</span></span>
-<span id="cb10-7"><a href="#cb10-7"></a>  }</span>
-<span id="cb10-8"><a href="#cb10-8"></a></span>
-<span id="cb10-9"><a href="#cb10-9"></a><span class="kw">port</span> <span class="fu">readFile</span> : (<span class="dt">File</span> <span class="op">-&gt;</span> <span class="fu">msg</span>) <span class="op">-&gt;</span> <span class="dt">Sub</span> <span class="fu">msg</span></span></code></pre></div>
-<div class="sourceCode" id="cb11"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb11-1"><a href="#cb11-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Model</span> <span class="op">=</span></span>
-<span id="cb11-2"><a href="#cb11-2"></a>  { <span class="fu">textarea</span> : <span class="dt">String</span></span>
-<span id="cb11-3"><a href="#cb11-3"></a>  <span class="op">,</span> <span class="fu">window</span> : <span class="dt">Window</span><span class="op">.</span><span class="dt">Size</span></span>
-<span id="cb11-4"><a href="#cb11-4"></a>  <span class="op">,</span> <span class="fu">filepath</span> : <span class="dt">String</span></span>
-<span id="cb11-5"><a href="#cb11-5"></a>  }</span>
-<span id="cb11-6"><a href="#cb11-6"></a></span>
-<span id="cb11-7"><a href="#cb11-7"></a><span class="kw">type</span> <span class="dt">Msg</span></span>
-<span id="cb11-8"><a href="#cb11-8"></a>  <span class="op">=</span> <span class="dt">TextAreaInput</span> <span class="dt">String</span></span>
-<span id="cb11-9"><a href="#cb11-9"></a>  <span class="op">|</span> <span class="dt">SizeUpdated</span> <span class="dt">Window</span><span class="op">.</span><span class="dt">Size</span></span>
-<span id="cb11-10"><a href="#cb11-10"></a>  <span class="op">|</span> <span class="dt">ReadFile</span> <span class="dt">FS</span><span class="op">.</span><span class="dt">File</span></span>
-<span id="cb11-11"><a href="#cb11-11"></a></span>
-<span id="cb11-12"><a href="#cb11-12"></a><span class="fu">update</span> : <span class="dt">Msg</span> <span class="op">-&gt;</span> <span class="dt">Model</span> <span class="op">-&gt;</span> ( <span class="dt">Model</span><span class="op">,</span> <span class="dt">Cmd</span> <span class="dt">Msg</span> )</span>
-<span id="cb11-13"><a href="#cb11-13"></a><span class="fu">update</span> <span class="fu">msg</span> <span class="fu">model</span> <span class="op">=</span></span>
-<span id="cb11-14"><a href="#cb11-14"></a>  <span class="cf">case</span> <span class="fu">msg</span> <span class="cf">of</span></span>
-<span id="cb11-15"><a href="#cb11-15"></a>    <span class="dt">TextAreaInput</span> <span class="fu">str</span> <span class="op">-&gt;</span></span>
-<span id="cb11-16"><a href="#cb11-16"></a>      ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">textarea</span> <span class="op">=</span> <span class="fu">str</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span> )</span>
-<span id="cb11-17"><a href="#cb11-17"></a>    <span class="dt">SizeUpdated</span> <span class="fu">size</span> <span class="op">-&gt;</span></span>
-<span id="cb11-18"><a href="#cb11-18"></a>      ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">window</span> <span class="op">=</span> <span class="fu">size</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span> )</span>
-<span id="cb11-19"><a href="#cb11-19"></a>    <span class="dt">ReadFile</span> <span class="fu">file</span> <span class="op">-&gt;</span></span>
-<span id="cb11-20"><a href="#cb11-20"></a>      ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">textarea</span> <span class="op">=</span> <span class="fu">file</span><span class="op">.</span><span class="fu">body</span><span class="op">,</span> <span class="fu">filepath</span> <span class="op">=</span> <span class="fu">file</span><span class="op">.</span><span class="fu">path</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span> )</span>
-<span id="cb11-21"><a href="#cb11-21"></a></span>
-<span id="cb11-22"><a href="#cb11-22"></a><span class="fu">subscriptions</span> : <span class="dt">Model</span> <span class="op">-&gt;</span> <span class="dt">Sub</span> <span class="dt">Msg</span></span>
-<span id="cb11-23"><a href="#cb11-23"></a><span class="fu">subscriptions</span> <span class="fu">model</span> <span class="op">=</span></span>
-<span id="cb11-24"><a href="#cb11-24"></a>  <span class="dt">Sub</span><span class="op">.</span><span class="fu">batch</span></span>
-<span id="cb11-25"><a href="#cb11-25"></a>    [ <span class="dt">Window</span><span class="op">.</span><span class="fu">resizes</span> <span class="dt">SizeUpdated</span></span>
-<span id="cb11-26"><a href="#cb11-26"></a>    <span class="op">,</span> <span class="dt">FS</span><span class="op">.</span><span class="fu">readFile</span> <span class="dt">ReadFile</span></span>
-<span id="cb11-27"><a href="#cb11-27"></a>    ]</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a><span class="co">-- src/Port/FS.elm</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true"></a><span class="kw">port</span> <span class="kw">module</span> <span class="dt">Port</span><span class="op">.</span><span class="dt">FS</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">File</span> <span class="op">=</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true"></a>  { <span class="fu">path</span> : <span class="dt">String</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true"></a>  <span class="op">,</span> <span class="fu">body</span> : <span class="dt">String</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true"></a>  }</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true"></a></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true"></a><span class="kw">port</span> <span class="fu">readFile</span> : (<span class="dt">File</span> <span class="op">-&gt;</span> <span class="fu">msg</span>) <span class="op">-&gt;</span> <span class="dt">Sub</span> <span class="fu">msg</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Model</span> <span class="op">=</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true"></a>  { <span class="fu">textarea</span> : <span class="dt">String</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true"></a>  <span class="op">,</span> <span class="fu">window</span> : <span class="dt">Window</span><span class="op">.</span><span class="dt">Size</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true"></a>  <span class="op">,</span> <span class="fu">filepath</span> : <span class="dt">String</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true"></a>  }</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true"></a></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">Msg</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true"></a>  <span class="op">=</span> <span class="dt">TextAreaInput</span> <span class="dt">String</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true"></a>  <span class="op">|</span> <span class="dt">SizeUpdated</span> <span class="dt">Window</span><span class="op">.</span><span class="dt">Size</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true"></a>  <span class="op">|</span> <span class="dt">ReadFile</span> <span class="dt">FS</span><span class="op">.</span><span class="dt">File</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true"></a></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true"></a><span class="fu">update</span> : <span class="dt">Msg</span> <span class="op">-&gt;</span> <span class="dt">Model</span> <span class="op">-&gt;</span> ( <span class="dt">Model</span><span class="op">,</span> <span class="dt">Cmd</span> <span class="dt">Msg</span> )</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true"></a><span class="fu">update</span> <span class="fu">msg</span> <span class="fu">model</span> <span class="op">=</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true"></a>  <span class="cf">case</span> <span class="fu">msg</span> <span class="cf">of</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true"></a>    <span class="dt">TextAreaInput</span> <span class="fu">str</span> <span class="op">-&gt;</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true"></a>      ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">textarea</span> <span class="op">=</span> <span class="fu">str</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span> )</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true"></a>    <span class="dt">SizeUpdated</span> <span class="fu">size</span> <span class="op">-&gt;</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true"></a>      ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">window</span> <span class="op">=</span> <span class="fu">size</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span> )</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true"></a>    <span class="dt">ReadFile</span> <span class="fu">file</span> <span class="op">-&gt;</span></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true"></a>      ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">textarea</span> <span class="op">=</span> <span class="fu">file</span><span class="op">.</span><span class="fu">body</span><span class="op">,</span> <span class="fu">filepath</span> <span class="op">=</span> <span class="fu">file</span><span class="op">.</span><span class="fu">path</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span> )</span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true"></a></span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true"></a><span class="fu">subscriptions</span> : <span class="dt">Model</span> <span class="op">-&gt;</span> <span class="dt">Sub</span> <span class="dt">Msg</span></span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true"></a><span class="fu">subscriptions</span> <span class="fu">model</span> <span class="op">=</span></span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true"></a>  <span class="dt">Sub</span><span class="op">.</span><span class="fu">batch</span></span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true"></a>    [ <span class="dt">Window</span><span class="op">.</span><span class="fu">resizes</span> <span class="dt">SizeUpdated</span></span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true"></a>    <span class="op">,</span> <span class="dt">FS</span><span class="op">.</span><span class="fu">readFile</span> <span class="dt">ReadFile</span></span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true"></a>    ]</span></code></pre></div>
 <p>レコード型を JS から Elm に投げるには普通のオブジェクトを使えばよいらしい(最初はタプルを使おうとして良くわからなくなり諦めた…)．</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb12-1"><a href="#cb12-1"></a><span class="co">// js/files.js</span></span>
-<span id="cb12-2"><a href="#cb12-2"></a>module<span class="op">.</span><span class="at">exports</span> <span class="op">=</span> {</span>
-<span id="cb12-3"><a href="#cb12-3"></a>  <span class="dt">readFile</span><span class="op">:</span> <span class="kw">function</span> (app) {</span>
-<span id="cb12-4"><a href="#cb12-4"></a>    dialog<span class="op">.</span><span class="fu">showOpenDialog</span>(<span class="kw">null</span><span class="op">,</span> {</span>
-<span id="cb12-5"><a href="#cb12-5"></a>        <span class="dt">properties</span><span class="op">:</span> [<span class="st">'openFile'</span>]<span class="op">,</span></span>
-<span id="cb12-6"><a href="#cb12-6"></a>        <span class="dt">title</span><span class="op">:</span> <span class="st">'File'</span><span class="op">,</span></span>
-<span id="cb12-7"><a href="#cb12-7"></a>        <span class="dt">defaultPath</span><span class="op">:</span> <span class="st">'.'</span><span class="op">,</span></span>
-<span id="cb12-8"><a href="#cb12-8"></a>        <span class="dt">filters</span><span class="op">:</span> [</span>
-<span id="cb12-9"><a href="#cb12-9"></a>            {<span class="dt">name</span><span class="op">:</span> <span class="st">'マークダウン'</span><span class="op">,</span> <span class="dt">extensions</span><span class="op">:</span> [<span class="st">'md'</span><span class="op">,</span> <span class="st">'markdown'</span>]}<span class="op">,</span></span>
-<span id="cb12-10"><a href="#cb12-10"></a>        ]</span>
-<span id="cb12-11"><a href="#cb12-11"></a>    }<span class="op">,</span> (fileNames) <span class="kw">=&gt;</span> {</span>
-<span id="cb12-12"><a href="#cb12-12"></a>        fs<span class="op">.</span><span class="fu">readFile</span>(fileNames[<span class="dv">0</span>]<span class="op">,</span> <span class="st">'utf8'</span><span class="op">,</span> (err<span class="op">,</span> data) <span class="kw">=&gt;</span> {</span>
-<span id="cb12-13"><a href="#cb12-13"></a>          <span class="cf">if</span> (err) <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(err)<span class="op">;</span></span>
-<span id="cb12-14"><a href="#cb12-14"></a>          app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">readFile</span><span class="op">.</span><span class="fu">send</span>({ <span class="dt">path</span><span class="op">:</span> fileNames[<span class="dv">0</span>]<span class="op">,</span> <span class="dt">body</span><span class="op">:</span> data })<span class="op">;</span></span>
-<span id="cb12-15"><a href="#cb12-15"></a>        })</span>
-<span id="cb12-16"><a href="#cb12-16"></a>    })<span class="op">;</span></span>
-<span id="cb12-17"><a href="#cb12-17"></a>  }</span>
-<span id="cb12-18"><a href="#cb12-18"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true"></a><span class="co">// js/files.js</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true"></a>module<span class="op">.</span><span class="at">exports</span> <span class="op">=</span> {</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true"></a>  <span class="dt">readFile</span><span class="op">:</span> <span class="kw">function</span> (app) {</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true"></a>    dialog<span class="op">.</span><span class="fu">showOpenDialog</span>(<span class="kw">null</span><span class="op">,</span> {</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true"></a>        <span class="dt">properties</span><span class="op">:</span> [<span class="st">'openFile'</span>]<span class="op">,</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true"></a>        <span class="dt">title</span><span class="op">:</span> <span class="st">'File'</span><span class="op">,</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true"></a>        <span class="dt">defaultPath</span><span class="op">:</span> <span class="st">'.'</span><span class="op">,</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true"></a>        <span class="dt">filters</span><span class="op">:</span> [</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true"></a>            {<span class="dt">name</span><span class="op">:</span> <span class="st">'マークダウン'</span><span class="op">,</span> <span class="dt">extensions</span><span class="op">:</span> [<span class="st">'md'</span><span class="op">,</span> <span class="st">'markdown'</span>]}<span class="op">,</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true"></a>        ]</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true"></a>    }<span class="op">,</span> (fileNames) <span class="kw">=&gt;</span> {</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true"></a>        fs<span class="op">.</span><span class="fu">readFile</span>(fileNames[<span class="dv">0</span>]<span class="op">,</span> <span class="st">'utf8'</span><span class="op">,</span> (err<span class="op">,</span> data) <span class="kw">=&gt;</span> {</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true"></a>          <span class="cf">if</span> (err) <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(err)<span class="op">;</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true"></a>          app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">readFile</span><span class="op">.</span><span class="fu">send</span>({ <span class="dt">path</span><span class="op">:</span> fileNames[<span class="dv">0</span>]<span class="op">,</span> <span class="dt">body</span><span class="op">:</span> data })<span class="op">;</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true"></a>        })</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true"></a>    })<span class="op">;</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true"></a>  }</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true"></a>}</span></code></pre></div>
 <h4 id="いよいよ書き出し">いよいよ書き出し</h4>
 <p>保存するとき，データは Elm 側から投げられるが保存ボタンは Electron 側(JS側)から始めたい． なので</p>
 <ol type="1">
@@ -413,98 +413,98 @@
 <p>というお手製同期通信を行うことにした(これもアンチパターンかも…)． 上書き保存のときは <code>null</code> (Elm 側では <code>Nothing</code>) を JS から送り，新規保存ならファイル名を送ることにする．</p>
 <h2 id="section-2"></h2>
 <p>まずは Elm 側で，以上の戦略から次のような <code>port</code> を書いた．</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb13-1"><a href="#cb13-1"></a><span class="kw">port</span> <span class="fu">writeFileHook</span> : (<span class="dt">Maybe</span> <span class="dt">String</span> <span class="op">-&gt;</span> <span class="fu">msg</span>) <span class="op">-&gt;</span> <span class="dt">Sub</span> <span class="fu">msg</span></span>
-<span id="cb13-2"><a href="#cb13-2"></a><span class="kw">port</span> <span class="fu">writeFile</span> : <span class="dt">File</span> <span class="op">-&gt;</span> <span class="dt">Cmd</span> <span class="fu">msg</span></span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true"></a><span class="kw">port</span> <span class="fu">writeFileHook</span> : (<span class="dt">Maybe</span> <span class="dt">String</span> <span class="op">-&gt;</span> <span class="fu">msg</span>) <span class="op">-&gt;</span> <span class="dt">Sub</span> <span class="fu">msg</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true"></a><span class="kw">port</span> <span class="fu">writeFile</span> : <span class="dt">File</span> <span class="op">-&gt;</span> <span class="dt">Cmd</span> <span class="fu">msg</span></span></code></pre></div>
 <p>次は JS 側に移る． ファイルの書き出しには <a href="https://nodejs.org/api/fs.html#fs_fs_writefile_file_data_options_callback"><code>fs.writeFile</code></a> 関数を用いた． 前述した <code>port</code> も使って，次のような関数を <code>files.js</code> に追加した．</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb14-1"><a href="#cb14-1"></a><span class="kw">function</span> <span class="fu">writeFileTo</span>(fileName<span class="op">,</span> data) {</span>
-<span id="cb14-2"><a href="#cb14-2"></a>  <span class="cf">if</span> (fileName) {</span>
-<span id="cb14-3"><a href="#cb14-3"></a>    fs<span class="op">.</span><span class="fu">writeFile</span>(fileName<span class="op">,</span> data<span class="op">,</span> (err) <span class="kw">=&gt;</span> {</span>
-<span id="cb14-4"><a href="#cb14-4"></a>      <span class="cf">if</span> (err) {</span>
-<span id="cb14-5"><a href="#cb14-5"></a>        <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(err)<span class="op">;</span></span>
-<span id="cb14-6"><a href="#cb14-6"></a>        dialog<span class="op">.</span><span class="fu">showErrorBox</span>(<span class="st">'Can not save fiel: '</span> <span class="op">+</span> fileName<span class="op">,</span> err)<span class="op">;</span></span>
-<span id="cb14-7"><a href="#cb14-7"></a>      }</span>
-<span id="cb14-8"><a href="#cb14-8"></a>    })</span>
-<span id="cb14-9"><a href="#cb14-9"></a>  }</span>
-<span id="cb14-10"><a href="#cb14-10"></a>}</span>
-<span id="cb14-11"><a href="#cb14-11"></a></span>
-<span id="cb14-12"><a href="#cb14-12"></a>module<span class="op">.</span><span class="at">exports</span> <span class="op">=</span> {</span>
-<span id="cb14-13"><a href="#cb14-13"></a>  <span class="dt">readFile</span><span class="op">:</span> <span class="kw">function</span> (app) {</span>
-<span id="cb14-14"><a href="#cb14-14"></a>    <span class="op">...</span></span>
-<span id="cb14-15"><a href="#cb14-15"></a>  }<span class="op">,</span></span>
-<span id="cb14-16"><a href="#cb14-16"></a>  <span class="dt">writeFile</span><span class="op">:</span> <span class="kw">function</span> (app) {</span>
-<span id="cb14-17"><a href="#cb14-17"></a>    app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">writeFileHook</span><span class="op">.</span><span class="fu">send</span>(<span class="kw">null</span>)<span class="op">;</span></span>
-<span id="cb14-18"><a href="#cb14-18"></a>    app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">writeFile</span><span class="op">.</span><span class="fu">subscribe</span>(args <span class="kw">=&gt;</span> { writeFileTo(args[<span class="st">'path'</span>]<span class="op">,</span> args[<span class="st">'body'</span>]) })<span class="op">;</span></span>
-<span id="cb14-19"><a href="#cb14-19"></a>  }<span class="op">,</span></span>
-<span id="cb14-20"><a href="#cb14-20"></a>  <span class="dt">writeFileAs</span><span class="op">:</span> <span class="kw">function</span> (app) {</span>
-<span id="cb14-21"><a href="#cb14-21"></a>    dialog<span class="op">.</span><span class="fu">showSaveDialog</span>(<span class="kw">null</span><span class="op">,</span> {</span>
-<span id="cb14-22"><a href="#cb14-22"></a>        <span class="dt">properties</span><span class="op">:</span> [<span class="st">'openFile'</span>]<span class="op">,</span></span>
-<span id="cb14-23"><a href="#cb14-23"></a>        <span class="dt">title</span><span class="op">:</span> <span class="st">'File'</span><span class="op">,</span></span>
-<span id="cb14-24"><a href="#cb14-24"></a>        <span class="dt">defaultPath</span><span class="op">:</span> <span class="st">'.'</span><span class="op">,</span></span>
-<span id="cb14-25"><a href="#cb14-25"></a>        <span class="dt">filters</span><span class="op">:</span> [</span>
-<span id="cb14-26"><a href="#cb14-26"></a>            {<span class="dt">name</span><span class="op">:</span> <span class="st">'Markdown'</span><span class="op">,</span> <span class="dt">extensions</span><span class="op">:</span> [<span class="st">'md'</span><span class="op">,</span> <span class="st">'markdown'</span>]}<span class="op">,</span></span>
-<span id="cb14-27"><a href="#cb14-27"></a>        ]</span>
-<span id="cb14-28"><a href="#cb14-28"></a>    }<span class="op">,</span> (fileName) <span class="kw">=&gt;</span> {</span>
-<span id="cb14-29"><a href="#cb14-29"></a>        <span class="cf">if</span> (fileName <span class="op">==</span> <span class="kw">undefined</span>) {</span>
-<span id="cb14-30"><a href="#cb14-30"></a>          <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(fileName)<span class="op">;</span></span>
-<span id="cb14-31"><a href="#cb14-31"></a>          dialog<span class="op">.</span><span class="fu">showErrorBox</span>(<span class="st">'Can not save fiel: '</span><span class="op">,</span> <span class="st">'Please select file.'</span>)<span class="op">;</span></span>
-<span id="cb14-32"><a href="#cb14-32"></a>          <span class="cf">return</span></span>
-<span id="cb14-33"><a href="#cb14-33"></a>        }</span>
-<span id="cb14-34"><a href="#cb14-34"></a>        app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">writeFileHook</span><span class="op">.</span><span class="fu">send</span>(fileName)<span class="op">;</span></span>
-<span id="cb14-35"><a href="#cb14-35"></a>        app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">writeFile</span><span class="op">.</span><span class="fu">subscribe</span>(args <span class="kw">=&gt;</span> { writeFileTo(args[<span class="st">'path'</span>]<span class="op">,</span> args[<span class="st">'body'</span>]) })<span class="op">;</span></span>
-<span id="cb14-36"><a href="#cb14-36"></a>    })<span class="op">;</span></span>
-<span id="cb14-37"><a href="#cb14-37"></a>  }</span>
-<span id="cb14-38"><a href="#cb14-38"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true"></a><span class="kw">function</span> <span class="fu">writeFileTo</span>(fileName<span class="op">,</span> data) {</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true"></a>  <span class="cf">if</span> (fileName) {</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true"></a>    fs<span class="op">.</span><span class="fu">writeFile</span>(fileName<span class="op">,</span> data<span class="op">,</span> (err) <span class="kw">=&gt;</span> {</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true"></a>      <span class="cf">if</span> (err) {</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true"></a>        <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(err)<span class="op">;</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true"></a>        dialog<span class="op">.</span><span class="fu">showErrorBox</span>(<span class="st">'Can not save fiel: '</span> <span class="op">+</span> fileName<span class="op">,</span> err)<span class="op">;</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true"></a>      }</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true"></a>    })</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true"></a>  }</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true"></a>}</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true"></a></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true"></a>module<span class="op">.</span><span class="at">exports</span> <span class="op">=</span> {</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true"></a>  <span class="dt">readFile</span><span class="op">:</span> <span class="kw">function</span> (app) {</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true"></a>    <span class="op">...</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true"></a>  }<span class="op">,</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true"></a>  <span class="dt">writeFile</span><span class="op">:</span> <span class="kw">function</span> (app) {</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true"></a>    app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">writeFileHook</span><span class="op">.</span><span class="fu">send</span>(<span class="kw">null</span>)<span class="op">;</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true"></a>    app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">writeFile</span><span class="op">.</span><span class="fu">subscribe</span>(args <span class="kw">=&gt;</span> { <span class="fu">writeFileTo</span>(args[<span class="st">'path'</span>]<span class="op">,</span> args[<span class="st">'body'</span>]) })<span class="op">;</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true"></a>  }<span class="op">,</span></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true"></a>  <span class="dt">writeFileAs</span><span class="op">:</span> <span class="kw">function</span> (app) {</span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true"></a>    dialog<span class="op">.</span><span class="fu">showSaveDialog</span>(<span class="kw">null</span><span class="op">,</span> {</span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true"></a>        <span class="dt">properties</span><span class="op">:</span> [<span class="st">'openFile'</span>]<span class="op">,</span></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true"></a>        <span class="dt">title</span><span class="op">:</span> <span class="st">'File'</span><span class="op">,</span></span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true"></a>        <span class="dt">defaultPath</span><span class="op">:</span> <span class="st">'.'</span><span class="op">,</span></span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true"></a>        <span class="dt">filters</span><span class="op">:</span> [</span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true"></a>            {<span class="dt">name</span><span class="op">:</span> <span class="st">'Markdown'</span><span class="op">,</span> <span class="dt">extensions</span><span class="op">:</span> [<span class="st">'md'</span><span class="op">,</span> <span class="st">'markdown'</span>]}<span class="op">,</span></span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true"></a>        ]</span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true"></a>    }<span class="op">,</span> (fileName) <span class="kw">=&gt;</span> {</span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true"></a>        <span class="cf">if</span> (fileName <span class="op">==</span> <span class="kw">undefined</span>) {</span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true"></a>          <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(fileName)<span class="op">;</span></span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true"></a>          dialog<span class="op">.</span><span class="fu">showErrorBox</span>(<span class="st">'Can not save fiel: '</span><span class="op">,</span> <span class="st">'Please select file.'</span>)<span class="op">;</span></span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true"></a>          <span class="cf">return</span></span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true"></a>        }</span>
+<span id="cb14-34"><a href="#cb14-34" aria-hidden="true"></a>        app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">writeFileHook</span><span class="op">.</span><span class="fu">send</span>(fileName)<span class="op">;</span></span>
+<span id="cb14-35"><a href="#cb14-35" aria-hidden="true"></a>        app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">writeFile</span><span class="op">.</span><span class="fu">subscribe</span>(args <span class="kw">=&gt;</span> { <span class="fu">writeFileTo</span>(args[<span class="st">'path'</span>]<span class="op">,</span> args[<span class="st">'body'</span>]) })<span class="op">;</span></span>
+<span id="cb14-36"><a href="#cb14-36" aria-hidden="true"></a>    })<span class="op">;</span></span>
+<span id="cb14-37"><a href="#cb14-37" aria-hidden="true"></a>  }</span>
+<span id="cb14-38"><a href="#cb14-38" aria-hidden="true"></a>}</span></code></pre></div>
 <p>上書き保存 <code>writeFile</code> と新しく保存 <code>writeFileAs</code> を用意し，共通部分は <code>writeFileTo</code> 関数として書き出した．</p>
 <p>これをメニューバーに追加する．</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb15-1"><a href="#cb15-1"></a><span class="kw">var</span> menuvar <span class="op">=</span> <span class="kw">new</span> Menu()<span class="op">;</span></span>
-<span id="cb15-2"><a href="#cb15-2"></a>menuvar<span class="op">.</span><span class="fu">append</span>(<span class="kw">new</span> MenuItem(</span>
-<span id="cb15-3"><a href="#cb15-3"></a>  {</span>
-<span id="cb15-4"><a href="#cb15-4"></a>    <span class="dt">label</span><span class="op">:</span> <span class="st">'File'</span><span class="op">,</span></span>
-<span id="cb15-5"><a href="#cb15-5"></a>    <span class="dt">submenu</span><span class="op">:</span> [</span>
-<span id="cb15-6"><a href="#cb15-6"></a>      {</span>
-<span id="cb15-7"><a href="#cb15-7"></a>        <span class="dt">label</span><span class="op">:</span> <span class="st">'Open'</span><span class="op">,</span></span>
-<span id="cb15-8"><a href="#cb15-8"></a>        click() { files<span class="op">.</span><span class="fu">readFile</span>(app) }</span>
-<span id="cb15-9"><a href="#cb15-9"></a>      }<span class="op">,</span></span>
-<span id="cb15-10"><a href="#cb15-10"></a>      {</span>
-<span id="cb15-11"><a href="#cb15-11"></a>        <span class="dt">label</span><span class="op">:</span> <span class="st">'Save'</span><span class="op">,</span></span>
-<span id="cb15-12"><a href="#cb15-12"></a>        click() { files<span class="op">.</span><span class="fu">writeFile</span>(app) }</span>
-<span id="cb15-13"><a href="#cb15-13"></a>      }<span class="op">,</span></span>
-<span id="cb15-14"><a href="#cb15-14"></a>      {</span>
-<span id="cb15-15"><a href="#cb15-15"></a>        <span class="dt">label</span><span class="op">:</span> <span class="st">'Save As'</span><span class="op">,</span></span>
-<span id="cb15-16"><a href="#cb15-16"></a>        click() { files<span class="op">.</span><span class="fu">writeFileAs</span>(app) }</span>
-<span id="cb15-17"><a href="#cb15-17"></a>      }</span>
-<span id="cb15-18"><a href="#cb15-18"></a>    ]</span>
-<span id="cb15-19"><a href="#cb15-19"></a>  }</span>
-<span id="cb15-20"><a href="#cb15-20"></a>))<span class="op">;</span></span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true"></a><span class="kw">var</span> menuvar <span class="op">=</span> <span class="kw">new</span> <span class="fu">Menu</span>()<span class="op">;</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true"></a>menuvar<span class="op">.</span><span class="fu">append</span>(<span class="kw">new</span> <span class="fu">MenuItem</span>(</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true"></a>  {</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true"></a>    <span class="dt">label</span><span class="op">:</span> <span class="st">'File'</span><span class="op">,</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true"></a>    <span class="dt">submenu</span><span class="op">:</span> [</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true"></a>      {</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true"></a>        <span class="dt">label</span><span class="op">:</span> <span class="st">'Open'</span><span class="op">,</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true"></a>        <span class="fu">click</span>() { files<span class="op">.</span><span class="fu">readFile</span>(app) }</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true"></a>      }<span class="op">,</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true"></a>      {</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true"></a>        <span class="dt">label</span><span class="op">:</span> <span class="st">'Save'</span><span class="op">,</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true"></a>        <span class="fu">click</span>() { files<span class="op">.</span><span class="fu">writeFile</span>(app) }</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true"></a>      }<span class="op">,</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true"></a>      {</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true"></a>        <span class="dt">label</span><span class="op">:</span> <span class="st">'Save As'</span><span class="op">,</span></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true"></a>        <span class="fu">click</span>() { files<span class="op">.</span><span class="fu">writeFileAs</span>(app) }</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true"></a>      }</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true"></a>    ]</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true"></a>  }</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true"></a>))<span class="op">;</span></span></code></pre></div>
 <p>最後に Elm 側に処理を追加した．</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb16-1"><a href="#cb16-1"></a><span class="co">-- app/src/Main.elm</span></span>
-<span id="cb16-2"><a href="#cb16-2"></a><span class="kw">type</span> <span class="dt">Msg</span></span>
-<span id="cb16-3"><a href="#cb16-3"></a>  <span class="op">=</span> <span class="dt">TextAreaInput</span> <span class="dt">String</span></span>
-<span id="cb16-4"><a href="#cb16-4"></a>  <span class="op">|</span> <span class="dt">SizeUpdated</span> <span class="dt">Window</span><span class="op">.</span><span class="dt">Size</span></span>
-<span id="cb16-5"><a href="#cb16-5"></a>  <span class="op">|</span> <span class="dt">ReadFile</span> <span class="dt">FS</span><span class="op">.</span><span class="dt">File</span></span>
-<span id="cb16-6"><a href="#cb16-6"></a>  <span class="op">|</span> <span class="dt">WriteFileHook</span> (<span class="dt">Maybe</span> <span class="dt">String</span>)</span>
-<span id="cb16-7"><a href="#cb16-7"></a></span>
-<span id="cb16-8"><a href="#cb16-8"></a><span class="fu">update</span> : <span class="dt">Msg</span> <span class="op">-&gt;</span> <span class="dt">Model</span> <span class="op">-&gt;</span> ( <span class="dt">Model</span><span class="op">,</span> <span class="dt">Cmd</span> <span class="dt">Msg</span> )</span>
-<span id="cb16-9"><a href="#cb16-9"></a><span class="fu">update</span> <span class="fu">msg</span> <span class="fu">model</span> <span class="op">=</span></span>
-<span id="cb16-10"><a href="#cb16-10"></a>  <span class="cf">case</span> <span class="fu">msg</span> <span class="cf">of</span></span>
-<span id="cb16-11"><a href="#cb16-11"></a>    <span class="dt">TextAreaInput</span> <span class="fu">str</span> <span class="op">-&gt;</span></span>
-<span id="cb16-12"><a href="#cb16-12"></a>      ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">textarea</span> <span class="op">=</span> <span class="fu">str</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span> )</span>
-<span id="cb16-13"><a href="#cb16-13"></a>    <span class="dt">SizeUpdated</span> <span class="fu">size</span> <span class="op">-&gt;</span></span>
-<span id="cb16-14"><a href="#cb16-14"></a>      ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">window</span> <span class="op">=</span> <span class="fu">size</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span> )</span>
-<span id="cb16-15"><a href="#cb16-15"></a>    <span class="dt">ReadFile</span> <span class="fu">file</span> <span class="op">-&gt;</span></span>
-<span id="cb16-16"><a href="#cb16-16"></a>      ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">textarea</span> <span class="op">=</span> <span class="fu">file</span><span class="op">.</span><span class="fu">body</span><span class="op">,</span> <span class="fu">filepath</span> <span class="op">=</span> <span class="fu">file</span><span class="op">.</span><span class="fu">path</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span> )</span>
-<span id="cb16-17"><a href="#cb16-17"></a>    <span class="dt">WriteFileHook</span> (<span class="dt">Just</span> <span class="fu">filepath</span>) <span class="op">-&gt;</span></span>
-<span id="cb16-18"><a href="#cb16-18"></a>      ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">filepath</span> <span class="op">=</span> <span class="fu">filepath</span> }<span class="op">,</span> <span class="dt">FS</span><span class="op">.</span><span class="fu">writeFile</span> { <span class="fu">path</span> <span class="op">=</span> <span class="fu">filepath</span><span class="op">,</span> <span class="fu">body</span> <span class="op">=</span> <span class="fu">model</span><span class="op">.</span><span class="fu">textarea</span> } )</span>
-<span id="cb16-19"><a href="#cb16-19"></a>    <span class="dt">WriteFileHook</span> <span class="dt">Nothing</span> <span class="op">-&gt;</span></span>
-<span id="cb16-20"><a href="#cb16-20"></a>      ( <span class="fu">model</span><span class="op">,</span> <span class="dt">FS</span><span class="op">.</span><span class="fu">writeFile</span> { <span class="fu">path</span> <span class="op">=</span> <span class="fu">model</span><span class="op">.</span><span class="fu">filepath</span><span class="op">,</span> <span class="fu">body</span> <span class="op">=</span> <span class="fu">model</span><span class="op">.</span><span class="fu">textarea</span> } )</span>
-<span id="cb16-21"><a href="#cb16-21"></a></span>
-<span id="cb16-22"><a href="#cb16-22"></a><span class="fu">subscriptions</span> : <span class="dt">Model</span> <span class="op">-&gt;</span> <span class="dt">Sub</span> <span class="dt">Msg</span></span>
-<span id="cb16-23"><a href="#cb16-23"></a><span class="fu">subscriptions</span> <span class="fu">model</span> <span class="op">=</span></span>
-<span id="cb16-24"><a href="#cb16-24"></a>  <span class="dt">Sub</span><span class="op">.</span><span class="fu">batch</span></span>
-<span id="cb16-25"><a href="#cb16-25"></a>    [ <span class="dt">Window</span><span class="op">.</span><span class="fu">resizes</span> <span class="dt">SizeUpdated</span></span>
-<span id="cb16-26"><a href="#cb16-26"></a>    <span class="op">,</span> <span class="dt">FS</span><span class="op">.</span><span class="fu">readFile</span> <span class="dt">ReadFile</span></span>
-<span id="cb16-27"><a href="#cb16-27"></a>    <span class="op">,</span> <span class="dt">FS</span><span class="op">.</span><span class="fu">writeFileHook</span> <span class="dt">WriteFileHook</span></span>
-<span id="cb16-28"><a href="#cb16-28"></a>    ]</span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true"></a><span class="co">-- app/src/Main.elm</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">Msg</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true"></a>  <span class="op">=</span> <span class="dt">TextAreaInput</span> <span class="dt">String</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true"></a>  <span class="op">|</span> <span class="dt">SizeUpdated</span> <span class="dt">Window</span><span class="op">.</span><span class="dt">Size</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true"></a>  <span class="op">|</span> <span class="dt">ReadFile</span> <span class="dt">FS</span><span class="op">.</span><span class="dt">File</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true"></a>  <span class="op">|</span> <span class="dt">WriteFileHook</span> (<span class="dt">Maybe</span> <span class="dt">String</span>)</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true"></a></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true"></a><span class="fu">update</span> : <span class="dt">Msg</span> <span class="op">-&gt;</span> <span class="dt">Model</span> <span class="op">-&gt;</span> ( <span class="dt">Model</span><span class="op">,</span> <span class="dt">Cmd</span> <span class="dt">Msg</span> )</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true"></a><span class="fu">update</span> <span class="fu">msg</span> <span class="fu">model</span> <span class="op">=</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true"></a>  <span class="cf">case</span> <span class="fu">msg</span> <span class="cf">of</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true"></a>    <span class="dt">TextAreaInput</span> <span class="fu">str</span> <span class="op">-&gt;</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true"></a>      ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">textarea</span> <span class="op">=</span> <span class="fu">str</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span> )</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true"></a>    <span class="dt">SizeUpdated</span> <span class="fu">size</span> <span class="op">-&gt;</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true"></a>      ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">window</span> <span class="op">=</span> <span class="fu">size</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span> )</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true"></a>    <span class="dt">ReadFile</span> <span class="fu">file</span> <span class="op">-&gt;</span></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true"></a>      ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">textarea</span> <span class="op">=</span> <span class="fu">file</span><span class="op">.</span><span class="fu">body</span><span class="op">,</span> <span class="fu">filepath</span> <span class="op">=</span> <span class="fu">file</span><span class="op">.</span><span class="fu">path</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span> )</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true"></a>    <span class="dt">WriteFileHook</span> (<span class="dt">Just</span> <span class="fu">filepath</span>) <span class="op">-&gt;</span></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true"></a>      ( { <span class="fu">model</span> <span class="op">|</span> <span class="fu">filepath</span> <span class="op">=</span> <span class="fu">filepath</span> }<span class="op">,</span> <span class="dt">FS</span><span class="op">.</span><span class="fu">writeFile</span> { <span class="fu">path</span> <span class="op">=</span> <span class="fu">filepath</span><span class="op">,</span> <span class="fu">body</span> <span class="op">=</span> <span class="fu">model</span><span class="op">.</span><span class="fu">textarea</span> } )</span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true"></a>    <span class="dt">WriteFileHook</span> <span class="dt">Nothing</span> <span class="op">-&gt;</span></span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true"></a>      ( <span class="fu">model</span><span class="op">,</span> <span class="dt">FS</span><span class="op">.</span><span class="fu">writeFile</span> { <span class="fu">path</span> <span class="op">=</span> <span class="fu">model</span><span class="op">.</span><span class="fu">filepath</span><span class="op">,</span> <span class="fu">body</span> <span class="op">=</span> <span class="fu">model</span><span class="op">.</span><span class="fu">textarea</span> } )</span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true"></a></span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true"></a><span class="fu">subscriptions</span> : <span class="dt">Model</span> <span class="op">-&gt;</span> <span class="dt">Sub</span> <span class="dt">Msg</span></span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true"></a><span class="fu">subscriptions</span> <span class="fu">model</span> <span class="op">=</span></span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true"></a>  <span class="dt">Sub</span><span class="op">.</span><span class="fu">batch</span></span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true"></a>    [ <span class="dt">Window</span><span class="op">.</span><span class="fu">resizes</span> <span class="dt">SizeUpdated</span></span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true"></a>    <span class="op">,</span> <span class="dt">FS</span><span class="op">.</span><span class="fu">readFile</span> <span class="dt">ReadFile</span></span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true"></a>    <span class="op">,</span> <span class="dt">FS</span><span class="op">.</span><span class="fu">writeFileHook</span> <span class="dt">WriteFileHook</span></span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true"></a>    ]</span></code></pre></div>
 <p>これでうまく動作するはずだ．</p>
 <p><img src="../assets/create-elmdeck/savefile.gif" /></p>
 <h3 id="ショートカット">ショートカット</h3>
@@ -513,29 +513,29 @@
 <li><a href="https://qiita.com/okaxaki/items/8b8942b0c4e13ac67739">Electronに開発用メニューとショートカットを付ける - Qiita</a></li>
 </ul>
 <p><a href="https://electronjs.org/docs/api/accelerator"><code>Accelerator</code></a> というのを使えばよいらしい．</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb17-1"><a href="#cb17-1"></a><span class="kw">var</span> menuvar <span class="op">=</span> <span class="kw">new</span> Menu()<span class="op">;</span></span>
-<span id="cb17-2"><a href="#cb17-2"></a>menuvar<span class="op">.</span><span class="fu">append</span>(<span class="kw">new</span> MenuItem(</span>
-<span id="cb17-3"><a href="#cb17-3"></a>  {</span>
-<span id="cb17-4"><a href="#cb17-4"></a>    <span class="dt">label</span><span class="op">:</span> <span class="st">'File'</span><span class="op">,</span></span>
-<span id="cb17-5"><a href="#cb17-5"></a>    <span class="dt">submenu</span><span class="op">:</span> [</span>
-<span id="cb17-6"><a href="#cb17-6"></a>      {</span>
-<span id="cb17-7"><a href="#cb17-7"></a>        <span class="dt">label</span><span class="op">:</span> <span class="st">'Open'</span><span class="op">,</span></span>
-<span id="cb17-8"><a href="#cb17-8"></a>        <span class="dt">accelerator</span><span class="op">:</span> <span class="st">'Ctrl+O'</span><span class="op">,</span></span>
-<span id="cb17-9"><a href="#cb17-9"></a>        click() { files<span class="op">.</span><span class="fu">readFile</span>(app) }</span>
-<span id="cb17-10"><a href="#cb17-10"></a>      }<span class="op">,</span></span>
-<span id="cb17-11"><a href="#cb17-11"></a>      {</span>
-<span id="cb17-12"><a href="#cb17-12"></a>        <span class="dt">label</span><span class="op">:</span> <span class="st">'Save'</span><span class="op">,</span></span>
-<span id="cb17-13"><a href="#cb17-13"></a>        <span class="dt">accelerator</span><span class="op">:</span> <span class="st">'Ctrl+S'</span><span class="op">,</span></span>
-<span id="cb17-14"><a href="#cb17-14"></a>        click() { files<span class="op">.</span><span class="fu">writeFile</span>(app) }</span>
-<span id="cb17-15"><a href="#cb17-15"></a>      }<span class="op">,</span></span>
-<span id="cb17-16"><a href="#cb17-16"></a>      {</span>
-<span id="cb17-17"><a href="#cb17-17"></a>        <span class="dt">label</span><span class="op">:</span> <span class="st">'Save As'</span><span class="op">,</span></span>
-<span id="cb17-18"><a href="#cb17-18"></a>        <span class="dt">accelerator</span><span class="op">:</span> <span class="st">'Ctrl+Shift+S'</span><span class="op">,</span></span>
-<span id="cb17-19"><a href="#cb17-19"></a>        click() { files<span class="op">.</span><span class="fu">writeFileAs</span>(app) }</span>
-<span id="cb17-20"><a href="#cb17-20"></a>      }</span>
-<span id="cb17-21"><a href="#cb17-21"></a>    ]</span>
-<span id="cb17-22"><a href="#cb17-22"></a>  }</span>
-<span id="cb17-23"><a href="#cb17-23"></a>))<span class="op">;</span></span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true"></a><span class="kw">var</span> menuvar <span class="op">=</span> <span class="kw">new</span> <span class="fu">Menu</span>()<span class="op">;</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true"></a>menuvar<span class="op">.</span><span class="fu">append</span>(<span class="kw">new</span> <span class="fu">MenuItem</span>(</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true"></a>  {</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true"></a>    <span class="dt">label</span><span class="op">:</span> <span class="st">'File'</span><span class="op">,</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true"></a>    <span class="dt">submenu</span><span class="op">:</span> [</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true"></a>      {</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true"></a>        <span class="dt">label</span><span class="op">:</span> <span class="st">'Open'</span><span class="op">,</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true"></a>        <span class="dt">accelerator</span><span class="op">:</span> <span class="st">'Ctrl+O'</span><span class="op">,</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true"></a>        <span class="fu">click</span>() { files<span class="op">.</span><span class="fu">readFile</span>(app) }</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true"></a>      }<span class="op">,</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true"></a>      {</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true"></a>        <span class="dt">label</span><span class="op">:</span> <span class="st">'Save'</span><span class="op">,</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true"></a>        <span class="dt">accelerator</span><span class="op">:</span> <span class="st">'Ctrl+S'</span><span class="op">,</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true"></a>        <span class="fu">click</span>() { files<span class="op">.</span><span class="fu">writeFile</span>(app) }</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true"></a>      }<span class="op">,</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true"></a>      {</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true"></a>        <span class="dt">label</span><span class="op">:</span> <span class="st">'Save As'</span><span class="op">,</span></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true"></a>        <span class="dt">accelerator</span><span class="op">:</span> <span class="st">'Ctrl+Shift+S'</span><span class="op">,</span></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true"></a>        <span class="fu">click</span>() { files<span class="op">.</span><span class="fu">writeFileAs</span>(app) }</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true"></a>      }</span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true"></a>    ]</span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true"></a>  }</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true"></a>))<span class="op">;</span></span></code></pre></div>
 <p>これで目的のモノはできた！</p>
 <h2 id="懸念">懸念</h2>
 <p>なんか Electron のファイル IO にはセキュリティ的に甘いところがあるらしい…</p>

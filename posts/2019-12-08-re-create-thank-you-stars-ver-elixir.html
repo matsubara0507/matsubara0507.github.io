@@ -129,28 +129,28 @@
 <li><a href="https://github.com/matsubara0507/thank-you-stars/pull/1">Add GitHub Actions config by matsubara0507 · Pull Request #1 · matsubara0507/thank-you-stars</a></li>
 </ul>
 <p>Elixir や Erlang/OTP のセットアップには <a href="https://github.com/actions/setup-elixir"><code>actions/setup-elixir</code></a> を使う． 色々と試して，最終的なジョブの設定はこんな感じ:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1"></a><span class="co"># ほんとんど actions/elixir-setup の例のまんま</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="fu">jobs</span><span class="kw">:</span></span>
-<span id="cb2-3"><a href="#cb2-3"></a><span class="at">  </span><span class="fu">build</span><span class="kw">:</span></span>
-<span id="cb2-4"><a href="#cb2-4"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-16.04</span></span>
-<span id="cb2-5"><a href="#cb2-5"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> OTP ${{matrix.otp}} / Elixir ${{matrix.elixir}}</span></span>
-<span id="cb2-6"><a href="#cb2-6"></a></span>
-<span id="cb2-7"><a href="#cb2-7"></a><span class="at">    </span><span class="fu">strategy</span><span class="kw">:</span></span>
-<span id="cb2-8"><a href="#cb2-8"></a><span class="at">      </span><span class="fu">matrix</span><span class="kw">:</span></span>
-<span id="cb2-9"><a href="#cb2-9"></a><span class="at">        </span><span class="fu">otp</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">21.x</span><span class="kw">,</span><span class="at"> 22.x</span><span class="kw">]</span><span class="co">      # 20.x は ubuntu 16,18 には無い様子</span></span>
-<span id="cb2-10"><a href="#cb2-10"></a><span class="at">        </span><span class="fu">elixir</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">1.8.x</span><span class="kw">,</span><span class="at"> 1.9.x</span><span class="kw">]</span></span>
-<span id="cb2-11"><a href="#cb2-11"></a><span class="at">      </span><span class="fu">fail-fast</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co">         # マトリックスのどれかのジョブが落ちても他のジョブは実行をやめない</span></span>
-<span id="cb2-12"><a href="#cb2-12"></a></span>
-<span id="cb2-13"><a href="#cb2-13"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
-<span id="cb2-14"><a href="#cb2-14"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v1.0.0</span></span>
-<span id="cb2-15"><a href="#cb2-15"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
-<span id="cb2-16"><a href="#cb2-16"></a><span class="at">        </span><span class="fu">fetch-depth</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span id="cb2-17"><a href="#cb2-17"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/setup-elixir@v1.0.0</span></span>
-<span id="cb2-18"><a href="#cb2-18"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
-<span id="cb2-19"><a href="#cb2-19"></a><span class="at">        </span><span class="fu">otp-version</span><span class="kw">:</span><span class="at"> ${{matrix.otp}}</span></span>
-<span id="cb2-20"><a href="#cb2-20"></a><span class="at">        </span><span class="fu">elixir-version</span><span class="kw">:</span><span class="at"> ${{matrix.elixir}}</span></span>
-<span id="cb2-21"><a href="#cb2-21"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> mix deps.get</span></span>
-<span id="cb2-22"><a href="#cb2-22"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> mix test</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="co"># ほんとんど actions/elixir-setup の例のまんま</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a><span class="at">  </span><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-16.04</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> OTP ${{matrix.otp}} / Elixir ${{matrix.elixir}}</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a><span class="at">    </span><span class="fu">strategy</span><span class="kw">:</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a><span class="at">      </span><span class="fu">matrix</span><span class="kw">:</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a><span class="at">        </span><span class="fu">otp</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">21.x</span><span class="kw">,</span><span class="at"> 22.x</span><span class="kw">]</span><span class="co">      # 20.x は ubuntu 16,18 には無い様子</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a><span class="at">        </span><span class="fu">elixir</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">1.8.x</span><span class="kw">,</span><span class="at"> 1.9.x</span><span class="kw">]</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a><span class="at">      </span><span class="fu">fail-fast</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co">         # マトリックスのどれかのジョブが落ちても他のジョブは実行をやめない</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v1.0.0</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true"></a><span class="at">        </span><span class="fu">fetch-depth</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/setup-elixir@v1.0.0</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true"></a><span class="at">        </span><span class="fu">otp-version</span><span class="kw">:</span><span class="at"> ${{matrix.otp}}</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true"></a><span class="at">        </span><span class="fu">elixir-version</span><span class="kw">:</span><span class="at"> ${{matrix.elixir}}</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> mix deps.get</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> mix test</span></span></code></pre></div>
 <p><code>mix.exs</code> でどうやって複数の Elixir のバージョンを許容するんだ？と結構調べたけど，単純にボトムのバージョンを <code>elixir: ~&gt; ...</code> で指定すればいいだけだった（普通 <code>&gt;=</code> じゃ無いの．．．）．</p>
 <p>キャッシュの導入も考えたが，たかが数分に入れてもしょうがないなってなってやめた．</p>
 <h2 id="おまけ-依存パケージを減らす大作戦">おまけ: 依存パケージを減らす大作戦</h2>
@@ -164,66 +164,66 @@
 <h3 id="vs.-ok">vs. <code>ok</code></h3>
 <p><code>ok</code> パッケージはいわゆる <code>Either</code> モナドだ． <code>{:ok, hoge} | {:error, fuga}</code> のような型を簡単に扱うためのマクロを提供している．</p>
 <p>これらの型の場合，Elixir の特徴であるパイプ演算子をうまく連結できない． なので，Elm 流に <code>and_then</code> 関数を用意して，それで賄うようにした:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb3-1"><a href="#cb3-1"></a>  <span class="co"># Result a -&gt; (a -&gt; Result b) -&gt; Result b</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a>  <span class="co"># ただし Result a = {:ok, a} | {:error, e}</span></span>
-<span id="cb3-3"><a href="#cb3-3"></a>  <span class="kw">defp</span> and_then({<span class="va">:ok</span>, v}, f), <span class="kw">do</span>: f<span class="op">.</span>(v)</span>
-<span id="cb3-4"><a href="#cb3-4"></a>  <span class="kw">defp</span> and_then(err <span class="op">=</span> {<span class="va">:error</span>, _}, _), <span class="kw">do</span>: err</span>
-<span id="cb3-5"><a href="#cb3-5"></a></span>
-<span id="cb3-6"><a href="#cb3-6"></a>  <span class="co"># 使用例</span></span>
-<span id="cb3-7"><a href="#cb3-7"></a>  <span class="kw">def</span> star_package(package_name, client) <span class="kw">do</span></span>
-<span id="cb3-8"><a href="#cb3-8"></a>    fetch_package_github_url(package_name)</span>
-<span id="cb3-9"><a href="#cb3-9"></a>    <span class="op">|&gt;</span> and_then(<span class="op">&amp;</span>star_github_package(<span class="op">&amp;</span><span class="dv">1</span>, client)) <span class="co"># ココ</span></span>
-<span id="cb3-10"><a href="#cb3-10"></a>    <span class="op">|&gt;</span> <span class="kw">case</span> <span class="kw">do</span></span>
-<span id="cb3-11"><a href="#cb3-11"></a>      {<span class="va">:ok</span>, url} <span class="op">-&gt;</span> <span class="st">&quot;Starred! </span><span class="ot">#{</span>url<span class="ot">}</span><span class="st">&quot;</span></span>
-<span id="cb3-12"><a href="#cb3-12"></a>      {<span class="va">:error</span>, url} <span class="op">-&gt;</span> <span class="st">&quot;Error    </span><span class="ot">#{</span>url<span class="ot">}</span><span class="st">&quot;</span></span>
-<span id="cb3-13"><a href="#cb3-13"></a>    <span class="kw">end</span></span>
-<span id="cb3-14"><a href="#cb3-14"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a>  <span class="co"># Result a -&gt; (a -&gt; Result b) -&gt; Result b</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a>  <span class="co"># ただし Result a = {:ok, a} | {:error, e}</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>  <span class="kw">defp</span> and_then({<span class="va">:ok</span>, v}, f), <span class="kw">do</span>: f<span class="op">.</span>(v)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>  <span class="kw">defp</span> and_then(err <span class="op">=</span> {<span class="va">:error</span>, _}, _), <span class="kw">do</span>: err</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a>  <span class="co"># 使用例</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a>  <span class="kw">def</span> star_package(package_name, client) <span class="kw">do</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a>    fetch_package_github_url(package_name)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a>    <span class="op">|&gt;</span> and_then(<span class="op">&amp;</span>star_github_package(<span class="op">&amp;</span><span class="dv">1</span>, client)) <span class="co"># ココ</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a>    <span class="op">|&gt;</span> <span class="kw">case</span> <span class="kw">do</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a>      {<span class="va">:ok</span>, url} <span class="op">-&gt;</span> <span class="st">&quot;Starred! </span><span class="ot">#{</span>url<span class="ot">}</span><span class="st">&quot;</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a>      {<span class="va">:error</span>, url} <span class="op">-&gt;</span> <span class="st">&quot;Error    </span><span class="ot">#{</span>url<span class="ot">}</span><span class="st">&quot;</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a>    <span class="kw">end</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true"></a>  <span class="kw">end</span></span></code></pre></div>
 <h3 id="vs.-tentacat">vs. <code>tentacat</code></h3>
 <p>単純に HTTP リクエストの PUT を認証付きでしているだけなので，<code>httpoison</code> に書き直した． まぁ面倒を後に丸投げてるだけだが笑</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb4-1"><a href="#cb4-1"></a>  <span class="kw">def</span> star_github_package(url, token) <span class="kw">do</span></span>
-<span id="cb4-2"><a href="#cb4-2"></a>    <span class="cn">URI</span><span class="op">.</span>parse(url)</span>
-<span id="cb4-3"><a href="#cb4-3"></a>    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="va">:path</span>, <span class="st">&quot;&quot;</span>)</span>
-<span id="cb4-4"><a href="#cb4-4"></a>    <span class="op">|&gt;</span> (<span class="op">&amp;</span>put_github_api(<span class="st">&quot;user/starred</span><span class="ot">#{</span><span class="op">&amp;</span><span class="dv">1</span><span class="ot">}</span><span class="st">&quot;</span>, token))<span class="op">.</span>()</span>
-<span id="cb4-5"><a href="#cb4-5"></a>    <span class="op">|&gt;</span> and_then(<span class="op">&amp;</span>map_get_with_ok(<span class="op">&amp;</span><span class="dv">1</span>, <span class="va">:status_code</span>))</span>
-<span id="cb4-6"><a href="#cb4-6"></a>    <span class="op">|&gt;</span> <span class="kw">case</span> <span class="kw">do</span></span>
-<span id="cb4-7"><a href="#cb4-7"></a>      {<span class="va">:ok</span>, <span class="dv">204</span>} <span class="op">-&gt;</span> {<span class="va">:ok</span>, url} <span class="co"># もちろん返り値も変わる</span></span>
-<span id="cb4-8"><a href="#cb4-8"></a>      _ <span class="op">-&gt;</span> {<span class="va">:error</span>, url}</span>
-<span id="cb4-9"><a href="#cb4-9"></a>    <span class="kw">end</span></span>
-<span id="cb4-10"><a href="#cb4-10"></a>  <span class="kw">end</span></span>
-<span id="cb4-11"><a href="#cb4-11"></a></span>
-<span id="cb4-12"><a href="#cb4-12"></a>  <span class="kw">defp</span> put_github_api(path, token) <span class="kw">do</span></span>
-<span id="cb4-13"><a href="#cb4-13"></a>    headers <span class="op">=</span> [{<span class="st">&quot;Authorization&quot;</span>, <span class="st">&quot;token </span><span class="ot">#{</span>token<span class="ot">}</span><span class="st">&quot;</span>}]</span>
-<span id="cb4-14"><a href="#cb4-14"></a>    <span class="cn">HTTPoison</span><span class="op">.</span>put(<span class="st">&quot;https://api.github.com/</span><span class="ot">#{</span>path<span class="ot">}</span><span class="st">&quot;</span>, <span class="st">&quot;&quot;</span>, headers)</span>
-<span id="cb4-15"><a href="#cb4-15"></a>  <span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a>  <span class="kw">def</span> star_github_package(url, token) <span class="kw">do</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a>    <span class="cn">URI</span><span class="op">.</span>parse(url)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a>    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>get(<span class="va">:path</span>, <span class="st">&quot;&quot;</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a>    <span class="op">|&gt;</span> (<span class="op">&amp;</span>put_github_api(<span class="st">&quot;user/starred</span><span class="ot">#{</span><span class="op">&amp;</span><span class="dv">1</span><span class="ot">}</span><span class="st">&quot;</span>, token))<span class="op">.</span>()</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a>    <span class="op">|&gt;</span> and_then(<span class="op">&amp;</span>map_get_with_ok(<span class="op">&amp;</span><span class="dv">1</span>, <span class="va">:status_code</span>))</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a>    <span class="op">|&gt;</span> <span class="kw">case</span> <span class="kw">do</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a>      {<span class="va">:ok</span>, <span class="dv">204</span>} <span class="op">-&gt;</span> {<span class="va">:ok</span>, url} <span class="co"># もちろん返り値も変わる</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a>      _ <span class="op">-&gt;</span> {<span class="va">:error</span>, url}</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a>    <span class="kw">end</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true"></a>  <span class="kw">end</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true"></a>  <span class="kw">defp</span> put_github_api(path, token) <span class="kw">do</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true"></a>    headers <span class="op">=</span> [{<span class="st">&quot;Authorization&quot;</span>, <span class="st">&quot;token </span><span class="ot">#{</span>token<span class="ot">}</span><span class="st">&quot;</span>}]</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true"></a>    <span class="cn">HTTPoison</span><span class="op">.</span>put(<span class="st">&quot;https://api.github.com/</span><span class="ot">#{</span>path<span class="ot">}</span><span class="st">&quot;</span>, <span class="st">&quot;&quot;</span>, headers)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true"></a>  <span class="kw">end</span></span></code></pre></div>
 <h3 id="vs.-poison">vs. <code>poison</code></h3>
 <p><code>poison</code> は JSON デコーダー・エンコーダーだ． GitHub トークンを設定(JSON)から取得したり，Hex から取得したライブラリの設定(JSON)をパースするのに使う．</p>
 <p>これを無くすにはどうするか．簡単ですね． <strong>JSON パーサーを自作すればいいのです</strong>．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">defmodule</span> <span class="cn">ThankYouStars</span><span class="op">.</span><span class="cn">JSON</span> <span class="kw">do</span></span>
-<span id="cb5-2"><a href="#cb5-2"></a>  <span class="im">alias</span> <span class="cn">ThankYouStars</span><span class="op">.</span><span class="cn">Result</span>, <span class="va">as:</span> <span class="cn">Result</span></span>
-<span id="cb5-3"><a href="#cb5-3"></a></span>
-<span id="cb5-4"><a href="#cb5-4"></a>  <span class="co"># String をもらって JSON として Map や Bool，List などを返す</span></span>
-<span id="cb5-5"><a href="#cb5-5"></a>  <span class="kw">def</span> decode(str) <span class="kw">do</span></span>
-<span id="cb5-6"><a href="#cb5-6"></a>    match_value(%{<span class="va">rest:</span> <span class="cn">String</span><span class="op">.</span>trim(str), <span class="va">result:</span> %{}})</span>
-<span id="cb5-7"><a href="#cb5-7"></a>    <span class="op">|&gt;</span> <span class="kw">case</span> <span class="kw">do</span></span>
-<span id="cb5-8"><a href="#cb5-8"></a>      {<span class="va">:ok</span>, %{<span class="va">rest:</span> <span class="st">&quot;&quot;</span>, <span class="va">result:</span> result}} <span class="op">-&gt;</span> <span class="cn">Result</span><span class="op">.</span>success(result)</span>
-<span id="cb5-9"><a href="#cb5-9"></a>      {_, %{<span class="va">rest:</span> rest}} <span class="op">-&gt;</span> <span class="cn">Result</span><span class="op">.</span>failure(rest)</span>
-<span id="cb5-10"><a href="#cb5-10"></a>    <span class="kw">end</span></span>
-<span id="cb5-11"><a href="#cb5-11"></a>  <span class="kw">end</span></span>
-<span id="cb5-12"><a href="#cb5-12"></a></span>
-<span id="cb5-13"><a href="#cb5-13"></a>  <span class="kw">defp</span> match_value(stat) <span class="kw">do</span></span>
-<span id="cb5-14"><a href="#cb5-14"></a>    trim_leading(stat)</span>
-<span id="cb5-15"><a href="#cb5-15"></a>    <span class="op">|&gt;</span> match_value_body()</span>
-<span id="cb5-16"><a href="#cb5-16"></a>    <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>map(<span class="op">&amp;</span>trim_leading(<span class="op">&amp;</span><span class="dv">1</span>))</span>
-<span id="cb5-17"><a href="#cb5-17"></a>  <span class="kw">end</span></span>
-<span id="cb5-18"><a href="#cb5-18"></a></span>
-<span id="cb5-19"><a href="#cb5-19"></a>  <span class="co"># 無駄にパターンマッチとパイプを使ってみることにした(Elixir っぽい？)</span></span>
-<span id="cb5-20"><a href="#cb5-20"></a>  <span class="kw">defp</span> match_value_body(stat <span class="op">=</span> %{<span class="va">rest:</span> <span class="st">&quot;true&quot;</span> <span class="op">&lt;&gt;</span> rest}) <span class="kw">do</span></span>
-<span id="cb5-21"><a href="#cb5-21"></a>    <span class="cn">Map</span><span class="op">.</span>put(stat, <span class="va">:result</span>, <span class="cn">true</span>)</span>
-<span id="cb5-22"><a href="#cb5-22"></a>    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>put(<span class="va">:rest</span>, rest)</span>
-<span id="cb5-23"><a href="#cb5-23"></a>    <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>success()</span>
-<span id="cb5-24"><a href="#cb5-24"></a>  <span class="kw">end</span></span>
-<span id="cb5-25"><a href="#cb5-25"></a></span>
-<span id="cb5-26"><a href="#cb5-26"></a>  <span class="op">...</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="kw">defmodule</span> <span class="cn">ThankYouStars</span><span class="op">.</span><span class="cn">JSON</span> <span class="kw">do</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a>  <span class="im">alias</span> <span class="cn">ThankYouStars</span><span class="op">.</span><span class="cn">Result</span>, <span class="va">as:</span> <span class="cn">Result</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a>  <span class="co"># String をもらって JSON として Map や Bool，List などを返す</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a>  <span class="kw">def</span> decode(str) <span class="kw">do</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a>    match_value(%{<span class="va">rest:</span> <span class="cn">String</span><span class="op">.</span>trim(str), <span class="va">result:</span> %{}})</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true"></a>    <span class="op">|&gt;</span> <span class="kw">case</span> <span class="kw">do</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true"></a>      {<span class="va">:ok</span>, %{<span class="va">rest:</span> <span class="st">&quot;&quot;</span>, <span class="va">result:</span> result}} <span class="op">-&gt;</span> <span class="cn">Result</span><span class="op">.</span>success(result)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true"></a>      {_, %{<span class="va">rest:</span> rest}} <span class="op">-&gt;</span> <span class="cn">Result</span><span class="op">.</span>failure(rest)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true"></a>    <span class="kw">end</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true"></a>  <span class="kw">end</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true"></a>  <span class="kw">defp</span> match_value(stat) <span class="kw">do</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true"></a>    trim_leading(stat)</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true"></a>    <span class="op">|&gt;</span> match_value_body()</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true"></a>    <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>map(<span class="op">&amp;</span>trim_leading(<span class="op">&amp;</span><span class="dv">1</span>))</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true"></a>  <span class="kw">end</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true"></a></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true"></a>  <span class="co"># 無駄にパターンマッチとパイプを使ってみることにした(Elixir っぽい？)</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true"></a>  <span class="kw">defp</span> match_value_body(stat <span class="op">=</span> %{<span class="va">rest:</span> <span class="st">&quot;true&quot;</span> <span class="op">&lt;&gt;</span> rest}) <span class="kw">do</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true"></a>    <span class="cn">Map</span><span class="op">.</span>put(stat, <span class="va">:result</span>, <span class="cn">true</span>)</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true"></a>    <span class="op">|&gt;</span> <span class="cn">Map</span><span class="op">.</span>put(<span class="va">:rest</span>, rest)</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true"></a>    <span class="op">|&gt;</span> <span class="cn">Result</span><span class="op">.</span>success()</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true"></a>  <span class="kw">end</span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true"></a></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true"></a>  <span class="op">...</span></span></code></pre></div>
 <p>JSON パーサーは比較的簡単だ(細かいところに目をつぶれば)． なんせ構文の定義が <a href="https://www.json.org/json-en.html">json.org</a> というサイトに書いてあるから． また，テストスイートも <a href="https://github.com/nst/JSONTestSuite">nst/JSONTestSuite</a> というところに置いてある．</p>
 <h1 id="section-1"></h1>
 <p>今回はガッっと一晩で雑に作ったので浮動小数点の <code>e</code> 記法やユニコードのエスケープ記法 <code>\u</code> なんかの実装は無視した（まぁ多分すぐできるけど）． また，Elixir ということで積極的にパターンマッチングとパイプを利用して実装している． 興味がある人は PR を見てください（汚いのでリファクタリングしたい）．</p>

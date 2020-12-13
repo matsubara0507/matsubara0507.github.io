@@ -136,17 +136,17 @@
 </ul>
 <h3 id="型アサーション">型アサーション</h3>
 <p>Goでの型キャストっぽい機能． インターフェースで指定されてる型からサブタイプへと変換する．</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">type</span> Hoge <span class="kw">interface</span> { ... }</span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">type</span> Fuga <span class="kw">struct</span> { ... }</span>
-<span id="cb1-3"><a href="#cb1-3"></a></span>
-<span id="cb1-4"><a href="#cb1-4"></a><span class="co">// Fuga は Hoge を実装しているとする</span></span>
-<span id="cb1-5"><a href="#cb1-5"></a><span class="kw">func</span> piyo(x Hoge) *Fuga {  <span class="co">// *X はX型のポインタ型</span></span>
-<span id="cb1-6"><a href="#cb1-6"></a>    y, ok := x.(Fuga)      <span class="co">// これが型アサーション</span></span>
-<span id="cb1-7"><a href="#cb1-7"></a>    <span class="kw">if</span> !ok {               <span class="co">// 型アサーションに失敗したときに false を返す</span></span>
-<span id="cb1-8"><a href="#cb1-8"></a>        <span class="kw">return</span> <span class="ot">nil</span>         <span class="co">// nil はポインタのゼロ値</span></span>
-<span id="cb1-9"><a href="#cb1-9"></a>    }</span>
-<span id="cb1-10"><a href="#cb1-10"></a>    <span class="kw">return</span> &amp;y</span>
-<span id="cb1-11"><a href="#cb1-11"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">type</span> Hoge <span class="kw">interface</span> { ... }</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="kw">type</span> Fuga <span class="kw">struct</span> { ... }</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a><span class="co">// Fuga は Hoge を実装しているとする</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a><span class="kw">func</span> piyo(x Hoge) *Fuga {  <span class="co">// *X はX型のポインタ型</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a>    y, ok := x.(Fuga)      <span class="co">// これが型アサーション</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a>    <span class="kw">if</span> !ok {               <span class="co">// 型アサーションに失敗したときに false を返す</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>        <span class="kw">return</span> <span class="ot">nil</span>         <span class="co">// nil はポインタのゼロ値</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a>    }</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a>    <span class="kw">return</span> &amp;y</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true"></a>}</span></code></pre></div>
 <p><code>piyo</code> 関数は <code>Hoge</code> インターフェースを実装した型の値であれば，なんでも引数として与えることができる． 型アサーションの <code>ok</code> は省略することができ，その場合は型アサーションに失敗したときに実行時エラーとなる．</p>
 <h3 id="用語と翻訳">用語と翻訳</h3>
 <p>基本的に，この分野の入門書として名高い[要出典]「型システム入門（原題：Type and Programming Language，略して TaPL）」の訳し方を参考にする． TaPL には無い用語は次のように翻訳したが，Go ジェネリクスが市民権を得たときには別の翻訳が宛てがわれるかもしれない：</p>
@@ -220,35 +220,35 @@
 <h2 id="goで多相的な実装をする">Goで多相的な実装をする</h2>
 <p>現状のGoでも多相的な実装をする方法がいくつかある． 今回目を付けたのが，インターフェースと型アサーションを使った方法だ．</p>
 <p>例えば，高階関数を次のように表現できる：</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">type</span> Any <span class="kw">interface</span> {}</span>
-<span id="cb2-2"><a href="#cb2-2"></a></span>
-<span id="cb2-3"><a href="#cb2-3"></a><span class="kw">type</span> Function <span class="kw">interface</span> {</span>
-<span id="cb2-4"><a href="#cb2-4"></a>    Apply(x Any) Any</span>
-<span id="cb2-5"><a href="#cb2-5"></a>}</span>
-<span id="cb2-6"><a href="#cb2-6"></a></span>
-<span id="cb2-7"><a href="#cb2-7"></a><span class="co">// g(f(x)) を表現</span></span>
-<span id="cb2-8"><a href="#cb2-8"></a><span class="kw">type</span> compose <span class="kw">struct</span> {</span>
-<span id="cb2-9"><a href="#cb2-9"></a>    f Function</span>
-<span id="cb2-10"><a href="#cb2-10"></a>    g Function</span>
-<span id="cb2-11"><a href="#cb2-11"></a>}</span>
-<span id="cb2-12"><a href="#cb2-12"></a><span class="kw">func</span> (this compose) Apply(x Any) Any {</span>
-<span id="cb2-13"><a href="#cb2-13"></a>    <span class="kw">return</span> this.g.Apply(this.f.Apply(x))</span>
-<span id="cb2-14"><a href="#cb2-14"></a>}</span>
-<span id="cb2-15"><a href="#cb2-15"></a></span>
-<span id="cb2-16"><a href="#cb2-16"></a><span class="kw">type</span> incr <span class="kw">struct</span> { n <span class="dt">int</span> } <span class="co">// nだけインクリメントする</span></span>
-<span id="cb2-17"><a href="#cb2-17"></a><span class="kw">func</span> (this incr) Apply(x Any) Any {</span>
-<span id="cb2-18"><a href="#cb2-18"></a>    <span class="kw">return</span> x.(<span class="dt">int</span>) + this.n</span>
-<span id="cb2-19"><a href="#cb2-19"></a>}</span>
-<span id="cb2-20"><a href="#cb2-20"></a></span>
-<span id="cb2-21"><a href="#cb2-21"></a><span class="kw">type</span> pos <span class="kw">struct</span> {} <span class="co">// 正数なら真が返る</span></span>
-<span id="cb2-22"><a href="#cb2-22"></a><span class="kw">func</span> (this pos) Apply(x Any) Any {</span>
-<span id="cb2-23"><a href="#cb2-23"></a>    <span class="kw">return</span> x.(<span class="dt">int</span>) &gt; <span class="dv">0</span></span>
-<span id="cb2-24"><a href="#cb2-24"></a>}</span>
-<span id="cb2-25"><a href="#cb2-25"></a></span>
-<span id="cb2-26"><a href="#cb2-26"></a><span class="kw">func</span> main() {</span>
-<span id="cb2-27"><a href="#cb2-27"></a>    <span class="kw">var</span> f Function = compose{incr{-<span class="dv">5</span>}, pos{}}</span>
-<span id="cb2-28"><a href="#cb2-28"></a>    <span class="kw">var</span> b <span class="dt">bool</span> = f.Apply(<span class="dv">3</span>).(<span class="dt">bool</span>) <span class="co">// false</span></span>
-<span id="cb2-29"><a href="#cb2-29"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="kw">type</span> Any <span class="kw">interface</span> {}</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a><span class="kw">type</span> Function <span class="kw">interface</span> {</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>    Apply(x Any) Any</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a>}</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a><span class="co">// g(f(x)) を表現</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a><span class="kw">type</span> compose <span class="kw">struct</span> {</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a>    f Function</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a>    g Function</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a>}</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true"></a><span class="kw">func</span> (this compose) Apply(x Any) Any {</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true"></a>    <span class="kw">return</span> this.g.Apply(this.f.Apply(x))</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true"></a>}</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true"></a><span class="kw">type</span> incr <span class="kw">struct</span> { n <span class="dt">int</span> } <span class="co">// nだけインクリメントする</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true"></a><span class="kw">func</span> (this incr) Apply(x Any) Any {</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true"></a>    <span class="kw">return</span> x.(<span class="dt">int</span>) + this.n</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true"></a>}</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true"></a></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true"></a><span class="kw">type</span> pos <span class="kw">struct</span> {} <span class="co">// 正数なら真が返る</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true"></a><span class="kw">func</span> (this pos) Apply(x Any) Any {</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true"></a>    <span class="kw">return</span> x.(<span class="dt">int</span>) &gt; <span class="dv">0</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true"></a>}</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true"></a></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true"></a><span class="kw">func</span> main() {</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true"></a>    <span class="kw">var</span> f Function = compose{incr{-<span class="dv">5</span>}, pos{}}</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true"></a>    <span class="kw">var</span> b <span class="dt">bool</span> = f.Apply(<span class="dv">3</span>).(<span class="dt">bool</span>) <span class="co">// false</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true"></a>}</span></code></pre></div>
 <p>このコードは，既存の Go としても完全に正しい． <code>Any</code> インターフェースは実装すべきメソッド仕様を一つも持たないので，全ての型が実装していることになる． 無論，本当は <code>int</code> や <code>bool</code> であるべきところが <code>Any</code> になっていたり，<code>Any</code> な型同士の区別が付かなくなっていたりする問題がある． だがしかし，それがコンパイル時に検査できるようになったらどうだろうか．新しいデザインがまさにそういう形式になっている．</p>
 <h2 id="fg-と-fgg">FG と FGG</h2>
 <p>論文では，それぞれの構文と型付け規則，簡約規則を定義し，構文的正しさの検証規則の定義と，保存定理と進行定理を証明している（すなわち型安全であることを示している）． ここでは2つの構文だけ紹介する．</p>
@@ -268,194 +268,194 @@
 <p>前述したとおり，FGG は FG をジェネリクスで拡張した言語である． なので下記の構文規則のうち，FG からの拡張に当たる部分を赤でハイライトしてある．</p>
 <p><img src="../assets/read-featherweight-go/fgg.jpg" /></p>
 <p>最も大きな変更として型宣言とメソッド宣言（メソッドシグネチャ）が型引数 <span class="math inline"><em>Φ</em></span> も取りうるようになったことだ． この型引数がまさにジェネリクスである． 手っ取り早く具体的なコードを見てみよう． 下記のコードは「Goで多相的な実装をする」を FGG 風の記法で置き換えたものだ（風というのは <code>+</code> や <code>&gt;</code> や <code>int</code> や <code>bool</code> は FGG にはまだ無いため）：</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">type</span> Any <span class="kw">interface</span> {}</span>
-<span id="cb3-2"><a href="#cb3-2"></a></span>
-<span id="cb3-3"><a href="#cb3-3"></a><span class="kw">type</span> Function(<span class="kw">type</span> a Any, b Any) <span class="kw">interface</span> {</span>
-<span id="cb3-4"><a href="#cb3-4"></a>    Apply(x a) b</span>
-<span id="cb3-5"><a href="#cb3-5"></a>}</span>
-<span id="cb3-6"><a href="#cb3-6"></a></span>
-<span id="cb3-7"><a href="#cb3-7"></a><span class="co">// g(f(x)) を表現</span></span>
-<span id="cb3-8"><a href="#cb3-8"></a><span class="kw">type</span> compose(<span class="kw">type</span> a Any, b Any, c Any) <span class="kw">struct</span> {</span>
-<span id="cb3-9"><a href="#cb3-9"></a>    f Function(a, b)</span>
-<span id="cb3-10"><a href="#cb3-10"></a>    g Function(b, c)</span>
-<span id="cb3-11"><a href="#cb3-11"></a>}</span>
-<span id="cb3-12"><a href="#cb3-12"></a><span class="kw">func</span> (this compose(<span class="kw">type</span> a Any, b Any, c Any)) Apply(x a) c {</span>
-<span id="cb3-13"><a href="#cb3-13"></a>    <span class="kw">return</span> this.g.Apply(this.f.Apply(x))</span>
-<span id="cb3-14"><a href="#cb3-14"></a>}</span>
-<span id="cb3-15"><a href="#cb3-15"></a></span>
-<span id="cb3-16"><a href="#cb3-16"></a><span class="kw">type</span> incr <span class="kw">struct</span> { n <span class="dt">int</span> } <span class="co">// nだけインクリメントする</span></span>
-<span id="cb3-17"><a href="#cb3-17"></a><span class="kw">func</span> (this incr) Apply(x <span class="dt">int</span>) <span class="dt">int</span> {</span>
-<span id="cb3-18"><a href="#cb3-18"></a>    <span class="kw">return</span> x + this.n</span>
-<span id="cb3-19"><a href="#cb3-19"></a>}</span>
-<span id="cb3-20"><a href="#cb3-20"></a></span>
-<span id="cb3-21"><a href="#cb3-21"></a><span class="kw">type</span> pos <span class="kw">struct</span> {} <span class="co">// 正数なら真が返る</span></span>
-<span id="cb3-22"><a href="#cb3-22"></a><span class="kw">func</span> (this pos) Apply(x <span class="dt">int</span>) <span class="dt">bool</span> {</span>
-<span id="cb3-23"><a href="#cb3-23"></a>    <span class="kw">return</span> x &gt; <span class="dv">0</span></span>
-<span id="cb3-24"><a href="#cb3-24"></a>}</span>
-<span id="cb3-25"><a href="#cb3-25"></a></span>
-<span id="cb3-26"><a href="#cb3-26"></a><span class="kw">func</span> main() {</span>
-<span id="cb3-27"><a href="#cb3-27"></a>    <span class="kw">var</span> f Function(<span class="dt">int</span>, <span class="dt">bool</span>) = compose(<span class="dt">int</span>, <span class="dt">int</span>, <span class="dt">bool</span>){incr{-<span class="dv">5</span>}, pos{}}</span>
-<span id="cb3-28"><a href="#cb3-28"></a>    <span class="kw">var</span> b <span class="dt">bool</span> = f.Apply(<span class="dv">3</span>) <span class="co">// false</span></span>
-<span id="cb3-29"><a href="#cb3-29"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="kw">type</span> Any <span class="kw">interface</span> {}</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a><span class="kw">type</span> Function(<span class="kw">type</span> a Any, b Any) <span class="kw">interface</span> {</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>    Apply(x a) b</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a>}</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a><span class="co">// g(f(x)) を表現</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a><span class="kw">type</span> compose(<span class="kw">type</span> a Any, b Any, c Any) <span class="kw">struct</span> {</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a>    f Function(a, b)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a>    g Function(b, c)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a>}</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a><span class="kw">func</span> (this compose(<span class="kw">type</span> a Any, b Any, c Any)) Apply(x a) c {</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a>    <span class="kw">return</span> this.g.Apply(this.f.Apply(x))</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true"></a>}</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true"></a></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true"></a><span class="kw">type</span> incr <span class="kw">struct</span> { n <span class="dt">int</span> } <span class="co">// nだけインクリメントする</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true"></a><span class="kw">func</span> (this incr) Apply(x <span class="dt">int</span>) <span class="dt">int</span> {</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true"></a>    <span class="kw">return</span> x + this.n</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true"></a>}</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true"></a></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true"></a><span class="kw">type</span> pos <span class="kw">struct</span> {} <span class="co">// 正数なら真が返る</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true"></a><span class="kw">func</span> (this pos) Apply(x <span class="dt">int</span>) <span class="dt">bool</span> {</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true"></a>    <span class="kw">return</span> x &gt; <span class="dv">0</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true"></a>}</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true"></a></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true"></a><span class="kw">func</span> main() {</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true"></a>    <span class="kw">var</span> f Function(<span class="dt">int</span>, <span class="dt">bool</span>) = compose(<span class="dt">int</span>, <span class="dt">int</span>, <span class="dt">bool</span>){incr{-<span class="dv">5</span>}, pos{}}</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true"></a>    <span class="kw">var</span> b <span class="dt">bool</span> = f.Apply(<span class="dv">3</span>) <span class="co">// false</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true"></a>}</span></code></pre></div>
 <p>なんと，このコードには型アサーションが一切出てこない． また，高階関数を表現するインターフェースで，ちゃんと引数と戻り値の型を区別することができている．</p>
 <p>構文の本質的な変更を見てみよう． インターフェースや構造体，メソッドの宣言に <code>(type a Any, b Any)</code> というのが出てくるようになった． これがまさに型引数 <span class="math inline"><em>Φ</em></span> や <span class="math inline"><em>Ψ</em></span> に当たる． <code>a</code> や <code>b</code> の型パラメーターの後に記述している <code>Any</code> は <strong>境界（bound）</strong> と呼び，自由にインターフェースを置くことができる． 構造体リテラルやメソッド呼び出しで型引数に型を適用する場合や，部分型関係が成り立つ場合（<code>Apply(x int) bool</code> の <code>int</code> や <code>bool</code> のこと）は，与えた型が境界のインターフェースのサブタイプになっている必要がある（今回の場合は <code>Any</code> なのでどんな型でも良いが）． ここで重要になるのが，型引数の型パラメーターのスコープである：</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb4-1"><a href="#cb4-1"></a><span class="co">// 型名やメソッド名の型パラメーターは内部のメソッドシグネチャで利用できる</span></span>
-<span id="cb4-2"><a href="#cb4-2"></a><span class="kw">type</span> List(<span class="kw">type</span> a Any) <span class="kw">interface</span> {</span>
-<span id="cb4-3"><a href="#cb4-3"></a>    Map(<span class="kw">type</span> b Any)(f Function(a, b)) List(b)</span>
-<span id="cb4-4"><a href="#cb4-4"></a>}</span>
-<span id="cb4-5"><a href="#cb4-5"></a></span>
-<span id="cb4-6"><a href="#cb4-6"></a><span class="co">// 型パラメーターを自身の境界で利用することもできる</span></span>
-<span id="cb4-7"><a href="#cb4-7"></a><span class="kw">type</span> Eq(<span class="kw">type</span> a Eq(a)) <span class="kw">interface</span> {</span>
-<span id="cb4-8"><a href="#cb4-8"></a>    Equal(that a) <span class="dt">bool</span></span>
-<span id="cb4-9"><a href="#cb4-9"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="co">// 型名やメソッド名の型パラメーターは内部のメソッドシグネチャで利用できる</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a><span class="kw">type</span> List(<span class="kw">type</span> a Any) <span class="kw">interface</span> {</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a>    Map(<span class="kw">type</span> b Any)(f Function(a, b)) List(b)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a>}</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a><span class="co">// 型パラメーターを自身の境界で利用することもできる</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a><span class="kw">type</span> Eq(<span class="kw">type</span> a Eq(a)) <span class="kw">interface</span> {</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a>    Equal(that a) <span class="dt">bool</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a>}</span></code></pre></div>
 <p>インターフェースの型引数はメソッド仕様の型引数でも使うことはできるが，その逆はできない．</p>
 <h2 id="単相化">単相化</h2>
 <p>いよいよ FGG から FG への変換方法をみていく． 論文では，単相化の規則を形式的に定義し，単相化したコードは構文的正しさが保存されることと，双模倣性を証明した．ここでは形式的な議論を割愛する．</p>
 <h3 id="単相化の例">単相化の例</h3>
 <p>まずは例を見てみよう． 前述した FGG の <code>Function</code> などの例を「単相化」で FG に変換すると次のようになる．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">type</span> Top <span class="kw">struct</span> {}</span>
-<span id="cb5-2"><a href="#cb5-2"></a></span>
-<span id="cb5-3"><a href="#cb5-3"></a><span class="kw">func</span> main() {</span>
-<span id="cb5-4"><a href="#cb5-4"></a>    <span class="kw">var</span> f Function&lt;<span class="dt">int</span>, <span class="dt">bool</span>&gt; = compose&lt;<span class="dt">int</span>, <span class="dt">int</span>, <span class="dt">bool</span>&gt;{incr{-<span class="dv">5</span>}, pos{}}</span>
-<span id="cb5-5"><a href="#cb5-5"></a>    <span class="kw">var</span> b <span class="dt">bool</span> = f.Apply(<span class="dv">3</span>)</span>
-<span id="cb5-6"><a href="#cb5-6"></a>}</span>
-<span id="cb5-7"><a href="#cb5-7"></a></span>
-<span id="cb5-8"><a href="#cb5-8"></a><span class="kw">type</span> compose&lt;<span class="dt">int</span>, <span class="dt">int</span>, <span class="dt">bool</span>&gt; <span class="kw">struct</span> {</span>
-<span id="cb5-9"><a href="#cb5-9"></a>    f Function&lt;<span class="dt">int</span>, <span class="dt">int</span>&gt;</span>
-<span id="cb5-10"><a href="#cb5-10"></a>    g Function&lt;<span class="dt">int</span>, <span class="dt">bool</span>&gt;</span>
-<span id="cb5-11"><a href="#cb5-11"></a>}</span>
-<span id="cb5-12"><a href="#cb5-12"></a></span>
-<span id="cb5-13"><a href="#cb5-13"></a><span class="kw">type</span> Function&lt;<span class="dt">int</span>, <span class="dt">int</span>&gt; <span class="kw">interface</span> {</span>
-<span id="cb5-14"><a href="#cb5-14"></a>    Apply&lt;<span class="dv">0</span>&gt; Top</span>
-<span id="cb5-15"><a href="#cb5-15"></a>    Apply(x <span class="dt">int</span>) <span class="dt">int</span>    </span>
-<span id="cb5-16"><a href="#cb5-16"></a>}</span>
-<span id="cb5-17"><a href="#cb5-17"></a></span>
-<span id="cb5-18"><a href="#cb5-18"></a><span class="kw">type</span> Function&lt;<span class="dt">int</span>, <span class="dt">bool</span>&gt; <span class="kw">interface</span> {</span>
-<span id="cb5-19"><a href="#cb5-19"></a>    Apply&lt;<span class="dv">1</span>&gt; Top</span>
-<span id="cb5-20"><a href="#cb5-20"></a>    Apply(x <span class="dt">int</span>) <span class="dt">bool</span>    </span>
-<span id="cb5-21"><a href="#cb5-21"></a>}</span>
-<span id="cb5-22"><a href="#cb5-22"></a></span>
-<span id="cb5-23"><a href="#cb5-23"></a><span class="kw">type</span> (this compose&lt;<span class="dt">int</span>, <span class="dt">int</span>, <span class="dt">bool</span>&gt;) Apply(x <span class="dt">int</span>) <span class="dt">bool</span> {</span>
-<span id="cb5-24"><a href="#cb5-24"></a>    <span class="kw">return</span> this.g.Apply(this.f.Apply(x))</span>
-<span id="cb5-25"><a href="#cb5-25"></a>}</span>
-<span id="cb5-26"><a href="#cb5-26"></a><span class="kw">type</span> (this compose&lt;<span class="dt">int</span>, <span class="dt">int</span>, <span class="dt">bool</span>&gt;) Apply&lt;<span class="dv">1</span>&gt;() Top {</span>
-<span id="cb5-27"><a href="#cb5-27"></a>    <span class="kw">return</span> Top{}</span>
-<span id="cb5-28"><a href="#cb5-28"></a>}</span>
-<span id="cb5-29"><a href="#cb5-29"></a></span>
-<span id="cb5-30"><a href="#cb5-30"></a><span class="kw">type</span> incr <span class="kw">struct</span> { n <span class="dt">int</span> }</span>
-<span id="cb5-31"><a href="#cb5-31"></a></span>
-<span id="cb5-32"><a href="#cb5-32"></a><span class="kw">type</span> (this incr) Apply(x <span class="dt">int</span>) <span class="dt">int</span> {</span>
-<span id="cb5-33"><a href="#cb5-33"></a>    <span class="kw">return</span> x + this.n</span>
-<span id="cb5-34"><a href="#cb5-34"></a>}</span>
-<span id="cb5-35"><a href="#cb5-35"></a><span class="kw">func</span> (this incr) Apply&lt;<span class="dv">0</span>&gt;() Top {</span>
-<span id="cb5-36"><a href="#cb5-36"></a>    <span class="kw">return</span> Top{}</span>
-<span id="cb5-37"><a href="#cb5-37"></a>}</span>
-<span id="cb5-38"><a href="#cb5-38"></a></span>
-<span id="cb5-39"><a href="#cb5-39"></a><span class="kw">type</span> pos strcut {}</span>
-<span id="cb5-40"><a href="#cb5-40"></a></span>
-<span id="cb5-41"><a href="#cb5-41"></a><span class="kw">func</span> (this pos) Apply(x <span class="dt">int</span>) <span class="dt">bool</span> {</span>
-<span id="cb5-42"><a href="#cb5-42"></a>    <span class="kw">return</span> x &gt; <span class="dv">0</span></span>
-<span id="cb5-43"><a href="#cb5-43"></a>}</span>
-<span id="cb5-44"><a href="#cb5-44"></a><span class="kw">func</span> (this incr) Apply&lt;<span class="dv">1</span>&gt;() Top {</span>
-<span id="cb5-45"><a href="#cb5-45"></a>    <span class="kw">return</span> Top{}</span>
-<span id="cb5-46"><a href="#cb5-46"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="kw">type</span> Top <span class="kw">struct</span> {}</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a><span class="kw">func</span> main() {</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a>    <span class="kw">var</span> f Function&lt;<span class="dt">int</span>, <span class="dt">bool</span>&gt; = compose&lt;<span class="dt">int</span>, <span class="dt">int</span>, <span class="dt">bool</span>&gt;{incr{-<span class="dv">5</span>}, pos{}}</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a>    <span class="kw">var</span> b <span class="dt">bool</span> = f.Apply(<span class="dv">3</span>)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a>}</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true"></a><span class="kw">type</span> compose&lt;<span class="dt">int</span>, <span class="dt">int</span>, <span class="dt">bool</span>&gt; <span class="kw">struct</span> {</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true"></a>    f Function&lt;<span class="dt">int</span>, <span class="dt">int</span>&gt;</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true"></a>    g Function&lt;<span class="dt">int</span>, <span class="dt">bool</span>&gt;</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true"></a>}</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true"></a><span class="kw">type</span> Function&lt;<span class="dt">int</span>, <span class="dt">int</span>&gt; <span class="kw">interface</span> {</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true"></a>    Apply&lt;<span class="dv">0</span>&gt; Top</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true"></a>    Apply(x <span class="dt">int</span>) <span class="dt">int</span>    </span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true"></a>}</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true"></a></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true"></a><span class="kw">type</span> Function&lt;<span class="dt">int</span>, <span class="dt">bool</span>&gt; <span class="kw">interface</span> {</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true"></a>    Apply&lt;<span class="dv">1</span>&gt; Top</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true"></a>    Apply(x <span class="dt">int</span>) <span class="dt">bool</span>    </span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true"></a>}</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true"></a></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true"></a><span class="kw">type</span> (this compose&lt;<span class="dt">int</span>, <span class="dt">int</span>, <span class="dt">bool</span>&gt;) Apply(x <span class="dt">int</span>) <span class="dt">bool</span> {</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true"></a>    <span class="kw">return</span> this.g.Apply(this.f.Apply(x))</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true"></a>}</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true"></a><span class="kw">type</span> (this compose&lt;<span class="dt">int</span>, <span class="dt">int</span>, <span class="dt">bool</span>&gt;) Apply&lt;<span class="dv">1</span>&gt;() Top {</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true"></a>    <span class="kw">return</span> Top{}</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true"></a>}</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true"></a></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true"></a><span class="kw">type</span> incr <span class="kw">struct</span> { n <span class="dt">int</span> }</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true"></a></span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true"></a><span class="kw">type</span> (this incr) Apply(x <span class="dt">int</span>) <span class="dt">int</span> {</span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true"></a>    <span class="kw">return</span> x + this.n</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true"></a>}</span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true"></a><span class="kw">func</span> (this incr) Apply&lt;<span class="dv">0</span>&gt;() Top {</span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true"></a>    <span class="kw">return</span> Top{}</span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true"></a>}</span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true"></a></span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true"></a><span class="kw">type</span> pos strcut {}</span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true"></a></span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true"></a><span class="kw">func</span> (this pos) Apply(x <span class="dt">int</span>) <span class="dt">bool</span> {</span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true"></a>    <span class="kw">return</span> x &gt; <span class="dv">0</span></span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true"></a>}</span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true"></a><span class="kw">func</span> (this incr) Apply&lt;<span class="dv">1</span>&gt;() Top {</span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true"></a>    <span class="kw">return</span> Top{}</span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true"></a>}</span></code></pre></div>
 <p>大きな変更箇所として，<code>Function&lt;int, int&gt;</code> のように <code>(,)</code> が <code>&lt;,&gt;</code> へ至る所でなっている． FGG のときの <code>(,)</code> は内部の型は個別の型として認識されていたが，<code>&lt;,&gt;</code> は <code>Function&lt;int, int&gt;</code> で一つの型となり内部の型は区別されない．</p>
 <p>また，<code>Apply&lt;0&gt; Top</code> のようなメソッドやメソッド仕様が追加されている． これは，部分型関係を正しく解決するためのダミーメソッドだ． 全てのメソッド宣言に対してダミーメソッドは追加で宣言され，インターフェースの全てのメソッド仕様に対してダミーメソッドのメソッド仕様が追加される． メソッド仕様の数字（<code>&lt;0&gt;</code> とか <code>&lt;1&gt;</code> とか）はメソッドの引数の型と返り値の型に対して一意に定まる（そのため <code>compose</code> と <code>pos</code> の <code>Apply</code> メソッドの数字は同じになる）．</p>
 <p>ちなみに <code>Top</code> 構造体はダミーメソッドのために追加された構造体だ．</p>
 <h3 id="ダミーメソッドが有効な例">ダミーメソッドが有効な例</h3>
 <p>さて，上記の例ではダミーメソッドの有効性がわからないので，もう一つ例を示す． 前にちょっとだけ出てきた <code>List</code> インターフェースの完全な例を示す． 下記は FGG でのコードだ．</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">type</span> List(<span class="kw">type</span> a Any) <span class="kw">interface</span> {</span>
-<span id="cb6-2"><a href="#cb6-2"></a>    Map(<span class="kw">type</span> b Any)(f Function(a, b)) List(b)</span>
-<span id="cb6-3"><a href="#cb6-3"></a>}</span>
-<span id="cb6-4"><a href="#cb6-4"></a></span>
-<span id="cb6-5"><a href="#cb6-5"></a><span class="kw">type</span> Nil(<span class="kw">type</span> a Any) <span class="kw">struct</span> {}</span>
-<span id="cb6-6"><a href="#cb6-6"></a><span class="kw">type</span> Cons(<span class="kw">type</span> a Any) <span class="kw">struct</span> {</span>
-<span id="cb6-7"><a href="#cb6-7"></a>    head a</span>
-<span id="cb6-8"><a href="#cb6-8"></a>    tail List(a)</span>
-<span id="cb6-9"><a href="#cb6-9"></a>}</span>
-<span id="cb6-10"><a href="#cb6-10"></a></span>
-<span id="cb6-11"><a href="#cb6-11"></a><span class="kw">func</span> (xs Nil(<span class="kw">type</span> a Any)) Map(<span class="kw">type</span> b Any)(f Function(a,b)) List(b) {</span>
-<span id="cb6-12"><a href="#cb6-12"></a>    <span class="kw">return</span> Nil(b){}</span>
-<span id="cb6-13"><a href="#cb6-13"></a>}</span>
-<span id="cb6-14"><a href="#cb6-14"></a></span>
-<span id="cb6-15"><a href="#cb6-15"></a><span class="kw">func</span> (xs Cons(<span class="kw">type</span> a Any)) Map(<span class="kw">type</span> b Any)(f Function(a,b)) List(b) {</span>
-<span id="cb6-16"><a href="#cb6-16"></a>    <span class="kw">return</span> Cons(b){f.Apply(xs.head), xs.tail.Map(b)(f)}</span>
-<span id="cb6-17"><a href="#cb6-17"></a>}</span>
-<span id="cb6-18"><a href="#cb6-18"></a></span>
-<span id="cb6-19"><a href="#cb6-19"></a><span class="kw">func</span> main() {</span>
-<span id="cb6-20"><a href="#cb6-20"></a>    <span class="kw">var</span> xs List(<span class="dt">int</span>) = Cons(<span class="dt">int</span>){<span class="dv">3</span>, Cons(<span class="dt">int</span>){<span class="dv">6</span>, Nil(<span class="dt">int</span>){}}}</span>
-<span id="cb6-21"><a href="#cb6-21"></a>    <span class="kw">var</span> ys List(<span class="dt">int</span>) = xs.Map(<span class="dt">int</span>)(incr{-<span class="dv">5</span>})</span>
-<span id="cb6-22"><a href="#cb6-22"></a>    <span class="kw">var</span> _ List(<span class="dt">bool</span>) = ys.Map(<span class="dt">bool</span>)(pos{})</span>
-<span id="cb6-23"><a href="#cb6-23"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="kw">type</span> List(<span class="kw">type</span> a Any) <span class="kw">interface</span> {</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a>    Map(<span class="kw">type</span> b Any)(f Function(a, b)) List(b)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a>}</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a><span class="kw">type</span> Nil(<span class="kw">type</span> a Any) <span class="kw">struct</span> {}</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a><span class="kw">type</span> Cons(<span class="kw">type</span> a Any) <span class="kw">struct</span> {</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true"></a>    head a</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true"></a>    tail List(a)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true"></a>}</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true"></a><span class="kw">func</span> (xs Nil(<span class="kw">type</span> a Any)) Map(<span class="kw">type</span> b Any)(f Function(a,b)) List(b) {</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true"></a>    <span class="kw">return</span> Nil(b){}</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true"></a>}</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true"></a><span class="kw">func</span> (xs Cons(<span class="kw">type</span> a Any)) Map(<span class="kw">type</span> b Any)(f Function(a,b)) List(b) {</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true"></a>    <span class="kw">return</span> Cons(b){f.Apply(xs.head), xs.tail.Map(b)(f)}</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true"></a>}</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true"></a></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true"></a><span class="kw">func</span> main() {</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true"></a>    <span class="kw">var</span> xs List(<span class="dt">int</span>) = Cons(<span class="dt">int</span>){<span class="dv">3</span>, Cons(<span class="dt">int</span>){<span class="dv">6</span>, Nil(<span class="dt">int</span>){}}}</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true"></a>    <span class="kw">var</span> ys List(<span class="dt">int</span>) = xs.Map(<span class="dt">int</span>)(incr{-<span class="dv">5</span>})</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true"></a>    <span class="kw">var</span> _ List(<span class="dt">bool</span>) = ys.Map(<span class="dt">bool</span>)(pos{})</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true"></a>}</span></code></pre></div>
 <p><code>List</code> インターフェースは，配列のようなコンテナ型の各要素に同じメソッドを適用する高階関数を提供する． <code>Nil</code> と <code>Cons</code> 構造体は線形リストを表したものだ． ちなみに，Go の構造体は構造体による再帰的な構造を宣言することはできないが，インターフェースを介する場合は可能だ．</p>
 <p>さて，これを単相化すると次のようになる．</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">func</span> main() {</span>
-<span id="cb7-2"><a href="#cb7-2"></a>    <span class="kw">var</span> xs List&lt;<span class="dt">int</span>&gt; = Cons&lt;<span class="dt">int</span>&gt;{<span class="dv">3</span>, Cons&lt;<span class="dt">int</span>&gt;{<span class="dv">6</span>, Nil&lt;<span class="dt">int</span>&gt;}}</span>
-<span id="cb7-3"><a href="#cb7-3"></a>    <span class="kw">var</span> ys List&lt;<span class="dt">int</span>&gt; = xs.Map&lt;<span class="dt">int</span>&gt;(incr{-<span class="dv">5</span>})</span>
-<span id="cb7-4"><a href="#cb7-4"></a>    <span class="kw">var</span> _ List&lt;<span class="dt">bool</span>&gt; = ys.Map&lt;<span class="dt">bool</span>&gt;(pos{})</span>
-<span id="cb7-5"><a href="#cb7-5"></a>}</span>
-<span id="cb7-6"><a href="#cb7-6"></a></span>
-<span id="cb7-7"><a href="#cb7-7"></a><span class="kw">type</span> List&lt;<span class="dt">int</span>&gt; <span class="kw">interface</span> {</span>
-<span id="cb7-8"><a href="#cb7-8"></a>    Map&lt;<span class="dv">2</span>&gt;() Top <span class="co">// これは `(f Function(int, b)) List(b)` からの数字</span></span>
-<span id="cb7-9"><a href="#cb7-9"></a>    Map&lt;<span class="dt">int</span>&gt;(f Function&lt;<span class="dt">int</span>,<span class="dt">int</span>&gt;) List&lt;<span class="dt">int</span>&gt;</span>
-<span id="cb7-10"><a href="#cb7-10"></a>    Map&lt;<span class="dt">bool</span>&gt;(f Function&lt;<span class="dt">int</span>,<span class="dt">bool</span>&gt;) List&lt;<span class="dt">bool</span>&gt;</span>
-<span id="cb7-11"><a href="#cb7-11"></a>}</span>
-<span id="cb7-12"><a href="#cb7-12"></a></span>
-<span id="cb7-13"><a href="#cb7-13"></a><span class="kw">type</span> Nil&lt;<span class="dt">int</span>&gt; <span class="kw">struct</span> {}</span>
-<span id="cb7-14"><a href="#cb7-14"></a><span class="kw">func</span> (xs Nil&lt;<span class="dt">int</span>&gt;) Map&lt;<span class="dt">int</span>&gt;(f Function&lt;<span class="dt">int</span>,<span class="dt">int</span>&gt;) List&lt;<span class="dt">int</span>&gt; {</span>
-<span id="cb7-15"><a href="#cb7-15"></a>    <span class="kw">return</span> Nil&lt;<span class="dt">int</span>&gt;{}</span>
-<span id="cb7-16"><a href="#cb7-16"></a>}</span>
-<span id="cb7-17"><a href="#cb7-17"></a><span class="kw">func</span> (xs Nil&lt;<span class="dt">int</span>&gt;) Map&lt;<span class="dt">bool</span>&gt;(f Function&lt;<span class="dt">int</span>,<span class="dt">bool</span>&gt;) List&lt;<span class="dt">bool</span>&gt; {</span>
-<span id="cb7-18"><a href="#cb7-18"></a>    <span class="kw">return</span> Nil&lt;<span class="dt">bool</span>&gt;{}</span>
-<span id="cb7-19"><a href="#cb7-19"></a>}</span>
-<span id="cb7-20"><a href="#cb7-20"></a><span class="kw">func</span> (xs Nil&lt;<span class="dt">int</span>&gt;) Map&lt;<span class="dv">2</span>&gt;() Top {</span>
-<span id="cb7-21"><a href="#cb7-21"></a>    <span class="kw">return</span> Top{}</span>
-<span id="cb7-22"><a href="#cb7-22"></a>}</span>
-<span id="cb7-23"><a href="#cb7-23"></a></span>
-<span id="cb7-24"><a href="#cb7-24"></a><span class="kw">type</span> Cons&lt;<span class="dt">int</span>&gt; <span class="kw">struct</span> {</span>
-<span id="cb7-25"><a href="#cb7-25"></a>    head <span class="dt">int</span></span>
-<span id="cb7-26"><a href="#cb7-26"></a>    tail List&lt;<span class="dt">int</span>&gt;</span>
-<span id="cb7-27"><a href="#cb7-27"></a>}</span>
-<span id="cb7-28"><a href="#cb7-28"></a><span class="kw">func</span> (xs Cons&lt;<span class="dt">int</span>&gt;) Map&lt;<span class="dt">int</span>&gt;(f Function&lt;<span class="dt">int</span>,<span class="dt">int</span>&gt;) List&lt;<span class="dt">int</span>&gt; {</span>
-<span id="cb7-29"><a href="#cb7-29"></a>    <span class="kw">return</span> Cons&lt;<span class="dt">int</span>&gt;{f.Apply(xs.head), xs.tail.Map&lt;<span class="dt">int</span>&gt;(f)}</span>
-<span id="cb7-30"><a href="#cb7-30"></a>}</span>
-<span id="cb7-31"><a href="#cb7-31"></a><span class="kw">func</span> (xs Cons&lt;<span class="dt">int</span>&gt;) Map&lt;<span class="dt">bool</span>&gt;(f Function&lt;<span class="dt">int</span>,<span class="dt">bool</span>&gt;) List&lt;<span class="dt">bool</span>&gt; {</span>
-<span id="cb7-32"><a href="#cb7-32"></a>    <span class="kw">return</span> Cons&lt;<span class="dt">bool</span>&gt;{f.Apply(xs.head), xs.tail.Map&lt;<span class="dt">bool</span>&gt;(f)}</span>
-<span id="cb7-33"><a href="#cb7-33"></a>}</span>
-<span id="cb7-34"><a href="#cb7-34"></a><span class="kw">func</span> (xs Cons&lt;<span class="dt">int</span>&gt;) Map&lt;<span class="dv">2</span>&gt;() Top {</span>
-<span id="cb7-35"><a href="#cb7-35"></a>    <span class="kw">return</span> Top{}</span>
-<span id="cb7-36"><a href="#cb7-36"></a>}</span>
-<span id="cb7-37"><a href="#cb7-37"></a></span>
-<span id="cb7-38"><a href="#cb7-38"></a><span class="kw">type</span> List&lt;<span class="dt">bool</span>&gt; <span class="kw">interface</span> {</span>
-<span id="cb7-39"><a href="#cb7-39"></a>    Map&lt;<span class="dv">3</span>&gt;() Top</span>
-<span id="cb7-40"><a href="#cb7-40"></a>}</span>
-<span id="cb7-41"><a href="#cb7-41"></a></span>
-<span id="cb7-42"><a href="#cb7-42"></a><span class="kw">type</span> Nil&lt;<span class="dt">bool</span>&gt; <span class="kw">struct</span> {}</span>
-<span id="cb7-43"><a href="#cb7-43"></a><span class="kw">func</span> (xs Nil&lt;<span class="dt">bool</span>&gt;) Map&lt;<span class="dv">3</span>&gt;() Top {</span>
-<span id="cb7-44"><a href="#cb7-44"></a>    <span class="kw">return</span> Top{}</span>
-<span id="cb7-45"><a href="#cb7-45"></a>}</span>
-<span id="cb7-46"><a href="#cb7-46"></a></span>
-<span id="cb7-47"><a href="#cb7-47"></a><span class="kw">type</span> Cons&lt;<span class="dt">bool</span>&gt; <span class="kw">struct</span> {</span>
-<span id="cb7-48"><a href="#cb7-48"></a>    head <span class="dt">bool</span></span>
-<span id="cb7-49"><a href="#cb7-49"></a>    tail List&lt;<span class="dt">bool</span>&gt;</span>
-<span id="cb7-50"><a href="#cb7-50"></a>}</span>
-<span id="cb7-51"><a href="#cb7-51"></a><span class="kw">func</span> (xs Cons&lt;<span class="dt">bool</span>&gt;) Map&lt;<span class="dv">3</span>&gt;() Top {</span>
-<span id="cb7-52"><a href="#cb7-52"></a>    <span class="kw">return</span> Top{}</span>
-<span id="cb7-53"><a href="#cb7-53"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a><span class="kw">func</span> main() {</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a>    <span class="kw">var</span> xs List&lt;<span class="dt">int</span>&gt; = Cons&lt;<span class="dt">int</span>&gt;{<span class="dv">3</span>, Cons&lt;<span class="dt">int</span>&gt;{<span class="dv">6</span>, Nil&lt;<span class="dt">int</span>&gt;}}</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a>    <span class="kw">var</span> ys List&lt;<span class="dt">int</span>&gt; = xs.Map&lt;<span class="dt">int</span>&gt;(incr{-<span class="dv">5</span>})</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true"></a>    <span class="kw">var</span> _ List&lt;<span class="dt">bool</span>&gt; = ys.Map&lt;<span class="dt">bool</span>&gt;(pos{})</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true"></a>}</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true"></a><span class="kw">type</span> List&lt;<span class="dt">int</span>&gt; <span class="kw">interface</span> {</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true"></a>    Map&lt;<span class="dv">2</span>&gt;() Top <span class="co">// これは `(f Function(int, b)) List(b)` からの数字</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true"></a>    Map&lt;<span class="dt">int</span>&gt;(f Function&lt;<span class="dt">int</span>,<span class="dt">int</span>&gt;) List&lt;<span class="dt">int</span>&gt;</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true"></a>    Map&lt;<span class="dt">bool</span>&gt;(f Function&lt;<span class="dt">int</span>,<span class="dt">bool</span>&gt;) List&lt;<span class="dt">bool</span>&gt;</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true"></a>}</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true"></a><span class="kw">type</span> Nil&lt;<span class="dt">int</span>&gt; <span class="kw">struct</span> {}</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true"></a><span class="kw">func</span> (xs Nil&lt;<span class="dt">int</span>&gt;) Map&lt;<span class="dt">int</span>&gt;(f Function&lt;<span class="dt">int</span>,<span class="dt">int</span>&gt;) List&lt;<span class="dt">int</span>&gt; {</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true"></a>    <span class="kw">return</span> Nil&lt;<span class="dt">int</span>&gt;{}</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true"></a>}</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true"></a><span class="kw">func</span> (xs Nil&lt;<span class="dt">int</span>&gt;) Map&lt;<span class="dt">bool</span>&gt;(f Function&lt;<span class="dt">int</span>,<span class="dt">bool</span>&gt;) List&lt;<span class="dt">bool</span>&gt; {</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true"></a>    <span class="kw">return</span> Nil&lt;<span class="dt">bool</span>&gt;{}</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true"></a>}</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true"></a><span class="kw">func</span> (xs Nil&lt;<span class="dt">int</span>&gt;) Map&lt;<span class="dv">2</span>&gt;() Top {</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true"></a>    <span class="kw">return</span> Top{}</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true"></a>}</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true"></a></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true"></a><span class="kw">type</span> Cons&lt;<span class="dt">int</span>&gt; <span class="kw">struct</span> {</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true"></a>    head <span class="dt">int</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true"></a>    tail List&lt;<span class="dt">int</span>&gt;</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true"></a>}</span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true"></a><span class="kw">func</span> (xs Cons&lt;<span class="dt">int</span>&gt;) Map&lt;<span class="dt">int</span>&gt;(f Function&lt;<span class="dt">int</span>,<span class="dt">int</span>&gt;) List&lt;<span class="dt">int</span>&gt; {</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true"></a>    <span class="kw">return</span> Cons&lt;<span class="dt">int</span>&gt;{f.Apply(xs.head), xs.tail.Map&lt;<span class="dt">int</span>&gt;(f)}</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true"></a>}</span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true"></a><span class="kw">func</span> (xs Cons&lt;<span class="dt">int</span>&gt;) Map&lt;<span class="dt">bool</span>&gt;(f Function&lt;<span class="dt">int</span>,<span class="dt">bool</span>&gt;) List&lt;<span class="dt">bool</span>&gt; {</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true"></a>    <span class="kw">return</span> Cons&lt;<span class="dt">bool</span>&gt;{f.Apply(xs.head), xs.tail.Map&lt;<span class="dt">bool</span>&gt;(f)}</span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true"></a>}</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true"></a><span class="kw">func</span> (xs Cons&lt;<span class="dt">int</span>&gt;) Map&lt;<span class="dv">2</span>&gt;() Top {</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true"></a>    <span class="kw">return</span> Top{}</span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true"></a>}</span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true"></a></span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true"></a><span class="kw">type</span> List&lt;<span class="dt">bool</span>&gt; <span class="kw">interface</span> {</span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true"></a>    Map&lt;<span class="dv">3</span>&gt;() Top</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true"></a>}</span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true"></a></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true"></a><span class="kw">type</span> Nil&lt;<span class="dt">bool</span>&gt; <span class="kw">struct</span> {}</span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true"></a><span class="kw">func</span> (xs Nil&lt;<span class="dt">bool</span>&gt;) Map&lt;<span class="dv">3</span>&gt;() Top {</span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true"></a>    <span class="kw">return</span> Top{}</span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true"></a>}</span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true"></a></span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true"></a><span class="kw">type</span> Cons&lt;<span class="dt">bool</span>&gt; <span class="kw">struct</span> {</span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true"></a>    head <span class="dt">bool</span></span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true"></a>    tail List&lt;<span class="dt">bool</span>&gt;</span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true"></a>}</span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true"></a><span class="kw">func</span> (xs Cons&lt;<span class="dt">bool</span>&gt;) Map&lt;<span class="dv">3</span>&gt;() Top {</span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true"></a>    <span class="kw">return</span> Top{}</span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true"></a>}</span></code></pre></div>
 <p><code>List&lt;int&gt;</code> の <code>Map</code> メソッドは <code>main</code> のところで <code>int -&gt; int</code> と <code>int -&gt; bool</code> の2パターンで使われていたため，2つもインターフェースのメソッドとして宣言されている． 対して <code>List&lt;bool&gt;</code> は <code>ys.Map&lt;bool&gt;(pos{})</code> で生成されるものの，<code>Map</code> メソッドを呼んでいないため，インターフェースのメソッドは1つもない． このようにインターフェースのメソッドは，実際に利用された型のものしか生成されない． これにより，メソッドの無いインターフェースが生成されることがある（正確にはダミーメソッド以外には無い，だが）． ダミーメソッドはこのような振る舞いに対して有効だ．例えば，変数 <code>f</code> に <code>incr{1}</code> が束縛されているときを考える． 型アサーション <code>f.(List&lt;bool&gt;)</code> はダミーメソッドがあることで失敗するが，ダミーメソッドがないと成功してしまう．</p>
 <h3 id="単相化ができない場合">単相化ができない場合</h3>
 <p>全ての型付け可能な FGG のコードが単相化可能かというとそうではない． 例えば，次のような FGG のコードは単相化できない．</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">type</span> Box(<span class="kw">type</span> a Any) <span class="kw">struct</span> {</span>
-<span id="cb8-2"><a href="#cb8-2"></a>    value a</span>
-<span id="cb8-3"><a href="#cb8-3"></a>}</span>
-<span id="cb8-4"><a href="#cb8-4"></a></span>
-<span id="cb8-5"><a href="#cb8-5"></a><span class="kw">func</span> (this Box(<span class="kw">type</span> a Any)) Nest(n <span class="dt">int</span>) Any {</span>
-<span id="cb8-6"><a href="#cb8-6"></a>    <span class="kw">if</span> (n == <span class="dv">0</span>) {</span>
-<span id="cb8-7"><a href="#cb8-7"></a>        <span class="kw">return</span> this</span>
-<span id="cb8-8"><a href="#cb8-8"></a>    } <span class="kw">else</span> {</span>
-<span id="cb8-9"><a href="#cb8-9"></a>        <span class="kw">return</span> Box(Box(a)){this}.Nest(n<span class="dv">-1</span>)</span>
-<span id="cb8-10"><a href="#cb8-10"></a>    }</span>
-<span id="cb8-11"><a href="#cb8-11"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a><span class="kw">type</span> Box(<span class="kw">type</span> a Any) <span class="kw">struct</span> {</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a>    value a</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a>}</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true"></a><span class="kw">func</span> (this Box(<span class="kw">type</span> a Any)) Nest(n <span class="dt">int</span>) Any {</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true"></a>    <span class="kw">if</span> (n == <span class="dv">0</span>) {</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true"></a>        <span class="kw">return</span> this</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true"></a>    } <span class="kw">else</span> {</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true"></a>        <span class="kw">return</span> Box(Box(a)){this}.Nest(n<span class="dv">-1</span>)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true"></a>    }</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true"></a>}</span></code></pre></div>
 <p>これは多相再帰（polymorphic recursion），ある型で呼び出されたメソッドが別の型で再帰呼び出しをするもの，をしているプログラムの例である．<code>Box(a)</code> 型をレシーバーとするメソッド <code>Nest</code> を呼び出すと <code>Box(Box(a))</code> 型のレシーバーで再帰的に呼び出される． この例は型がどれだけ深くネストするかを事前に決定することができないので単相化することができない．</p>
 <p>逆に，このような多相再帰なコードが含まれていない場合は，全ての FGG のコードを単相化することができる（ことを論文で証明していた）． なので，実際のコンパイラでは多相再帰が含まれてるかどうかの検査をするようだ．</p>
 <h3 id="単相化の仕組み">単相化の仕組み</h3>

@@ -98,101 +98,101 @@
 </ul>
 <p>拡張可能タングルを用いれば，文脈付き(<code>IO</code> などの <code>Monad</code> 型クラスのインスタンス)で拡張可能レコードを生成し，更にフィールド間で依存関係を持つ際に，型クラスを用いて各フィールドごとに振る舞いを記述できるようになる． まぁこのヒトコトでは伝わらないですよね．</p>
 <p>百聞は一見に如かず．例えば</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">type</span> <span class="dt">Rec</span> <span class="ot">=</span> <span class="dt">Record</span> <span class="dt">Fields</span></span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">type</span> <span class="dt">Fields</span> <span class="ot">=</span></span>
-<span id="cb1-3"><a href="#cb1-3"></a>    '[ <span class="st">&quot;hoge1&quot;</span> <span class="op">&gt;:</span> <span class="dt">String</span></span>
-<span id="cb1-4"><a href="#cb1-4"></a>     , <span class="st">&quot;hoge2&quot;</span> <span class="op">&gt;:</span> <span class="dt">Bool</span></span>
-<span id="cb1-5"><a href="#cb1-5"></a>     , <span class="st">&quot;hoge3&quot;</span> <span class="op">&gt;:</span> <span class="dt">Int</span></span>
-<span id="cb1-6"><a href="#cb1-6"></a>     ]</span>
-<span id="cb1-7"><a href="#cb1-7"></a></span>
-<span id="cb1-8"><a href="#cb1-8"></a><span class="ot">makeRec ::</span> <span class="dt">IO</span> <span class="dt">Rec</span></span>
-<span id="cb1-9"><a href="#cb1-9"></a>makeRec <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb1-10"><a href="#cb1-10"></a>  hoge1 <span class="ot">&lt;-</span> <span class="fu">getLine</span></span>
-<span id="cb1-11"><a href="#cb1-11"></a>  hoge3 <span class="ot">&lt;-</span> randomRIO (<span class="dv">0</span>, <span class="dv">2</span> <span class="op">*</span> <span class="fu">length</span> hoge1)</span>
-<span id="cb1-12"><a href="#cb1-12"></a>  <span class="fu">pure</span></span>
-<span id="cb1-13"><a href="#cb1-13"></a>     <span class="op">$</span> <span class="op">#</span>hoge1 <span class="op">@=</span> hoge1</span>
-<span id="cb1-14"><a href="#cb1-14"></a>    <span class="op">&lt;:</span> <span class="op">#</span>hoge2 <span class="op">@=</span> (<span class="fu">length</span> hoge1 <span class="op">&lt;=</span> hoge3)</span>
-<span id="cb1-15"><a href="#cb1-15"></a>    <span class="op">&lt;:</span> <span class="op">#</span>hoge3 <span class="op">@=</span> hoge3</span>
-<span id="cb1-16"><a href="#cb1-16"></a>    <span class="op">&lt;:</span> emptyRecord</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">Rec</span> <span class="ot">=</span> <span class="dt">Record</span> <span class="dt">Fields</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">Fields</span> <span class="ot">=</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a>    '[ <span class="st">&quot;hoge1&quot;</span> <span class="op">&gt;:</span> <span class="dt">String</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a>     , <span class="st">&quot;hoge2&quot;</span> <span class="op">&gt;:</span> <span class="dt">Bool</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a>     , <span class="st">&quot;hoge3&quot;</span> <span class="op">&gt;:</span> <span class="dt">Int</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a>     ]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a><span class="ot">makeRec ::</span> <span class="dt">IO</span> <span class="dt">Rec</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a>makeRec <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a>  hoge1 <span class="ot">&lt;-</span> <span class="fu">getLine</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true"></a>  hoge3 <span class="ot">&lt;-</span> randomRIO (<span class="dv">0</span>, <span class="dv">2</span> <span class="op">*</span> <span class="fu">length</span> hoge1)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true"></a>  <span class="fu">pure</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true"></a>     <span class="op">$</span> <span class="op">#</span>hoge1 <span class="op">@=</span> hoge1</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true"></a>    <span class="op">&lt;:</span> <span class="op">#</span>hoge2 <span class="op">@=</span> (<span class="fu">length</span> hoge1 <span class="op">&lt;=</span> hoge3)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true"></a>    <span class="op">&lt;:</span> <span class="op">#</span>hoge3 <span class="op">@=</span> hoge3</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true"></a>    <span class="op">&lt;:</span> emptyRecord</span></code></pre></div>
 <p>というような関数があったとする． これを拡張可能タングルを使って書き直すと次のようになります．</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1"></a><span class="ot">makeRec ::</span> <span class="dt">IO</span> <span class="dt">Rec</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a>makeRec <span class="ot">=</span> runTangles tangles (wrench emptyRecord)</span>
-<span id="cb2-3"><a href="#cb2-3"></a></span>
-<span id="cb2-4"><a href="#cb2-4"></a><span class="kw">type</span> <span class="dt">FieldI</span> <span class="ot">=</span> <span class="dt">Field</span> <span class="dt">Identity</span></span>
-<span id="cb2-5"><a href="#cb2-5"></a></span>
-<span id="cb2-6"><a href="#cb2-6"></a><span class="ot">tangles ::</span> <span class="dt">Comp</span> (<span class="dt">TangleT</span> <span class="dt">FieldI</span> <span class="dt">Fields</span> <span class="dt">IO</span>) <span class="dt">FieldI</span> <span class="op">:*</span> <span class="dt">Fields</span></span>
-<span id="cb2-7"><a href="#cb2-7"></a>tangles <span class="ot">=</span> htabulateFor (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">MakeRec</span>) <span class="op">$</span></span>
-<span id="cb2-8"><a href="#cb2-8"></a>  \m <span class="ot">-&gt;</span> <span class="dt">Comp</span> <span class="op">$</span> <span class="dt">Field</span> <span class="op">.</span> <span class="fu">pure</span> <span class="op">&lt;$&gt;</span> make m</span>
-<span id="cb2-9"><a href="#cb2-9"></a></span>
-<span id="cb2-10"><a href="#cb2-10"></a><span class="kw">class</span> <span class="dt">MakeRec</span> kv <span class="kw">where</span></span>
-<span id="cb2-11"><a href="#cb2-11"></a><span class="ot">  make ::</span> proxy kv <span class="ot">-&gt;</span> <span class="dt">TangleT</span> <span class="dt">FieldI</span> <span class="dt">Fields</span> <span class="dt">IO</span> (<span class="dt">AssocValue</span> kv)</span>
-<span id="cb2-12"><a href="#cb2-12"></a></span>
-<span id="cb2-13"><a href="#cb2-13"></a><span class="kw">instance</span> <span class="dt">MakeRec</span> (<span class="st">&quot;hoge1&quot;</span> <span class="op">&gt;:</span> <span class="dt">String</span>) <span class="kw">where</span></span>
-<span id="cb2-14"><a href="#cb2-14"></a>  make _ <span class="ot">=</span> lift <span class="fu">getLine</span></span>
-<span id="cb2-15"><a href="#cb2-15"></a></span>
-<span id="cb2-16"><a href="#cb2-16"></a><span class="kw">instance</span> <span class="dt">MakeRec</span> (<span class="st">&quot;hoge2&quot;</span> <span class="op">&gt;:</span> <span class="dt">Bool</span>) <span class="kw">where</span></span>
-<span id="cb2-17"><a href="#cb2-17"></a>  make _ <span class="ot">=</span> (<span class="op">&lt;=</span>) <span class="op">&lt;$&gt;</span> (<span class="fu">length</span> <span class="op">&lt;$&gt;</span> lasso <span class="op">#</span>hoge1) <span class="op">&lt;*&gt;</span> lasso <span class="op">#</span>hoge3</span>
-<span id="cb2-18"><a href="#cb2-18"></a></span>
-<span id="cb2-19"><a href="#cb2-19"></a><span class="kw">instance</span> <span class="dt">MakeRec</span> (<span class="st">&quot;hoge3&quot;</span> <span class="op">&gt;:</span> <span class="dt">Int</span>) <span class="kw">where</span></span>
-<span id="cb2-20"><a href="#cb2-20"></a>  make _ <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb2-21"><a href="#cb2-21"></a>    ml <span class="ot">&lt;-</span> <span class="fu">length</span> <span class="op">&lt;$&gt;</span> lasso <span class="op">#</span>hoge1</span>
-<span id="cb2-22"><a href="#cb2-22"></a>    lift <span class="op">$</span> randomRIO (<span class="dv">0</span>, <span class="dv">2</span> <span class="op">*</span> ml)</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="ot">makeRec ::</span> <span class="dt">IO</span> <span class="dt">Rec</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a>makeRec <span class="ot">=</span> runTangles tangles (wrench emptyRecord)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">FieldI</span> <span class="ot">=</span> <span class="dt">Field</span> <span class="dt">Identity</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a><span class="ot">tangles ::</span> <span class="dt">Comp</span> (<span class="dt">TangleT</span> <span class="dt">FieldI</span> <span class="dt">Fields</span> <span class="dt">IO</span>) <span class="dt">FieldI</span> <span class="op">:*</span> <span class="dt">Fields</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a>tangles <span class="ot">=</span> htabulateFor (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">MakeRec</span>) <span class="op">$</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a>  \m <span class="ot">-&gt;</span> <span class="dt">Comp</span> <span class="op">$</span> <span class="dt">Field</span> <span class="op">.</span> <span class="fu">pure</span> <span class="op">&lt;$&gt;</span> make m</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a><span class="kw">class</span> <span class="dt">MakeRec</span> kv <span class="kw">where</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a><span class="ot">  make ::</span> proxy kv <span class="ot">-&gt;</span> <span class="dt">TangleT</span> <span class="dt">FieldI</span> <span class="dt">Fields</span> <span class="dt">IO</span> (<span class="dt">AssocValue</span> kv)</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">MakeRec</span> (<span class="st">&quot;hoge1&quot;</span> <span class="op">&gt;:</span> <span class="dt">String</span>) <span class="kw">where</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true"></a>  make _ <span class="ot">=</span> lift <span class="fu">getLine</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">MakeRec</span> (<span class="st">&quot;hoge2&quot;</span> <span class="op">&gt;:</span> <span class="dt">Bool</span>) <span class="kw">where</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true"></a>  make _ <span class="ot">=</span> (<span class="op">&lt;=</span>) <span class="op">&lt;$&gt;</span> (<span class="fu">length</span> <span class="op">&lt;$&gt;</span> lasso <span class="op">#</span>hoge1) <span class="op">&lt;*&gt;</span> lasso <span class="op">#</span>hoge3</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true"></a></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">MakeRec</span> (<span class="st">&quot;hoge3&quot;</span> <span class="op">&gt;:</span> <span class="dt">Int</span>) <span class="kw">where</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true"></a>  make _ <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true"></a>    ml <span class="ot">&lt;-</span> <span class="fu">length</span> <span class="op">&lt;$&gt;</span> lasso <span class="op">#</span>hoge1</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true"></a>    lift <span class="op">$</span> randomRIO (<span class="dv">0</span>, <span class="dv">2</span> <span class="op">*</span> ml)</span></code></pre></div>
 <p>コード量そのものは倍近くなっている． しかし，フィールドの構築方法ごとにインスタンスメソッドとして切り分けることが出来ている． しかも，<strong>摩訶不思議な <a href="https://hackage.haskell.org/package/extensible-0.4.7.1/docs/Data-Extensible-Tangle.html#v:lasso"><code>lasso</code></a> 関数により依存関係も勝手に解決してくれる</strong> ． もちろん，フィールドのインスタンスが足りないときは，足りないというコンパイルエラーになるよ．</p>
 <h2 id="do記法レスプログラミング">Do記法レスプログラミング</h2>
 <p>Haskell はなんらかの作用付きの振る舞いは次のように <code>Monad</code> と <code>do</code> 記法を用いて書くのが一般的だ． しかし，便利な Do 記法に甘えて無駄に長い，数十行もある Do 式を書いたことは無いだろうか？ たしかに(関数合成だけで記述するより)読みやすいが，なんかこう…ちがうじゃないですか！？</p>
 <h2 id="section-1"></h2>
 <p>そこで，先述した拡張可能タングルを用いて長いDo式をフィールドごとに切り分けてみよう． 例題として次のようなログ(っぽいなにか)を読み込む関数を考える．</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">type</span> <span class="dt">Log</span> <span class="ot">=</span> <span class="dt">Record</span> <span class="dt">LogFields</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">type</span> <span class="dt">LogFields</span> <span class="ot">=</span></span>
-<span id="cb3-3"><a href="#cb3-3"></a>    '[ <span class="st">&quot;path&quot;</span>    <span class="op">&gt;:</span> <span class="dt">FilePath</span></span>
-<span id="cb3-4"><a href="#cb3-4"></a>     , <span class="st">&quot;time&quot;</span>    <span class="op">&gt;:</span> <span class="dt">Time</span></span>
-<span id="cb3-5"><a href="#cb3-5"></a>     , <span class="st">&quot;code&quot;</span>    <span class="op">&gt;:</span> <span class="dt">Int</span></span>
-<span id="cb3-6"><a href="#cb3-6"></a>     , <span class="st">&quot;message&quot;</span> <span class="op">&gt;:</span> <span class="dt">Text</span></span>
-<span id="cb3-7"><a href="#cb3-7"></a>     ]</span>
-<span id="cb3-8"><a href="#cb3-8"></a></span>
-<span id="cb3-9"><a href="#cb3-9"></a><span class="kw">type</span> <span class="dt">Time</span> <span class="ot">=</span> <span class="dt">Text</span></span>
-<span id="cb3-10"><a href="#cb3-10"></a></span>
-<span id="cb3-11"><a href="#cb3-11"></a><span class="kw">type</span> <span class="dt">LogCsv</span> <span class="ot">=</span> <span class="dt">Record</span> <span class="dt">CsvFields</span></span>
-<span id="cb3-12"><a href="#cb3-12"></a></span>
-<span id="cb3-13"><a href="#cb3-13"></a><span class="kw">type</span> <span class="dt">CsvFields</span> <span class="ot">=</span></span>
-<span id="cb3-14"><a href="#cb3-14"></a>    '[ <span class="st">&quot;time&quot;</span>    <span class="op">&gt;:</span> <span class="dt">Time</span></span>
-<span id="cb3-15"><a href="#cb3-15"></a>     , <span class="st">&quot;info&quot;</span>    <span class="op">&gt;:</span> <span class="dt">LB.ByteString</span></span>
-<span id="cb3-16"><a href="#cb3-16"></a>     ]</span>
-<span id="cb3-17"><a href="#cb3-17"></a></span>
-<span id="cb3-18"><a href="#cb3-18"></a><span class="kw">type</span> <span class="dt">Info</span> <span class="ot">=</span> <span class="dt">Record</span></span>
-<span id="cb3-19"><a href="#cb3-19"></a>    '[ <span class="st">&quot;code&quot;</span>    <span class="op">&gt;:</span> <span class="dt">Int</span></span>
-<span id="cb3-20"><a href="#cb3-20"></a>     , <span class="st">&quot;message&quot;</span> <span class="op">&gt;:</span> <span class="dt">Text</span></span>
-<span id="cb3-21"><a href="#cb3-21"></a>     ]</span>
-<span id="cb3-22"><a href="#cb3-22"></a></span>
-<span id="cb3-23"><a href="#cb3-23"></a><span class="kw">type</span> <span class="dt">EIO</span> <span class="ot">=</span> <span class="dt">Eff</span></span>
-<span id="cb3-24"><a href="#cb3-24"></a>    '[ <span class="dt">EitherDef</span> <span class="dt">String</span></span>
-<span id="cb3-25"><a href="#cb3-25"></a>     , <span class="st">&quot;IO&quot;</span> <span class="op">&gt;:</span> <span class="dt">IO</span></span>
-<span id="cb3-26"><a href="#cb3-26"></a>     ]</span>
-<span id="cb3-27"><a href="#cb3-27"></a></span>
-<span id="cb3-28"><a href="#cb3-28"></a><span class="ot">runEIO ::</span> <span class="dt">EIO</span> a <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Either</span> <span class="dt">String</span> a)</span>
-<span id="cb3-29"><a href="#cb3-29"></a>runEIO <span class="ot">=</span> retractEff <span class="op">.</span> runEitherDef</span>
-<span id="cb3-30"><a href="#cb3-30"></a></span>
-<span id="cb3-31"><a href="#cb3-31"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
-<span id="cb3-32"><a href="#cb3-32"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb3-33"><a href="#cb3-33"></a>  result <span class="ot">&lt;-</span> runEIO <span class="op">$</span> <span class="kw">do</span></span>
-<span id="cb3-34"><a href="#cb3-34"></a>    (path<span class="op">:</span>_) <span class="ot">&lt;-</span> liftIO getArgs</span>
-<span id="cb3-35"><a href="#cb3-35"></a>    file <span class="ot">&lt;-</span>  liftIO (LB.readFile path)</span>
-<span id="cb3-36"><a href="#cb3-36"></a>    <span class="kw">let</span></span>
-<span id="cb3-37"><a href="#cb3-37"></a>      csv <span class="ot">=</span> <span class="fu">mconcat</span> [header, <span class="st">&quot;\n&quot;</span>, file]</span>
-<span id="cb3-38"><a href="#cb3-38"></a>    (_, logs) <span class="ot">&lt;-</span> <span class="fu">either</span> throwError <span class="fu">pure</span> (decodeByName csv)<span class="ot"> ::</span> <span class="dt">EIO</span> (<span class="dt">Header</span>, <span class="dt">LogCsv</span>)</span>
-<span id="cb3-39"><a href="#cb3-39"></a>    <span class="kw">let</span></span>
-<span id="cb3-40"><a href="#cb3-40"></a>      log' <span class="ot">=</span> V.head logs</span>
-<span id="cb3-41"><a href="#cb3-41"></a>    info <span class="ot">&lt;-</span> <span class="fu">either</span> throwError <span class="fu">pure</span> (eitherDecode <span class="op">$</span> log' <span class="op">^.</span> <span class="op">#</span>info)<span class="ot"> ::</span> <span class="dt">EIO</span> <span class="dt">Info</span></span>
-<span id="cb3-42"><a href="#cb3-42"></a>    <span class="fu">pure</span> <span class="op">$</span></span>
-<span id="cb3-43"><a href="#cb3-43"></a>      <span class="op">#</span>path <span class="op">@=</span> path <span class="op">&lt;:</span> <span class="op">#</span>time <span class="op">@=</span> (log' <span class="op">^.</span> <span class="op">#</span>time) <span class="op">&lt;:</span> info</span>
-<span id="cb3-44"><a href="#cb3-44"></a>  <span class="fu">either</span> <span class="fu">error</span> <span class="fu">print</span> result</span>
-<span id="cb3-45"><a href="#cb3-45"></a></span>
-<span id="cb3-46"><a href="#cb3-46"></a><span class="ot">header ::</span> <span class="dt">LB.ByteString</span></span>
-<span id="cb3-47"><a href="#cb3-47"></a>header <span class="ot">=</span> LB.intercalate <span class="st">&quot;,&quot;</span> <span class="op">.</span> <span class="fu">fmap</span> fromString <span class="op">$</span> henumerateFor</span>
-<span id="cb3-48"><a href="#cb3-48"></a>  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">Show</span>))</span>
-<span id="cb3-49"><a href="#cb3-49"></a>  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">CsvFields</span>)</span>
-<span id="cb3-50"><a href="#cb3-50"></a>  ((<span class="op">:</span>) <span class="op">.</span> symbolVal <span class="op">.</span> proxyAssocKey)</span>
-<span id="cb3-51"><a href="#cb3-51"></a>  []</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">Log</span> <span class="ot">=</span> <span class="dt">Record</span> <span class="dt">LogFields</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">LogFields</span> <span class="ot">=</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>    '[ <span class="st">&quot;path&quot;</span>    <span class="op">&gt;:</span> <span class="dt">FilePath</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>     , <span class="st">&quot;time&quot;</span>    <span class="op">&gt;:</span> <span class="dt">Time</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a>     , <span class="st">&quot;code&quot;</span>    <span class="op">&gt;:</span> <span class="dt">Int</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a>     , <span class="st">&quot;message&quot;</span> <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a>     ]</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">Time</span> <span class="ot">=</span> <span class="dt">Text</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">LogCsv</span> <span class="ot">=</span> <span class="dt">Record</span> <span class="dt">CsvFields</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">CsvFields</span> <span class="ot">=</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true"></a>    '[ <span class="st">&quot;time&quot;</span>    <span class="op">&gt;:</span> <span class="dt">Time</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true"></a>     , <span class="st">&quot;info&quot;</span>    <span class="op">&gt;:</span> <span class="dt">LB.ByteString</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true"></a>     ]</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true"></a></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">Info</span> <span class="ot">=</span> <span class="dt">Record</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true"></a>    '[ <span class="st">&quot;code&quot;</span>    <span class="op">&gt;:</span> <span class="dt">Int</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true"></a>     , <span class="st">&quot;message&quot;</span> <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true"></a>     ]</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true"></a></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">EIO</span> <span class="ot">=</span> <span class="dt">Eff</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true"></a>    '[ <span class="dt">EitherDef</span> <span class="dt">String</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true"></a>     , <span class="st">&quot;IO&quot;</span> <span class="op">&gt;:</span> <span class="dt">IO</span></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true"></a>     ]</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true"></a></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true"></a><span class="ot">runEIO ::</span> <span class="dt">EIO</span> a <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Either</span> <span class="dt">String</span> a)</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true"></a>runEIO <span class="ot">=</span> retractEff <span class="op">.</span> runEitherDef</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true"></a></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true"></a>  result <span class="ot">&lt;-</span> runEIO <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true"></a>    (path<span class="op">:</span>_) <span class="ot">&lt;-</span> liftIO getArgs</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true"></a>    file <span class="ot">&lt;-</span>  liftIO (LB.readFile path)</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true"></a>    <span class="kw">let</span></span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true"></a>      csv <span class="ot">=</span> <span class="fu">mconcat</span> [header, <span class="st">&quot;\n&quot;</span>, file]</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true"></a>    (_, logs) <span class="ot">&lt;-</span> <span class="fu">either</span> throwError <span class="fu">pure</span> (decodeByName csv)<span class="ot"> ::</span> <span class="dt">EIO</span> (<span class="dt">Header</span>, <span class="dt">LogCsv</span>)</span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true"></a>    <span class="kw">let</span></span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true"></a>      log' <span class="ot">=</span> V.head logs</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true"></a>    info <span class="ot">&lt;-</span> <span class="fu">either</span> throwError <span class="fu">pure</span> (eitherDecode <span class="op">$</span> log' <span class="op">^.</span> <span class="op">#</span>info)<span class="ot"> ::</span> <span class="dt">EIO</span> <span class="dt">Info</span></span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true"></a>    <span class="fu">pure</span> <span class="op">$</span></span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true"></a>      <span class="op">#</span>path <span class="op">@=</span> path <span class="op">&lt;:</span> <span class="op">#</span>time <span class="op">@=</span> (log' <span class="op">^.</span> <span class="op">#</span>time) <span class="op">&lt;:</span> info</span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true"></a>  <span class="fu">either</span> <span class="fu">error</span> <span class="fu">print</span> result</span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true"></a></span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true"></a><span class="ot">header ::</span> <span class="dt">LB.ByteString</span></span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true"></a>header <span class="ot">=</span> LB.intercalate <span class="st">&quot;,&quot;</span> <span class="op">.</span> <span class="fu">fmap</span> fromString <span class="op">$</span> henumerateFor</span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true"></a>  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">Show</span>))</span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true"></a>  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">CsvFields</span>)</span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true"></a>  ((<span class="op">:</span>) <span class="op">.</span> symbolVal <span class="op">.</span> proxyAssocKey)</span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true"></a>  []</span></code></pre></div>
 <p>このメイン関数は次のような CSV をログデータとして読み込んで，2行目の JSON もパースしたうえで，ひとつの拡張可能レコードとして吐き出す．</p>
 <pre class="csv"><code>2018-02-23T03:10:00,&quot;{&quot;&quot;code&quot;&quot;:123,&quot;&quot;message&quot;&quot;:&quot;&quot;hello&quot;&quot;}&quot;</code></pre>
 <p>正直，この例だと大した長さではないので切り分けるメリットはなーーんにもないんですけど．</p>
@@ -210,79 +210,79 @@
 <li><a href="https://haskell.e-bigmoon.com/posts/2017/12-23-stack161.html">カスタムスナップショットの紹介</a></li>
 </ul>
 <p>ここには書いてないが，カスタムスナップショットは <code>stack script</code> にも使える． 例えば今回は次のようなカスタムスナップショットを作った．</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1"></a><span class="fu">resolver</span><span class="kw">:</span><span class="at"> lts-10.6</span></span>
-<span id="cb5-2"><a href="#cb5-2"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> matsubara0507</span></span>
-<span id="cb5-3"><a href="#cb5-3"></a><span class="fu">packages</span><span class="kw">:</span></span>
-<span id="cb5-4"><a href="#cb5-4"></a><span class="kw">-</span><span class="at"> </span><span class="fu">git</span><span class="kw">:</span><span class="at"> https://github.com/matsubara0507/extensible-instances.git</span></span>
-<span id="cb5-5"><a href="#cb5-5"></a><span class="at">  </span><span class="fu">commit</span><span class="kw">:</span><span class="at"> 8dabe7a3dd9cf162e2d81e4ca16dbe73b98a3809</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="fu">resolver</span><span class="kw">:</span><span class="at"> lts-10.6</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> matsubara0507</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a><span class="fu">packages</span><span class="kw">:</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a><span class="kw">-</span><span class="at"> </span><span class="fu">git</span><span class="kw">:</span><span class="at"> https://github.com/matsubara0507/extensible-instances.git</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a><span class="at">  </span><span class="fu">commit</span><span class="kw">:</span><span class="at"> 8dabe7a3dd9cf162e2d81e4ca16dbe73b98a3809</span></span></code></pre></div>
 <p>これを <code>snapshot.yaml</code> とし，例題のコードを <code>fun-of-tangle.hs</code> とすると次のように実行できる</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1"></a>$ <span class="fu">cat</span> sampleLog.csv</span>
-<span id="cb6-2"><a href="#cb6-2"></a><span class="ex">2018-02-23T03</span>:10:00,<span class="st">&quot;{&quot;&quot;code&quot;&quot;:123,&quot;&quot;message&quot;&quot;:&quot;&quot;hello&quot;&quot;}&quot;</span></span>
-<span id="cb6-3"><a href="#cb6-3"></a></span>
-<span id="cb6-4"><a href="#cb6-4"></a>$ <span class="ex">stack</span> script --resolver ./snapshot.yaml -- fun-of-tangle.hs sampleLog.csv</span>
-<span id="cb6-5"><a href="#cb6-5"></a><span class="ex">Using</span> resolver: custom: ./snapshot.yaml specified on command line</span>
-<span id="cb6-6"><a href="#cb6-6"></a><span class="ex">path</span> @= <span class="st">&quot;sampleLog.csv&quot;</span> <span class="op">&lt;</span>: time @= <span class="st">&quot;2018-02-23T03:10:00&quot;</span> <span class="op">&lt;</span>: code @= 123 <span class="op">&lt;</span>: message @= <span class="st">&quot;hello&quot;</span> <span class="op">&lt;</span>: nil</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a>$ <span class="fu">cat</span> sampleLog.csv</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a><span class="ex">2018-02-23T03</span>:10:00,<span class="st">&quot;{&quot;&quot;code&quot;&quot;:123,&quot;&quot;message&quot;&quot;:&quot;&quot;hello&quot;&quot;}&quot;</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a>$ <span class="ex">stack</span> script --resolver ./snapshot.yaml -- fun-of-tangle.hs sampleLog.csv</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a><span class="ex">Using</span> resolver: custom: ./snapshot.yaml specified on command line</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a><span class="ex">path</span> @= <span class="st">&quot;sampleLog.csv&quot;</span> <span class="op">&lt;</span>: time @= <span class="st">&quot;2018-02-23T03:10:00&quot;</span> <span class="op">&lt;</span>: code @= 123 <span class="op">&lt;</span>: message @= <span class="st">&quot;hello&quot;</span> <span class="op">&lt;</span>: nil</span></code></pre></div>
 <h3 id="ヘッダの生成">ヘッダの生成</h3>
 <p>CSV の読み込みには <code>cassava</code> というパッケージを使っている． このパッケージには <code>FromRecord</code> と <code>FromNamedRecord</code> 型クラスがある． 前者は前から順に勝手に取っていくのに対し，後者はフィールド名と CSV の列名を対応させて取ってきてくれる．</p>
 <p><code>cassava</code> 系の拡張可能レコードのインスタンスを書いてるときは <code>extensible</code> 力がまだ低く，フィールドからインデックスをとっていくる方法が分からなかった． そのため <code>FromRecord</code> 型クラスのインスタンスが <code>extensible-instances</code> にはない(何故かついこの前，<a href="https://github.com/fumieval/extensible/commit/074210e76ed5bd35f62d452f66c940a40d821534">本家へコミット</a>されたけど)．</p>
 <p>なので，型から列名のヘッダーを生成してしまおう，というのが <code>header</code> 関数．</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1"></a><span class="ot">header ::</span> <span class="dt">LB.ByteString</span></span>
-<span id="cb7-2"><a href="#cb7-2"></a>header <span class="ot">=</span> LB.intercalate <span class="st">&quot;,&quot;</span> <span class="op">.</span> <span class="fu">fmap</span> fromString <span class="op">$</span> henumerateFor</span>
-<span id="cb7-3"><a href="#cb7-3"></a>  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">Show</span>))</span>
-<span id="cb7-4"><a href="#cb7-4"></a>  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">CsvFields</span>)</span>
-<span id="cb7-5"><a href="#cb7-5"></a>  ((<span class="op">:</span>) <span class="op">.</span> symbolVal <span class="op">.</span> proxyAssocKey)</span>
-<span id="cb7-6"><a href="#cb7-6"></a>  []</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a><span class="ot">header ::</span> <span class="dt">LB.ByteString</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a>header <span class="ot">=</span> LB.intercalate <span class="st">&quot;,&quot;</span> <span class="op">.</span> <span class="fu">fmap</span> fromString <span class="op">$</span> henumerateFor</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a>  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> (<span class="dt">KeyValue</span> <span class="dt">KnownSymbol</span> <span class="dt">Show</span>))</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true"></a>  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">CsvFields</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true"></a>  ((<span class="op">:</span>) <span class="op">.</span> symbolVal <span class="op">.</span> proxyAssocKey)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true"></a>  []</span></code></pre></div>
 <p><code>Proxy (KeyValue KnownSymbol Show)</code> ってのが悲しいですよね…(<code>Show</code> は全く無意味)． キー側だけ型クラスを指定する方法は無いような気がしたんだよなぁ．</p>
 <h2 id="分割しましょう">分割しましょう</h2>
 <p>では本題．</p>
 <p>まずは型クラスを考えよう．</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">class</span> <span class="dt">MakeLog</span> kv <span class="kw">where</span></span>
-<span id="cb8-2"><a href="#cb8-2"></a><span class="ot">  make ::</span> proxy kv <span class="ot">-&gt;</span> <span class="dt">TangleT</span> <span class="dt">FieldI</span> <span class="dt">LogFields</span> <span class="dt">EIO</span> (<span class="dt">AssocValue</span> kv)</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a><span class="kw">class</span> <span class="dt">MakeLog</span> kv <span class="kw">where</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a><span class="ot">  make ::</span> proxy kv <span class="ot">-&gt;</span> <span class="dt">TangleT</span> <span class="dt">FieldI</span> <span class="dt">LogFields</span> <span class="dt">EIO</span> (<span class="dt">AssocValue</span> kv)</span></code></pre></div>
 <p>試しに，<code>"path" &gt;: FilePath</code> のインスタンスを書いてみる．</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;path&quot;</span> <span class="op">&gt;:</span> <span class="dt">FilePath</span>) <span class="kw">where</span></span>
-<span id="cb9-2"><a href="#cb9-2"></a>  make _ <span class="ot">=</span> lift <span class="op">$</span> liftIO getArgs <span class="op">&gt;&gt;=</span> \<span class="kw">case</span></span>
-<span id="cb9-3"><a href="#cb9-3"></a>    (path <span class="op">:</span> _) <span class="ot">-&gt;</span> <span class="fu">pure</span> path</span>
-<span id="cb9-4"><a href="#cb9-4"></a>    _          <span class="ot">-&gt;</span> throwError <span class="st">&quot;please path.&quot;</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;path&quot;</span> <span class="op">&gt;:</span> <span class="dt">FilePath</span>) <span class="kw">where</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a>  make _ <span class="ot">=</span> lift <span class="op">$</span> liftIO getArgs <span class="op">&gt;&gt;=</span> \<span class="kw">case</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true"></a>    (path <span class="op">:</span> _) <span class="ot">-&gt;</span> <span class="fu">pure</span> path</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true"></a>    _          <span class="ot">-&gt;</span> throwError <span class="st">&quot;please path.&quot;</span></span></code></pre></div>
 <p>他のはできるだろうか？ 元のメイン関数を見ればわかると思うが，たぶん無理だと思う． 他のフィールドは <code>log'</code> 変数に保存した中間状態を共有するからだ．</p>
 <h3 id="中間状態をどうするか">中間状態をどうするか</h3>
 <p>他にもっといい手はあるかもしれないが，今回は <strong>レコードを中間状態も加えて拡張する</strong> ことにする．</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">type</span> <span class="dt">MidFields</span> <span class="ot">=</span> '[<span class="st">&quot;log&quot;</span> <span class="op">&gt;:</span> <span class="dt">LogCsv</span> '<span class="op">:</span> <span class="st">&quot;info&quot;</span> <span class="op">&gt;:</span> <span class="dt">Info</span>] <span class="op">++</span> <span class="dt">LogFields</span></span>
-<span id="cb10-2"><a href="#cb10-2"></a></span>
-<span id="cb10-3"><a href="#cb10-3"></a><span class="kw">class</span> <span class="dt">MakeLog</span> kv <span class="kw">where</span></span>
-<span id="cb10-4"><a href="#cb10-4"></a><span class="ot">  make ::</span> proxy kv <span class="ot">-&gt;</span> <span class="dt">TangleT</span> <span class="dt">FieldI</span> <span class="dt">MidFields</span> <span class="dt">EIO</span> (<span class="dt">AssocValue</span> kv)</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">MidFields</span> <span class="ot">=</span> '[<span class="st">&quot;log&quot;</span> <span class="op">&gt;:</span> <span class="dt">LogCsv</span> '<span class="op">:</span> <span class="st">&quot;info&quot;</span> <span class="op">&gt;:</span> <span class="dt">Info</span>] <span class="op">++</span> <span class="dt">LogFields</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true"></a><span class="kw">class</span> <span class="dt">MakeLog</span> kv <span class="kw">where</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true"></a><span class="ot">  make ::</span> proxy kv <span class="ot">-&gt;</span> <span class="dt">TangleT</span> <span class="dt">FieldI</span> <span class="dt">MidFields</span> <span class="dt">EIO</span> (<span class="dt">AssocValue</span> kv)</span></code></pre></div>
 <p><a href="https://hackage.haskell.org/package/extensible-0.4.7.1/docs/Data-Extensible-Product.html#t:-43--43-"><code>(++)</code></a> は型レベルリストの連結演算子だ． <code>'["log" &gt;: LogCsv ': "info" &gt;: Info]</code> が追加する中間状態にあたる． これを最後にどうやって外すかと言うと，実は簡単で <a href="https://hackage.haskell.org/package/extensible-0.4.7.1/docs/Data-Extensible-Inclusion.html#v:shrink"><code>shrink</code></a> 関数で縮小してやればよい．</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1"></a><span class="ot">makeLog ::</span> <span class="dt">EIO</span> <span class="dt">Log</span></span>
-<span id="cb11-2"><a href="#cb11-2"></a>makeLog <span class="ot">=</span> shrink <span class="op">&lt;$&gt;</span> runTangles tangles (wrench emptyRecord)</span>
-<span id="cb11-3"><a href="#cb11-3"></a></span>
-<span id="cb11-4"><a href="#cb11-4"></a><span class="ot">tangles ::</span> <span class="dt">Comp</span> (<span class="dt">TangleT</span> <span class="dt">FieldI</span> <span class="dt">MidFields</span> <span class="dt">EIO</span>) <span class="dt">FieldI</span> <span class="op">:*</span> <span class="dt">MidFields</span></span>
-<span id="cb11-5"><a href="#cb11-5"></a>tangles <span class="ot">=</span> htabulateFor (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">MakeLog</span>) <span class="op">$</span></span>
-<span id="cb11-6"><a href="#cb11-6"></a>  \m <span class="ot">-&gt;</span> <span class="dt">Comp</span> <span class="op">$</span> <span class="dt">Field</span> <span class="op">.</span> <span class="fu">pure</span> <span class="op">&lt;$&gt;</span> make m</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true"></a><span class="ot">makeLog ::</span> <span class="dt">EIO</span> <span class="dt">Log</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true"></a>makeLog <span class="ot">=</span> shrink <span class="op">&lt;$&gt;</span> runTangles tangles (wrench emptyRecord)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true"></a><span class="ot">tangles ::</span> <span class="dt">Comp</span> (<span class="dt">TangleT</span> <span class="dt">FieldI</span> <span class="dt">MidFields</span> <span class="dt">EIO</span>) <span class="dt">FieldI</span> <span class="op">:*</span> <span class="dt">MidFields</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true"></a>tangles <span class="ot">=</span> htabulateFor (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">MakeLog</span>) <span class="op">$</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true"></a>  \m <span class="ot">-&gt;</span> <span class="dt">Comp</span> <span class="op">$</span> <span class="dt">Field</span> <span class="op">.</span> <span class="fu">pure</span> <span class="op">&lt;$&gt;</span> make m</span></code></pre></div>
 <p>中間状態のインスタンス定義してしまう．</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;log&quot;</span> <span class="op">&gt;:</span> <span class="dt">LogCsv</span>) <span class="kw">where</span></span>
-<span id="cb12-2"><a href="#cb12-2"></a>  make _ <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb12-3"><a href="#cb12-3"></a>    file <span class="ot">&lt;-</span> lift <span class="op">.</span> liftIO <span class="op">.</span> LB.readFile <span class="op">=&lt;&lt;</span> lasso <span class="op">#</span>path</span>
-<span id="cb12-4"><a href="#cb12-4"></a>    (_, log') <span class="ot">&lt;-</span> lift <span class="op">$</span></span>
-<span id="cb12-5"><a href="#cb12-5"></a>      <span class="fu">either</span> throwError <span class="fu">pure</span> (decodeByName <span class="op">$</span> <span class="fu">mconcat</span> [header, <span class="st">&quot;\n&quot;</span>, file])</span>
-<span id="cb12-6"><a href="#cb12-6"></a>    <span class="fu">pure</span> <span class="op">$</span> V.head log'</span>
-<span id="cb12-7"><a href="#cb12-7"></a></span>
-<span id="cb12-8"><a href="#cb12-8"></a><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;info&quot;</span> <span class="op">&gt;:</span> <span class="dt">Info</span>) <span class="kw">where</span></span>
-<span id="cb12-9"><a href="#cb12-9"></a>  make _ <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb12-10"><a href="#cb12-10"></a>    log' <span class="ot">&lt;-</span> lasso <span class="op">#</span>log</span>
-<span id="cb12-11"><a href="#cb12-11"></a>    lift <span class="op">$</span> <span class="fu">either</span> throwError <span class="fu">pure</span> (eitherDecode <span class="op">$</span> log' <span class="op">^.</span> <span class="op">#</span>info)</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;log&quot;</span> <span class="op">&gt;:</span> <span class="dt">LogCsv</span>) <span class="kw">where</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true"></a>  make _ <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true"></a>    file <span class="ot">&lt;-</span> lift <span class="op">.</span> liftIO <span class="op">.</span> LB.readFile <span class="op">=&lt;&lt;</span> lasso <span class="op">#</span>path</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true"></a>    (_, log') <span class="ot">&lt;-</span> lift <span class="op">$</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true"></a>      <span class="fu">either</span> throwError <span class="fu">pure</span> (decodeByName <span class="op">$</span> <span class="fu">mconcat</span> [header, <span class="st">&quot;\n&quot;</span>, file])</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true"></a>    <span class="fu">pure</span> <span class="op">$</span> V.head log'</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;info&quot;</span> <span class="op">&gt;:</span> <span class="dt">Info</span>) <span class="kw">where</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true"></a>  make _ <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true"></a>    log' <span class="ot">&lt;-</span> lasso <span class="op">#</span>log</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true"></a>    lift <span class="op">$</span> <span class="fu">either</span> throwError <span class="fu">pure</span> (eitherDecode <span class="op">$</span> log' <span class="op">^.</span> <span class="op">#</span>info)</span></code></pre></div>
 <p>うん…まぁ…読みやすさのためにね，多少は <code>do</code> を残しましたよ(タイトル詐欺)．</p>
 <h3 id="残りは簡単">残りは簡単</h3>
 <p>あとは，フィールドを取り出すだけなので簡単．</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1"></a><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;time&quot;</span> <span class="op">&gt;:</span> <span class="dt">Time</span>) <span class="kw">where</span></span>
-<span id="cb13-2"><a href="#cb13-2"></a>  make _ <span class="ot">=</span> view <span class="op">#</span>time <span class="op">&lt;$&gt;</span> lasso <span class="op">#</span>log</span>
-<span id="cb13-3"><a href="#cb13-3"></a></span>
-<span id="cb13-4"><a href="#cb13-4"></a><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;code&quot;</span> <span class="op">&gt;:</span> <span class="dt">Int</span>) <span class="kw">where</span></span>
-<span id="cb13-5"><a href="#cb13-5"></a>  make _ <span class="ot">=</span> view <span class="op">#</span>code <span class="op">&lt;$&gt;</span> lasso <span class="op">#</span>info</span>
-<span id="cb13-6"><a href="#cb13-6"></a></span>
-<span id="cb13-7"><a href="#cb13-7"></a><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;message&quot;</span> <span class="op">&gt;:</span> <span class="dt">Text</span>) <span class="kw">where</span></span>
-<span id="cb13-8"><a href="#cb13-8"></a>  make _ <span class="ot">=</span> view <span class="op">#</span>message <span class="op">&lt;$&gt;</span> lasso <span class="op">#</span>info</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;time&quot;</span> <span class="op">&gt;:</span> <span class="dt">Time</span>) <span class="kw">where</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true"></a>  make _ <span class="ot">=</span> view <span class="op">#</span>time <span class="op">&lt;$&gt;</span> lasso <span class="op">#</span>log</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true"></a></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;code&quot;</span> <span class="op">&gt;:</span> <span class="dt">Int</span>) <span class="kw">where</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true"></a>  make _ <span class="ot">=</span> view <span class="op">#</span>code <span class="op">&lt;$&gt;</span> lasso <span class="op">#</span>info</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true"></a></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">MakeLog</span> (<span class="st">&quot;message&quot;</span> <span class="op">&gt;:</span> <span class="dt">Text</span>) <span class="kw">where</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true"></a>  make _ <span class="ot">=</span> view <span class="op">#</span>message <span class="op">&lt;$&gt;</span> lasso <span class="op">#</span>info</span></code></pre></div>
 <p>メイン関数はこんな感じ．</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
-<span id="cb14-2"><a href="#cb14-2"></a>main <span class="ot">=</span> <span class="fu">either</span> <span class="fu">error</span> <span class="fu">print</span> <span class="op">=&lt;&lt;</span> runEIO makeLog</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true"></a>main <span class="ot">=</span> <span class="fu">either</span> <span class="fu">error</span> <span class="fu">print</span> <span class="op">=&lt;&lt;</span> runEIO makeLog</span></code></pre></div>
 <p>わぁすっきり(メイン関数は)．</p>
 <h2 id="おしまい">おしまい</h2>
 <p>これぐらいの規模だとメリットが皆無なんですが，もっと CSV の列数が多くなったらどうでしょう？ うーーーん，あんまり変わらないかも(笑) まぁ，少なくとも面白い(不思議な)プログラミングが出来るのは確かです．</p>
