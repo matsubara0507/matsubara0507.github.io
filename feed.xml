@@ -8,8 +8,157 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2020-12-14T00:00:00Z</updated>
+    <updated>2021-01-01T00:00:00Z</updated>
     <entry>
+    <title>rules_haskell でパッケージの依存関係がうまく解決できない時</title>
+    <link href="https://matsubara0507.github.io/posts/2021-01-01-missing-dependencies-with-rules_haskell.html" />
+    <id>https://matsubara0507.github.io/posts/2021-01-01-missing-dependencies-with-rules_haskell.html</id>
+    <published>2021-01-01T00:00:00Z</published>
+    <updated>2021-01-01T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
+    <p>ちょっとした rules_haskell で起きたエラーに関するメモ書きです（Bazel の話）．</p>
+<h2 id="起きたエラー">起きたエラー</h2>
+<p>具体的には「<a href="/posts/2021-01-01-mdium-with-gist.html">MarkdownをMediumへポストするときにコードブロックをGistのリンクにする</a>」をやっていたときに起きたエラー：</p>
+<pre><code>$ bazel build //:mdium
+...
+ERROR: /.../external/stackage/BUILD.bazel:1277:22: HaskellCabalLibrary @stackage//:hslua failed (Exit 1) cabal_wrapper failed: error executing command bazel-out/host/bin/external/rules_haskell/haskell/cabal_wrapper lib:hslua hslua-1.3.0 true external/stackage/hslua-1.3.0/Setup.hs external/stackage/hslua-1.3.0 ... (remaining 9 argument(s) skipped)
+
+Use --sandbox_debug to see verbose messages from the sandbox
+Setup.hs: Encountered missing dependencies:
+base-compat &gt;=0.10
+...</code></pre>
+<p>base-compat はバージョン 0.11.2 が入ってるはずなので，この依存関係は満たしているはずなのに…？？？</p>
+<h2 id="原因">原因</h2>
+<p>hslua-1.3.0 の Cabal ファイルを読んでたら気づいた：</p>
+<pre class="cabal"><code>  if impl(ghc &lt; 8.8)
+    build-depends:       base-compat          &gt;= 0.10
+    hs-source-dirs:      prelude
+    other-modules:       Prelude</code></pre>
+<p><code>if impl(ghc &lt; 8.8)</code> の部分． もしかして，Bazel の依存パッケージを解決してるときにこの分岐がうまくいってない？つまり GHC のバージョンが間違ってる？</p>
+<p>正解でした．</p>
+<h2 id="対処">対処</h2>
+<p>GHC のバージョンは rules_haskell の <code>rules_haskell_toolchains</code> の <code>version</code> 引数で指定できる． 指定しない場合は デフォルトで 8.6.5 が利用される． 決して，<code>stack_snapshot</code> で指定した LTS から自動で解決されない（はず）． 僕はこの仕様をすっかり忘れており，LTS では GHC 8.8 系を利用しているのに GHC 8.6 でビルドをしていた． 結果として，依存パッケージの解決がめちゃくちゃになっていたのだ．</p>
+<p>対処法は簡単で，<code>rules_haskell_toolchains</code> で <code>version</code> を指定すれば良い：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a>http_archive(</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a>    name <span class="op">=</span> <span class="st">&quot;rules_haskell&quot;</span>,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>    strip_prefix <span class="op">=</span> <span class="st">&quot;rules_haskell-3b8182ca5287cf93687fff1cefd98910f683b679&quot;</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>    urls <span class="op">=</span> [<span class="st">&quot;https://github.com/tweag/rules_haskell/archive/3b8182ca5287cf93687fff1cefd98910f683b679.tar.gz&quot;</span>],</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a>    sha256 <span class="op">=</span> <span class="st">&quot;85f269adfecfc5760fae6017608f7efebfccb719c22c7e71af03c4887f54b08e&quot;</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a>load(</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a>    <span class="st">&quot;@rules_haskell//haskell:toolchain.bzl&quot;</span>,</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a>    <span class="st">&quot;rules_haskell_toolchains&quot;</span>,</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a>)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a>rules_haskell_toolchains(version <span class="op">=</span> <span class="st">&quot;8.8.4&quot;</span>)</span></code></pre></div>
+<p>ちなみに，rules_haskell の現在の最新のバージョンタグである v0.13 を使わずに，直接最新のコミットハッシュを指定しているのは，v0.13 では LTS で利用している 8.8.4 が無いからだ．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>本当にちょっとしたことだけど念のため記事にしておいた． rules_haskell が流行ったあかつきにはきっと助かる人が出るはず笑</p>
+  </div>]]></summary>
+</entry>
+<entry>
+    <title>MarkdownをMediumへポストするときにコードブロックをGistのリンクにする</title>
+    <link href="https://matsubara0507.github.io/posts/2021-01-01-mdium-with-gist.html" />
+    <id>https://matsubara0507.github.io/posts/2021-01-01-mdium-with-gist.html</id>
+    <published>2021-01-01T00:00:00Z</published>
+    <updated>2021-01-01T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
+    <p>「<a href="/posts/2018-11-04-create-mdium.html">Markdownで書いたテキストをMediumへポストする(mdium)</a>」で作った Markdown で書いたテキストを Medium へポストするツールですが，ちょくちょく改良を続けてます． 今回は Pandoc を利用して、コードブロックを Gist のリンクに置き換える機能を追加したので，そのことについてのメモ書きです．</p>
+<h2 id="medium-のシンタックスハイライト">Medium のシンタックスハイライト</h2>
+<p>Medium は普通にコードブロックを記述するとシンタックハイライトされずダサい：</p>
+<p><img src="/assets/mdium-with-gist/medium-code-block.jpg"></img></p>
+<p>これをなんとかする方法の一つに Gist のリンクを貼って埋め込みにするというのがある：</p>
+<p><img src="/assets/mdium-with-gist/medium-code-block-using-gist.jpg"></img></p>
+<p>ただし，一つの Gist に一つのファイルを設定しないといけないのでコスパが最悪で，1つの記事に対してこんな感じに大量の Gist を作る必要がある：</p>
+<p><img src="/assets/mdium-with-gist/many-gists-for-medium.jpg"></img></p>
+<p>最近はその Gist を使った方法をとっているが，いちいち Gist に手で置き換えるのはめんどいよね． ってことで，自作ツールの mdium が自動でやってくれるようにした．</p>
+<h2 id="作る">作る</h2>
+<p>作業 PR はこれです：</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/mdium/pull/9">Add gist option · #9 · matsubara0507/mdium</a></li>
+</ul>
+<h3 id="gist-を作成する-api">Gist を作成する API</h3>
+<p><a href="https://docs.github.com/rest/reference/gists#create-a-gist">GitHub API には Gist を作成するものがある</a>． しかし，私がよく使う <a href="https://hackage.haskell.org/package/github">Haskell の GitHub クライアント</a>には Gist を作成する関数が作られてなかった． ので，作成してとりあえず PR を出した：</p>
+<ul>
+<li><a href="https://github.com/phadej/github/pull/455">Add endpoint to create gist · #455 · phadej/github</a></li>
+</ul>
+<p>実は（リファレンスからは分かりにくい？）注意点があって：</p>
+<ol type="1">
+<li><code>files</code> は <code>{&quot;hoge.txt&quot;: {&quot;content&quot;: &quot;abc&quot;}}</code> って感じのJSONオブジェクト</li>
+<li><code>description</code> パラメーターや <code>files</code> の <code>content</code> は <code>null</code> を渡せない</li>
+<li><code>public</code> を <code>null</code> にした場合レスポンスの <code>public</code> も <code>null</code> になる</li>
+</ol>
+<p>aeson で <code>Maybe</code> を使ってオプショナルなパラメーターを表現した場合は強制的に <code>null</code> が渡される． <del>そのため，<code>description</code> はオプショナルなパラメーターだが型を <code>Text</code> にした</del> が，レビューで次のようにやればいいよって返ってきた：</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">ToJSON</span> <span class="dt">NewGist</span> <span class="kw">where</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>    toJSON <span class="dt">NewGist</span> { <span class="op">...</span> } <span class="ot">=</span> object <span class="op">$</span> <span class="fu">filter</span> notNull</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a>                   [ <span class="st">&quot;description&quot;</span> <span class="op">.=</span> newGistDescription</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a>                   , <span class="st">&quot;files&quot;</span>       <span class="op">.=</span> newGistFiles</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a>                   , <span class="st">&quot;public&quot;</span>      <span class="op">.=</span> newGistPublic</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a>                   ]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a>      <span class="kw">where</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>        notNull (_, <span class="dt">Null</span>) <span class="ot">=</span> <span class="dt">False</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a>        notNull (_, _)    <span class="ot">=</span> <span class="dt">True</span></span></code></pre></div>
+<p>なるほど，レビュー感謝． で，<code>public</code> は，すでにある <code>Gist</code> 型（レスポンスに使いたい）の <code>public</code> が <code>Maybe Bool</code> ではなく <code>Bool</code> なので (3) の挙動が困る． そのため，<code>public</code> パラメーターの型も <code>Bool</code> にしたが，<code>description</code> 同様に <code>filter notNull</code> 効かせたので普通に <code>Maybe Bool</code> で良くなった． ちなみに，デフォルトは <code>false</code>．</p>
+<h3 id="pandoc-で書き換える">Pandoc で書き換える</h3>
+<p>少しオーバースペックのような気がするが，Pandoc を利用して Markdown をパースする：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="ot">customizeContent ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">RIO</span> <span class="dt">Env</span> <span class="dt">Text</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a>customizeContent content <span class="ot">=</span> liftIO <span class="op">.</span> Pandoc.runIOorExplode <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>  p0 <span class="ot">&lt;-</span> Pandoc.readCommonMark Pandoc.def content</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>  Pandoc.writeCommonMark Pandoc.def p0</span></code></pre></div>
+<p><code>readMarkdown</code> というのもあるが，GFM などを使う場合は <code>readCommonMark</code> の方を使う． <code>p0</code> というのが <code>Pandoc</code> 型の値で，<code>Walkable</code> を利用することで任意のブロックに対してのみ変換を適用したりできる：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="ot">customizeContent ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">RIO</span> <span class="dt">Env</span> <span class="dt">Text</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a>customizeContent content <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>  p0 <span class="ot">&lt;-</span> liftIO <span class="op">$</span> Pandoc.runIOorExplode (Pandoc.readCommonMark Pandoc.def content)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>  p1 <span class="ot">&lt;-</span> Pandoc.walkPandocM replaceCodeBlockToGistLink p0</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a>  liftIO <span class="op">$</span> Pandoc.runIOorExplode (Pandoc.writeCommonMark Pandoc.def p1)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a><span class="ot">replaceCodeBlockToGistLink ::</span> <span class="dt">Pandoc.Block</span> <span class="ot">-&gt;</span> <span class="dt">RIO</span> <span class="dt">Env</span> <span class="dt">Pandoc.Block</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a>replaceCodeBlockToGistLink <span class="ot">=</span> \<span class="kw">case</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a>  <span class="dt">Pandoc.CodeBlock</span> attr txt <span class="ot">-&gt;</span> <span class="fu">undefined</span> <span class="co">-- 書き換える</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a>  block <span class="ot">-&gt;</span> <span class="fu">pure</span> block</span></code></pre></div>
+<p>Gist がよしなにプログラミング言語を特定してシンタックスハイライトするにはファイルの拡張子が必要だ． コードブロックのバッククオートの後ろに指定している拡張子を取得するために <code>attr</code> を見てみると <code>(&quot;&quot;, [&quot;hs&quot;], [])</code> となっていた（プログラミング言語名も指定できるけど，拡張子だけを指定してるとする）． なので，これを利用する：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="ot">replaceCodeBlockToGistLink ::</span> <span class="dt">Pandoc.Block</span> <span class="ot">-&gt;</span> <span class="dt">RIO</span> <span class="dt">Env</span> <span class="dt">Pandoc.Block</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a>replaceCodeBlockToGistLink <span class="ot">=</span> \<span class="kw">case</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a>  <span class="dt">Pandoc.CodeBlock</span> (_, [ext], _) txt <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a>    gist <span class="ot">&lt;-</span> lift <span class="op">$</span> createGist ext txt</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a>    <span class="fu">pure</span> <span class="op">$</span> <span class="dt">Pandoc.Plain</span> [<span class="dt">Pandoc.Str</span> (GitHub.getUrl <span class="op">$</span> GitHub.gistHtmlUrl gist)]</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a>  block <span class="ot">-&gt;</span> <span class="fu">pure</span> block</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a><span class="ot">createGist ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">RIO</span> <span class="dt">Env</span> <span class="dt">GitHub.Gist</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a>createGist ext txt <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true"></a>  <span class="kw">let</span> files <span class="ot">=</span> HM.fromList [(<span class="st">&quot;sample.&quot;</span> <span class="op">&lt;&gt;</span> ext, <span class="dt">GitHub.NewGistFile</span> txt)]</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true"></a>  <span class="co">-- とりあえずエラーハンドリングは適当に throwM する</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true"></a>  <span class="fu">either</span> throwM <span class="fu">pure</span> <span class="op">=&lt;&lt;</span> MixGitHub.fetch (GitHub.createGistR <span class="op">$</span> <span class="dt">GitHub.NewGist</span> <span class="st">&quot;&quot;</span> files <span class="dt">True</span>)</span></code></pre></div>
+<p><code>MixGitHub.fetch</code> というのは<a href="https://github.com/matsubara0507/mix.hs/tree/master/mix-plugin-github">これ</a>です． 便利です．</p>
+<p>これでとりあえず，コードブロックから Gist を作ってリンクに置き換えることができるようになった．</p>
+<h3 id="gist-のファイル名を工夫する">Gist のファイル名を工夫する</h3>
+<p>現状だと全ての Gist ファイルが <code>sample.hs</code> みたいに拡張子以外は一緒になってしまう． なのでプレフィックスを指定できるようにするのと，何個目のコードブロックかで <code>sample1.hs</code> や <code>sample2.hs</code> みたいにできるようにしたい． そのために <code>State</code> モナドを利用する：</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="ot">customizeContent ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">RIO</span> <span class="dt">Env</span> <span class="dt">Text</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a>customizeContent content <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a>  p0 <span class="ot">&lt;-</span> liftIO <span class="op">$</span> Pandoc.runIOorExplode (Pandoc.readCommonMark Pandoc.def content)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a>  p1 <span class="ot">&lt;-</span> <span class="fu">fst</span> <span class="op">&lt;$&gt;</span> runStateT (Pandoc.walkPandocM replaceCodeBlockToGistLink p0) <span class="dv">1</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a>  liftIO <span class="op">$</span> Pandoc.runIOorExplode (Pandoc.writeCommonMark Pandoc.def p1)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true"></a><span class="ot">replaceCodeBlockToGistLink ::</span>  <span class="dt">Pandoc.Block</span> <span class="ot">-&gt;</span> <span class="dt">StateT</span> <span class="dt">Int</span> (<span class="dt">RIO</span> <span class="dt">Env</span>) <span class="dt">Pandoc.Block</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true"></a>replaceCodeBlockToGistLink <span class="ot">=</span> \<span class="kw">case</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true"></a>  <span class="dt">Pandoc.CodeBlock</span> (_, [ext], _) txt <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true"></a>    cnt  <span class="ot">&lt;-</span> State.get</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true"></a>    gist <span class="ot">&lt;-</span> lift <span class="op">$</span> createGist (tshow cnt) ext txt</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true"></a>    State.modify (<span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true"></a>    <span class="fu">pure</span> <span class="op">$</span> <span class="dt">Pandoc.Plain</span> [<span class="dt">Pandoc.Str</span> (GitHub.getUrl <span class="op">$</span> GitHub.gistHtmlUrl gist)]</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true"></a>  block <span class="ot">-&gt;</span> <span class="fu">pure</span> block</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true"></a></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true"></a><span class="ot">createGist ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">RIO</span> <span class="dt">Env</span> <span class="dt">GitHub.Gist</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true"></a>createGist suffix ext txt <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true"></a>  <span class="kw">let</span> files <span class="ot">=</span> HM.fromList [(<span class="st">&quot;sample&quot;</span> <span class="op">&lt;&gt;</span> suffix <span class="op">&lt;&gt;</span> <span class="st">&quot;.&quot;</span> <span class="op">&lt;&gt;</span> ext, <span class="dt">GitHub.NewGistFile</span> txt)]</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true"></a>  <span class="fu">either</span> throwM <span class="fu">pure</span> <span class="op">=&lt;&lt;</span> MixGitHub.fetch (GitHub.createGistR <span class="op">$</span> <span class="dt">GitHub.NewGist</span> <span class="st">&quot;&quot;</span> files <span class="dt">True</span>)</span></code></pre></div>
+<p>プレフィックスはコマンドのオプションから指定して，適当に <code>createGist</code> まで持ってくるだけなので割愛． これで完全に手作業してたのが自動化された．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>Pandoc パッケージのビルドがゲキオモなのがネックだけどね．</p>
+  </div>]]></summary>
+</entry>
+<entry>
     <title>外部ツールのバージョンアップを GitHub Actions で検知する</title>
     <link href="https://matsubara0507.github.io/posts/2020-12-14-check-release-using-github-actions.html" />
     <id>https://matsubara0507.github.io/posts/2020-12-14-check-release-using-github-actions.html</id>
@@ -2128,356 +2277,6 @@ $ docker run -it --rm -w /work -v `pwd`/example:/work matsubara0507/hamler run
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true"></a><span class="ex">haskell-jp</span>/antenna: <span class="ex">lts-14.20</span></span></code></pre></div>
 <h1 id="おしまい">おしまい</h1>
 <p>追々，Webページの生成と http://packdeps.haskellers.com っぽい機能を足したりするつもりです。</p>
-  </div>]]></summary>
-</entry>
-<entry>
-    <title>Haskell Servant で Slack からの署名付きリクエストを受ける</title>
-    <link href="https://matsubara0507.github.io/posts/2020-04-20-servant-with-slack-verifying-requests.html" />
-    <id>https://matsubara0507.github.io/posts/2020-04-20-servant-with-slack-verifying-requests.html</id>
-    <published>2020-04-20T00:00:00Z</published>
-    <updated>2020-04-20T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
-    <p>Slack のスラッシュコマンドなどで利用される署名付きリクエストを Haskell Servant で受ける方法を考えて実装しました． 実装は slackell という Haskell の Slack API パッケージにしてあります：</p>
-<ul>
-<li><a href="https://github.com/matsubara0507/slackell">matsubara0507/slackell - GitHub</a></li>
-</ul>
-<p><a href="https://github.com/matsubara0507/slackell/pull/1">該当 PR はこれです</a>．</p>
-<h2 id="署名付きリクエスト">署名付きリクエスト</h2>
-<p>スラッシュコマンドなどで Slack からのリクエストを受け取るときに，そのリクエストが本当に該当のスラッシュコマンドから送られてきた正しいリクエストかを検証するには，リクエストパラメーターとして送られてきた検証トークンを確認していた． しかし，この方法は現在では非推奨になっており，代わりにリクエストヘッダーに付いている署名を確認する． 公式ドキュメントは以下：</p>
-<ul>
-<li><a href="https://api.slack.com/authentication/verifying-requests-from-slack">Verifying requests from Slack | Slack</a></li>
-</ul>
-<p>署名は <code>X-Slack-Signature</code> というヘッダーに <code>v0=</code> というプレフィックス付きで含まれている． このリクエストを受け取ったアプリケーション側は以下の方法で署名をエンコードして比較することで，そのリクエストの正当性を保証する：</p>
-<ol type="1">
-<li><code>X-Slack-Request-Timestamp</code> リクエストヘッダーに含まれているタイムスタンプを読む</li>
-<li>バージョン番号・1のタイムスタンプ・リクエストボディの3つを <code>:</code> 区切りで連結する
-<ul>
-<li>e.g. <code>v0:123456789:command=/weather&amp;text=94070</code></li>
-<li>バージョン番号は今のところ全て <code>v0</code></li>
-</ul></li>
-<li>2の文字列を Slack Apps で取得できる <code>Signing Secret</code> を使って HMAC SHA256 でエンコード</li>
-</ol>
-<h3 id="haskellでエンコードする">Haskellでエンコードする</h3>
-<p>このアルゴリズムを Haskell プログラムで実装する． HMAC SHA256 エンコードには <a href="https://hackage.haskell.org/package/cryptonite">cryptonite</a> パッケージを使った． 2と3の部分を行って署名をエンコードする関数は以下：</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">module</span> <span class="dt">Web.Slack.Verify</span> <span class="kw">where</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Crypto.Hash</span> (<span class="dt">Digest</span>, <span class="dt">SHA256</span>)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Crypto.MAC.HMAC</span> (<span class="dt">HMAC</span> (..), hmac)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a><span class="kw">newtype</span> <span class="dt">SigningSecret</span> <span class="ot">=</span> <span class="dt">SigningSecret</span> <span class="dt">Text</span> <span class="kw">deriving</span> (<span class="dt">IsString</span>)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">RequestTimestamp</span> <span class="ot">=</span> <span class="dt">Text</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a><span class="co">-- | シークレット・タイムスタンプ・リクエストボディは引数でもらう</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a><span class="ot">encodeSignature ::</span> <span class="dt">SigningSecret</span> <span class="ot">-&gt;</span> <span class="dt">RequestTimestamp</span> <span class="ot">-&gt;</span> <span class="dt">ByteString</span> <span class="ot">-&gt;</span> <span class="dt">Digest</span> <span class="dt">SHA256</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true"></a>encodeSignature (<span class="dt">SigningSecret</span> secret) ts body <span class="ot">=</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true"></a>  hmacGetDigest <span class="op">$</span> hmac (Text.encodeUtf8 secret) basestr</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true"></a>  <span class="kw">where</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true"></a>    basestr <span class="ot">=</span> BS.intercalate <span class="st">&quot;:&quot;</span> [Text.encodeUtf8 version, Text.encodeUtf8 ts, body]</span></code></pre></div>
-<p>最終的な型が <code>Digest SHA256</code> なので，ヘッダーの方の署名と比較しやすいように文字列からの変換関数も用意しておく：</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Crypto.Hash</span> (<span class="dt">Digest</span>, <span class="dt">SHA256</span>, digestFromByteString)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Data.ByteArray.Encoding</span> (<span class="dt">Base</span> (..), convertFromBase)</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">SignatureHeader</span> <span class="ot">=</span> <span class="dt">Text</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a><span class="ot">convertSignatureHeader ::</span> <span class="dt">SignatureHeader</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (<span class="dt">Digest</span> <span class="dt">SHA256</span>)</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a>convertSignatureHeader sign <span class="ot">=</span> <span class="fu">either</span> (<span class="fu">const</span> <span class="dt">Nothing</span>) digestFromByteString bs</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a>  <span class="kw">where</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a>    (_, sign&#39;) <span class="ot">=</span> Text.breakOnEnd (version <span class="op">&lt;&gt;</span> <span class="st">&quot;=&quot;</span>) sign</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a>    bs <span class="ot">=</span> convertFromBase <span class="dt">Base16</span> (Text.encodeUtf8 sign&#39;)<span class="ot"> ::</span> <span class="dt">Either</span> <span class="dt">String</span> <span class="dt">ByteString</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true"></a><span class="ot">version ::</span> <span class="dt">Text</span></span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true"></a>version <span class="ot">=</span> <span class="st">&quot;v0&quot;</span></span></code></pre></div>
-<p>ここで注意しなければいけないのが <code>digestFromByteString</code> 関数に食わせる <code>ByteString</code> 型の値は， <code>memory</code> パッケージの関数を利用して16進数表現から直す必要がある．</p>
-<h2 id="slash-command-を受け取る">Slash Command を受け取る</h2>
-<p>署名をエンコードする関数はできたので，あとは Servant でスラッシュコマンドを受け取る方法を考える． まずはスラッシュコマンドから送られてくるリクエストボディの型を宣言しておこう：</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="kw">module</span> <span class="dt">Web.Slack.SlashCommand</span> <span class="kw">where</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Data.Extensible</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">RequestData</span> <span class="ot">=</span> <span class="dt">Record</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a>  &#39;[ <span class="st">&quot;token&quot;</span>           <span class="op">&gt;:</span> <span class="dt">Text</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a>   , <span class="st">&quot;command&quot;</span>         <span class="op">&gt;:</span> <span class="dt">Text</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a>   , <span class="st">&quot;text&quot;</span>            <span class="op">&gt;:</span> <span class="dt">Text</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a>   , <span class="st">&quot;response_url&quot;</span>    <span class="op">&gt;:</span> <span class="dt">Text</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a>   , <span class="st">&quot;trigger_id&quot;</span>      <span class="op">&gt;:</span> <span class="dt">Text</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a>   , <span class="st">&quot;user_id&quot;</span>         <span class="op">&gt;:</span> <span class="dt">Text</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a>   , <span class="st">&quot;user_name&quot;</span>       <span class="op">&gt;:</span> <span class="dt">Text</span></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a>   , <span class="st">&quot;team_id&quot;</span>         <span class="op">&gt;:</span> <span class="dt">Text</span></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true"></a>   , <span class="st">&quot;team_domain&quot;</span>     <span class="op">&gt;:</span> <span class="dt">Text</span></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true"></a>   , <span class="st">&quot;channel_id&quot;</span>      <span class="op">&gt;:</span> <span class="dt">Text</span></span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true"></a>   , <span class="st">&quot;channel_name&quot;</span>    <span class="op">&gt;:</span> <span class="dt">Text</span></span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true"></a>   , <span class="st">&quot;enterprise_id&quot;</span>   <span class="op">&gt;:</span> <span class="dt">Maybe</span> <span class="dt">Text</span></span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true"></a>   , <span class="st">&quot;enterprise_name&quot;</span> <span class="op">&gt;:</span> <span class="dt">Maybe</span> <span class="dt">Text</span></span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true"></a>   ]</span></code></pre></div>
-<p>正直，これを調べるのも大変だった． 公式ドキュメントにはどんなパラメータがあるか割愛されてる部分があるからだ．</p>
-<p>で，API の型は雰囲気としてはこんな感じ：</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="co">-- Web.Slack は slackell</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Web.Slack.Verify</span> <span class="kw">as</span> <span class="dt">Slack</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Web.Slack.SlashCommand</span> <span class="kw">as</span> <span class="dt">SlashCmd</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">API</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a>    <span class="ot">=</span> <span class="st">&quot;slash&quot;</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a>      <span class="op">:&gt;</span> <span class="dt">ReqBody</span> &#39;[<span class="dt">FormUrlEncoded</span>] <span class="dt">RequestData</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a>      <span class="op">:&gt;</span> <span class="dt">Header</span> <span class="st">&quot;X-Slack-Request-Timestamp&quot;</span> <span class="dt">Slack.RequestTimestamp</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a>      <span class="op">:&gt;</span> <span class="dt">Header</span> <span class="st">&quot;X-Slack-Signature&quot;</span> <span class="dt">Slack.SignatureHeader</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true"></a>      <span class="op">:&gt;</span> <span class="dt">Post</span> &#39;[<span class="dt">JSON</span>] <span class="dt">NoContent</span></span></code></pre></div>
-<p>ここで問題が1つ． 署名をエンコードするのに必要なのはデータ型 <code>SlachCmd.RequestData</code> に変換される前の文字列だ． <code>ToForm</code> 型クラスを使って元の形（<code>=</code> と <code>&amp;</code> で連結するやつ）に戻せば良いと思うかも知れないが，これだと key の順番が変わってしまう可能性があり，順番が変わると別のエンコード結果になってしまう． 逆に文字列のまんま受け取れば良いかと思うかも知れないが，Servant は正しい ContentType な型を指定しないと 400 を返してしまう（スラッシュコマンドは <code>application/x-www-form-urlencoded</code> でリクエストしてくる）． 困った． 色々調べたが，後から素のリクエストボディを取得する方法がわからなかった…</p>
-<h3 id="contenttypeを自作する">ContentTypeを自作する</h3>
-<p>まぁ無いなら自作するしかない． 素の文字列を返してくれて <code>application/x-www-form-urlencoded</code> メディアタイプを表している ContentType な型を作る． どのメディアタイプかは <code>Accept</code> 型クラスで定義し，どの型で返してくれるかは <code>MimeUnrender</code> 型クラスで定義する：</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="kw">module</span> <span class="dt">Web.Slack.SlashCommand</span> <span class="kw">where</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">RequestData</span> <span class="ot">=</span> <span class="op">...</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a><span class="kw">data</span> <span class="dt">SlashCommand</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">Accept</span> <span class="dt">SlashCommand</span> <span class="kw">where</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true"></a><span class="ot">  contentType ::</span> <span class="dt">Proxy</span> <span class="dt">SlashCommand</span> <span class="ot">-&gt;</span> <span class="dt">MediaType</span></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true"></a>  contentType _ <span class="ot">=</span> <span class="st">&quot;application&quot;</span> <span class="op">M.//</span> <span class="st">&quot;x-www-form-urlencoded&quot;</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true"></a></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">MimeUnrender</span> <span class="dt">SlashCommand</span> (<span class="dt">ByteString</span>, <span class="dt">RequestData</span>) <span class="kw">where</span></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true"></a><span class="ot">  mimeUnrender ::</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true"></a>    <span class="dt">Proxy</span> <span class="dt">SlashCommand</span> <span class="ot">-&gt;</span> <span class="dt">Lazy.ByteString</span> <span class="ot">-&gt;</span> <span class="dt">Either</span> <span class="dt">String</span> (<span class="dt">ByteString</span>, <span class="dt">RequestData</span>)</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true"></a>  mimeUnrender _ bs <span class="ot">=</span> Text.unpack <span class="op">+++</span> (bs,) <span class="op">$</span> urlDecodeAsForm bs</span></code></pre></div>
-<p>どーせ後から <code>RequestData</code> 型に変換するので両方を返すことにした． あとはこれを使うだけ：</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="co">-- Web.Slack は slackell</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Web.Slack.Verify</span> <span class="kw">as</span> <span class="dt">Slack</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Web.Slack.SlashCommand</span> <span class="kw">as</span> <span class="dt">SlashCmd</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a><span class="kw">import</span>           <span class="dt">Web.Slack.SlashCommand</span> (<span class="dt">SlashCommand</span>)</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">API</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true"></a>    <span class="ot">=</span> <span class="st">&quot;slash&quot;</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true"></a>      <span class="op">:&gt;</span> <span class="dt">ReqBody</span> &#39;[<span class="dt">SlashCommand</span>] <span class="dt">RequestData</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true"></a>      <span class="op">:&gt;</span> <span class="dt">Header</span> <span class="st">&quot;X-Slack-Request-Timestamp&quot;</span> <span class="dt">Slack.RequestTimestamp</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true"></a>      <span class="op">:&gt;</span> <span class="dt">Header</span> <span class="st">&quot;X-Slack-Signature&quot;</span> <span class="dt">Slack.SignatureHeader</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true"></a>      <span class="op">:&gt;</span> <span class="dt">Post</span> &#39;[<span class="dt">JSON</span>] <span class="dt">NoContent</span></span></code></pre></div>
-<h3 id="apiの実装">APIの実装</h3>
-<p>残りは今までのを使うだけなので簡単：</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a><span class="ot">server ::</span> <span class="dt">Slack.SigningSecret</span> <span class="ot">-&gt;</span> <span class="dt">Server</span> <span class="dt">API</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a>server secret <span class="ot">=</span> slashCommand</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a>  <span class="kw">where</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true"></a>    slashCommand (lbs, body) (<span class="dt">Just</span> ts) (<span class="dt">Just</span> sign) <span class="ot">=</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true"></a>      <span class="kw">let</span> digest <span class="ot">=</span> Slack.encodeSignature secret ts (LBS.toStrict lbs) <span class="kw">in</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true"></a>      <span class="kw">if</span> <span class="dt">Just</span> digest <span class="op">==</span> Slack.convertSignatureHeader sign <span class="kw">then</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true"></a>        liftIO <span class="op">$</span> <span class="kw">do</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true"></a>          _ <span class="ot">&lt;-</span> forkIO <span class="op">$</span> action body <span class="co">-- タイムアウトがあるので処理自体は fork する</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true"></a>          <span class="fu">pure</span> <span class="dt">NoContent</span></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true"></a>      <span class="kw">else</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true"></a>        throwError err401</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true"></a>    slashCommand _ _ _ <span class="ot">=</span> throwError err401</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true"></a></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true"></a><span class="ot">    action ::</span> <span class="dt">SlashCmd.RequestData</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true"></a>    action body <span class="ot">=</span> <span class="op">...</span></span></code></pre></div>
-<h2 id="おまけfromformインスタンス">おまけ：FromFormインスタンス</h2>
-<p>実はこれだkではビルドが通らない． というのも，拡張可能データ型の <code>FromForm</code> 型クラスインスタンスが無いからだ． しょうがないので自作した：</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Web.FormUrlEncoded</span> (<span class="dt">FromForm</span> (..))</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a><span class="kw">import</span> <span class="dt">Web.HttpApiData</span> (<span class="dt">FromHttpApiData</span> (..), parseUnique)</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">Forall</span> (<span class="dt">KeyTargetAre</span> <span class="dt">KnownSymbol</span> <span class="dt">FromFormData</span>) xs <span class="ot">=&gt;</span> <span class="dt">FromForm</span> (<span class="dt">Record</span> xs) <span class="kw">where</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true"></a>  fromForm form <span class="ot">=</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true"></a>    hgenerateFor (<span class="dt">Proxy</span> <span class="op">@</span> (<span class="dt">KeyTargetAre</span> <span class="dt">KnownSymbol</span> <span class="dt">FromFormData</span>)) <span class="op">$</span> \m <span class="ot">-&gt;</span></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true"></a>      <span class="dt">Field</span> <span class="op">&lt;$&gt;</span> parseUnique (stringKeyOf m) form</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true"></a></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true"></a><span class="co">-- Identity のインスタンスぐらい宣言しておいてよ</span></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">FromHttpApiData</span> a <span class="ot">=&gt;</span> <span class="dt">FromHttpApiData</span> (<span class="dt">Identity</span> a) <span class="kw">where</span></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true"></a>  parseUrlPiece <span class="ot">=</span> <span class="fu">fmap</span> <span class="fu">pure</span> <span class="op">.</span> parseUrlPiece</span></code></pre></div>
-<p>これの欠点が1つ． <code>parseUnique</code> 関数の <code>Maybe a</code> 型に関する振る舞いだ． <code>Maybe a</code> 型なら該当の key が含まれなければ <code>Nothing</code> で key があれば <code>Just v</code> になって欲しい． しかし実際はこうだ：</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a><span class="op">&gt;&gt;&gt;</span> parseUnique <span class="st">&quot;age&quot;</span> [(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;Just 25&quot;</span>)]<span class="ot"> ::</span> <span class="dt">Either</span> <span class="dt">Text</span> (<span class="dt">Maybe</span> <span class="dt">Int</span>)</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a><span class="dt">Right</span> (<span class="dt">Just</span> <span class="dv">25</span>)</span></code></pre></div>
-<p>現実のリクエストが <code>&quot;Just hoge&quot;</code> なんて送ってくるわけが無い！ しょうがないので自作した：</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a><span class="kw">class</span> <span class="dt">FromFormData</span> a <span class="kw">where</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true"></a><span class="ot">  parseUnique&#39; ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Form</span> <span class="ot">-&gt;</span> <span class="dt">Either</span> <span class="dt">Text</span> a</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true"></a></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">FromFormData</span> <span class="dt">Int</span>   <span class="kw">where</span> parseUnique&#39; <span class="ot">=</span> parseUnique</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">FromFormData</span> <span class="dt">Float</span> <span class="kw">where</span> parseUnique&#39; <span class="ot">=</span> parseUnique</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">FromFormData</span> <span class="dt">Bool</span>  <span class="kw">where</span> parseUnique&#39; <span class="ot">=</span> parseUnique</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">FromFormData</span> <span class="dt">Char</span>  <span class="kw">where</span> parseUnique&#39; <span class="ot">=</span> parseUnique</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">FromFormData</span> <span class="dt">Text</span>  <span class="kw">where</span> parseUnique&#39; <span class="ot">=</span> parseUnique</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true"></a></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">FromHttpApiData</span> a <span class="ot">=&gt;</span> <span class="dt">FromFormData</span> (<span class="dt">Maybe</span> a) <span class="kw">where</span></span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true"></a>  parseUnique&#39; key form <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true"></a>    mv <span class="ot">&lt;-</span> lookupMaybe key form</span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true"></a>    <span class="kw">case</span> mv <span class="kw">of</span></span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true"></a>      <span class="dt">Just</span> v  <span class="ot">-&gt;</span> <span class="dt">Just</span> <span class="op">&lt;$&gt;</span> parseQueryParam v</span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true"></a>      <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="fu">pure</span> <span class="dt">Nothing</span></span></code></pre></div>
-<p>で，<code>parseUnique</code> の代わりに <code>parseUnique&#39;</code> を使うように <code>FromForm</code> 型クラスのインスタンスを書き換えるだけだ． これは汎用的なので<a href="https://github.com/matsubara0507/extensible-ext/tree/master/extensible-http-api-data">別のリポジトリに切り分けた</a>．</p>
-<h2 id="おしまい">おしまい</h2>
-<p><a href="https://github.com/matsubara0507/slackell/tree/master/example">サンプルコード</a>を作ってスラッシュコマンドのデバッグをしたが，間にちゃんとリクエスト・レスポンスをロギングする仕組みを省いたせいで超大変だった笑．</p>
-  </div>]]></summary>
-</entry>
-<entry>
-    <title>Haskell Servant に GitHub Apps による認証を追加する</title>
-    <link href="https://matsubara0507.github.io/posts/2020-04-06-servant-auth-with-github-apps.html" />
-    <id>https://matsubara0507.github.io/posts/2020-04-06-servant-auth-with-github-apps.html</id>
-    <published>2020-04-06T00:00:00Z</published>
-    <updated>2020-04-06T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
-    <p>時々みる「GitHubでログイン」っぽいのを Servant 製サンプルアプリケーションに実装します．</p>
-<p>サンプルアプリケーションは2年前に書いた「<a href="/posts/2017-09-17-create-haskell-and-elm.html">Haskell × Elm のサンプルアプリケーションを書いてみた</a>」という記事のものを，最近の GHC や Elm でリファクタリングして使います． これは簡単な ToDo アプリケーションです：</p>
-<p><img src="/assets/create-haskell-and-elm/sample.jpg"></img></p>
-<p>最終的な実装 PR は<a href="https://github.com/matsubara0507/haskell-and-elm/pull/2">これ</a>．</p>
-<h2 id="github-apps-による認証">GitHub Apps による認証</h2>
-<p><a href="https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps">公式ドキュメント</a>より</p>
-<ol type="1">
-<li>GitHub で Apps を登録する
-<ul>
-<li>Client ID・Client Secret を取得</li>
-<li>callback URL を設定</li>
-</ul></li>
-<li>ログインする際に <code>https://github.com/login/oauth/authorize?cleint_id=[cleint_id]</code> へリダイレクトさせる
-<ul>
-<li>(1)の App の使用を許可するかという画面へ飛ぶ</li>
-</ul></li>
-<li>許可すると(1)で設定した callback エンドポイントが叩かれる
-<ul>
-<li>code というリクエストパラメータがついてくる</li>
-</ul></li>
-<li>Client ID・Client Secret と(3)の code を使うことで bearer token が手に入る
-<ul>
-<li>このトークンを利用することで GitHub ユーザーの情報を取得したりできる</li>
-</ul></li>
-<li>(4)を利用して取得した GitHub アカウント名などを Cookie に積んでおく</li>
-</ol>
-<p>あとは (5) の Cookie の有無によってログイン済みかどうかを判断するだけ（まぁこれは GitHub App とか関係ないよくあるやり方）． つまり問題は Servant でどうやってログイン情報などを Cookie に載せるかということだ．</p>
-<h2 id="servant-で認証機能">Servant で認証機能</h2>
-<p>を作るには <a href="https://hackage.haskell.org/package/servant-auth-server">servant-auth-server</a> という Servant 公式のパッケージを使えば良いようだ． 詳しくは以下の公式ドキュメントを読むと良い：</p>
-<ul>
-<li><a href="https://docs.servant.dev/en/stable/tutorial/Authentication.html">Authentication in Servant — Servant documentation</a></li>
-</ul>
-<p>servant-auth-server を利用することで，JWT エンコードした認証情報を Cookie として保存したり，その Cookie の有無によって認証済みかどうかチェックしたりなどができる． 公式ドキュメント以外に特に利用の仕方を解説した記事とか見当たらなくて，結局実装コード読んだり，servant-auth-server パッケージを使ってるリポジトリを GitHub で検索したりして手探りで実装していった．</p>
-<h3 id="api-の型">API の型</h3>
-<p>元々はこんな感じ：</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Text.Blaze.Html5</span> <span class="kw">as</span> <span class="dt">H</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="kw">import</span>           <span class="dt">Servant.HTML.Blaze</span> (<span class="dt">HTML</span>)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">API</span> <span class="ot">=</span> <span class="dt">Get</span> &#39;[<span class="dt">HTML</span>] <span class="dt">H.Html</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a>      <span class="op">:&lt;|&gt;</span> <span class="st">&quot;static&quot;</span> <span class="op">:&gt;</span> <span class="dt">Raw</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a>      <span class="op">:&lt;|&gt;</span> <span class="st">&quot;api&quot;</span> <span class="op">:&gt;</span> <span class="dt">Todo.CRUD</span></span></code></pre></div>
-<p>これに認証機能を追加する：</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">API</span> <span class="ot">=</span> (<span class="dt">Auth</span> &#39;[<span class="dt">Cookie</span>] <span class="dt">GitHub.User</span> <span class="op">:&gt;</span> <span class="dt">Protected</span>) <span class="op">:&lt;|&gt;</span> <span class="dt">Unprotected</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">Protected</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>      <span class="ot">=</span> <span class="st">&quot;api&quot;</span> <span class="op">:&gt;</span> <span class="dt">Todo.CRUD</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">Unprotected</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a>      <span class="ot">=</span> <span class="dt">Get</span> &#39;[<span class="dt">HTML</span>] <span class="dt">H.Html</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a>   <span class="op">:&lt;|&gt;</span> <span class="st">&quot;static&quot;</span>   <span class="op">:&gt;</span> <span class="dt">Raw</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a>   <span class="op">:&lt;|&gt;</span> <span class="st">&quot;login&quot;</span>    <span class="op">:&gt;</span> <span class="dt">GetRedirected</span> &#39;[]</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a>   <span class="op">:&lt;|&gt;</span> <span class="st">&quot;callback&quot;</span> <span class="op">:&gt;</span> <span class="dt">QueryParam</span> <span class="st">&quot;code&quot;</span> <span class="dt">String</span> <span class="op">:&gt;</span> <span class="dt">GetRedirected</span> <span class="dt">JWTCookieHeaders</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">GetRedirected</span> headers <span class="ot">=</span></span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true"></a>  <span class="dt">Verb</span> <span class="dt">&#39;GET</span> <span class="dv">308</span> &#39;[<span class="dt">HTML</span>] (<span class="dt">Headers</span> (<span class="dt">Header</span> <span class="st">&quot;Location&quot;</span> <span class="dt">String</span> &#39;<span class="op">:</span> headers) <span class="dt">NoContent</span>)</span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true"></a></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">JWTCookieHeaders</span> <span class="ot">=</span></span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true"></a>  &#39;[ <span class="dt">Header</span> <span class="st">&quot;Set-Cookie&quot;</span> <span class="dt">SetCookie</span>, <span class="dt">Header</span> <span class="st">&quot;Set-Cookie&quot;</span> <span class="dt">SetCookie</span> ]</span></code></pre></div>
-<p><code>Protected</code> と <code>Unprotected</code> 型のように，認証済みの場合だけ利用可能なエンドポイントとそうでないエンドポイントを分けると良いようだ． 今回は <code>/index.html</code> を認証の外にしたが，別に中にしてもいいと思う． 認証側に <code>Auth &#39;[Cookie] a</code> を追加することで JWT エンコードされた Cookie の有無で認証済みかを判断し，Cookie があればそれを <code>a</code> 型へデコードしてくれる． Cookie の付与自体は callback エンドポイントで行う． ちなみに，<code>Set-Cookie</code> が2つあるのは，1つを CRSF Protection に使うためだ（CRSF Protection については後述）．</p>
-<h3 id="cookie-と-jwt-の設定">Cookie と JWT の設定</h3>
-<p>また，Cookie や JWT の設定は Servant の Context 機能で渡す必要がある：</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>  todoDB       <span class="ot">&lt;-</span> STM.atomically <span class="op">$</span> STM.newTVar initTodoDB</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>  clientId     <span class="ot">&lt;-</span> getEnv <span class="st">&quot;GITHUB_CLIENT_ID&quot;</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a>  clientSecret <span class="ot">&lt;-</span> getEnv <span class="st">&quot;GITHUB_CLIENT_SECRET&quot;</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a>  jwtSettings  <span class="ot">&lt;-</span> defaultJWTSettings <span class="op">&lt;$&gt;</span> generateKey</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a>  <span class="kw">let</span> cfg   <span class="ot">=</span> cookieSettings <span class="op">:.</span> jwtSettings <span class="op">:.</span> <span class="dt">EmptyContext</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a>      oauth <span class="ot">=</span> <span class="op">#</span>client_id <span class="op">@=</span> clientId <span class="op">&lt;:</span> <span class="op">#</span>client_secret <span class="op">@=</span> clientSecret <span class="op">&lt;:</span> nil</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a>      env   <span class="ot">=</span> <span class="op">#</span>index  <span class="op">@=</span> indexHtml</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a>           <span class="op">&lt;:</span> <span class="op">#</span>cookie <span class="op">@=</span> cookieSettings</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a>           <span class="op">&lt;:</span> <span class="op">#</span>jwt    <span class="op">@=</span> jwtSettings</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a>           <span class="op">&lt;:</span> <span class="op">#</span>todos  <span class="op">@=</span> todoDB</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a>           <span class="op">&lt;:</span> <span class="op">#</span>oauth  <span class="op">@=</span> oauth</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true"></a>           <span class="op">&lt;:</span> nil</span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true"></a>  Warp.run <span class="dv">8080</span> <span class="op">$</span> serveWithContext api cfg (server env)</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true"></a>  <span class="kw">where</span></span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true"></a>  initTodoDB <span class="ot">=</span> (<span class="fu">length</span> initTodos, IntMap.fromList initTodos)</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true"></a>  cookieSettings <span class="ot">=</span> defaultCookieSettings</span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true"></a>    { cookieIsSecure <span class="ot">=</span> <span class="dt">NotSecure</span></span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true"></a>    , cookieMaxAge <span class="ot">=</span> <span class="dt">Just</span> <span class="op">$</span> Time.secondsToDiffTime (<span class="dv">3</span> <span class="op">*</span> <span class="dv">60</span>)</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true"></a>    , cookieXsrfSetting <span class="ot">=</span> <span class="dt">Nothing</span></span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true"></a>    }</span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true"></a></span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true"></a><span class="ot">api ::</span> <span class="dt">Proxy</span> (<span class="dt">API</span> &#39;[<span class="dt">Cookie</span>])</span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true"></a>api <span class="ot">=</span> <span class="dt">Proxy</span></span></code></pre></div>
-<p>それぞれの設定は servant-auth-server の <code>defaultCookieSettings</code> と <code>defaultJWTSettings</code> を利用すれば良い．</p>
-<p>今回は localhost で利用するようにしてるので <code>cookieIsSecure</code> に <code>NotSecure</code> を設定してる（これで HttpOnly になる）が，普通は <code>Secure</code> のままで良い． <code>cookieXsrfSetting</code> は前述した CSRF Protection の設定で，デフォルトではオンになっている． オンの場合は Cookie に設定された CSRF Protection 用のトークンをヘッダーに設定してリクエストしないと，Protected な API は弾かれるようになる（Cookie 名は cookieXsrfSetting で設定する）． ちなみに，GET リクエストは CSRF Protection しないという設定も可能だ．</p>
-<p>JWT の設定にはエンコードするための鍵を渡す必要がある． 今回は servant-auth-server の <code>generateKey</code> 関数を利用している． これは（少なくともバージョン0.4.5.1では）256長の対称鍵（HS256）をランダムに生成してくれる． ランダムに生成したものを利用してるので，起動するたびに Cookie の情報が変わってしまう点に注意． もし，JWTのアルゴリズムや鍵を別のものにしたい場合は <a href="http://hackage.haskell.org/package/jose">jose パッケージ</a> を利用すれば良いはずだ．</p>
-<h1 id="section"></h1>
-<p>余談だが，Cookie にある JWT のデコードは Servant Context の設定を利用するが，Cookie に積むときはエンドポイントの最後でエンコードをするので，同一の設定をエンドポイントまで橋渡しをしないといけない（ぼくは他方がデフォルトのままになってるのに気付かず3時間溶かした…）．</p>
-<h3 id="protected-なエンドポイント">Protected なエンドポイント</h3>
-<p>こんな感じ：</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="ot">protected ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">AuthResult</span> <span class="dt">GitHub.User</span> <span class="ot">-&gt;</span> <span class="dt">Server</span> <span class="dt">Protected</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a>protected env (<span class="dt">Authenticated</span> _) <span class="ot">=</span> todoAPI (env <span class="op">^.</span> <span class="op">#</span>todos)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a>protected _ _                   <span class="ot">=</span> throwAll err401</span></code></pre></div>
-<p>今回はアカウントによってレスポンスの出しわけをしてないので，<code>Authenticated</code> かどうかだけをみている．</p>
-<h3 id="ログインエンドポイント">ログインエンドポイント</h3>
-<p>ログインエンドポイントはただ GitHub の該当 URL へリダイレクトするだけ：</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="ot">unprotected ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Server</span> <span class="dt">Unprotected</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a>unprotected env <span class="ot">=</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a>  <span class="fu">pure</span> (env <span class="op">^.</span> <span class="op">#</span>index) <span class="op">:&lt;|&gt;</span> serveDirectoryFileServer <span class="st">&quot;static&quot;</span> <span class="op">:&lt;|&gt;</span> login <span class="op">:&lt;|&gt;</span> callback</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a>  <span class="kw">where</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a>    login <span class="ot">=</span> <span class="fu">pure</span> <span class="op">$</span> addHeader (GitHub.authorizeUrl <span class="op">$</span> env <span class="op">^.</span> <span class="op">#</span>oauth) <span class="dt">NoContent</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a>    callback <span class="ot">=</span> <span class="fu">undefined</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true"></a></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true"></a><span class="co">-- GitHub module</span></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true"></a><span class="ot">authorizeUrl ::</span> <span class="dt">OAuthSettings</span> <span class="ot">-&gt;</span> <span class="dt">String</span></span></code></pre></div>
-<p><code>OAuthSettings</code> は GitHub App の Client ID と Client Secret が保存されている．</p>
-<h3 id="callback-エンドポイント">callback エンドポイント</h3>
-<p>最後は callback で，JWT エンコードした認証情報を Cookie に保存すれば良い：</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="ot">unprotected ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Server</span> <span class="dt">Unprotected</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a>unprotected env <span class="ot">=</span> <span class="op">...</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a>  <span class="kw">where</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a>    login <span class="ot">=</span> <span class="op">...</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a>    callback (<span class="dt">Just</span> code) <span class="ot">=</span> GitHub.fetchUser (env <span class="op">^.</span> <span class="op">#</span>oauth) code <span class="op">&gt;&gt;=</span> \<span class="kw">case</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a>      <span class="dt">Nothing</span>   <span class="ot">-&gt;</span> throwError err401</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true"></a>      <span class="dt">Just</span> user <span class="ot">-&gt;</span> liftIO (acceptLogin (env <span class="op">^.</span> <span class="op">#</span>cookie) (env <span class="op">^.</span> <span class="op">#</span>jwt) user) <span class="op">&gt;&gt;=</span> \<span class="kw">case</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true"></a>        <span class="dt">Nothing</span>           <span class="ot">-&gt;</span> throwError err401</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true"></a>        <span class="dt">Just</span> applyCookies <span class="ot">-&gt;</span> <span class="fu">pure</span> <span class="op">$</span> addHeader <span class="st">&quot;/&quot;</span> (applyCookies <span class="dt">NoContent</span>)</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true"></a></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true"></a><span class="co">-- GitHub module</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true"></a><span class="ot">fetchUser ::</span> <span class="dt">MonadIO</span> m <span class="ot">=&gt;</span> <span class="dt">OAuthSettings</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> m (<span class="dt">Maybe</span> <span class="dt">User</span>)</span></code></pre></div>
-<p>認証情報には GitHub のユーザー情報を利用しており，callback で渡された <code>code</code> パラメーターを利用して（取得したトークンを利用して）取得する． 認証情報を JWT エンコードして Cookie に埋め込む処理は servant-auth-servar パッケージの <code>acceptLogin</code> 関数を使うだけで良い．</p>
-<h1 id="section-1"></h1>
-<p>これで API 側の準備はできた． あとはフロントを少しいじって出来上がり．</p>
-<h2 id="フロントにログインボタンを作る">フロントにログインボタンを作る</h2>
-<p>認証状態を使ってイロイロと出し分けたほうがいいのだが，めんどくさいのでただ <code>/login</code> へのリンクをおいた：</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a><span class="fu">view</span> : <span class="dt">Model</span> <span class="op">-&gt;</span> <span class="dt">Html</span> <span class="dt">Msg</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a><span class="fu">view</span> <span class="fu">model</span> <span class="op">=</span></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a>    <span class="fu">div</span> [ <span class="fu">class</span> <span class="st">&quot;my-3 mx-auto col-10&quot;</span> ]</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true"></a>        [ <span class="fu">h1</span> [] [ <span class="fu">text</span> <span class="st">&quot;ToDo List !!&quot;</span><span class="op">,</span> <span class="fu">loginButton</span> ]</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true"></a>        <span class="op">,</span> <span class="fu">viewToDos</span> <span class="fu">model</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true"></a>        <span class="op">,</span> <span class="fu">viewPost</span> <span class="fu">model</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true"></a>        ]</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true"></a></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true"></a></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true"></a><span class="fu">loginButton</span> : <span class="dt">Html</span> <span class="fu">msg</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true"></a><span class="fu">loginButton</span> <span class="op">=</span></span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true"></a>    <span class="fu">button</span> [ <span class="fu">class</span> <span class="st">&quot;btn btn-sm btn-outline float-right mt-2&quot;</span><span class="op">,</span> <span class="fu">type_</span> <span class="st">&quot;button&quot;</span> ]</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true"></a>        [ <span class="fu">a</span></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true"></a>            [ <span class="fu">href</span> <span class="st">&quot;/login&quot;</span></span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true"></a>            <span class="op">,</span> <span class="fu">style</span> <span class="st">&quot;color&quot;</span> <span class="st">&quot;inherit&quot;</span></span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true"></a>            <span class="op">,</span> <span class="fu">style</span> <span class="st">&quot;text-decoration-line&quot;</span> <span class="st">&quot;none&quot;</span></span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true"></a>            ]</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true"></a>            [ <span class="fu">text</span> <span class="st">&quot;Login by GitHub&quot;</span> ]</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true"></a>        ]</span></code></pre></div>
-<p>こんな感じ：</p>
-<p><img src="/assets/servant-auth-with-github-apps/sample.jpg"></img></p>
-<h2 id="おまけreaderモナド">おまけ：Readerモナド</h2>
-<p><code>Env</code> は Cookie や JWT の設定を保持しているグローバル環境型だ． こういうのは引数としてリレーしても良いが，<code>Reader</code> モナド使って渡すのがよくある手法だ． Servant の場合は <a href="https://hackage.haskell.org/package/servant-server-0.17/docs/Servant-Server.html#v:hoistServerWithContext"><code>hoistServerWithContext</code></a> を使うことで <code>Handler</code> の代わりに別のモナドを利用できる：</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a>  <span class="op">...</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a>  Warp.run <span class="dv">8080</span> <span class="op">$</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true"></a>    serveWithContext api cfg (hoistServerWithContext api ctx (convert env) server)</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true"></a></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true"></a><span class="ot">ctx ::</span> <span class="dt">Proxy</span> &#39;[ <span class="dt">CookieSettings</span>, <span class="dt">JWTSettings</span> ]</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true"></a>ctx <span class="ot">=</span> <span class="dt">Proxy</span></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true"></a></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">App</span> <span class="ot">=</span> <span class="dt">ReaderT</span> <span class="dt">Env</span> <span class="dt">Handler</span></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true"></a></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true"></a><span class="ot">convert ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">App</span> a <span class="ot">-&gt;</span> <span class="dt">Handler</span> a</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true"></a>convert context app <span class="ot">=</span> runReaderT app context</span></code></pre></div>
-<p>あとは <code>Env -&gt; Server api</code> みたいな型を <code>ServerT api App</code> としていくだけ．</p>
-<h2 id="おしまい">おしまい</h2>
-<p>意外とこういう組み合わせに言及した記事がなくて調べるの大変だった． あと一応，実アプリケーションで使うときはちゃんと安全性について別途調べてくださいね（責任は持ちません）．</p>
   </div>]]></summary>
 </entry>
 
