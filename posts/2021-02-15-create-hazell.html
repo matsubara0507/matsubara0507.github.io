@@ -1,0 +1,374 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+  <meta charset="utf-8">
+  <link rel="icon" href="../assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+    
+      <meta property="og:title" content="hpack の設定から Bazel の設定を自動生成するツール Hazell を作った" />
+    
+  
+
+  <meta property="og:site_name" content="ひげメモ" />
+
+  
+
+  
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-86386380-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  
+
+  <title>
+    
+      
+        hpack の設定から Bazel の設定を自動生成するツール Hazell を作った
+      
+    
+  </title>
+
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+</head>
+
+
+  <body>
+      <div class="outer">
+
+        <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+
+  </div>
+
+  <div class="header-badge">
+    <a href="https://matsubara0507.github.io/">
+        <img src="../assets/icon.jpg" />
+    </a>
+  </div>
+
+</header>
+
+
+        <div class="page-content">
+          <div class="wrapper">
+            <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+ <div class="card-content">
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">hpack の設定から Bazel の設定を自動生成するツール Hazell を作った</h1>
+    <p class="post-meta">
+      <time datetime="2021-02-15" itemprop="datePublished">
+        Feb 15, 2021
+      </time>
+      
+      
+      <div class="tags">
+          <i class="fa fa-tags"></i> <a href="../tags/Haskell.html">Haskell</a> <a href="../tags/Bazel.html">Bazel</a> <a href="../tags/application.html">application</a>
+      </div>
+      
+    </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>趣味のアプリケーションを新しく Haskell×Elm×Bazel で実装しようと考えてます． しかし，Bazel の設定は Haskell，というか <a href="https://github.com/sol/hpack">hpack</a> の設定に比べると煩雑で面倒臭いです（重複がいくつかある）． なので，hpack から Cabal ファイルを生成するように，Bazel の設定ファイルを生成できるようにすれば楽ができるなと考えて作りました．</p>
+<h2 id="完成品">完成品</h2>
+<iframe width="320" height="184" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/hazell">
+</iframe>
+<p>まだ途中で，現状できるのは：</p>
+<ul>
+<li>hpack の設定から WORKSPACE の <code>stack_snapshot</code> ルールを置き換える</li>
+<li>hpack の設定から BUILD.bazel の <code>haskell_library</code> ルールを置き換える</li>
+</ul>
+<p>置き換えるとあるが，そもそもなければ追加する． また，すでにある WORKSPACE ファイルや BUILD.bazel に書き込むために Bazel の設定ファイルのパーサーを自作した． しかし，構文定義を読んで真面目に実装しておらず，あくまで自分のユースケースで動く程度な雑実装だ．</p>
+<h2 id="作る">作る</h2>
+<p>おおきく4ステップ</p>
+<ol type="1">
+<li>hpack の設定から Bazel の設定を構築（Haskell のデータ型として）</li>
+<li>Bazel の設定をパースして読み込む</li>
+<li>Haskell関連のところだけ置き換える</li>
+<li>Bazel の設定を PrettyPrint する</li>
+</ol>
+<h3 id="hpack-の設定から-bazel-の設定を構築">1. hpack の設定から Bazel の設定を構築</h3>
+<p>まずは hpack の設定を読み込む． これは簡単で，hpack が hpack を利用したツールを作る用に，そういうパッケージを公開してくれている．</p>
+<ul>
+<li><a href="https://hackage.haskell.org/package/hpack">hpack: A modern format for Haskell packages - Hackage</a></li>
+</ul>
+<p>このパッケージの <code>readPackageConfig</code> を利用することで読み込める：</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a>  <span class="kw">let</span> opts <span class="ot">=</span> Hpack.defaultDecodeOptions </span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a>  result <span class="ot">&lt;-</span> Hpack.readPackageConfig opts</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a>  <span class="kw">case</span> result <span class="kw">of</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a>    <span class="dt">Left</span> e <span class="ot">-&gt;</span> </span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a>      <span class="fu">fail</span> e</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>    <span class="dt">Right</span> r <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a>      <span class="kw">let</span> package <span class="ot">=</span> Hpack.decodeResultPackage r</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a>      <span class="co">-- package が Hpack.Package 型の値</span></span></code></pre></div>
+<p>例えば，<code>Hpack.packageDependencies package</code> で全ての依存パッケージのリストを参照したり，<code>Hpack.packageLibrary package</code> でライブラリの設定を参照したりできる．</p>
+<p>次に，Bazel の設定を表現する型を定義した：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="kw">data</span> <span class="dt">Rule</span> <span class="ot">=</span> <span class="dt">Rule</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a>  {<span class="ot"> ruleName ::</span> <span class="dt">String</span> <span class="co">-- http_archive とか stack_snapshot などの Bazel ルール名</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>  ,<span class="ot"> ruleDef  ::</span> <span class="dt">String</span> <span class="co">-- load で利用する Bazel ルールの定義先</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>  ,<span class="ot"> ruleArgs ::</span> [(<span class="dt">Maybe</span> <span class="dt">String</span>, <span class="dt">RuleArg</span>)] <span class="co">-- 1つ目の要素は `name = &quot;abc&quot;` の name</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a>  } <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a><span class="kw">data</span> <span class="dt">RuleArg</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a>  <span class="ot">=</span> <span class="dt">RuleArgString</span> <span class="dt">String</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a>  <span class="op">|</span> <span class="dt">RuleArgBool</span> <span class="dt">Bool</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a>  <span class="op">|</span> <span class="dt">RuleArgArray</span> [<span class="dt">RuleArg</span>]</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a>  <span class="op">|</span> <span class="dt">RuleArgConst</span> <span class="dt">String</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true"></a>  <span class="op">|</span> <span class="dt">RuleArgGlob</span> <span class="dt">String</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true"></a>  <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</span></code></pre></div>
+<p><code>RuleArg</code> はとりあえず今回必要になった分だけ定義した． 本当は辞書型やリストの結合式が書けたりするが，ちょっとパーサーがめんどくさいのでサボった．</p>
+<p>最後に，<code>Rule</code> 型で <code>stack_snapshot</code> ルールと <code>haskell_libarary</code> ルールを <code>Hpack.Package</code> から生成する関数を定義する：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="ot">buildStackSnapshotRule ::</span> <span class="dt">Hpack.Package</span> <span class="ot">-&gt;</span> <span class="dt">Rule</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a>buildStackSnapshotRule package localSnapshot <span class="ot">=</span> <span class="dt">Rule</span> { <span class="op">..</span> }</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>  <span class="kw">where</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>    ruleName <span class="ot">=</span> <span class="st">&quot;stack_snapshot&quot;</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a>    ruleDef <span class="ot">=</span> <span class="st">&quot;@rules_haskell//haskell:cabal.bzl&quot;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a>    ruleArgs <span class="ot">=</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a>      [ (<span class="dt">Just</span> <span class="st">&quot;name&quot;</span>, <span class="dt">RuleArgString</span> <span class="st">&quot;stackage&quot;</span>)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a>      , (<span class="dt">Just</span> <span class="st">&quot;packages&quot;</span>, <span class="dt">RuleArgArray</span> <span class="op">$</span> <span class="fu">map</span> <span class="dt">RuleArgString</span> dependencies)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a>      , (<span class="dt">Just</span> <span class="st">&quot;local_snapshot&quot;</span>, <span class="dt">RuleArgString</span> <span class="st">&quot;//:stack-snapshot.yaml&quot;</span>) <span class="co">-- ここの拡張性はとりあえずサボる</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a>      ]</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a>    dependencies <span class="ot">=</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a>      <span class="co">-- 自分自身はあとで生成するので省く</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a>      <span class="fu">filter</span> (<span class="op">/=</span> Hpack.packageName package) <span class="op">$</span> <span class="fu">map</span> <span class="fu">fst</span> (Hpack.packageDependencies package)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true"></a><span class="ot">buildHaskellLibraryRule ::</span> <span class="dt">Hpack.Package</span> <span class="ot">-&gt;</span> <span class="dt">Rule</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true"></a>buildHaskellLibraryRule package <span class="ot">=</span> <span class="dt">Rule</span> { <span class="op">..</span> }</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true"></a>  <span class="kw">where</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true"></a>    ruleName <span class="ot">=</span> <span class="st">&quot;haskell_library&quot;</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true"></a>    ruleDef <span class="ot">=</span> <span class="st">&quot;@rules_haskell//haskell:defs.bzl&quot;</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true"></a>    ruleArgs <span class="ot">=</span> buildRuleArgs (Hpack.packageLibrary package)</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true"></a>    buildRuleArgs <span class="dt">Nothing</span> <span class="ot">=</span> []</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true"></a>    buildRuleArgs (<span class="dt">Just</span> lib) <span class="ot">=</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true"></a>      [ (<span class="dt">Just</span> <span class="st">&quot;name&quot;</span>, <span class="dt">RuleArgString</span> <span class="op">$</span> Hpack.packageName package <span class="op">&lt;&gt;</span> <span class="st">&quot;-library&quot;</span>)</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true"></a>        <span class="co">-- `source-dirs` が複数あった場合はとりあえず無視</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true"></a>      , (<span class="dt">Just</span> <span class="st">&quot;src_strip_prefix&quot;</span>, <span class="dt">RuleArgString</span> <span class="op">$</span> <span class="fu">head</span> (Hpack.sectionSourceDirs lib))</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true"></a>      , (<span class="dt">Just</span> <span class="st">&quot;srcs&quot;</span>, <span class="dt">RuleArgGlob</span> <span class="op">$</span> <span class="fu">head</span> (Hpack.sectionSourceDirs lib) <span class="op">&lt;&gt;</span> <span class="st">&quot;/**/*.hs&quot;</span>)</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true"></a>      , (<span class="dt">Just</span> <span class="st">&quot;deps&quot;</span>, <span class="dt">RuleArgArray</span> <span class="op">$</span> <span class="fu">map</span> <span class="dt">RuleArgString</span> (dependencies lib))</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true"></a>      , (<span class="dt">Just</span> <span class="st">&quot;compiler_flags&quot;</span>, <span class="dt">RuleArgConst</span> <span class="st">&quot;GHC_FLAGS&quot;</span>) <span class="co">-- いったん定数でお茶を濁す</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true"></a>      ]</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true"></a>    dependencies lib <span class="ot">=</span> </span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true"></a>      <span class="fu">map</span> (<span class="st">&quot;@stackage//:&quot;</span> <span class="op">&lt;&gt;</span>) <span class="op">$</span> Map.keys (Hpack.unDependencies <span class="op">$</span> Hpack.sectionDependencies lib)</span></code></pre></div>
+<h3 id="bazel-の設定をパースして読み込む">2. Bazel の設定をパースして読み込む</h3>
+<p>ここが大変． ざっと探した感じ，BUILD ファイルの構文定義が見つからなかったので雰囲気でパーサーを自作する． 例えば，次のようなファイルを眺めてみると：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="co"># Set all target’s visibility in this package to &quot;public&quot;.</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a>package(default_visibility <span class="op">=</span> [<span class="st">&quot;//visibility:public&quot;</span>])</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a>load(</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a>    <span class="st">&quot;//:build/common.bzl&quot;</span>,</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a>    <span class="st">&quot;GHC_FLAGS&quot;</span>,</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a>load(</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true"></a>    <span class="st">&quot;@rules_haskell//haskell:defs.bzl&quot;</span>,</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true"></a>    <span class="st">&quot;haskell_library&quot;</span>,</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true"></a>)</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true"></a></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true"></a>haskell_library(</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true"></a>    name <span class="op">=</span> <span class="st">&quot;hazell-library&quot;</span>,</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true"></a>    src_strip_prefix <span class="op">=</span> <span class="st">&quot;src&quot;</span>,</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true"></a>    srcs <span class="op">=</span> glob([<span class="st">&quot;src/**/*.hs&quot;</span>]),</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true"></a>    deps <span class="op">=</span> [</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true"></a>        <span class="st">&quot;@stackage//:base&quot;</span>,</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true"></a>        <span class="st">&quot;@stackage//:containers&quot;</span>,</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true"></a>        <span class="st">&quot;@stackage//:filepath&quot;</span>,</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true"></a>        <span class="st">&quot;@stackage//:hpack&quot;</span>,</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true"></a>        <span class="st">&quot;@stackage//:megaparsec&quot;</span>,</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true"></a>        <span class="st">&quot;@stackage//:prettyprinter&quot;</span>,</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true"></a>        <span class="st">&quot;@stackage//:text&quot;</span>,</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true"></a>    ],</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true"></a>    compiler_flags <span class="op">=</span> GHC_FLAGS,</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true"></a>)</span></code></pre></div>
+<p>構成要素は：</p>
+<ul>
+<li>コメント</li>
+<li><code>hoge(name = "fuga")</code> という関数呼び出し（省略可能な名前付き引数）</li>
+</ul>
+<p>ぐらいだ． なので，他にも細かい記法はあるかもしれないが，いったんこれのリストとしてパースする：</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">BuildFile</span> <span class="ot">=</span> [<span class="dt">BuildContent</span>]</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a><span class="kw">data</span> <span class="dt">BuildContent</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a>  <span class="ot">=</span> <span class="dt">BuildRule</span> <span class="dt">Text</span> [(<span class="dt">Maybe</span> <span class="dt">String</span>, <span class="dt">RuleArg</span>)]</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a>  <span class="op">|</span> <span class="dt">BuildComment</span> <span class="dt">Text</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a>  <span class="op">|</span> <span class="dt">BuildNewline</span> <span class="co">-- 改行も保存したいので</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true"></a>  <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</span></code></pre></div>
+<p>パーサーを作るには megaparsec パッケージを利用する：</p>
+<ul>
+<li><a href="https://hackage.haskell.org/package/megaparsec">megaparsec: Monadic parser combinators - Hackage</a></li>
+</ul>
+<p>一つ一つ説明すると長くなるので細かくは割愛． 工夫した点として，BUILD ファイルでの関数呼び出しや配列はいわゆるケツカンマを許容している：</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="co"># どちらもOK</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a>[</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a>    <span class="va">True</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a>    <span class="va">True</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a>]</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a>[</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true"></a>    <span class="va">True</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true"></a>    <span class="va">True</span>,</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true"></a>]</span></code></pre></div>
+<p>これを <code>sepBy</code> で実現するのは難しいので専用のコンビネーターを自作した：</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a><span class="ot">sepAndEndBy ::</span> <span class="dt">MonadPlus</span> m <span class="ot">=&gt;</span> m a <span class="ot">-&gt;</span> (m sep, m end) <span class="ot">-&gt;</span> m [a]</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a>sepAndEndBy p (sep, end) <span class="ot">=</span> go</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a>  <span class="kw">where</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true"></a>    go <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true"></a>      r <span class="ot">&lt;-</span> optional p</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true"></a>      <span class="kw">case</span> r <span class="kw">of</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true"></a>        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> end <span class="op">$&gt;</span> []</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true"></a>        <span class="dt">Just</span> x <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true"></a>          s <span class="ot">&lt;-</span> optional sep</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true"></a>          <span class="kw">case</span> s <span class="kw">of</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true"></a>            <span class="dt">Nothing</span> <span class="ot">-&gt;</span> end <span class="op">$&gt;</span> [x]</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true"></a>            <span class="dt">Just</span> _  <span class="ot">-&gt;</span> (x<span class="op">:</span>) <span class="op">&lt;$&gt;</span> go</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true"></a><span class="co">-- 例えば配列</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true"></a><span class="ot">buildRuleArgArrayParser ::</span> <span class="dt">Parser</span> <span class="dt">RuleArg</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true"></a>buildRuleArgArrayParser <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true"></a>  char <span class="ch">'['</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true"></a>  space</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true"></a>  arr <span class="ot">&lt;-</span> buildRuleArgParser <span class="ot">`sepAndEndBy`</span> (comma, space <span class="op">&gt;&gt;</span> char <span class="ch">']'</span>)</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true"></a>  <span class="fu">pure</span> <span class="op">$</span> <span class="dt">RuleArgArray</span> arr</span></code></pre></div>
+<p>あと，工夫というか困ったところで名前付き引数があった． いろいろ考えた結果，とりあえず泥臭い方法をとった：</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a><span class="ot">buildRuleParser ::</span> <span class="dt">Parser</span> <span class="dt">BuildContent</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a>buildRuleParser <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a>  name <span class="ot">&lt;-</span> nameParser <span class="co">-- `A-Z0-9a-z_` からなる文字列</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a>  char <span class="ch">'('</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true"></a>  space</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true"></a>  args <span class="ot">&lt;-</span> argParser <span class="ot">`sepAndEndBy`</span> (comma, space <span class="op">&gt;&gt;</span> char <span class="ch">')'</span>)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true"></a>  optional newline</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true"></a>  <span class="fu">pure</span> <span class="op">$</span> <span class="dt">BuildRule</span> (Text.pack name) args</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true"></a>  <span class="kw">where</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true"></a>    argParser <span class="ot">=</span> buildRuleArgWithNameParser <span class="op">&lt;|&gt;</span> buildRuleArgWithoutNameParser</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true"></a></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true"></a><span class="ot">buildRuleArgWithNameParser ::</span> <span class="dt">Parser</span> (<span class="dt">Maybe</span> <span class="dt">String</span>, <span class="dt">RuleArg</span>)</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true"></a>buildRuleArgWithNameParser <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true"></a>  <span class="co">-- try を付けると失敗しても入力文字を消費しない（その代わり効率が悪くなる）</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true"></a>  name <span class="ot">&lt;-</span> try <span class="op">$</span> nameParser <span class="op">&lt;*</span> space <span class="op">&lt;*</span> char <span class="ch">'='</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true"></a>  space</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true"></a>  (<span class="dt">Just</span> name,) <span class="op">&lt;$&gt;</span> buildRuleArgParser</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true"></a></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true"></a><span class="ot">buildRuleArgWithoutNameParser ::</span> <span class="dt">Parser</span> (<span class="dt">Maybe</span> <span class="dt">String</span>, <span class="dt">RuleArg</span>)</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true"></a>buildRuleArgWithoutNameParser <span class="ot">=</span> (<span class="dt">Nothing</span>,) <span class="op">&lt;$&gt;</span> buildRuleArgParser</span></code></pre></div>
+<p>ちゃんと実装するなら，いったん <code>nameParser</code> して，後ろに <code>=</code> があれば名前付き引数で無ければ変数かなんかとするみたいにすれば良いかしら．</p>
+<h3 id="haskell関連のところだけ置き換える">3. Haskell関連のところだけ置き換える</h3>
+<p>WORKSPACE ファイルや BUILD.bazel ファイルを読み込んで， (2) のパーサーで <code>BuildFile</code> 型の値に変換する． そのうち，<code>stack_snapshot</code> ルールや <code>haskell_libarary</code> ルールのものを検知して，(1) で生成したものに置き換える． ことを実装したのが次の関数だ：</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a><span class="ot">replaceStackSnapshotRule ::</span> <span class="dt">Hpack.Package</span> <span class="ot">-&gt;</span> <span class="dt">FilePath</span> <span class="ot">-&gt;</span> <span class="dt">BuildFile</span> <span class="ot">-&gt;</span> <span class="dt">BuildFile</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a>replaceStackSnapshotRule package stackSnapshotPath ws <span class="ot">=</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true"></a>  <span class="kw">if</span> <span class="fu">any</span> (<span class="ot">`isRule`</span> stackSnapshotRule) ws <span class="kw">then</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true"></a>    ws <span class="op">&lt;&amp;&gt;</span> \content <span class="ot">-&gt;</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true"></a>      <span class="kw">if</span> content <span class="ot">`isRule`</span> stackSnapshotRule <span class="kw">then</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true"></a>        stackSnapshotContent</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true"></a>      <span class="kw">else</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true"></a>        content</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true"></a>  <span class="kw">else</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true"></a>    ws <span class="op">++</span> [<span class="dt">BuildNewline</span>, loadContent, <span class="dt">BuildNewline</span>, stackSnapshotContent]</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true"></a>  <span class="kw">where</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true"></a>    stackSnapshotRule <span class="ot">=</span> buildStackSnapshotRule package stackSnapshotPath</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true"></a>    (loadContent, stackSnapshotContent) <span class="ot">=</span> fromRule stackSnapshotRule</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true"></a></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true"></a><span class="ot">isRule ::</span> <span class="dt">BuildContent</span> <span class="ot">-&gt;</span> <span class="dt">Rule</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true"></a>isRule (<span class="dt">BuildRule</span> name _) rule <span class="ot">=</span> name <span class="op">==</span> <span class="fu">pack</span> (ruleName rule)</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true"></a>isRule _ _                     <span class="ot">=</span> <span class="dt">False</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true"></a></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true"></a><span class="ot">isStringArg ::</span> <span class="dt">RuleArg</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true"></a>isStringArg (<span class="dt">RuleArgString</span> str) str' <span class="ot">=</span> str <span class="op">==</span> str'</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true"></a>isStringArg _ _                      <span class="ot">=</span> <span class="dt">False</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true"></a></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true"></a><span class="ot">fromRule ::</span> <span class="dt">Rule</span> <span class="ot">-&gt;</span> (<span class="dt">BuildContent</span>, <span class="dt">BuildContent</span>)</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true"></a>fromRule rule <span class="ot">=</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true"></a>  ( <span class="dt">BuildRule</span> <span class="st">&quot;load&quot;</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true"></a>      [ (<span class="dt">Nothing</span>, <span class="dt">RuleArgString</span> <span class="op">$</span> ruleDef rule)</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true"></a>      , (<span class="dt">Nothing</span>, <span class="dt">RuleArgString</span> <span class="op">$</span> ruleName rule)</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true"></a>      ]</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true"></a>  , <span class="dt">BuildRule</span> (<span class="fu">pack</span> <span class="op">$</span> ruleName rule) <span class="op">$</span> ruleArgs rule</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true"></a>  )</span></code></pre></div>
+<p>これは <code>stack_snapshot</code> ルール版． <code>haskell_library</code> ルールの場合もほとんど同じなので割愛する．</p>
+<h3 id="bazel-の設定を-prettyprint-する">4. Bazel の設定を PrettyPrint する</h3>
+<p>最後に，(3) の結果をいい感じに出力するために PrettyPrint する． 今回はそのために prettyprinter パッケージを利用する．</p>
+<ul>
+<li><a href="https://hackage.haskell.org/package/prettyprinter">prettyprinter: A modern, easy to use, well-documented, extensible pretty-printer - Hackage</a></li>
+</ul>
+<p>任意の型の PrettyPrint の仕方を定義するには，その型の <code>Pretty</code> 型クラスインスタンスを定義すれば良い． 今回出力したいのは <code>BuildFile</code> 型もとい <code>BuildContent</code> 型の値なので，その型の <code>Pretty</code> 型クラスインスタンスを定義する：</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">Pretty</span> <span class="dt">BuildContent</span> <span class="kw">where</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true"></a>  pretty (<span class="dt">BuildRule</span> name args)  <span class="ot">=</span> prettyMethodCall (Text.unpack name) (<span class="fu">map</span> prettyMethodArg args)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true"></a>  pretty (<span class="dt">BuildComment</span> comment) <span class="ot">=</span> <span class="st">&quot;#&quot;</span> <span class="op">&lt;&gt;</span> fromString (Text.unpack comment)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true"></a>  pretty <span class="dt">BuildNewline</span>           <span class="ot">=</span> <span class="st">&quot;&quot;</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true"></a></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">Pretty</span> <span class="dt">RuleArg</span> <span class="kw">where</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true"></a>  pretty (<span class="dt">RuleArgString</span> str)  <span class="ot">=</span> fromString (<span class="fu">show</span> str) <span class="co">-- show すると文字列の前後に `&quot;` が付く</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true"></a>  pretty (<span class="dt">RuleArgBool</span> <span class="dt">True</span>)   <span class="ot">=</span> <span class="st">&quot;True&quot;</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true"></a>  pretty (<span class="dt">RuleArgBool</span> <span class="dt">False</span>)  <span class="ot">=</span> <span class="st">&quot;False&quot;</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true"></a>  pretty (<span class="dt">RuleArgConst</span> name)  <span class="ot">=</span> fromString name</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true"></a>  pretty (<span class="dt">RuleArgGlob</span> path)   <span class="ot">=</span> <span class="st">&quot;glob([&quot;</span> <span class="op">&lt;&gt;</span> fromString (<span class="fu">show</span> path) <span class="op">&lt;&gt;</span> <span class="st">&quot;])&quot;</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true"></a>  <span class="co">-- 配列の要素数によって場合分け</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true"></a>  pretty (<span class="dt">RuleArgArray</span> [])    <span class="ot">=</span> <span class="st">&quot;[]&quot;</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true"></a>  pretty (<span class="dt">RuleArgArray</span> [arg]) <span class="ot">=</span> <span class="st">&quot;[&quot;</span> <span class="op">&lt;&gt;</span> pretty arg <span class="op">&lt;&gt;</span> <span class="st">&quot;]&quot;</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true"></a>  pretty (<span class="dt">RuleArgArray</span> args)  <span class="ot">=</span> vsep [nest <span class="dv">4</span> <span class="op">$</span> vsep (<span class="st">&quot;[&quot;</span> <span class="op">:</span> <span class="fu">map</span> ((<span class="op">&lt;&gt;</span> <span class="st">&quot;,&quot;</span>) <span class="op">.</span> pretty) args), <span class="st">&quot;]&quot;</span>]</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true"></a></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true"></a><span class="co">-- 関数呼び出しの引数の個数によって場合分け</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true"></a><span class="ot">prettyMethodCall ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> [<span class="dt">Doc</span> ann] <span class="ot">-&gt;</span> <span class="dt">Doc</span> ann</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true"></a>prettyMethodCall name []    <span class="ot">=</span> fromString name <span class="op">&lt;&gt;</span> <span class="st">&quot;()&quot;</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true"></a>prettyMethodCall name [arg] <span class="ot">=</span> fromString name <span class="op">&lt;&gt;</span> <span class="st">&quot;(&quot;</span> <span class="op">&lt;&gt;</span> arg <span class="op">&lt;&gt;</span> <span class="st">&quot;)&quot;</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true"></a>prettyMethodCall name args  <span class="ot">=</span> vsep [nest <span class="dv">4</span> <span class="op">$</span> vsep (fromString name <span class="op">&lt;&gt;</span> <span class="st">&quot;(&quot;</span> <span class="op">:</span> <span class="fu">map</span> (<span class="op">&lt;&gt;</span> <span class="st">&quot;,&quot;</span>) args), <span class="st">&quot;)&quot;</span>]</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true"></a></span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true"></a><span class="ot">prettyMethodArg ::</span> (<span class="dt">Maybe</span> <span class="dt">String</span>, <span class="dt">RuleArg</span>) <span class="ot">-&gt;</span> <span class="dt">Doc</span> ann</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true"></a>prettyMethodArg (<span class="dt">Nothing</span>, val)  <span class="ot">=</span> pretty val</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true"></a>prettyMethodArg (<span class="dt">Just</span> key, val) <span class="ot">=</span> fromString key <span class="op">&lt;+&gt;</span> <span class="st">&quot;=&quot;</span> <span class="op">&lt;+&gt;</span> pretty val</span></code></pre></div>
+<p><code>pretty</code> の構成要素は <code>Doc a</code> 型である． <code>&lt;&gt;</code> は空白無しで結合，<code>&lt;+&gt;</code> は空白有りで結合になる． <code>vsep</code> で与えた <code>Doc a</code> 型のリストを改行で結合してくれる． <code>nest 4 (vsep [...])</code> とすることで <code>vsep</code> の2要素目から4スペースでインデントしてくれる． つまり，<code>vsep [nest 4 $ vsep ["[", "True,", "True,"], "]"]</code> は次のようになる：</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true"></a>[</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true"></a>    <span class="va">True</span>,</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true"></a>    <span class="va">True</span>,</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true"></a>]</span></code></pre></div>
+<p>便利ですね．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>思いの外，さくっとできた． それよりも作りたいアプリケーションの方を作らないと笑</p>
+  </div>
+
+  <footer class="post-footer">
+    <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button" data-show-count="false">Tweet</a>
+    <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+  </footer>
+</div>
+</article>
+
+          </div>
+        </div>
+
+        <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <span class="footer-heading">ひげメモ</span>
+
+  </div>
+
+  <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+    <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+      <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+    </a>
+  </div>
+
+</footer>
+
+
+      </div>
+  </body>
+
+</html>

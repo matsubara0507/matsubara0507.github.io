@@ -211,7 +211,7 @@
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a><span class="fu">baseurl</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;https://matsubara0507.github.io&quot;</span></span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true"></a><span class="fu">github</span><span class="kw">:</span><span class="at">  matsubara0507</span></span></code></pre></div>
 <h2 id="post-以下のマークダウン置き場を変更"><code>post/</code> 以下のマークダウン置き場を変更</h2>
-<p>記事のマークダウンは全て <code>posts/</code> 以下に置いていたのだが，各年ごとにディレクトリを切りたいなぁと思った． 例えば <code>posts/2018/02-21-add-feats-mysite-2018.md</code> といった具合に． しかし，出力は今まで通り <code>posts/2018-02-21-add-feats-mysite-2018.html</code> としたい(リンクが変わっちゃうからね)． まんま<a href="http://daimatz.net/text/2014/0126-hakyll.html">同じことをしてくれている記事</a>があったので，参考にして次のように書き換えた．</p>
+<p>記事のマークダウンは全て <code>posts/</code> 以下に置いていたのだが，各年ごとにディレクトリを切りたいなぁと思った． 例えば <code>posts/2018/02-21-add-feats-mysite-2018.md</code> といった具合に． しかし，出力は今まで通り <code>posts/2018-02-21-add-feats-mysite-2018.html</code> としたい(リンクが変わっちゃうからね)． まんま同じことをしてくれている記事（サイトは消えていた）があったので，参考にして次のように書き換えた．</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a>  <span class="op">...</span></span>

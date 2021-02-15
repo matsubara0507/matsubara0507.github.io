@@ -8,8 +8,271 @@
         <name>MATSUBARA Nobutada</name>
         <email></email>
     </author>
-    <updated>2021-01-18T00:00:00Z</updated>
+    <updated>2021-02-15T00:00:00Z</updated>
     <entry>
+    <title>hpack の設定から Bazel の設定を自動生成するツール Hazell を作った</title>
+    <link href="https://matsubara0507.github.io/posts/2021-02-15-create-hazell.html" />
+    <id>https://matsubara0507.github.io/posts/2021-02-15-create-hazell.html</id>
+    <published>2021-02-15T00:00:00Z</published>
+    <updated>2021-02-15T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
+    <p>趣味のアプリケーションを新しく Haskell×Elm×Bazel で実装しようと考えてます． しかし，Bazel の設定は Haskell，というか <a href="https://github.com/sol/hpack">hpack</a> の設定に比べると煩雑で面倒臭いです（重複がいくつかある）． なので，hpack から Cabal ファイルを生成するように，Bazel の設定ファイルを生成できるようにすれば楽ができるなと考えて作りました．</p>
+<h2 id="完成品">完成品</h2>
+<iframe width="320" height="184" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/hazell">
+</iframe>
+<p>まだ途中で，現状できるのは：</p>
+<ul>
+<li>hpack の設定から WORKSPACE の <code>stack_snapshot</code> ルールを置き換える</li>
+<li>hpack の設定から BUILD.bazel の <code>haskell_library</code> ルールを置き換える</li>
+</ul>
+<p>置き換えるとあるが，そもそもなければ追加する． また，すでにある WORKSPACE ファイルや BUILD.bazel に書き込むために Bazel の設定ファイルのパーサーを自作した． しかし，構文定義を読んで真面目に実装しておらず，あくまで自分のユースケースで動く程度な雑実装だ．</p>
+<h2 id="作る">作る</h2>
+<p>おおきく4ステップ</p>
+<ol type="1">
+<li>hpack の設定から Bazel の設定を構築（Haskell のデータ型として）</li>
+<li>Bazel の設定をパースして読み込む</li>
+<li>Haskell関連のところだけ置き換える</li>
+<li>Bazel の設定を PrettyPrint する</li>
+</ol>
+<h3 id="hpack-の設定から-bazel-の設定を構築">1. hpack の設定から Bazel の設定を構築</h3>
+<p>まずは hpack の設定を読み込む． これは簡単で，hpack が hpack を利用したツールを作る用に，そういうパッケージを公開してくれている．</p>
+<ul>
+<li><a href="https://hackage.haskell.org/package/hpack">hpack: A modern format for Haskell packages - Hackage</a></li>
+</ul>
+<p>このパッケージの <code>readPackageConfig</code> を利用することで読み込める：</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a>  <span class="kw">let</span> opts <span class="ot">=</span> Hpack.defaultDecodeOptions </span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a>  result <span class="ot">&lt;-</span> Hpack.readPackageConfig opts</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a>  <span class="kw">case</span> result <span class="kw">of</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a>    <span class="dt">Left</span> e <span class="ot">-&gt;</span> </span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a>      <span class="fu">fail</span> e</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>    <span class="dt">Right</span> r <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a>      <span class="kw">let</span> package <span class="ot">=</span> Hpack.decodeResultPackage r</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a>      <span class="co">-- package が Hpack.Package 型の値</span></span></code></pre></div>
+<p>例えば，<code>Hpack.packageDependencies package</code> で全ての依存パッケージのリストを参照したり，<code>Hpack.packageLibrary package</code> でライブラリの設定を参照したりできる．</p>
+<p>次に，Bazel の設定を表現する型を定義した：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="kw">data</span> <span class="dt">Rule</span> <span class="ot">=</span> <span class="dt">Rule</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a>  {<span class="ot"> ruleName ::</span> <span class="dt">String</span> <span class="co">-- http_archive とか stack_snapshot などの Bazel ルール名</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>  ,<span class="ot"> ruleDef  ::</span> <span class="dt">String</span> <span class="co">-- load で利用する Bazel ルールの定義先</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>  ,<span class="ot"> ruleArgs ::</span> [(<span class="dt">Maybe</span> <span class="dt">String</span>, <span class="dt">RuleArg</span>)] <span class="co">-- 1つ目の要素は `name = &quot;abc&quot;` の name</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a>  } <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a><span class="kw">data</span> <span class="dt">RuleArg</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a>  <span class="ot">=</span> <span class="dt">RuleArgString</span> <span class="dt">String</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a>  <span class="op">|</span> <span class="dt">RuleArgBool</span> <span class="dt">Bool</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a>  <span class="op">|</span> <span class="dt">RuleArgArray</span> [<span class="dt">RuleArg</span>]</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a>  <span class="op">|</span> <span class="dt">RuleArgConst</span> <span class="dt">String</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true"></a>  <span class="op">|</span> <span class="dt">RuleArgGlob</span> <span class="dt">String</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true"></a>  <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</span></code></pre></div>
+<p><code>RuleArg</code> はとりあえず今回必要になった分だけ定義した． 本当は辞書型やリストの結合式が書けたりするが，ちょっとパーサーがめんどくさいのでサボった．</p>
+<p>最後に，<code>Rule</code> 型で <code>stack_snapshot</code> ルールと <code>haskell_libarary</code> ルールを <code>Hpack.Package</code> から生成する関数を定義する：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="ot">buildStackSnapshotRule ::</span> <span class="dt">Hpack.Package</span> <span class="ot">-&gt;</span> <span class="dt">Rule</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a>buildStackSnapshotRule package localSnapshot <span class="ot">=</span> <span class="dt">Rule</span> { <span class="op">..</span> }</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>  <span class="kw">where</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>    ruleName <span class="ot">=</span> <span class="st">&quot;stack_snapshot&quot;</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a>    ruleDef <span class="ot">=</span> <span class="st">&quot;@rules_haskell//haskell:cabal.bzl&quot;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a>    ruleArgs <span class="ot">=</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a>      [ (<span class="dt">Just</span> <span class="st">&quot;name&quot;</span>, <span class="dt">RuleArgString</span> <span class="st">&quot;stackage&quot;</span>)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a>      , (<span class="dt">Just</span> <span class="st">&quot;packages&quot;</span>, <span class="dt">RuleArgArray</span> <span class="op">$</span> <span class="fu">map</span> <span class="dt">RuleArgString</span> dependencies)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a>      , (<span class="dt">Just</span> <span class="st">&quot;local_snapshot&quot;</span>, <span class="dt">RuleArgString</span> <span class="st">&quot;//:stack-snapshot.yaml&quot;</span>) <span class="co">-- ここの拡張性はとりあえずサボる</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a>      ]</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a>    dependencies <span class="ot">=</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a>      <span class="co">-- 自分自身はあとで生成するので省く</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a>      <span class="fu">filter</span> (<span class="op">/=</span> Hpack.packageName package) <span class="op">$</span> <span class="fu">map</span> <span class="fu">fst</span> (Hpack.packageDependencies package)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true"></a><span class="ot">buildHaskellLibraryRule ::</span> <span class="dt">Hpack.Package</span> <span class="ot">-&gt;</span> <span class="dt">Rule</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true"></a>buildHaskellLibraryRule package <span class="ot">=</span> <span class="dt">Rule</span> { <span class="op">..</span> }</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true"></a>  <span class="kw">where</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true"></a>    ruleName <span class="ot">=</span> <span class="st">&quot;haskell_library&quot;</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true"></a>    ruleDef <span class="ot">=</span> <span class="st">&quot;@rules_haskell//haskell:defs.bzl&quot;</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true"></a>    ruleArgs <span class="ot">=</span> buildRuleArgs (Hpack.packageLibrary package)</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true"></a>    buildRuleArgs <span class="dt">Nothing</span> <span class="ot">=</span> []</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true"></a>    buildRuleArgs (<span class="dt">Just</span> lib) <span class="ot">=</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true"></a>      [ (<span class="dt">Just</span> <span class="st">&quot;name&quot;</span>, <span class="dt">RuleArgString</span> <span class="op">$</span> Hpack.packageName package <span class="op">&lt;&gt;</span> <span class="st">&quot;-library&quot;</span>)</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true"></a>        <span class="co">-- `source-dirs` が複数あった場合はとりあえず無視</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true"></a>      , (<span class="dt">Just</span> <span class="st">&quot;src_strip_prefix&quot;</span>, <span class="dt">RuleArgString</span> <span class="op">$</span> <span class="fu">head</span> (Hpack.sectionSourceDirs lib))</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true"></a>      , (<span class="dt">Just</span> <span class="st">&quot;srcs&quot;</span>, <span class="dt">RuleArgGlob</span> <span class="op">$</span> <span class="fu">head</span> (Hpack.sectionSourceDirs lib) <span class="op">&lt;&gt;</span> <span class="st">&quot;/**/*.hs&quot;</span>)</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true"></a>      , (<span class="dt">Just</span> <span class="st">&quot;deps&quot;</span>, <span class="dt">RuleArgArray</span> <span class="op">$</span> <span class="fu">map</span> <span class="dt">RuleArgString</span> (dependencies lib))</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true"></a>      , (<span class="dt">Just</span> <span class="st">&quot;compiler_flags&quot;</span>, <span class="dt">RuleArgConst</span> <span class="st">&quot;GHC_FLAGS&quot;</span>) <span class="co">-- いったん定数でお茶を濁す</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true"></a>      ]</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true"></a>    dependencies lib <span class="ot">=</span> </span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true"></a>      <span class="fu">map</span> (<span class="st">&quot;@stackage//:&quot;</span> <span class="op">&lt;&gt;</span>) <span class="op">$</span> Map.keys (Hpack.unDependencies <span class="op">$</span> Hpack.sectionDependencies lib)</span></code></pre></div>
+<h3 id="bazel-の設定をパースして読み込む">2. Bazel の設定をパースして読み込む</h3>
+<p>ここが大変． ざっと探した感じ，BUILD ファイルの構文定義が見つからなかったので雰囲気でパーサーを自作する． 例えば，次のようなファイルを眺めてみると：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="co"># Set all target’s visibility in this package to &quot;public&quot;.</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a>package(default_visibility <span class="op">=</span> [<span class="st">&quot;//visibility:public&quot;</span>])</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a>load(</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a>    <span class="st">&quot;//:build/common.bzl&quot;</span>,</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a>    <span class="st">&quot;GHC_FLAGS&quot;</span>,</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a>load(</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true"></a>    <span class="st">&quot;@rules_haskell//haskell:defs.bzl&quot;</span>,</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true"></a>    <span class="st">&quot;haskell_library&quot;</span>,</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true"></a>)</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true"></a></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true"></a>haskell_library(</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true"></a>    name <span class="op">=</span> <span class="st">&quot;hazell-library&quot;</span>,</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true"></a>    src_strip_prefix <span class="op">=</span> <span class="st">&quot;src&quot;</span>,</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true"></a>    srcs <span class="op">=</span> glob([<span class="st">&quot;src/**/*.hs&quot;</span>]),</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true"></a>    deps <span class="op">=</span> [</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true"></a>        <span class="st">&quot;@stackage//:base&quot;</span>,</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true"></a>        <span class="st">&quot;@stackage//:containers&quot;</span>,</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true"></a>        <span class="st">&quot;@stackage//:filepath&quot;</span>,</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true"></a>        <span class="st">&quot;@stackage//:hpack&quot;</span>,</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true"></a>        <span class="st">&quot;@stackage//:megaparsec&quot;</span>,</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true"></a>        <span class="st">&quot;@stackage//:prettyprinter&quot;</span>,</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true"></a>        <span class="st">&quot;@stackage//:text&quot;</span>,</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true"></a>    ],</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true"></a>    compiler_flags <span class="op">=</span> GHC_FLAGS,</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true"></a>)</span></code></pre></div>
+<p>構成要素は：</p>
+<ul>
+<li>コメント</li>
+<li><code>hoge(name = &quot;fuga&quot;)</code> という関数呼び出し（省略可能な名前付き引数）</li>
+</ul>
+<p>ぐらいだ． なので，他にも細かい記法はあるかもしれないが，いったんこれのリストとしてパースする：</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="kw">type</span> <span class="dt">BuildFile</span> <span class="ot">=</span> [<span class="dt">BuildContent</span>]</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a><span class="kw">data</span> <span class="dt">BuildContent</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a>  <span class="ot">=</span> <span class="dt">BuildRule</span> <span class="dt">Text</span> [(<span class="dt">Maybe</span> <span class="dt">String</span>, <span class="dt">RuleArg</span>)]</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a>  <span class="op">|</span> <span class="dt">BuildComment</span> <span class="dt">Text</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a>  <span class="op">|</span> <span class="dt">BuildNewline</span> <span class="co">-- 改行も保存したいので</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true"></a>  <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</span></code></pre></div>
+<p>パーサーを作るには megaparsec パッケージを利用する：</p>
+<ul>
+<li><a href="https://hackage.haskell.org/package/megaparsec">megaparsec: Monadic parser combinators - Hackage</a></li>
+</ul>
+<p>一つ一つ説明すると長くなるので細かくは割愛． 工夫した点として，BUILD ファイルでの関数呼び出しや配列はいわゆるケツカンマを許容している：</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="co"># どちらもOK</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a>[</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a>    <span class="va">True</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a>    <span class="va">True</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a>]</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a>[</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true"></a>    <span class="va">True</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true"></a>    <span class="va">True</span>,</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true"></a>]</span></code></pre></div>
+<p>これを <code>sepBy</code> で実現するのは難しいので専用のコンビネーターを自作した：</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a><span class="ot">sepAndEndBy ::</span> <span class="dt">MonadPlus</span> m <span class="ot">=&gt;</span> m a <span class="ot">-&gt;</span> (m sep, m end) <span class="ot">-&gt;</span> m [a]</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a>sepAndEndBy p (sep, end) <span class="ot">=</span> go</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a>  <span class="kw">where</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true"></a>    go <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true"></a>      r <span class="ot">&lt;-</span> optional p</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true"></a>      <span class="kw">case</span> r <span class="kw">of</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true"></a>        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> end <span class="op">$&gt;</span> []</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true"></a>        <span class="dt">Just</span> x <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true"></a>          s <span class="ot">&lt;-</span> optional sep</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true"></a>          <span class="kw">case</span> s <span class="kw">of</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true"></a>            <span class="dt">Nothing</span> <span class="ot">-&gt;</span> end <span class="op">$&gt;</span> [x]</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true"></a>            <span class="dt">Just</span> _  <span class="ot">-&gt;</span> (x<span class="op">:</span>) <span class="op">&lt;$&gt;</span> go</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true"></a><span class="co">-- 例えば配列</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true"></a><span class="ot">buildRuleArgArrayParser ::</span> <span class="dt">Parser</span> <span class="dt">RuleArg</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true"></a>buildRuleArgArrayParser <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true"></a>  char <span class="ch">&#39;[&#39;</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true"></a>  space</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true"></a>  arr <span class="ot">&lt;-</span> buildRuleArgParser <span class="ot">`sepAndEndBy`</span> (comma, space <span class="op">&gt;&gt;</span> char <span class="ch">&#39;]&#39;</span>)</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true"></a>  <span class="fu">pure</span> <span class="op">$</span> <span class="dt">RuleArgArray</span> arr</span></code></pre></div>
+<p>あと，工夫というか困ったところで名前付き引数があった． いろいろ考えた結果，とりあえず泥臭い方法をとった：</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a><span class="ot">buildRuleParser ::</span> <span class="dt">Parser</span> <span class="dt">BuildContent</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a>buildRuleParser <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a>  name <span class="ot">&lt;-</span> nameParser <span class="co">-- `A-Z0-9a-z_` からなる文字列</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a>  char <span class="ch">&#39;(&#39;</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true"></a>  space</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true"></a>  args <span class="ot">&lt;-</span> argParser <span class="ot">`sepAndEndBy`</span> (comma, space <span class="op">&gt;&gt;</span> char <span class="ch">&#39;)&#39;</span>)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true"></a>  optional newline</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true"></a>  <span class="fu">pure</span> <span class="op">$</span> <span class="dt">BuildRule</span> (Text.pack name) args</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true"></a>  <span class="kw">where</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true"></a>    argParser <span class="ot">=</span> buildRuleArgWithNameParser <span class="op">&lt;|&gt;</span> buildRuleArgWithoutNameParser</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true"></a></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true"></a><span class="ot">buildRuleArgWithNameParser ::</span> <span class="dt">Parser</span> (<span class="dt">Maybe</span> <span class="dt">String</span>, <span class="dt">RuleArg</span>)</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true"></a>buildRuleArgWithNameParser <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true"></a>  <span class="co">-- try を付けると失敗しても入力文字を消費しない（その代わり効率が悪くなる）</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true"></a>  name <span class="ot">&lt;-</span> try <span class="op">$</span> nameParser <span class="op">&lt;*</span> space <span class="op">&lt;*</span> char <span class="ch">&#39;=&#39;</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true"></a>  space</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true"></a>  (<span class="dt">Just</span> name,) <span class="op">&lt;$&gt;</span> buildRuleArgParser</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true"></a></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true"></a><span class="ot">buildRuleArgWithoutNameParser ::</span> <span class="dt">Parser</span> (<span class="dt">Maybe</span> <span class="dt">String</span>, <span class="dt">RuleArg</span>)</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true"></a>buildRuleArgWithoutNameParser <span class="ot">=</span> (<span class="dt">Nothing</span>,) <span class="op">&lt;$&gt;</span> buildRuleArgParser</span></code></pre></div>
+<p>ちゃんと実装するなら，いったん <code>nameParser</code> して，後ろに <code>=</code> があれば名前付き引数で無ければ変数かなんかとするみたいにすれば良いかしら．</p>
+<h3 id="haskell関連のところだけ置き換える">3. Haskell関連のところだけ置き換える</h3>
+<p>WORKSPACE ファイルや BUILD.bazel ファイルを読み込んで， (2) のパーサーで <code>BuildFile</code> 型の値に変換する． そのうち，<code>stack_snapshot</code> ルールや <code>haskell_libarary</code> ルールのものを検知して，(1) で生成したものに置き換える． ことを実装したのが次の関数だ：</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a><span class="ot">replaceStackSnapshotRule ::</span> <span class="dt">Hpack.Package</span> <span class="ot">-&gt;</span> <span class="dt">FilePath</span> <span class="ot">-&gt;</span> <span class="dt">BuildFile</span> <span class="ot">-&gt;</span> <span class="dt">BuildFile</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a>replaceStackSnapshotRule package stackSnapshotPath ws <span class="ot">=</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true"></a>  <span class="kw">if</span> <span class="fu">any</span> (<span class="ot">`isRule`</span> stackSnapshotRule) ws <span class="kw">then</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true"></a>    ws <span class="op">&lt;&amp;&gt;</span> \content <span class="ot">-&gt;</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true"></a>      <span class="kw">if</span> content <span class="ot">`isRule`</span> stackSnapshotRule <span class="kw">then</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true"></a>        stackSnapshotContent</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true"></a>      <span class="kw">else</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true"></a>        content</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true"></a>  <span class="kw">else</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true"></a>    ws <span class="op">++</span> [<span class="dt">BuildNewline</span>, loadContent, <span class="dt">BuildNewline</span>, stackSnapshotContent]</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true"></a>  <span class="kw">where</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true"></a>    stackSnapshotRule <span class="ot">=</span> buildStackSnapshotRule package stackSnapshotPath</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true"></a>    (loadContent, stackSnapshotContent) <span class="ot">=</span> fromRule stackSnapshotRule</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true"></a></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true"></a><span class="ot">isRule ::</span> <span class="dt">BuildContent</span> <span class="ot">-&gt;</span> <span class="dt">Rule</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true"></a>isRule (<span class="dt">BuildRule</span> name _) rule <span class="ot">=</span> name <span class="op">==</span> <span class="fu">pack</span> (ruleName rule)</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true"></a>isRule _ _                     <span class="ot">=</span> <span class="dt">False</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true"></a></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true"></a><span class="ot">isStringArg ::</span> <span class="dt">RuleArg</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true"></a>isStringArg (<span class="dt">RuleArgString</span> str) str&#39; <span class="ot">=</span> str <span class="op">==</span> str&#39;</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true"></a>isStringArg _ _                      <span class="ot">=</span> <span class="dt">False</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true"></a></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true"></a><span class="ot">fromRule ::</span> <span class="dt">Rule</span> <span class="ot">-&gt;</span> (<span class="dt">BuildContent</span>, <span class="dt">BuildContent</span>)</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true"></a>fromRule rule <span class="ot">=</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true"></a>  ( <span class="dt">BuildRule</span> <span class="st">&quot;load&quot;</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true"></a>      [ (<span class="dt">Nothing</span>, <span class="dt">RuleArgString</span> <span class="op">$</span> ruleDef rule)</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true"></a>      , (<span class="dt">Nothing</span>, <span class="dt">RuleArgString</span> <span class="op">$</span> ruleName rule)</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true"></a>      ]</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true"></a>  , <span class="dt">BuildRule</span> (<span class="fu">pack</span> <span class="op">$</span> ruleName rule) <span class="op">$</span> ruleArgs rule</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true"></a>  )</span></code></pre></div>
+<p>これは <code>stack_snapshot</code> ルール版． <code>haskell_library</code> ルールの場合もほとんど同じなので割愛する．</p>
+<h3 id="bazel-の設定を-prettyprint-する">4. Bazel の設定を PrettyPrint する</h3>
+<p>最後に，(3) の結果をいい感じに出力するために PrettyPrint する． 今回はそのために prettyprinter パッケージを利用する．</p>
+<ul>
+<li><a href="https://hackage.haskell.org/package/prettyprinter">prettyprinter: A modern, easy to use, well-documented, extensible pretty-printer - Hackage</a></li>
+</ul>
+<p>任意の型の PrettyPrint の仕方を定義するには，その型の <code>Pretty</code> 型クラスインスタンスを定義すれば良い． 今回出力したいのは <code>BuildFile</code> 型もとい <code>BuildContent</code> 型の値なので，その型の <code>Pretty</code> 型クラスインスタンスを定義する：</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">Pretty</span> <span class="dt">BuildContent</span> <span class="kw">where</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true"></a>  pretty (<span class="dt">BuildRule</span> name args)  <span class="ot">=</span> prettyMethodCall (Text.unpack name) (<span class="fu">map</span> prettyMethodArg args)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true"></a>  pretty (<span class="dt">BuildComment</span> comment) <span class="ot">=</span> <span class="st">&quot;#&quot;</span> <span class="op">&lt;&gt;</span> fromString (Text.unpack comment)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true"></a>  pretty <span class="dt">BuildNewline</span>           <span class="ot">=</span> <span class="st">&quot;&quot;</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true"></a></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true"></a><span class="kw">instance</span> <span class="dt">Pretty</span> <span class="dt">RuleArg</span> <span class="kw">where</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true"></a>  pretty (<span class="dt">RuleArgString</span> str)  <span class="ot">=</span> fromString (<span class="fu">show</span> str) <span class="co">-- show すると文字列の前後に `&quot;` が付く</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true"></a>  pretty (<span class="dt">RuleArgBool</span> <span class="dt">True</span>)   <span class="ot">=</span> <span class="st">&quot;True&quot;</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true"></a>  pretty (<span class="dt">RuleArgBool</span> <span class="dt">False</span>)  <span class="ot">=</span> <span class="st">&quot;False&quot;</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true"></a>  pretty (<span class="dt">RuleArgConst</span> name)  <span class="ot">=</span> fromString name</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true"></a>  pretty (<span class="dt">RuleArgGlob</span> path)   <span class="ot">=</span> <span class="st">&quot;glob([&quot;</span> <span class="op">&lt;&gt;</span> fromString (<span class="fu">show</span> path) <span class="op">&lt;&gt;</span> <span class="st">&quot;])&quot;</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true"></a>  <span class="co">-- 配列の要素数によって場合分け</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true"></a>  pretty (<span class="dt">RuleArgArray</span> [])    <span class="ot">=</span> <span class="st">&quot;[]&quot;</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true"></a>  pretty (<span class="dt">RuleArgArray</span> [arg]) <span class="ot">=</span> <span class="st">&quot;[&quot;</span> <span class="op">&lt;&gt;</span> pretty arg <span class="op">&lt;&gt;</span> <span class="st">&quot;]&quot;</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true"></a>  pretty (<span class="dt">RuleArgArray</span> args)  <span class="ot">=</span> vsep [nest <span class="dv">4</span> <span class="op">$</span> vsep (<span class="st">&quot;[&quot;</span> <span class="op">:</span> <span class="fu">map</span> ((<span class="op">&lt;&gt;</span> <span class="st">&quot;,&quot;</span>) <span class="op">.</span> pretty) args), <span class="st">&quot;]&quot;</span>]</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true"></a></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true"></a><span class="co">-- 関数呼び出しの引数の個数によって場合分け</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true"></a><span class="ot">prettyMethodCall ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> [<span class="dt">Doc</span> ann] <span class="ot">-&gt;</span> <span class="dt">Doc</span> ann</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true"></a>prettyMethodCall name []    <span class="ot">=</span> fromString name <span class="op">&lt;&gt;</span> <span class="st">&quot;()&quot;</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true"></a>prettyMethodCall name [arg] <span class="ot">=</span> fromString name <span class="op">&lt;&gt;</span> <span class="st">&quot;(&quot;</span> <span class="op">&lt;&gt;</span> arg <span class="op">&lt;&gt;</span> <span class="st">&quot;)&quot;</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true"></a>prettyMethodCall name args  <span class="ot">=</span> vsep [nest <span class="dv">4</span> <span class="op">$</span> vsep (fromString name <span class="op">&lt;&gt;</span> <span class="st">&quot;(&quot;</span> <span class="op">:</span> <span class="fu">map</span> (<span class="op">&lt;&gt;</span> <span class="st">&quot;,&quot;</span>) args), <span class="st">&quot;)&quot;</span>]</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true"></a></span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true"></a><span class="ot">prettyMethodArg ::</span> (<span class="dt">Maybe</span> <span class="dt">String</span>, <span class="dt">RuleArg</span>) <span class="ot">-&gt;</span> <span class="dt">Doc</span> ann</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true"></a>prettyMethodArg (<span class="dt">Nothing</span>, val)  <span class="ot">=</span> pretty val</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true"></a>prettyMethodArg (<span class="dt">Just</span> key, val) <span class="ot">=</span> fromString key <span class="op">&lt;+&gt;</span> <span class="st">&quot;=&quot;</span> <span class="op">&lt;+&gt;</span> pretty val</span></code></pre></div>
+<p><code>pretty</code> の構成要素は <code>Doc a</code> 型である． <code>&lt;&gt;</code> は空白無しで結合，<code>&lt;+&gt;</code> は空白有りで結合になる． <code>vsep</code> で与えた <code>Doc a</code> 型のリストを改行で結合してくれる． <code>nest 4 (vsep [...])</code> とすることで <code>vsep</code> の2要素目から4スペースでインデントしてくれる． つまり，<code>vsep [nest 4 $ vsep [&quot;[&quot;, &quot;True,&quot;, &quot;True,&quot;], &quot;]&quot;]</code> は次のようになる：</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true"></a>[</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true"></a>    <span class="va">True</span>,</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true"></a>    <span class="va">True</span>,</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true"></a>]</span></code></pre></div>
+<p>便利ですね．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>思いの外，さくっとできた． それよりも作りたいアプリケーションの方を作らないと笑</p>
+  </div>]]></summary>
+</entry>
+<entry>
     <title>rules_elm を作る</title>
     <link href="https://matsubara0507.github.io/posts/2021-01-18-create-rules_elm.html" />
     <id>https://matsubara0507.github.io/posts/2021-01-18-create-rules_elm.html</id>
@@ -2000,220 +2263,6 @@ No latest package revision found for: hamler, dependency callstack: []</code></p
 <p>また，<a href="https://doi.org/10.1017/s0956796815000143">NEAT</a> を利用して FGG のサブセットから全ての正しく型付けされたプログラム（ただし，メソッドと型の出現巣の合計を指定して，ある程度のサイズまでに限定した上で）を列挙もしたらしい（SmallCheck に似ているらしい）． このサブセットに含まれる全ての FGG プログラムをサイズ20まで生成して，上述した双模倣性のテストが通ったことを確認したそうだ．</p>
 <h2 id="おしまい">おしまい</h2>
 <p>今後は C# のような，型のランタイム表現を渡すことに基づいた実装を検討して，単相化と組み合わせる方法を模索するらしい． あと，代入・配列・スライス・パッケージなどの他の重要な機能のモデル化も計画してるらしく，これを Bantamweight Go と呼ぶつもりらしい． さらに，「goroutines」とメッセージパッシングに基づくGoの並行メカニズムのモデル化も計画していて，これを Cruiserweight Go と呼ぶらしい． いったい素の Go は何級なんだろう笑</p>
-  </div>]]></summary>
-</entry>
-<entry>
-    <title>Hamler の Docker イメージを作る</title>
-    <link href="https://matsubara0507.github.io/posts/2020-06-13-build-docker-image-for-hamler.html" />
-    <id>https://matsubara0507.github.io/posts/2020-06-13-build-docker-image-for-hamler.html</id>
-    <published>2020-06-13T00:00:00Z</published>
-    <updated>2020-06-13T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<div class="post-content" itemprop="articleBody">
-    <p><a href="https://www.hamler-lang.org/">Hamler</a> という ErlangVM 上で動作する Haskell に似た構文のプログラミング言語が公開された． 手元で遊ぶためにまず，Docker イメージを作ってみることにした（brew したくなかった）． <a href="https://hub.docker.com/repository/docker/matsubara0507/hamler">作成したイメージはココ</a>で<a href="https://github.com/matsubara0507/docker-hamler">リポジトリはココ</a>．</p>
-<p>ちなみに，今回利用するバージョンは <code>0.1</code> です．</p>
-<h2 id="docker-イメージを作る">Docker イメージを作る</h2>
-<p><a href="https://github.com/erlang/docker-erlang-otp/blob/ed3bd9400e1b72b2bdd08596990f8ed3350a75c0/22/Dockerfile#L1">公式の Erlang の Docker イメージは Debian</a> なので，Debian の Docker イメージを作る． 現状は Mac 用のバイナリしか提供されていないので自前でビルドする必要がある． 自前でビルドする方法は<a href="https://github.com/hamler-lang/hamler/tree/2ed8e6088721471a4dd7993eb6a984fb7ce66a73#installation">公式ドキュメント</a>によると次の通り：</p>
-<ol type="1">
-<li>Erlang インストール</li>
-<li>Haskell Stack をインストール</li>
-<li>hamler-lang/hamler リポジトリをクローン</li>
-<li>リポジトリで <code>make &amp;&amp; make install</code></li>
-</ol>
-<p>幸いにも，Hamler は Haskell Stack でビルドできるので簡単だ．</p>
-<h3 id="コンパイラをビルドする">コンパイラをビルドする</h3>
-<p>まずは Stack をインストールしよう：</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="co"># マルチステージビルドをするので AS でタグづけしておく</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="kw">ARG</span> OTP_VERSION=22.3.4.1</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="kw">FROM</span> erlang:${OTP_VERSION} AS build</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a><span class="kw">WORKDIR</span> /work</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a><span class="kw">RUN</span> curl -sSL https://get.haskellstack.org/ | sh</span></code></pre></div>
-<p>次にリポジトリを <code>git clone</code> してビルドする：</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="kw">ARG</span> HAMLER_VERSION=0.1</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="kw">RUN</span> git clone --branch=v$HAMLER_VERSION --depth=1 https://github.com/hamler-lang/hamler.git</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a><span class="kw">RUN</span> cd hamler &amp;&amp; make &amp;&amp; make install</span></code></pre></div>
-<p>で，<code>make</code> というか中身は <code>stack build</code> のところで次のようなエラーが出た：</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="ex">Package</span> index cache populated</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="ex">Cloning</span> afb0b731ff457d278403ab4bc134d3c88e09ea1f from git@github.com:hamler-lang/CoreErlang.git</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a><span class="ex">Received</span> ExitFailure 128 when running</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a><span class="ex">Raw</span> command: /usr/bin/git clone git@github.com:hamler-lang/CoreErlang.git /tmp/with-repo10/cloned</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a><span class="ex">Standard</span> error:</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a><span class="ex">Cloning</span> into <span class="st">&#39;/tmp/with-repo10/cloned&#39;</span>...</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a><span class="ex">Host</span> key verification failed.</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a><span class="ex">fatal</span>: Could not read from remote repository.</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a><span class="ex">Please</span> make sure you have the correct access rights</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a><span class="ex">and</span> the repository exists.</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true"></a><span class="ex">make</span>: *** [Makefile:9: build] Error 1</span></code></pre></div>
-<p>これは stack.yaml の <code>extra-deps</code> で次のように指定していたからだ：</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="kw">-</span><span class="at"> </span><span class="fu">git</span><span class="kw">:</span><span class="at"> git@github.com:hamler-lang/CoreErlang.git</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a><span class="at">  </span><span class="fu">commit</span><span class="kw">:</span><span class="at"> afb0b731ff457d278403ab4bc134d3c88e09ea1f</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a><span class="kw">-</span><span class="at"> </span><span class="fu">git</span><span class="kw">:</span><span class="at"> git@github.com:hamler-lang/purescript.git</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a><span class="at">  </span><span class="fu">commit</span><span class="kw">:</span><span class="at"> 2c43709229b12e72dfc550ccf3efce6bfa60da72</span></span></code></pre></div>
-<p><code>git@github.com:owner/repo.git</code> という形で指定すると SSH を利用した方法で <code>git clone</code> をするのだが，この Docker 環境では SSH の設定をしていないのでエラーになる． なので，次のように書き換えてあげれば良い：</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="kw">-</span><span class="at"> </span><span class="fu">github</span><span class="kw">:</span><span class="at"> hamler-lang/CoreErlang</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a><span class="at">  </span><span class="fu">commit</span><span class="kw">:</span><span class="at"> afb0b731ff457d278403ab4bc134d3c88e09ea1f</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a><span class="kw">-</span><span class="at"> </span><span class="fu">github</span><span class="kw">:</span><span class="at"> hamler-lang/purescript</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a><span class="at">  </span><span class="fu">commit</span><span class="kw">:</span><span class="at"> 2c43709229b12e72dfc550ccf3efce6bfa60da72</span></span></code></pre></div>
-<p>このように修正した <code>stack.yaml</code> を用意して上書きすることにした：</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="kw">ARG</span> HAMLER_VERSION=0.1</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a><span class="kw">RUN</span> git clone --branch=v$HAMLER_VERSION --depth=1 https://github.com/hamler-lang/hamler.git</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a><span class="kw">COPY</span> stack.yaml hamler/stack.yaml</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a><span class="kw">RUN</span> cd hamler &amp;&amp; make &amp;&amp; make install</span></code></pre></div>
-<p>余談だが，これについては<a href="https://github.com/hamler-lang/hamler/pull/157">修正PRを出してマージされた</a>ので次のバージョンからは必要ない． で，今度は次のようなエラーが出た：</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a><span class="ex">language-javascript</span>              <span class="op">&gt;</span> configure</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a><span class="ex">language-javascript</span>              <span class="op">&gt;</span> Configuring language-javascript-0.7.0.0...</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a><span class="ex">language-javascript</span>              <span class="op">&gt;</span> build</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true"></a><span class="ex">language-javascript</span>              <span class="op">&gt;</span> Preprocessing library for language-javascript-0.7.0.0..</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true"></a><span class="ex">language-javascript</span>              <span class="op">&gt;</span> happy: src/Language/JavaScript/Parser/Grammar7.y: hGetContents: invalid argument (invalid byte sequence)</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true"></a><span class="ex">--</span>  While building package language-javascript-0.7.0.0 using:</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true"></a>      <span class="ex">/root/.stack/setup-exe-cache/x86_64-linux-tinfo6/Cabal-simple_mPHDZzAJ_2.4.0.1_ghc-8.6.5</span> --builddir=.stack-work/dist/x86_64-linux-tinfo6/Cabal-2.4.0.1 build --ghc-options <span class="st">&quot;&quot;</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true"></a>    <span class="ex">Process</span> exited with code: ExitFailure 1</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true"></a><span class="ex">make</span>: *** [Makefile:9: build] Error 1</span></code></pre></div>
-<p>はい，親の顔よりも見る <code>hGetContents: invalid argument (invalid byte sequence)</code> ですね． language-javascript パッケージは UTF-8 前提なので <code>LC_ALL</code> 環境変数を UTF-8 にしてあげる必要がある：</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a><span class="kw">ARG</span> HAMLER_VERSION=0.1</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a><span class="kw">RUN</span> git clone --branch=v$HAMLER_VERSION --depth=1 https://github.com/hamler-lang/hamler.git</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a><span class="kw">COPY</span> stack.yaml hamler/stack.yaml</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a><span class="kw">ENV</span> LC_ALL C.UTF-8</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true"></a><span class="kw">RUN</span> cd hamler &amp;&amp; make &amp;&amp; make install</span></code></pre></div>
-<p>これでコンパイラのビルドは成功した！</p>
-<h3 id="replを試すまで">REPLを試すまで</h3>
-<p>マルチステージビルドなのでビルドしたコンパイラを次のステージにコピーしよう：</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a><span class="kw">FROM</span> erlang:${OTP_VERSION}</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a><span class="kw">COPY</span> --from=build /root/.local/bin/hamler /usr/local/bin/hamler</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true"></a><span class="kw">ENTRYPOINT</span> [<span class="st">&quot;/usr/local/bin/hamler&quot;</span>]</span></code></pre></div>
-<p>試しに <code>--help</code> をしてみる：</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a>$ <span class="ex">docker</span> run --rm matsubara0507/hamler --help</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true"></a><span class="ex">Usage</span>: hamler COMMAND</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true"></a>  <span class="ex">The</span> hamler compiler based on purescript v0.13.6</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true"></a></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true"></a><span class="ex">Available</span> options:</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true"></a>  <span class="ex">--version</span>                Show the version number</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true"></a>  <span class="ex">-h</span>,--help                Show this help text</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true"></a></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true"></a><span class="ex">Available</span> commands:</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true"></a>  <span class="ex">build</span>                    Compile hamler source files</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true"></a>  <span class="ex">init</span>                     init a hamler project</span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true"></a>  <span class="ex">run</span>                      run hamler project</span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true"></a>  <span class="ex">repldev</span>                  dev hamler lib</span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true"></a>  <span class="ex">repl</span>                     run hamler repl</span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true"></a></span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true"></a><span class="ex">For</span> help using each individual command, run <span class="kw">`</span><span class="ex">hamler</span> COMMAND --help<span class="kw">`</span>. For</span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true"></a><span class="ex">example</span>, <span class="kw">`</span><span class="ex">hamler</span> build --help<span class="kw">`</span> displays options specific to the <span class="kw">`</span><span class="ex">build</span><span class="kw">`</span> command.</span>
-<span id="cb10-18"><a href="#cb10-18" aria-hidden="true"></a></span>
-<span id="cb10-19"><a href="#cb10-19" aria-hidden="true"></a><span class="ex">hamler</span> 0.1</span></code></pre></div>
-<p>動作確認するために REPL を試してみる：</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true"></a>$ <span class="ex">docker</span> run -it --rm matsubara0507/hamler repl</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true"></a><span class="ex">hamler</span>: //src: getDirectoryContents:openDirStream: does not exist (No such file or directory)</span></code></pre></div>
-<p>グローバルな環境で REPL は使えないっぽいのでプロジェクトを作成してみる：</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true"></a>$ <span class="ex">docker</span> run --rm -w /work -v <span class="kw">`</span><span class="bu">pwd</span><span class="kw">`</span>/example:/work matsubara0507/hamler init</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true"></a>$ <span class="ex">docker</span> run -it --rm -w /work -v <span class="kw">`</span><span class="bu">pwd</span><span class="kw">`</span>/example:/work matsubara0507/hamler repl</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true"></a><span class="ex">hamler</span>: /usr/local/lib/hamler/lib: getDirectoryContents:openDirStream: does not exist (No such file or directory)</span></code></pre></div>
-<p><code>/usr/local/lib/hamler/lib</code> ？？？ いったいこれはどこで参照してるやつだ？？？と思ってリポジトリで色々調べてみたところ，どうやら標準ライブラリかなんかを参照してるっぽい． バグかな？って思ったけど <a href="https://github.com/hamler-lang/homebrew-hamler/blob/0.1/Formula/hamler.rb#L38-L40"><code>brew</code> の設定</a>をみてみたらリポジトリっぽいのを <code>/usr/local/lib/hamler</code> にシンボリックリンクしてるようだった． なので，試しにそうしてみる：</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true"></a><span class="kw">FROM</span> erlang:${OTP_VERSION}</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true"></a><span class="kw">COPY</span> --from=build /root/.local/bin/hamler /usr/local/bin/hamler</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true"></a><span class="kw">COPY</span> --from=build /work/hamler /usr/local/lib/hamler</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true"></a><span class="kw">ENTRYPOINT</span> [<span class="st">&quot;/usr/local/bin/hamler&quot;</span>]</span></code></pre></div>
-<p>今度はこういうエラーが出た：</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true"></a>$ docker run -it --rm -w /work -v `pwd`/example:/work matsubara0507/hamler repl</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true"></a><span class="st">&quot;/work&quot;</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true"></a>hamler: /usr/local/lib/hamler/bin/replsrv: start replsrv error!! : runInteractiveProcess: exec: does not exist (No such file or directory)</span></code></pre></div>
-<p><code>bin/replsrv</code> ？？？ <code>brew</code> でインストールしてる tgz の中身をみてみたら <code>bin</code> ディレクトリがあり，そこには <code>replsrv</code> と <code>hamler</code> というファイルがあった． <code>hamler</code> はコンパイラのバイナリで，<code>replsrv</code> は Erlang のスクリプトだった． 探してみたら <code>repl/replsrv</code> という Erlang スクリプトがリポジトリにあり，<code>diff</code> してみたら tgz のものと一緒だった． なのでこれをコピーするようにした：</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true"></a><span class="kw">FROM</span> erlang:${OTP_VERSION}</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true"></a><span class="kw">COPY</span> --from=build /root/.local/bin/hamler /usr/local/bin/hamler</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true"></a><span class="kw">COPY</span> --from=build /work/hamler /usr/local/lib/hamler</span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true"></a><span class="kw">RUN</span> mkdir /usr/local/lib/hamler/bin \</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true"></a> &amp;&amp; cp /usr/local/lib/hamler/repl/replsrv /usr/local/lib/hamler/bin</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true"></a><span class="kw">ENTRYPOINT</span> [<span class="st">&quot;/usr/local/bin/hamler&quot;</span>]</span></code></pre></div>
-<p>なんとこれで REPL が動作した：</p>
-<pre><code>$ docker run -it --rm -w /work -v `pwd`/example:/work matsubara0507/hamler repl
-&quot;/work&quot;
-Compiling Data.Void
-...
-Compiling Main
-Compiling Demo.GenServer
-PSCi, version 0.13.6
-Type :? for help
-
-&gt; :?
-The following commands are available:
-
-    :?                        Show this help menu
-    :quit                     Quit PSCi
-    :reload                   Reload all imported modules while discarding bindings
-    :clear                    Discard all imported modules and declared bindings
-    :browse      &lt;module&gt;     See all functions in &lt;module&gt;
-    :type        &lt;expr&gt;       Show the type of &lt;expr&gt;
-    :kind        &lt;type&gt;       Show the kind of &lt;type&gt;
-    :show        import       Show all imported modules
-    :show        loaded       Show all loaded modules
-    :show        print        Show the repl&#39;s current printing function
-    :paste       paste        Enter multiple lines, terminated by ^D
-    :complete    &lt;prefix&gt;     Show completions for &lt;prefix&gt; as if pressing tab
-    :print       &lt;fn&gt;         Set the repl&#39;s printing function to &lt;fn&gt; (which must be fully qualified)
-    :set         pro val      Set the pro&#39;s val
-
-Further information is available on the PureScript documentation repository:
- --&gt; https://github.com/purescript/documentation/blob/master/guides/PSCi.md
-&gt; 1 + 1
-2
-&gt; :type 1
-Integer</code></pre>
-<p>やったね．</p>
-<h2 id="おまけサンプルプログラム">おまけ：サンプルプログラム</h2>
-<p><a href="https://github.com/hamler-lang/documentation/blob/60607565253a2b6fa3984067cf068c20ec971d69/guides/01_WhyHamler.md#erlang-and-concurrency">ここにあるサンプルプログラム</a>をビルドして実行してみた：</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true"></a><span class="co">-- `hamler run` は Main.main 関数を実行するみたい</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true"></a>  <span class="co">-- メインプロセスのプロセスIDを取得</span></span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true"></a>  pid0 <span class="ot">&lt;-</span> selfPid</span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true"></a>  <span class="co">-- `spawn` は子プロセスの生成、`seqio` は IO 専用の `sequence`</span></span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true"></a>  pid100 <span class="ot">&lt;-</span> seqio [spawn loop (<span class="dt">State</span> pid0) <span class="op">|</span> x <span class="ot">&lt;-</span> [<span class="dv">1</span><span class="op">..</span><span class="dv">1000</span>]]</span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true"></a>  <span class="co">-- `last` はリストの最後の要素を、`init` はリストの最後以外の部分リストを返す</span></span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true"></a>  <span class="co">-- `[x|xs]` は Haskell の `x:xs`、つまりリストの中身を1つずらしてる</span></span>
-<span id="cb17-10"><a href="#cb17-10" aria-hidden="true"></a>  <span class="co">-- `send` は指定したプロセスにメッセージを送信する</span></span>
-<span id="cb17-11"><a href="#cb17-11" aria-hidden="true"></a>  seqio [send j (<span class="dt">Next</span> i) <span class="op">|</span> (i,j) <span class="ot">&lt;-</span> (<span class="fu">zip</span> pid100 [<span class="fu">last</span> pid100<span class="op">|</span><span class="fu">init</span> pid100]) ]</span>
-<span id="cb17-12"><a href="#cb17-12" aria-hidden="true"></a>  send (<span class="fu">head</span> pid100) (<span class="dt">Trans</span> <span class="st">&quot;great hamler! &quot;</span> <span class="dv">0</span>)</span>
-<span id="cb17-13"><a href="#cb17-13" aria-hidden="true"></a>  <span class="fu">return</span> ()</span>
-<span id="cb17-14"><a href="#cb17-14" aria-hidden="true"></a></span>
-<span id="cb17-15"><a href="#cb17-15" aria-hidden="true"></a><span class="kw">data</span> <span class="dt">Message</span> <span class="ot">=</span> <span class="dt">Next</span> <span class="dt">Pid</span> <span class="op">|</span> <span class="dt">Trans</span> <span class="dt">String</span> <span class="dt">Integer</span></span>
-<span id="cb17-16"><a href="#cb17-16" aria-hidden="true"></a><span class="kw">data</span> <span class="dt">State</span> <span class="ot">=</span> <span class="dt">State</span> <span class="dt">Pid</span></span>
-<span id="cb17-17"><a href="#cb17-17" aria-hidden="true"></a></span>
-<span id="cb17-18"><a href="#cb17-18" aria-hidden="true"></a><span class="ot">dealMessage ::</span> <span class="dt">State</span> <span class="ot">-&gt;</span>  <span class="dt">Message</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">State</span></span>
-<span id="cb17-19"><a href="#cb17-19" aria-hidden="true"></a>dealMessage (<span class="dt">State</span> pid) (<span class="dt">Next</span> p) <span class="ot">=</span> <span class="fu">return</span> (<span class="dt">State</span> p)</span>
-<span id="cb17-20"><a href="#cb17-20" aria-hidden="true"></a>dealMessage (<span class="dt">State</span> pid) (<span class="dt">Trans</span> str <span class="dv">11111</span>) <span class="ot">=</span> <span class="fu">return</span> (<span class="dt">State</span> pid)</span>
-<span id="cb17-21"><a href="#cb17-21" aria-hidden="true"></a>dealMessage (<span class="dt">State</span> pid) (<span class="dt">Trans</span> str i) <span class="ot">=</span></span>
-<span id="cb17-22"><a href="#cb17-22" aria-hidden="true"></a>  <span class="kw">do</span> send pid (<span class="dt">Trans</span> str (i<span class="op">+</span><span class="dv">1</span>))</span>
-<span id="cb17-23"><a href="#cb17-23" aria-hidden="true"></a>     pid0 <span class="ot">&lt;-</span> selfPid</span>
-<span id="cb17-24"><a href="#cb17-24" aria-hidden="true"></a>     println (<span class="fu">show</span> pid0 <span class="op">&lt;&gt;</span> <span class="st">&quot; -&gt; &quot;</span> <span class="op">&lt;&gt;</span> <span class="fu">show</span> pid <span class="op">&lt;&gt;</span> <span class="st">&quot;: &quot;</span> <span class="op">&lt;&gt;</span> str <span class="op">&lt;&gt;</span> <span class="fu">show</span> i)</span>
-<span id="cb17-25"><a href="#cb17-25" aria-hidden="true"></a>     <span class="fu">return</span> (<span class="dt">State</span> pid)</span>
-<span id="cb17-26"><a href="#cb17-26" aria-hidden="true"></a></span>
-<span id="cb17-27"><a href="#cb17-27" aria-hidden="true"></a><span class="ot">loop ::</span> <span class="dt">State</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</span>
-<span id="cb17-28"><a href="#cb17-28" aria-hidden="true"></a>loop s <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb17-29"><a href="#cb17-29" aria-hidden="true"></a>  <span class="co">-- `receive` は送信されたメッセージを受信する</span></span>
-<span id="cb17-30"><a href="#cb17-30" aria-hidden="true"></a>  x <span class="ot">&lt;-</span> receive</span>
-<span id="cb17-31"><a href="#cb17-31" aria-hidden="true"></a>  s1 <span class="ot">&lt;-</span> dealMessage s x</span>
-<span id="cb17-32"><a href="#cb17-32" aria-hidden="true"></a>  loop s1</span></code></pre></div>
-<p>Erlang についてはあんまり詳しくないんだが，確かいわゆるアクターモデル的な並行システムだった気がする． 各 Erlang プロセスはメッセージボックス的なのを持っていて，別プロセスから送信することができる． この型検査ってどれぐらいできるのだろうか． さすがに送信・受信の型があってるかまではチェックできなそう（調べてない）．</p>
-<p>で，これをビルドした結果がこちら：</p>
-<pre><code>$ docker run -it --rm -w /work -v `pwd`/example:/work matsubara0507/hamler build
-Compiling Data.Void
-...
-Compiling Demo.GenServer
-Compiling Main
-
-$ docker run -it --rm -w /work -v `pwd`/example:/work matsubara0507/hamler run
-&lt;0.749.0&gt; -&gt; &lt;0.750.0&gt;: great hamler! 672
-&lt;0.80.0&gt; -&gt; &lt;0.81.0&gt;: great hamler! 3
-&lt;0.81.0&gt; -&gt; &lt;0.82.0&gt;: great hamler! 4
-&lt;0.82.0&gt; -&gt; &lt;0.83.0&gt;: great hamler! 5
-...
-&lt;0.791.0&gt; -&gt; &lt;0.792.0&gt;: great hamler! 7714
-&lt;0.792.0&gt; -&gt; &lt;0.793.0&gt;: great hamler! 7715</code></pre>
-<h2 id="おしまい">おしまい</h2>
-<p>会社単位で作ってるみたい． すごいなぁ，羨ましい．</p>
   </div>]]></summary>
 </entry>
 
