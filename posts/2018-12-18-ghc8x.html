@@ -292,7 +292,7 @@
 </ul></li>
 <li><code>MonadFail</code> という型クラスで切り出す</li>
 <li><code>-Wnoncanonical-monadfail-instances</code> ができた？</li>
-<li>8.6: <a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#extension-MonadFailDesugaring"><code>MonadFailDesugaring</code></a> 言語拡張がデフォルトに
+<li>8.6: <a href="https://downloads.haskell.org/~ghc/8.6.1/docs/html/users_guide/glasgow_exts.html#extension-MonadFailDesugaring"><code>MonadFailDesugaring</code></a> 言語拡張がデフォルトに
 <ul>
 <li>do 記法の <code>fail</code> への脱糖が <code>MonadFail</code> のものになる</li>
 </ul></li>
@@ -301,7 +301,7 @@
 <p><a href="https://downloads.haskell.org/~ghc/8.6.1/docs/html/users_guide/8.6.1-notes.html">リリースノートはこれ</a>．</p>
 <h3 id="quantifiedconstraints">QuantifiedConstraints</h3>
 <ul>
-<li><a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#extension-QuantifiedConstraints">QuantifiedConstraints</a> 言語拡張を追加</li>
+<li><a href="https://downloads.haskell.org/~ghc/8.6.1/docs/html/users_guide/glasgow_exts.html#extension-QuantifiedConstraints">QuantifiedConstraints</a> 言語拡張を追加</li>
 <li>インスタンスの定義に量化が使える
 <ul>
 <li>例: <code>instance (Eq a, forall b. (Eq b) =&gt; Eq (f b)) =&gt; Eq (Rose f a)</code></li>
@@ -314,7 +314,7 @@
 </ul>
 <h3 id="derivingvia">DerivingVia</h3>
 <ul>
-<li><a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#extension-DerivingVia"><code>DerivingVia</code></a> 言語拡張について</li>
+<li><a href="https://downloads.haskell.org/~ghc/8.6.1/docs/html/users_guide/glasgow_exts.html#extension-DerivingVia"><code>DerivingVia</code></a> 言語拡張について</li>
 <li><code>via</code> キーワードを使ってインスタンスを明示的に選択できるようになる</li>
 <li><a href="https://github.com/kayhide/try-ghc86">kayhide 氏の資料</a>
 <ul>
@@ -339,7 +339,7 @@
 <ul>
 <li><a href="https://haskell.jp/blog/posts/2017/07-TypedHoles.html">Type Hole については Haskell-jp に記事がある</a></li>
 </ul></li>
-<li><a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#typed-hole-valid-hole-fits">コンパイルフラグ</a>で type Holes での推論アルゴリズム(?)のコントロールができるようになった(って感じかな)</li>
+<li><a href="https://downloads.haskell.org/~ghc/8.6.1/docs/html/users_guide/glasgow_exts.html#typed-hole-valid-hole-fits">コンパイルフラグ</a>で type Holes での推論アルゴリズム(?)のコントロールができるようになった(って感じかな)</li>
 </ul>
 <h3 id="シンタックスの言語拡張">シンタックスの言語拡張</h3>
 <ul>
