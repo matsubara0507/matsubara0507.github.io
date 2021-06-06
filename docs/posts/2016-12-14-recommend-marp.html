@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Marp のすゝめ" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <meta property="og:image" content="/images//assets/recommend-marp/editing_marp.jpg" />
+<title>Marp のすゝめ</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">Marp のすゝめ</h1>
+            </header>
+            <div class="post-content">
+              <p>本記事で紹介している <strong>Marp は今後メンテナンスしないと作者が明言しており</strong>，代わりに Marp Next というツールを作成しているようなので，そちらの紹介記事を書きました:</p>
+<ul>
+<li><a href="/posts/2019-02-04-re-recommend-marp.html">Re: Marp のすゝめ - ひげメモ</a></li>
+</ul>
+<h2 id="section"></h2>
+<p><a href="http://www.adventar.org/calendars/1572">IGGG アドベントカレンダー 2016</a> 14日目の記事です．</p>
+<p>昨日は謎のC++使い <a href="http://castorb100.hatenablog.com/entry/custom/advent/161213">castorb100</a> さんが mutex とおまけで Diffie-Hellman 鍵交換の話をしてくれてましたね． どちらの話も大学で聞いたよーな...(遠い目) どちらも聞くばかりで，自分で書いたことなかったなぁ，今度やってみるか．</p>
+<p>さて，今回は <a href="https://yhatt.github.io/marp/">Marp</a> というソフトウェアを紹介します． ちなみに，私が作ったものではないのであしからず．</p>
+<h2 id="marp-とは">Marp とは</h2>
+<p>Marp はマークダウン記法のファイルからスライドを生成してくれるソフトウェアです． 最近はやりの <a href="http://electron.atom.io/">Electron</a> で書かれているため，各プラットフォームで動作することができます．</p>
+<p>ソースコードは全て <a href="https://github.com/yhatt/marp">GitHub で公開</a>されており，MIT ライセンスのため，自由に改良して使うことができるはずです．</p>
+<p>開発経緯等は作者 <a href="https://qiita.com/yhatt/items/0bf65699a538d5508c33">yhatt さんの Qiita 記事</a>にまとめられているので，そちらを参照してください．</p>
+<p><img src="/assets/recommend-marp/editing_marp.jpg" /></p>
+<h3 id="なぜ-marp-か">なぜ Marp か</h3>
+<p>卒論発表するとか，学会発表するとかそういうレベルのものはパワポなりキーノートなり使ってしっかり作れば良いと思います． が，ただの LT や輪講や進捗報告の資料なんかは基本的に</p>
+<ul>
+<li>箇条書き</li>
+<li>図</li>
+<li>コード</li>
+<li>数式</li>
+</ul>
+<p>程度をだーっとしか書かないじゃないですか？ だったら，マークダウンで書ければ非常に楽だなーと誰しもが思ったと思います．</p>
+<p>現に，マークダウン(など)からスライドを生成してくれるソフトは多いです．</p>
+<ul>
+<li>参考: <a href="https://matome.naver.jp/odai/2133017481093611101">プログラマ向けプレゼン・ツールまとめ - NAVER まとめ</a></li>
+</ul>
+<p>自分も以前は <a href="http://pandoc.org/">pandoc</a> + <a href="http://lab.hakim.se/reveal-js/">reveal.js</a> を使っていたのだが，イマイチ使い勝手が悪い． 個人的に一番きつかったのが，<strong>画像の拡縮</strong> がうまくできないこと．</p>
+<p>で，Marp は図の拡縮も，コードのシンタックスハイライトも，数式も扱えるのです！</p>
+<p>もちろん足りないなぁと思う機能もいくつかある(例えばプレゼンテーションモードが無いとか)が，issue や wiki に "今後対応したい" 的なこ書いていたし，更新が活発なので気長に待ちます．</p>
+<h3 id="marp-の機能まとめ">Marp の機能まとめ</h3>
+<p>まぁわざわざ書き出す必要はないんですけど，GitHub とかでわかるので．</p>
+<ul>
+<li>Markdown から生成
+<ul>
+<li>GFM をベースにしてる</li>
+<li><code>---</code> でスライドを区切る (<a href="http://www.decksetapp.com/">Deckest</a> に寄せてる)</li>
+</ul></li>
+<li>テーマとカラーを指定できる
+<ul>
+<li>テーマは頭に <code>&lt;!-- $theme: gaia --&gt;</code></li>
+<li>カラーは各ページの頭に <code>&lt;!-- *template: default --&gt;</code></li>
+<li><code>*</code> があると一枚だけで無いと以降全部</li>
+</ul></li>
+<li>PDFにエクスポート
+<ul>
+<li>現状プレゼンテーションモードが無いので</li>
+<li>発表するときは PDF で</li>
+</ul></li>
+<li>画像に関するオプション
+<ul>
+<li><code>![70%](hoge.jpg)</code> で拡縮変更</li>
+<li><code>![center](hoge.jpg)</code> でセンタリング</li>
+<li><code>![bg](hoge.jpg)</code> で背景に設定</li>
+<li><code>![fit](hoge.jpg)</code> でサイズを合わせてくれる</li>
+<li><code>![70% center](hoge.jpg)</code> 空白区切りで複数指定か</li>
+</ul></li>
+<li><code>$ ... $</code> や <code>$$ ... $$</code> で数式をレンダリング
+<ul>
+<li><a href="https://khan.github.io/KaTeX/">KaTex</a> を使ってる</li>
+<li>なので完全に <a href="https://github.com/Khan/KaTeX/wiki/Function-Support-in-KaTeX">LaTex 表記をサポートしてるわけではない</a></li>
+</ul></li>
+<li>emoji をサポート
+<ul>
+<li><a href="https://github.com/yhatt/marp/issues/80">チェックボックスも絵文字を使えばいいんだって</a></li>
+</ul></li>
+<li><code>==abc==</code> でハイライト</li>
+<li><code>&lt;!-- footer: text --&gt;</code> でフッターを設定
+<ul>
+<li><code>*</code> があると以降のスライド全部に付ける</li>
+</ul></li>
+<li><code>&lt;!-- page_number: true --&gt;</code> でページ番号をそのページから追加(デフォルトは <code>false</code>)</li>
+<li><code>&lt;!-- $width: 12in --&gt;</code> や <code>&lt;!-- $height: 6in --&gt;</code> や <code>&lt;!-- $size: 16:9 --&gt;</code> でサイズを変更できる</li>
+</ul>
+<p>他にもあるかもしれない．</p>
+<p>逆に，たぶん現状できないのは</p>
+<ul>
+<li>プレゼンテーションモード
+<ul>
+<li><a href="https://github.com/yhatt/marp/issues/13">対応予定?</a></li>
+</ul></li>
+<li>テーマの作成(カスタム CSS)
+<ul>
+<li>現状のテーマのCSSをいじるのはできる(<a href="https://github.com/yhatt/marp#readme">README</a> 参照)</li>
+<li>もっといいのは<a href="https://github.com/yhatt/marp/issues/1">対応予定?</a></li>
+</ul></li>
+<li>ついてるエディタのショートカットをいじれない</li>
+</ul>
+<p>これも，他にもあるかもしれない．</p>
+<h2 id="テーマを作った">テーマを作った</h2>
+<p>さて，紹介して終わりじゃズルいですよね．</p>
+<p>実は自分はテーマを作って利用してます． 上述したとおり，ソフト側から作る方法はないんですけど，コードは公開されてるので，フォークしてエレクトロンを少しいじって作りました．</p>
+<p>一応，<a href="https://github.com/matsubara0507/marp/tree/edit_themes">自分のリポジトリ</a>にあげてあります．</p>
+<p>作ったテーマはこんな感じ．</p>
+<div class="slide">
+<div style="float: left;">
+<iframe src="//www.slideshare.net/slideshow/embed_code/key/4WBorWnrQgliwL" width="340" height="290" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin: 10px; max-width: 100%;" allowfullscreen>
+</iframe>
+</div>
+<div>
+<iframe src="//www.slideshare.net/slideshow/embed_code/key/b3tjkSUwe1I5YR" width="340" height="290" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin: 10px; max-width: 100%;" allowfullscreen>
+</iframe>
+</div>
+</div>
+<h3 id="準備">準備</h3>
+<p>まずは，クローンでもフォークでもダウンロードでもいいので，yhatt さんのリポジトリ(ないしは私のようなフォークされたの)からコード一式を取ってきます．</p>
+<p>次に，README に書いてあるように，ビルド環境を揃えます． <a href="https://www.npmjs.com/">npm</a> さへあれば良いので，npm をインストール(Windows の場合はインストーラーがある)し</p>
+<pre><code>$ npm install
+$ npm start</code></pre>
+<p>とするだけで，デバッグモードで起動できます．</p>
+<p>デバッグモードの場合，ツールバーに <code>Dev</code> とあるはずなので，それをクリックするとブラウザの開発者モードのようなものを使うことができます． これさへあれば，簡単に CSS を変更して試せますよね．</p>
+<p><img src="/assets/recommend-marp/dev_marp.jpg" /></p>
+<h3 id="css-を書く">CSS を書く</h3>
+<p><code>/sass/themes/</code> に適当な名前(例えば <code>hoge.sass</code>)で <a href="http://sass-lang.com/">Sass</a> のファイルを作ります． あとは，元々ある <code>gaia.sass</code> などを参考にして自由に書いてください．</p>
+<pre class="sass"><code>&amp;[data-template~=&quot;invert&quot;]
+  +color-template($text-color, $bg-color, #4fc3f7)
+
+&amp;[data-template~=&quot;gaia&quot;]
+  +color-template($highlight-color, $bg-color, #81d4fa)</code></pre>
+<p>って感じにすることでカラスキームを好きなだけ追加できます(<code>$text-color</code> とか <code>bg-color</code> は <code>gaia.sass</code> の上の方で定義されてる)．</p>
+<h3 id="coffeescript-を修正">CoffeeScript を修正</h3>
+<p><code>/coffee/classes/mds_md_setting.coffee</code> の32行目にある</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode coffeescript"><code class="sourceCode coffee"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>  <span class="kw">return</span> <span class="kw">if</span> basename <span class="kw">in</span> <span class="kw">[</span><span class="st">&#39;default&#39;</span><span class="kw">,</span> <span class="st">&#39;gaia&#39;</span><span class="kw">]</span> <span class="kw">then</span> <span class="st">&quot;css/themes/</span><span class="ch">#{</span>basename<span class="ch">}</span><span class="st">.css&quot;</span> <span class="kw">else</span> <span class="ot">null</span></span></code></pre></div>
+<p>の <code>['default', 'gaia']</code> の部分に自分で作ったテーマを追加する．</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode coffeescript"><code class="sourceCode coffee"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>  <span class="kw">return</span> <span class="kw">if</span> basename <span class="kw">in</span> <span class="kw">[</span><span class="st">&#39;default&#39;</span><span class="kw">,</span> <span class="st">&#39;gaia&#39;</span><span class="kw">,</span> <span class="st">&#39;hoge&#39;</span><span class="kw">]</span> <span class="kw">then</span> <span class="st">&quot;css/themes/</span><span class="ch">#{</span>basename<span class="ch">}</span><span class="st">.css&quot;</span> <span class="kw">else</span> <span class="ot">null</span></span></code></pre></div>
+<h3 id="後は使うだけ">後は使うだけ</h3>
+<p>マークダウンで <code>&lt;!-- $theme: hoge --&gt;</code> とか書けば使えます．</p>
+<h3 id="リリース">リリース</h3>
+<p>毎回，デバッグモードで起動するのが面倒なときは，README に書いて手順で実行ファイルを生成してしまえば良いです．</p>
+<pre><code>$ gulp release</code></pre>
+<p>ただし，<code>package.json</code> の <code>version</code> をあげないといけません． 自分は元と被らないように <code>0.0.10.1</code> みたいな感じで一桁増やしちゃいました．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>個人的には，ほんとーーーーーに助かってるんで，お金払いたいレベルです． 自分に実力があればコミットしたいんですけど.... 時間を見つけて，ソースコードをちゃんと読みます...</p>
+<p>すっごいおすすめなので，是非使ってみてください． スターも忘れずに！</p>
+<p>次回はまた sakuragi ですね． いったい何を書くんでしょうか．</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

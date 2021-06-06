@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Haskell Stack プロジェクトを Bazel でビルドしてみる" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>Haskell Stack プロジェクトを Bazel でビルドしてみる</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">Haskell Stack プロジェクトを Bazel でビルドしてみる</h1>
+            </header>
+            <div class="post-content">
+              <p>仕事では Bazel を使ってビルドすることが多くなり，自分でも Bazel ルールを自作するようになったので，実験も兼ねて趣味の Haskell Stack プロジェクトを Bazel を使ってビルドしてみることにしました． 本記事はそのメモ書きです．</p>
+<h1 id="section"></h1>
+<p>あとこれは <a href="https://qiita.com/advent-calendar/2020/haskell">Haskell Advent Calendar 2020</a> の2日目の記事です．</p>
+<h2 id="bazel">Bazel</h2>
+<p><a href="https://bazel.build/">Bazel</a> は Google のエンジニアが中心になって開発している OSS のビルドツールだ．</p>
+<p>以下のような特徴がある：</p>
+<ul>
+<li>必要なコマンドのインストール・バイナリのビルド・コマンドの実行などを記述できる</li>
+<li>それらは全て専用のサンドボックス内で実行されるため再現性が高い</li>
+<li>Starlark という Python 風な独自言語で記述する</li>
+<li>キャッシュなどが工夫されており二度目以降のビルドが高速になりやすい</li>
+<li>依存関係を明確に記述する必要がある</li>
+</ul>
+<p>また，記述した Bazel ルールを公開したり，それをライブラリのように再利用したりできる． 多くのメジャーな言語や Docker や Kubernetes などのメジャーなツールの Bazel ルールは<a href="https://github.com/search?q=topic%3Abazel-rules+org%3Abazelbuild&amp;type=Repositories">公式が結構提供してくれている</a>．</p>
+<h3 id="rules_haskell">rules_haskell</h3>
+<p>だがしかし，Haskell の Bazel ルールは不思議なことに公式にはない． 代わりに，<a href="https://www.tweag.io/">Tweag</a> が rules_haskell を精力的に作成してくれているので，今回はこれを利用することにする．</p>
+<ul>
+<li><a href="https://github.com/tweag/rules_haskell">tweag/rules_haskell - GitHub</a></li>
+</ul>
+<p>また，GitHub の <a href="https://github.com/github/semantic">semantic</a> が Bazel を利用しており，とても参考になる．</p>
+<h2 id="ビルドする">ビルドする</h2>
+<p>今回は <a href="https://github.com/matsubara0507/mdium">mdium</a> という自作ツールに Bazel を導入する． これは表題の通り，すでに Stack で管理されたプロジェクトだ． 今回の作業 PR はこれ：</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/mdium/pull/8">Use Bazel to build by matsubara0507 · Pull Request #8 · matsubara0507/mdium</a></li>
+</ul>
+<h3 id="bazelisk">bazelisk</h3>
+<p>作業を始める前に <a href="https://github.com/bazelbuild/bazelisk">bazelisk</a> について紹介する． bazel コマンドの代わりに bazelisk コマンドを利用することで，<code>.bazelversion</code> ファイルに記述したバージョンの bazel コマンドを勝手に利用してくれる．</p>
+<p>rules_haskell は現在の最新バージョンである v0.13 だと（なぜか）サポートしている Bazel のバージョンが 2.1.0〜3.3.1 なので， <code>.bazelversion</code> ファイルで 3.3.1 を指定しておくと良い． ちなみに，現在の最新は 3.7.1．</p>
+<h3 id="初期化する">初期化する</h3>
+<p>rules<em>haskell の README にある通り，下記のコマンドを実行することでカレントディレクトリのプロジェクトを rules</em>haskell で初期化できる：</p>
+<pre><code>$ curl https://haskell.build/start | sh</code></pre>
+<p>実行することで以下のファイルが作成される</p>
+<ul>
+<li><code>WORKSPACE</code></li>
+<li><code>BUILD.bazel</code></li>
+<li><code>zlib.BUILD.bazel</code></li>
+<li><code>Example.hs</code></li>
+<li><code>.bazelrc</code></li>
+</ul>
+<p>WORKSPACE ファイルは外部への依存を記述する（コマンドのインストールなど）ファイルで，Bazel コマンドを実行するときのルートパスにもなる． BUILD ファイルは実行可能な Bazel コマンドを記述する． WORKSPACE が1つの Bazel プロジェクトに1つなのに対して，BUILD ファイルはアプリケーション毎に分ける（ことが多い）． 例えば，zlib.BUILD.bazel は zlib を用意するためのものだ． .bazelrc は Bazel コマンドを実行するときに渡すデフォルトのオプションなどを記述することができる．</p>
+<p>Example.hs は例用の <code>Main</code> ファイルなので，これと今回は使わない zlib.BUILD.bazel は削除してしまう． また WORKSPACE に zlib 用の記述があるので，これも消してしまう．</p>
+<p>また，gitignore に <code>bazel-*</code> を追記する． これは Bazel を実行したときに生成されるファイル群なのでコミットしない．</p>
+<h3 id="依存パッケージの準備">依存パッケージの準備</h3>
+<p>Haskell を Bazel でビルドするのにはパッケージの依存関係を Bazel で明示する必要がある（Cabal ファイルなどとは別に）． 厳密にどのバージョンのパッケージを使うかを記述す必要があるのだが，一つ一つやるのはめんどくさい． そこで，Stackage を使うことでだいぶ楽ができる（Stackage のスナップショットには，様々なパッケージのバージョンが固定されている）． 次のような<a href="https://docs.haskellstack.org/en/v1.3.0/custom_snapshot/">カスタムスナップショット</a>を定義してあげると良い：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resolver</span><span class="kw">:</span><span class="at"> lts-16.23</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">packages</span><span class="kw">:</span><span class="co"> # 指定した resolver にはないパッケージをここで追記する</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> extensible-0.8.1</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> membership-0</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> fallible-0.1.0</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> incremental-0.3.1</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">github</span><span class="kw">:</span><span class="at"> matsubara0507/mix.hs</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">commit</span><span class="kw">:</span><span class="at"> 75714be080db16f6a4f9d0a22e86947ffcdadc57</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">subdirs</span><span class="kw">:</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> mix</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> mix-json-logger</span></span></code></pre></div>
+<p>このファイルを利用する形で，次のように WORKSPACE ファイルへ依存パッケージを記述する：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>load(</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;@rules_haskell//haskell:cabal.bzl&quot;</span>,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;stack_snapshot&quot;</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>stack_snapshot(</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;stackage&quot;</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 利用するパッケージを列挙する</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    packages <span class="op">=</span> [</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;base&quot;</span>,</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;rio&quot;</span>,</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;aeson&quot;</span>,</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;dotenv&quot;</span>,</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;extensible&quot;</span>,</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;fallible&quot;</span>,</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;mix&quot;</span>,</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;mix-json-logger&quot;</span>,</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;wreq&quot;</span>,</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 自分で定義したカスタムスナップショットを指定する</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>    local_snapshot <span class="op">=</span> <span class="st">&quot;//:stack-snapshot.yaml&quot;</span>,</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p>ちなみに，これは github/semantic にあったやり方．</p>
+<h3 id="パッケージのビルド">パッケージのビルド</h3>
+<p>次に自身で記述したパッケージのビルド方法を記述する． BUILD.bazel に次のようにルールを追記するだけだ：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>load(<span class="st">&quot;@rules_haskell//haskell:defs.bzl&quot;</span>, <span class="st">&quot;haskell_library&quot;</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>load(<span class="st">&quot;//:build/common.bzl&quot;</span>, <span class="st">&quot;GHC_FLAGS&quot;</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># You can add your own libraries with haskell_library.</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>haskell_library(</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;mdium-library&quot;</span>,</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    srcs <span class="op">=</span> glob([<span class="st">&#39;src/**/*.hs&#39;</span>]),</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># WORKSPACE の stack_snapshot で明記した依存パッケージを記述している</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    deps <span class="op">=</span> [</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:base&quot;</span>,</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:rio&quot;</span>,</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:aeson&quot;</span>,</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:extensible&quot;</span>,</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:fallible&quot;</span>,</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:mix&quot;</span>,</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:mix-json-logger&quot;</span>,</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:wreq&quot;</span>,</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    compiler_flags <span class="op">=</span> GHC_FLAGS,</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p>確か，<code>srcs</code> には <code>.hs</code> ファイル以外を指定しても利用できないはず． Template Haskell などで使いたい <code>.hs</code> 以外のファイルをビルド時に利用する場合は <code>extra_srcs</code> を利用する． まぁ詳しくは<a href="https://release.api.haskell.build/haskell/defs.html#haskell_library">公式ドキュメント</a>を参照してください．</p>
+<p><code>GHC_FLAGS</code> という定数っぽいのは build/common.bzl というファイルに次のように記述されている：</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>GHC_FLAGS <span class="op">=</span> [</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-v1&quot;</span>,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-j8&quot;</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-fdiagnostics-color=always&quot;</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-ferror-spans&quot;</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-Wall&quot;</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-Wcompat&quot;</span>,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-Wincomplete-record-updates&quot;</span>,</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-Wincomplete-uni-patterns&quot;</span>,</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-Wredundant-constraints&quot;</span>,</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-optP-Wno-nonportable-include-path&quot;</span>,</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-DBAZEL_BUILD=1&quot;</span>,</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-XNoImplicitPrelude&quot;</span>,</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-XConstraintKinds&quot;</span>,</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-XDataKinds&quot;</span>,</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-XFlexibleContexts&quot;</span>,</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-XFlexibleInstances&quot;</span>,</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-XGeneralizedNewtypeDeriving&quot;</span>,</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-XLambdaCase&quot;</span>,</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-XMultiWayIf&quot;</span>,</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-XNumericUnderscores&quot;</span>,</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-XOverloadedLabels&quot;</span>,</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-XOverloadedStrings&quot;</span>,</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-XPolyKinds&quot;</span>,</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-XRankNTypes&quot;</span>,</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-XStandaloneDeriving&quot;</span>,</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-XTypeFamilies&quot;</span>,</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-XTypeOperators&quot;</span>,</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;-XTypeSynonymInstances&quot;</span>,</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>]</span></code></pre></div>
+<p>これも github/semantic を参考にしたやり方だ．</p>
+<p>あとは <code>bazelisk build //:mdium-library</code> というコマンドを実行することでパッケージのビルドができる． なお，初回は30分ぐらい時間がかかるので注意．</p>
+<h3 id="バイナリのビルド">バイナリのビルド</h3>
+<p>あとはバイナリをビルドするだけだ．バイナリの場合は BUILD.bazel に次のようにルールを追記する：</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>load(<span class="st">&quot;@rules_haskell//haskell:defs.bzl&quot;</span>, <span class="st">&quot;haskell_binary&quot;</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>haskell_binary(</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;mdium&quot;</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    srcs <span class="op">=</span> glob([<span class="st">&quot;app/**/*.hs&quot;</span>]),</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    deps <span class="op">=</span> [</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;:mdium-library&quot;</span>, <span class="co"># 前小節で作ったパッケージ</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:base&quot;</span>,</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:rio&quot;</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:extensible&quot;</span>,</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:dotenv&quot;</span>,</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    compiler_flags <span class="op">=</span> GHC_FLAGS,</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p>あとは <code>bazelisk build //:mdium</code> というコマンドでバイナリのビルドができる．</p>
+<p>ただし，<code>--version</code> オプションがうまくコンパイルできないので，一旦この部分を削除することにした． というのも，(1) paths_module は自動生成されないのと (2) githash パッケージ（.git からバージョン情報を組み立てる）が動作しないためである． (1) は頑張ってとりあえず解決したので後述する．</p>
+<h3 id="github-actions-を設定する">GitHub Actions を設定する</h3>
+<p>最後に，CI/CD を回すために GitHub Actions を設定しておく． なんと，bazel と bazelisk コマンドはデフォルトで全てのプラットフォームにインストールされてるので，そのままコマンドを実行できる．</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> Build Application</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">on</span><span class="kw">:</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">pull_request</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> master</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-18.04</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v2</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Cache Bazel</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/cache@v2</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="fu">        path</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>          ~/.cache/bazel</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">key</span><span class="kw">:</span><span class="at"> ${{ runner.os }}-${{ hashFiles(&#39;WORKSPACE&#39;) }}</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Build binary</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="fu">      run</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>        bazelisk build //:mdium</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>        bazel-bin/mdium --help</span></code></pre></div>
+<p>キャッシュは1G以上あったが，30分近くかかったビルドが2分ぐらいで終わるようになるのでできれば設定した方がいいんじゃないかな．</p>
+<h2 id="バージョン情報を埋め込む">バージョン情報を埋め込む</h2>
+<p>かなり苦戦した． 色々試した結果，まずは path_module を自分で生成することにした． build/rules/haskell/def.bzl というファイルを作成し，そこに自作ルールを次のように記述した：</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>load(<span class="st">&quot;@rules_haskell//haskell:defs.bzl&quot;</span>, <span class="st">&quot;haskell_library&quot;</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> paths_module(name, package, version, <span class="bu">dir</span> <span class="op">=</span> <span class="st">&quot;gen_paths&quot;</span>, deps <span class="op">=</span> [<span class="st">&quot;@stackage//:base&quot;</span>], <span class="op">**</span>kwargs):</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    module_name <span class="op">=</span> <span class="st">&quot;Paths_&quot;</span> <span class="op">+</span> package.replace(<span class="st">&quot;-&quot;</span>, <span class="st">&quot;_&quot;</span>)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    paths_file <span class="op">=</span> <span class="bu">dir</span> <span class="op">+</span> <span class="st">&quot;/&quot;</span> <span class="op">+</span> module_name <span class="op">+</span> <span class="st">&quot;.hs&quot;</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    _generate_paths_module(name <span class="op">=</span> paths_file, module <span class="op">=</span> module_name, version <span class="op">=</span> version)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    haskell_library(name <span class="op">=</span> name, srcs <span class="op">=</span> [paths_file], deps <span class="op">=</span> deps, <span class="op">**</span>kwargs)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>_generate_paths_module <span class="op">=</span> rule(</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    _generate_paths_module_impl,</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    attrs <span class="op">=</span> {</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;module&quot;</span>: attr.string(),</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;version&quot;</span>: attr.string(),</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;_template&quot;</span>: attr.label(</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>            default <span class="op">=</span> <span class="st">&quot;:Paths_module.hs&quot;</span>,</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>            allow_single_file <span class="op">=</span> <span class="va">True</span>,</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _generate_paths_module_impl(ctx):</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>    paths_file <span class="op">=</span> ctx.actions.declare_file(ctx.label.name)</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>    ctx.actions.expand_template(</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>        template <span class="op">=</span> ctx.<span class="bu">file</span>._template,</span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>        output <span class="op">=</span> paths_file,</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>        substitutions <span class="op">=</span> {</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;%</span><span class="sc">{module_name}</span><span class="st">&quot;</span>: ctx.attr.module,</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;%</span><span class="sc">{version}</span><span class="st">&quot;</span>: <span class="bu">str</span>(ctx.attr.version.replace(<span class="st">&quot;.&quot;</span>, <span class="st">&quot;,&quot;</span>)),</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> struct(files <span class="op">=</span> depset([paths_file]))</span></code></pre></div>
+<p>やってることは単純で，<code>_generate_paths_module</code> という自作ルールで <code>Paths_xxx.hs</code> というファイルを生成し（普段は Cabal とかがやってるはず），それを <code>haskell_library</code> を利用して Bazel で参照できるパッケージにしている．</p>
+<h3 id="ルールの自作">ルールの自作</h3>
+<p>ルールの自作は，結構慣れてこないと難しいのだが簡単に説明する． ルールを自作するには，<code>rule_name = rule(...)</code> というふうにメソッドっぽいものを定義する． このルールで使える引数を <code>attrs</code> という名前付き引数で指定している．<code>_generate_paths_module</code> の場合は：</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>_generate_paths_module <span class="op">=</span> rule(</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    _generate_paths_module_impl,</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    attrs <span class="op">=</span> {</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;module&quot;</span>: attr.string(),</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;version&quot;</span>: attr.string(),</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;_template&quot;</span>: attr.label(</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>            default <span class="op">=</span> <span class="st">&quot;:Paths_module.hs&quot;</span>,</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>            allow_single_file <span class="op">=</span> <span class="va">True</span>,</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p><code>module</code> と <code>version</code> がある（アンダースコアから始まる引数は普通デフォルト値でしか利用しないみたい）． 実際のルールの実装は1引数目（あるいは <code>implementation</code> という名前付き引数）で指定する． つまり <code>_generate_paths_module_impl</code> というのが，<code>_generate_paths_module</code> の実装部分である（名前の通りですね）．</p>
+<p>ルールの実装に当たるメソッドの引数には ctx というのが割り当てられる． 詳しくは<a href="https://docs.bazel.build/versions/master/skylark/lib/ctx.html">公式ドキュメント</a>を参照して欲しいが，この引数からルールに与えられた引数を参照したり（<code>ctx.attr</code>），ファイルのダウンロードやテンプレートの展開をしたりができる（<code>ctx.actions</code>）． <code>_generate_paths_module_impl</code> の場合は：</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _generate_paths_module_impl(ctx):</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    paths_file <span class="op">=</span> ctx.actions.declare_file(ctx.label.name)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    ctx.actions.expand_template(</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>        template <span class="op">=</span> ctx.<span class="bu">file</span>._template,</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>        output <span class="op">=</span> paths_file,</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>        substitutions <span class="op">=</span> {</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;%</span><span class="sc">{module_name}</span><span class="st">&quot;</span>: ctx.attr.module,</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;%</span><span class="sc">{version}</span><span class="st">&quot;</span>: <span class="bu">str</span>(ctx.attr.version.replace(<span class="st">&quot;.&quot;</span>, <span class="st">&quot;,&quot;</span>)),</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> struct(files <span class="op">=</span> depset([paths_file]))</span></code></pre></div>
+<p><code>ctx.actions.expand_template</code> で，テンプレートの展開をしている． <code>substitutions</code> はテンプレートファイル内にある文字列の置換用辞書だ． テンプレートファイルは <code>_template</code> という引数のデフォルト値で指定しており，build/rules/haskell/Paths_module.hs という次のようなファイルを使っている：</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="op">%</span>{module_name} <span class="kw">where</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Prelude</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.Version</span> (<span class="dt">Version</span> (..))</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="ot">version ::</span> <span class="dt">Version</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>version <span class="ot">=</span> <span class="dt">Version</span> [<span class="op">%</span>{version}] []</span></code></pre></div>
+<p>モジュール名はパッケージ名の区切りもじを <code>_</code> に置換して，<code>Paths_</code> というプレフィックスをつけたものだ（最初の <code>paths_module</code> メソッドの冒頭でやっている）． バージョンは <code>1.2.3</code> などのままでは使えないので，<code>.</code> を <code>,</code> に置換してからテンプレートに埋め込んでいる． ちなみに，テンプレートファイルのように <code>BUILD</code> ファイル外のファイルを利用するには次のような <code>BUILD</code> ファイルを記述して公開設定をしておく必要がある：</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># build/rules/haskell/BUILD.bazel</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>filegroup(name <span class="op">=</span> <span class="st">&quot;all&quot;</span>, srcs <span class="op">=</span> glob([<span class="st">&quot;*&quot;</span>]), visibility <span class="op">=</span> [<span class="st">&quot;//visibility:public&quot;</span>])</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>exports_files([<span class="st">&quot;Paths_module.hs&quot;</span>], visibility <span class="op">=</span> [<span class="st">&quot;//visibility:public&quot;</span>])</span></code></pre></div>
+<h3 id="自作ルールを利用する">自作ルールを利用する</h3>
+<p>あとは BUILD.bazel に次のように追記することで paths_module が生成される：</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>load(<span class="st">&quot;//build/rules/haskell:def.bzl&quot;</span>, <span class="st">&quot;paths_module&quot;</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>paths_module(</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;paths_module&quot;</span>,</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    package <span class="op">=</span> <span class="st">&quot;mdium&quot;</span>,</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    version <span class="op">=</span> <span class="st">&quot;1.0.0&quot;</span>,</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p><code>haskell_binary</code> の方の <code>deps</code> に <code>:paths_module</code> を追記することで <code>Paths_mdium</code> モジュールを利用できるようになる． これを利用して <code>--version</code> オプションを復活させた．</p>
+<h2 id="github-container-registry-にプッシュする">GitHub Container Registry にプッシュする</h2>
+<p>最後に Bazel で Docker イメージのビルドを行い，それを GitHub Container Registry にプッシュできるようにしておく．</p>
+<h3 id="rules_docker-の準備">rules_docker の準備</h3>
+<p>Docker の操作を行うには rules<em>docker を利用する．rules</em>docker を利用するためにまずは WORKSPACE に rules_docker の設定を追記しよう：</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>http_archive(</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;io_bazel_rules_docker&quot;</span>,</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    sha256 <span class="op">=</span> <span class="st">&quot;1698624e878b0607052ae6131aa216d45ebb63871ec497f26c67455b34119c80&quot;</span>,</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    strip_prefix <span class="op">=</span> <span class="st">&quot;rules_docker-0.15.0&quot;</span>,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    urls <span class="op">=</span> [<span class="st">&quot;https://github.com/bazelbuild/rules_docker/releases/download/v0.15.0/rules_docker-v0.15.0.tar.gz&quot;</span>],</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>load(</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;@io_bazel_rules_docker//repositories:repositories.bzl&quot;</span>,</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    container_repositories <span class="op">=</span> <span class="st">&quot;repositories&quot;</span>,</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>container_repositories()</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>load(<span class="st">&quot;@io_bazel_rules_docker//repositories:deps.bzl&quot;</span>, container_deps <span class="op">=</span> <span class="st">&quot;deps&quot;</span>)</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>container_deps()</span></code></pre></div>
+<p>これは rules_docker の README に書いてある追記の仕方なのだが，このままビルドしようとすると次のようなエラーが出た：</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> bazel build //:image</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="ex">ERROR:</span> error loading package <span class="st">&#39;&#39;</span>: in /path/to/external/io_bazel_rules_docker/repositories/deps.bzl: in /path/to/external/io_bazel_rules_docker/repositories/py_repositories.bzl: Label <span class="st">&#39;@rules_python//python/legacy_pip_import:pip.bzl&#39;</span> is invalid because <span class="st">&#39;python/legacy_pip_import&#39;</span> is not a package<span class="kw">;</span> <span class="ex">perhaps</span> you meant to put the colon here: <span class="st">&#39;@rules_python//python:legacy_pip_import/pip.bzl&#39;</span><span class="pp">?</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="ex">INFO:</span> Elapsed time: 0.235s</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="ex">INFO:</span> 0 processes.</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="ex">FAILED:</span> Build did NOT complete successfully <span class="er">(</span><span class="ex">0</span> packages loaded<span class="kw">)</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    <span class="ex">Fetching</span> @bazel_gazelle<span class="kw">;</span> <span class="ex">fetching</span></span></code></pre></div>
+<p>色々調べたところ，これはどうやら <a href="https://github.com/bazelbuild/rules_docker/issues/1670#issuecomment-734249355">rules<em>docker が依存している rules</em>python v0.1.0 より古い rules_python を利用しようとしてエラーが起きている</a>ようだった． 実は rules<em>haskell が古い rules</em>python v0.0.1 に依存しており，rules<em>docker が最新をダウンロードするよりも先に古いほうの rules</em>python をダウンロードしてしまう（WORKSPACE ファイル内で先に書いてあるので）． なので，rules<em>haskell よりも先に，明示的に rules</em>python v0.1.0 を自分でダウンロードするようにした：</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>http_archive(</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;rules_python&quot;</span>,</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    sha256 <span class="op">=</span> <span class="st">&quot;b6d46438523a3ec0f3cead544190ee13223a52f6a6765a29eae7b7cc24cc83a0&quot;</span>,</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    urls <span class="op">=</span> [<span class="st">&quot;https://github.com/bazelbuild/rules_python/releases/download/0.1.0/rules_python-0.1.0.tar.gz&quot;</span>],</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Download rules_haskell and make it accessible as &quot;@rules_haskell&quot;.</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>http_archive(</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;rules_haskell&quot;</span>,</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>    ...</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p>幸いにも，rules<em>haskell は v0.1.0 の rules</em>python を使っても動作している． 今のところは．</p>
+<h3 id="ベースイメージのプル">ベースイメージのプル</h3>
+<p>ベースイメージの準備は WORKSPACE に次のように記述する：</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>load(</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;@io_bazel_rules_docker//container:container.bzl&quot;</span>,</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;container_pull&quot;</span>,</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>container_pull(</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;haskell_base&quot;</span>,</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    registry <span class="op">=</span> <span class="st">&quot;registry.hub.docker.com&quot;</span>,</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>    repository <span class="op">=</span> <span class="st">&quot;matsubara0507/ubuntu-for-haskell&quot;</span>,</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>    digest <span class="op">=</span> <span class="st">&quot;sha256:5967c5908a6c79dc4f4253badfe90326aaf4584a3eaa42d9c9ecc5ae8ba4d133&quot;</span>,</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p>ちなみにこれは<a href="https://hub.docker.com/r/matsubara0507/ubuntu-for-haskell">自作しているやつ</a>です．</p>
+<h3 id="イメージのビルドとプッシュ">イメージのビルドとプッシュ</h3>
+<p>ここからは BUILD.bazel の方に記述する． イメージの設定を追加する前に，バイナリをパッケージ化しておこう：</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>load(<span class="st">&quot;@rules_pkg//:pkg.bzl&quot;</span>, <span class="st">&quot;pkg_tar&quot;</span>)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>pkg_tar(</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;mdium-bin&quot;</span>,</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    srcs <span class="op">=</span> [<span class="st">&quot;:mdium&quot;</span>],</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    mode <span class="op">=</span> <span class="st">&quot;0755&quot;</span>,</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    package_dir <span class="op">=</span> <span class="st">&quot;/usr/local/bin&quot;</span>,</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p>こうすることで，バイナリのイメージへの展開先などが指定できて便利だ． イメージのビルドとプッシュの設定はこんな感じだ：</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>load(</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;@io_bazel_rules_docker//container:container.bzl&quot;</span>,</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;container_image&quot;</span>,</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;container_push&quot;</span>,</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>container_image(</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;mdium-image&quot;</span>,</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>    base <span class="op">=</span> <span class="st">&quot;@haskell_base//image&quot;</span>,</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>    tars <span class="op">=</span> [<span class="st">&quot;:mdium-bin&quot;</span>],</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>    entrypoint <span class="op">=</span> [<span class="st">&quot;/usr/local/bin/mdium&quot;</span>],</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>container_push(</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;push&quot;</span>,</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>    <span class="bu">format</span> <span class="op">=</span> <span class="st">&quot;Docker&quot;</span>,</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>    image <span class="op">=</span> <span class="st">&quot;:mdium-image&quot;</span>,</span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>    registry <span class="op">=</span> <span class="st">&quot;ghcr.io&quot;</span>,</span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>    repository <span class="op">=</span> <span class="st">&quot;matsubara0507/mdium&quot;</span>,</span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p>これで <code>bazelisk run //:push</code> で GitHub Container Registry へプッシュできる（先に <code>docker login</code> などの設定は済んでいる前提です）． ただ問題が1つある． 実はベースイメージは ubuntu だが，バイナリはビルド環境のものになっている． 例えば，Mac でこのコマンドを実行してしまうと，プッシュされたイメージでの <code>docker run</code> は次のようなエラーとなる：</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> docker run <span class="at">--rm</span> bazel:mdium-image</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="ex">standard_init_linux.go:211:</span> exec user process caused <span class="st">&quot;exec format error&quot;</span></span></code></pre></div>
+<p><a href="https://github.com/tweag/rules_haskell/issues/32">rules_haskell はどうやらまだ，クロスコンパイルをサポートしていない</a>ようなのでこれは仕方ない（そもそも Haskell のクロスコンパイルは難しい）． Haskell Stack なら Docker インテグレーションを使って割と簡単にできるが，，，どうしたものか． ということで，GitHub Actions に頼ることにした．</p>
+<h3 id="github-actions-からプッシュする">GitHub Actions からプッシュする</h3>
+<p>GitHub Actions の ubuntu イメージでイメージのビルドとプッシュをしてしまえば，正しい Docker イメージを構築できそうだ． ということで，その設定を次のように追記する：</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> Build Application</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="fu">on</span><span class="kw">:</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">pull_request</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> master</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a><span class="at">    ...</span></span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a><span class="at">    ...</span></span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Build image</span></span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> bazelisk build //:mdium-image</span></span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Setup QEMU</span><span class="co"> # ここはいらないかも</span></span>
+<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> docker/setup-qemu-action@master</span></span>
+<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">platforms</span><span class="kw">:</span><span class="at"> all</span></span>
+<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Login to GitHub Container Registry</span></span>
+<span id="cb21-23"><a href="#cb21-23" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> docker/login-action@v1</span></span>
+<span id="cb21-24"><a href="#cb21-24" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb21-25"><a href="#cb21-25" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">registry</span><span class="kw">:</span><span class="at"> ghcr.io</span></span>
+<span id="cb21-26"><a href="#cb21-26" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">username</span><span class="kw">:</span><span class="at"> matsubara0507</span></span>
+<span id="cb21-27"><a href="#cb21-27" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">password</span><span class="kw">:</span><span class="at"> ${{ secrets.CR_PAT }}</span></span>
+<span id="cb21-28"><a href="#cb21-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-29"><a href="#cb21-29" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Push image</span></span>
+<span id="cb21-30"><a href="#cb21-30" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">if</span><span class="kw">:</span><span class="at"> ${{ github.event_name != &#39;pull_request&#39; }}</span></span>
+<span id="cb21-31"><a href="#cb21-31" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> bazelisk run //:push</span></span></code></pre></div>
+<p><a href="https://github.com/docker/login-action"><code>docker/login-action</code></a> を使うことで，様々なレジストリの <code>docker login</code> を済ましてくれる． それ以外はただシンプルに bazel コマンドを実行しているだけだ．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>Bazel を利用することで，Haskell コードのビルドの他に Docker イメージのビルドなどの設定も同じビルドツールで管理できるようになります． 正直，Docker だけだとあまりメリットを感じませんが，例えば Web アプリケーションを作るためにフロント用言語（例えば TypeScript や Elm など）も Bazel でビルドしたり，k8s でのデプロイも Bazel で行えるようになったりすればメリットがどんどん大きくなってきますね．</p>
+<p>しかし，Bazel の「やってみた・使ってみた」記事は少なく，Haskell 関連や日本語記事となると本当にちょっとしかありません． ので，できるだけ増やして行こうかなーっていう野心です．</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

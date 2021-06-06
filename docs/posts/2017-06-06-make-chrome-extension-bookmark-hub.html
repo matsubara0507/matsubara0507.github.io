@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="GitHub に Bookmark を送る Chrome 拡張を作ってみた" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <meta property="og:image" content="/images//assets/make-chrome-extension-bookmark-hub/bookmark-hub.jpg" />
+<title>GitHub に Bookmark を送る Chrome 拡張を作ってみた</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">GitHub に Bookmark を送る Chrome 拡張を作ってみた</h1>
+            </header>
+            <div class="post-content">
+              <p>Chrome 拡張を作ってみた． どんなのを作ったかというと，ブックマークを GitHub のリポジトリのファイルに書き込んでいくやつ． ファイルを指定して，どんな時に参照してたかを分けたり，メッセージを残せたり．</p>
+<p>残りの細かい作業(消したり，修正したり，検索したり)は GitHub 側で自由にやってくれって感じの拡張です．</p>
+<p>なんか作業してるとタブがたまってしょうがない(あとで記事でも書こうかなと思うと尚更)のでずっと欲しかった． まぁ車輪の再発明の可能性あるけど，まぁいいや．</p>
+<h2 id="作った">作った</h2>
+<p>こんな感じ．</p>
+<p><img src="/assets/make-chrome-extension-bookmark-hub/bookmark-hub.jpg" /></p>
+<p>一応<a href="https://chrome.google.com/webstore/detail/bookmark-using-github/aoicnpaoijbcdgcailchgfmfiefpmpjm?hl=ja">公開</a>してみたけど，<strong>バグは残ってそう</strong>． ごめんなさい．</p>
+<p><a href="https://github.com/matsubara0507/bookmark-hub">ソースコードはコチラ</a>．</p>
+<p>見た目は <a href="https://primer.style">Primer.css</a> っていう GitHub 公式の CSS ツールキットを用いて寄せた． あとは，リポジトリとブランチを既存のを取ってきて選択できるようにした．</p>
+<h2 id="作る">作る</h2>
+<p>要約すると <a href="https://developer.github.com/v3/">GitHub API</a> でプッシュするだけ． で，認証とかをどうするかというと，愛用してる <a href="https://github.com/leonhartX/gas-github">GAS と GitHub をつなぐ Chrome 拡張</a>がいい感じで MIT ライセンスなので，使わせてもらった． これをベースに以下のサイトを見ながら，読み解いて作っていった．</p>
+<ul>
+<li><a href="https://liginc.co.jp/web/tool/browser/163575">Chromeのオリジナル拡張機能を開発しよう（ソースコードあり） | 株式会社LIG</a></li>
+</ul>
+<h3 id="vs-github-api">vs GitHub API</h3>
+<p>最初は，<a href="/posts/2017-05-03-make-githubapi-lib-for-gas.html">前作った日記 Bot</a> を参考にしながら</p>
+<ol>
+<li>コミットしたいブランチの情報を取得(既存のブランチに紐づけないならいらない)</li>
+<li>blobオブジェクトを作成(ファイル単位のオブジェクト)</li>
+<li>treeオブジェクトを作成(ディレクトリ単位のオブジェクト)</li>
+<li>commitオブジェクトを作成(treeオブジェクトをコミットに紐づける)</li>
+<li>ブランチに紐づける</li>
+</ol>
+<p>とかやってた． しかし，ちゃんと GitHub API を見てると，ファイルを直接送れる <a href="https://developer.github.com/v3/repos/contents/">Contents API</a> というのがあった． 早く気づきたかった...orz</p>
+<p>ただ，ファイルの有無をチャックするのには <a href="https://developer.github.com/v3/git/trees/">tree オブジェクトの API</a> を使って再帰的に探すようにした． <a href="https://developer.github.com/v3/repos/contents/#get-contents">get contents</a> でもできるんだけど，1000ファイルを超えると使えなくなるらしいし，せっかくだから自作してしまった．</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">existContents</span>(filepath<span class="op">,</span> pTree) {</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">var</span> loop <span class="op">=</span> (<span class="kw">function</span> (filepaths<span class="op">,</span> index<span class="op">,</span> pTree<span class="op">,</span> resolve) {</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> path <span class="op">=</span> filepaths[index]<span class="op">;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> result <span class="op">=</span> {}<span class="op">;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">var</span> i <span class="kw">in</span> pTree) {</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (pTree[i]<span class="op">.</span><span class="at">path</span><span class="op">.</span><span class="fu">toString</span>() <span class="op">===</span> path<span class="op">.</span><span class="fu">toString</span>()) {</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (i <span class="op">-</span> <span class="dv">0</span> <span class="op">===</span> filepaths<span class="op">.</span><span class="at">length</span> <span class="op">-</span> <span class="dv">1</span> <span class="op">&amp;&amp;</span> pTree[i]<span class="op">.</span><span class="at">type</span><span class="op">.</span><span class="fu">toString</span>() <span class="op">===</span> <span class="st">&#39;blob&#39;</span>) {</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>          result <span class="op">=</span> pTree[i]<span class="op">;</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>          <span class="cf">break</span><span class="op">;</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        } <span class="cf">else</span> <span class="cf">if</span> (pTree[i]<span class="op">.</span><span class="at">type</span><span class="op">.</span><span class="fu">toString</span>() <span class="op">===</span> <span class="st">&#39;tree&#39;</span>) {</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>          result <span class="op">=</span> pTree[i]<span class="op">;</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>          <span class="cf">break</span><span class="op">;</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">switch</span> (result<span class="op">.</span><span class="at">type</span>) {</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>      <span class="cf">case</span> <span class="st">&#39;blob&#39;</span><span class="op">:</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>        <span class="fu">resolve</span>({ <span class="dt">ok</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span> <span class="dt">sha</span><span class="op">:</span> pTree[i]<span class="op">.</span><span class="at">sha</span> })<span class="op">;</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>        <span class="cf">break</span><span class="op">;</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>      <span class="cf">case</span> <span class="st">&#39;tree&#39;</span><span class="op">:</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>        $<span class="op">.</span><span class="fu">ajax</span>({</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>          <span class="dt">url</span><span class="op">:</span> <span class="vs">`</span><span class="sc">${</span>github<span class="op">.</span><span class="at">baseUrl</span><span class="sc">}</span><span class="vs">/repos/</span><span class="sc">${</span>github<span class="op">.</span><span class="at">user</span><span class="sc">}</span><span class="vs">/</span><span class="sc">${</span>github<span class="op">.</span><span class="at">repo</span><span class="sc">}</span><span class="vs">/git/trees/</span><span class="sc">${</span>pTree[i]<span class="op">.</span><span class="at">sha</span><span class="sc">}</span><span class="vs">`</span><span class="op">,</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>          <span class="dt">headers</span> <span class="op">:</span> { <span class="dt">Authorization</span><span class="op">:</span> <span class="vs">`token </span><span class="sc">${</span>github<span class="op">.</span><span class="at">token</span><span class="sc">}</span><span class="vs">`</span> }</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>        })<span class="op">.</span><span class="fu">done</span>((tree) <span class="kw">=&gt;</span> {</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>          <span class="fu">loop</span>(filepaths<span class="op">,</span> index1<span class="op">,</span> tree<span class="op">.</span><span class="at">tree</span><span class="op">,</span> resolve)<span class="op">;</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>        })<span class="op">.</span><span class="fu">fail</span>(() <span class="kw">=&gt;</span> {</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>          <span class="fu">resolve</span>({ <span class="dt">ok</span><span class="op">:</span> <span class="kw">false</span> })<span class="op">;</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>        })<span class="op">;</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>        <span class="cf">break</span><span class="op">;</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>      <span class="cf">default</span><span class="op">:</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>        <span class="fu">resolve</span>({ <span class="dt">ok</span><span class="op">:</span> <span class="kw">false</span> })<span class="op">;</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>  })<span class="op">;</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="kw">new</span> <span class="bu">Promise</span>((resolve) <span class="kw">=&gt;</span> {</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>    <span class="fu">loop</span>(filepath<span class="op">.</span><span class="fu">split</span>(<span class="st">&#39;/&#39;</span>)<span class="op">,</span> <span class="dv">0</span><span class="op">,</span> pTree<span class="op">,</span> resolve)<span class="op">;</span></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>  })<span class="op">;</span></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>イロイロやってみた結果，<code>loop</code> という関数を使って，与えられたファイルパスを基にして再帰的に呼び出している．</p>
+<h3 id="vs-promise">vs Promise</h3>
+<p>上のコードを見るとあるように，<code>Promise</code> っていうオブジェクトを複製(生成)してる．</p>
+<p>Javascript は外のリソース(API をたたくとか)とやり取りする場合は，<code>Promise</code> オブジェクトに処理を記述して，あとで実行し，返ってくるまで処理が止まるようにしているみたいだ(なんでこうなっているんだろう？)． これを，<code>then</code> メソッドで数珠つなぎみたいにしていく． こんな感じ．</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">initContext</span>()</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="op">.</span><span class="fu">then</span>(initUserInfo)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="op">.</span><span class="fu">then</span>(checkGitHubAPI)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="op">.</span><span class="fu">then</span>(() <span class="kw">=&gt;</span> <span class="kw">new</span> <span class="bu">Promise</span>((resolve) <span class="kw">=&gt;</span> { github<span class="op">.</span><span class="at">repo</span> <span class="op">=</span> repository<span class="op">;</span> <span class="fu">resolve</span>()<span class="op">;</span> }))</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="op">.</span><span class="fu">then</span>(github<span class="op">.</span><span class="fu">get</span>(<span class="vs">`repos/</span><span class="sc">${</span>github<span class="op">.</span><span class="at">user</span><span class="sc">}</span><span class="vs">/</span><span class="sc">${</span>github<span class="op">.</span><span class="at">repo</span><span class="sc">}</span><span class="vs">/branches/</span><span class="sc">${</span>branch<span class="sc">}</span><span class="vs">`</span>))</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="op">.</span><span class="fu">then</span>(branch <span class="kw">=&gt;</span> {</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="op">!</span>(context<span class="op">.</span><span class="at">name</span> <span class="op">&amp;&amp;</span> context<span class="op">.</span><span class="at">email</span>)) {</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    context<span class="op">.</span><span class="at">name</span> <span class="op">=</span> branch<span class="op">.</span><span class="at">commit</span><span class="op">.</span><span class="at">commit</span><span class="op">.</span><span class="at">author</span><span class="op">.</span><span class="at">name</span><span class="op">;</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    context<span class="op">.</span><span class="at">email</span> <span class="op">=</span> branch<span class="op">.</span><span class="at">commit</span><span class="op">.</span><span class="at">commit</span><span class="op">.</span><span class="at">author</span><span class="op">.</span><span class="at">email</span><span class="op">;</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> github<span class="op">.</span><span class="fu">get</span>(<span class="vs">`repos/</span><span class="sc">${</span>github<span class="op">.</span><span class="at">user</span><span class="sc">}</span><span class="vs">/</span><span class="sc">${</span>github<span class="op">.</span><span class="at">repo</span><span class="sc">}</span><span class="vs">/git/trees/</span><span class="sc">${</span>branch<span class="op">.</span><span class="at">commit</span><span class="op">.</span><span class="at">commit</span><span class="op">.</span><span class="at">tree</span><span class="op">.</span><span class="at">sha</span><span class="sc">}</span><span class="vs">`</span>)()<span class="op">;</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="op">.</span><span class="fu">then</span>(tree <span class="kw">=&gt;</span> <span class="fu">existContents</span>(filepath<span class="op">,</span> tree<span class="op">.</span><span class="at">tree</span><span class="op">,</span> repository))</span></code></pre></div>
+<p>4つ目の <code>() =&gt; new Promise((resolve) =&gt; { github.repo = repository; resolve(); })</code> にあるように，引数の <code>resolve</code> が次の <code>then</code> で与えるメソッドである．</p>
+<p>なんかこういう構造は型クラスと相性よさそうだ．</p>
+<p>値が返ってきてから実行したい処理は，ちゃんと <code>Promise</code> の中に入れないとうまく動作しない(このあたりにバグが潜んでそう...)． 今は愚直に数珠繋ぎしてるが，きっともっと賢い繋げ方がある気がする．</p>
+<h3 id="vs-debug">vs Debug</h3>
+<p>やり方わからないから自流でやった．</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">&lt;div</span> <span class="er">id</span><span class="ot">=</span><span class="st">&#39;result&#39;</span><span class="kw">&gt;&lt;/div&gt;</span></span></code></pre></div>
+<p>みたいのを書いておいて</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">$</span>(<span class="st">&#39;#result&#39;</span>)<span class="op">.</span><span class="fu">text</span>(<span class="fu">$</span>(<span class="st">&#39;#result&#39;</span>)<span class="op">.</span><span class="fu">text</span>()<span class="vs">` : 1 </span><span class="sc">${</span><span class="bu">JSON</span><span class="op">.</span><span class="fu">stringify</span>(data)<span class="sc">}</span><span class="vs">`</span>)<span class="op">;</span></span></code></pre></div>
+<p>みたいな感じでいわゆる printf デバッグをしてた． あとは，Developer Tools とかを見ると，エラーが出ていることも(構文的なモノとかはコッチのが多いかなぁ)． 動的言語は静的検査があればわかるバグもごちゃっになって出てくるのでつらいですね...</p>
+<h3 id="vs-primercss">vs Primer.css</h3>
+<p>最後にサクッとデザイン変えて完成！っていう感じの軽い気持ちで手を出したら，思ったより時間かかった． というのも，Primer.css には Bootstrap みたいな Web 越しでリンクを貼れる公式のとこが見当たらなかった(ローカルに落とさなくても使える的な)． なので，ローカルにリポジトリを落として，ビルドする必要がある．</p>
+<p>が，ぼくは Windows なので，ちとつらい． このためだけに <code>node</code> いれるのもだるかったので，Docker でビルドして持ってこようと考えた(どーせ css を生成するだけだろーし)．</p>
+<p>しかし，<a href="https://github.com/primer/primer-css/blob/master/README.md">ドキュメント</a>にあるとおりに，クローンして <code>npm run build</code> とやったのに，<code>Error: File to import not found or unreadable: primer-core/index.scss</code> とでたり，<a href="https://www.npmjs.com/package/primer-module-build"><code>primer-module-build</code></a> が無いといわれたり，なかなかすんなりいかなかった．</p>
+<p>最終的には，</p>
+<ol>
+<li><code>docker run --rm -it -v /c/Users/username/tekitounatokoro:/mnt node /bin/bash</code> って感じに適当なところを適当なとこにマウントし</li>
+<li><code>/root</code> で</li>
+<li><code>npm install --save primer-module-build</code> し</li>
+<li><code>npm install --save primer-css</code> して</li>
+<li><code>/root/node_modules</code> 以下にあるビルド済み <code>prime-css</code> の中から生成された CSS ファイルを</li>
+<li>マウント先にコピーして取ってきた</li>
+</ol>
+<p>あとはこの <a href="https://styleguide.github.com/primer/">Primer.css のドキュメント</a>に従って，いい感じにデザインを変えていった．</p>
+<h3 id="vs-javascript">vs Javascript</h3>
+<p>意外な挙動がいくつか．</p>
+<h4 id="日時のフォーマット">日時のフォーマット</h4>
+<p>まず，日時のフォーマットをするメソッドが無かったので<a href="http://kuroeveryday.blogspot.jp/2016/06/format-to-ISO8601.html">調べて</a>作った． まぁこれは最終的には使ってないんだが(コミットするときに必要だった)．</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">formatISO8601</span>(date) {</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">var</span> offset <span class="op">=</span> (<span class="kw">function</span> (d) {</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> o <span class="op">=</span> d<span class="op">.</span><span class="fu">getTimezoneOffset</span>() <span class="op">/</span> <span class="op">-</span><span class="dv">60</span><span class="op">;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> ((<span class="dv">0</span> <span class="op">&lt;</span> o) <span class="op">?</span> <span class="st">&#39;+&#39;</span> <span class="op">:</span> <span class="st">&#39;-&#39;</span>)(<span class="st">&#39;00&#39;</span><span class="bu">Math</span><span class="op">.</span><span class="fu">abs</span>(o))<span class="op">.</span><span class="fu">substr</span>(<span class="op">-</span><span class="dv">2</span>)<span class="st">&#39;:00&#39;</span><span class="op">;</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  })(date)<span class="op">;</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> [</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>      date<span class="op">.</span><span class="fu">getFullYear</span>()<span class="op">,</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>      (<span class="st">&#39;00&#39;</span>(date<span class="op">.</span><span class="fu">getMonth</span>()<span class="dv">1</span>))<span class="op">.</span><span class="fu">substr</span>(<span class="op">-</span><span class="dv">2</span>)<span class="op">,</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>      (<span class="st">&#39;00&#39;</span>date<span class="op">.</span><span class="fu">getDate</span>())<span class="op">.</span><span class="fu">substr</span>(<span class="op">-</span><span class="dv">2</span>)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    ]<span class="op">.</span><span class="fu">join</span>(<span class="st">&#39;-&#39;</span>)<span class="op">,</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;T&#39;</span><span class="op">,</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>      (<span class="st">&#39;00&#39;</span>date<span class="op">.</span><span class="fu">getHours</span>())<span class="op">.</span><span class="fu">substr</span>(<span class="op">-</span><span class="dv">2</span>)<span class="op">,</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>      (<span class="st">&#39;00&#39;</span>date<span class="op">.</span><span class="fu">getMinutes</span>())<span class="op">.</span><span class="fu">substr</span>(<span class="op">-</span><span class="dv">2</span>)<span class="op">,</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>      (<span class="st">&#39;00&#39;</span>date<span class="op">.</span><span class="fu">getSeconds</span>())<span class="op">.</span><span class="fu">substr</span>(<span class="op">-</span><span class="dv">2</span>)</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    ]<span class="op">.</span><span class="fu">join</span>(<span class="st">&#39;:&#39;</span>)<span class="op">,</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    offset</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>  ]<span class="op">.</span><span class="fu">join</span>(<span class="st">&#39;&#39;</span>)<span class="op">;</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<h4 id="this">this</h4>
+<p>GitHub API に関するのだけ外に出してたら</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">GitHubAPI</span>(baseUrl<span class="op">,</span> user<span class="op">,</span> repo<span class="op">,</span> token) {</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">this</span><span class="op">.</span><span class="at">baseUrl</span> <span class="op">=</span> baseUrl<span class="op">;</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">this</span><span class="op">.</span><span class="at">user</span> <span class="op">=</span> user<span class="op">;</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">this</span><span class="op">.</span><span class="at">repo</span> <span class="op">=</span> repo<span class="op">;</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">this</span><span class="op">.</span><span class="at">token</span> <span class="op">=</span> token<span class="op">;</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>GitHubAPI<span class="op">.</span><span class="at">prototype</span><span class="op">.</span><span class="at">fetch</span> <span class="op">=</span> <span class="kw">function</span>(method<span class="op">,</span> endpoint<span class="op">,</span> data) {</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="kw">new</span> <span class="bu">Promise</span>((resolve<span class="op">,</span> reject) <span class="kw">=&gt;</span> {</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> params <span class="op">=</span> {</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>      <span class="dt">url</span><span class="op">:</span> <span class="vs">`</span><span class="sc">${</span><span class="kw">this</span><span class="op">.</span><span class="at">baseUrl</span><span class="sc">}</span><span class="vs">/</span><span class="sc">${</span>endpoint<span class="sc">}</span><span class="vs">`</span><span class="op">,</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>      <span class="dt">headers</span> <span class="op">:</span> { <span class="dt">Authorization</span><span class="op">:</span> <span class="vs">`token </span><span class="sc">${</span><span class="kw">this</span><span class="op">.</span><span class="at">token</span><span class="sc">}</span><span class="vs">`</span> }</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    }<span class="op">;</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  })<span class="op">;</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>}<span class="op">;</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>GitHubAPI<span class="op">.</span><span class="at">prototype</span><span class="op">.</span><span class="at">get</span> <span class="op">=</span> <span class="kw">function</span> (endpoint) {</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="kw">function</span>() { <span class="cf">return</span> <span class="kw">this</span><span class="op">.</span><span class="fu">fetch</span>(<span class="st">&#39;GET&#39;</span><span class="op">,</span> endpoint<span class="op">,</span> <span class="kw">null</span>)<span class="op">;</span> }<span class="op">;</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>}<span class="op">;</span></span></code></pre></div>
+<p>こんな感じのコードで <code>this</code> に <code>fetch</code> がないと怒られた． ぜんぜん意味が分からなかったんだけど，調べてみたら．</p>
+<ul>
+<li><a href="http://qiita.com/takeharu/items/9935ce476a17d6258e27">JavaScriptの「this」は「4種類」？？ - Qiita</a></li>
+</ul>
+<blockquote>
+<p>メソッド呼び出しの中で関数呼び出しされているので、 あくまで注2の「this」はグローバルを指してしまいます。</p>
+</blockquote>
+<p>えぇぇ，って感じだった． (メソッドではなく)関数の <code>this</code> はグローバルを指すんだってさ． まぁ確かに，関数を実行するのはオブジェクトでないしなぁ． で解決策は</p>
+<blockquote>
+<p>「<code>this</code>」を別の変数で持っておきます。この手法はよく使われます。 慣用的に変数は「<code>self</code>」, 「<code>that</code>」, 「<code>_this</code>」のどれかが使われる事が多いです。</p>
+</blockquote>
+<p>なんか <code>var _this = this</code> とか何度か見たけど，そういう意味だったのね．</p>
+<h4 id="primitive-string-型と-string-クラス">Primitive string 型と String クラス</h4>
+<p><a href="http://jshint.com/">JSHint</a> 使ってリファクタリングしたら <code>==</code> を <code>===</code> にしろと言われた． 言われたとおりにしたら動かなくなった...</p>
+<p>原因のひとつは Primitive の文字列型と文字列クラスを比較してたから． <code>'abc'</code> とかみたいに値を書けば文字列型だが，API の返り値である JSON オブジェクトの文字列は文字列クラスになっている． なので，JSONオブジェクトだったほうを <code>toString()</code> して比較した．</p>
+<h4 id="for-in-の挙動">for-in の挙動</h4>
+<p>Javascript の拡張 for 文として次のようなのがある</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> xs <span class="op">=</span> [<span class="dv">1</span><span class="op">,</span><span class="dv">2</span><span class="op">,</span><span class="dv">3</span>]<span class="op">;</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (<span class="kw">var</span> i <span class="kw">in</span> xs)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(xs[i])<span class="op">;</span></span></code></pre></div>
+<p>for-in なのに，要素(<code>1,2,3</code> の方)ではなく，インデックスが変えるのにも驚きなのだが，じつはこの <code>i</code>，文字列なのである．</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (<span class="kw">var</span> i <span class="kw">in</span> [<span class="dv">1</span><span class="op">,</span><span class="dv">2</span><span class="op">,</span><span class="dv">3</span>])</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="kw">typeof</span> i)<span class="op">;</span></span></code></pre></div>
+<p>とやると <code>string</code> が変える． <code>i === xs.length - 1</code> が必ず <code>false</code> になるので気づいた． 文字列を数値に変換するだけなので，直すのは簡単．</p>
+<p>ちなみに，なんでこうなってるのかとトゥートしてみたら．</p>
+<p><a href="https://qiitadon.com/@okadahiroshi/37851" class="uri">https://qiitadon.com/@okadahiroshi/37851</a></p>
+<blockquote>
+<p>javascript の for in はあくまでオブジェクトのプロパティー<em>名</em> に対して列挙するので、文字列になる。</p>
+</blockquote>
+<p>とのこと． 要するに連想配列のことも考慮してるみたい． なるほど(別の動作でいいのに)．</p>
+<h2 id="公開">公開</h2>
+<p>以下を参考に5ドル払って公開してみた． アイコンやスクリーンショットのサイズが厳密に決まってたのなんでなんだろう．</p>
+<ul>
+<li><a href="http://qiita.com/otchy/items/e29bf2e377c5b7ddc2f7">超最低限の Chrome エクステンションを開発しウェブストアで公開するまでの手順 - Qiita</a></li>
+</ul>
+<h2 id="使う">使う</h2>
+<p><img src="/assets/make-chrome-extension-bookmark-hub/bookmark-hub-run1.jpg" /></p>
+<p><img src="/assets/make-chrome-extension-bookmark-hub/bookmark-hub-run2.jpg" /></p>
+<p><img src="/assets/make-chrome-extension-bookmark-hub/bookmark-hub-run3.jpg" /></p>
+<h2 id="おしまい">おしまい</h2>
+<p>出来たのはうれしいけど，その場しのぎでサクッと作ったのでもやぁぁっとしますね． javascript の勉強もしたいなぁ． あと，再現性の低いバグがなぁ...</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

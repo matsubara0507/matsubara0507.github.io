@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Elchemy 入門 : その１" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>Elchemy 入門 : その１</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">Elchemy 入門 : その１</h1>
+            </header>
+            <div class="post-content">
+              <p>Elm から Elixir のトランスパイラ，<a href="https://github.com/wende/elmchemy">Elchemy</a> についてイロイロと調べたのでまとめていきます． 今回は</p>
+<ul>
+<li><a href="https://github.com/wende/elchemy/blob/9184d758dc1d5d5d3209302f9742c11fe01aa92c/README.md">README</a> の意訳</li>
+<li>Dockerイメージ作成</li>
+<li>Tutorial その１をやってみた</li>
+</ul>
+<p>の3本立てです． ちなみに，現在のバージョンは 0.7.4 です．</p>
+<h2 id="readme-意訳">README 意訳</h2>
+<p>Elchemy は，Elixir の強力なエコシステムと Elm の型安全によって，より簡潔に高速に高品質で型安全なコードを記述するために作られた処理系です．</p>
+<ul>
+<li><del>Elchemy のオンライン環境</del>リンクが死んでた</li>
+<li><a href="https://wende.gitbooks.io/elchemy/content/">Elchemy の公式ドキュメント</a></li>
+<li><a href="https://hackernoon.com/elmchemy-write-type-safe-elixir-code-with-elms-syntax-part-1-introduction-8968b76d721d">Elchemy のチュートリアル</a> (今のところ Part1 と Part2 がある)</li>
+</ul>
+<p>なにか質問がある場合は <a href="https://github.com/wende/elchemy/labels/Q%26A"><code>Q&amp;A</code> ラベルを付けて Issue を書いて</a>，だそうだ．</p>
+<h3 id="features">Features</h3>
+<ul>
+<li><strong>型推論:</strong> 強力な型推論によって型注釈を付けることはめったにない． コンパイラによって全て検査される．</li>
+<li><strong>簡単で型安全な呼び出し:</strong> 余計なボイラープレートなしに Elixir/Erlang のプログラムを呼び出すことが出来る． Elixir の typespec に基づいて可能な限り徹底的に型安全の観点から全ての呼び出しを検査する．</li>
+<li><strong>Elm と Elixir のいいとこどり:</strong> Elchemy は Elm の型安全性と強力な型推論，素晴らしい表現力を継承し，Elixir の Doc-test とツール群，そして BEAM プラットフォームを継承している．</li>
+<li><strong>ほとんどないランタイムエラー:</strong> Elchemy の型システムは <strong>ほぼ全てのランタイムエラーを排除する</strong> ． エッジケースが少なくなることで，Elchemy のコードそのものは安全になる． ランタイムエラーが発生した場合，おそらく Elixir のところが起こしているのだろう．</li>
+<li><strong>美しくて可読性の高い出力:</strong> 生成されたコードは慣習的で効率的で元のコードが無くとも読みやすく分析可能である．</li>
+</ul>
+<h3 id="faq">FAQ</h3>
+<h4 id="どういう人にお勧めか">どういう人にお勧めか？</h4>
+<ul>
+<li>型が好きな人</li>
+<li>実行時エラーよりコンパイルエラーの方が好みな人</li>
+<li><code>defp add(a, b), do: b + c</code> より <code>add b c = b + c</code> な書き方の方が好みな人</li>
+<li>カリー化が好きな人</li>
+<li>さっさと失敗させるより全て失敗しない方が賢いと思う人</li>
+</ul>
+<h4 id="どういう人にお勧めじゃないか">どういう人にお勧めじゃないか？</h4>
+<ul>
+<li>もしあなたのプロジェクトが徹底的にテストされたライブラリに依存しておりかつ，あなたが 0 から始まるバージョンを嫌う場合</li>
+<li>モナドを学ぶことで口ひげが伸び視力が弱くなることを恐れる場合</li>
+</ul>
+<h4 id="既にある-elixir-プロジェクトを置き換えるのは可能か">既にある Elixir プロジェクトを置き換えるのは可能か？</h4>
+<p>可能です． しかし，ナイスでダンディーなコンパイルツールは開発中です．</p>
+<h4 id="上司に-elchemy-に現を抜かしていることがばれるだろうか">上司に Elchemy に現を抜かしていることがばれるだろうか？</h4>
+<p>Elchemy の出力はコードの可読性を第一級市民として扱っている． コードは適切にインデントされ，コメントは省略されず，できるだけ最適化されている(例えば，case 節は関数のオーバーロードになる)．</p>
+<h4 id="elchemy-100-はまだ">Elchemy 1.0.0 はまだ？</h4>
+<p>終わったらね．</p>
+<h4 id="コントリビュートしてもいい">コントリビュートしてもいい？</h4>
+<p>絶対にしてください．</p>
+<h4 id="型はどのように表される">型はどのように表される？</h4>
+<p>Elchemy の全ての値コンストラクタはスネークケースのアトムとして表現され，コンストラクタの引数はタプルで表わされる． つまり，Elchemy で <code>MyType 42 "Forty two" Error</code> という値は <code>{:my_type, 42, "Forty two", :error}</code> という Elixir の値となる．</p>
+<p>(Type constructor と書いてあるが正しくは Data constructor あるいは value constructor のはずで，Type application も間違いだと思われる)</p>
+<h4 id="elm-の既存のライブラリを-elchemy-で使えるの">Elm の既存のライブラリを Elchemy で使えるの？</h4>
+<p>Native モジュールや Port，Elm ランタイムを使わない限りは，それらを安全にインポートして使うことが出来る．</p>
+<h4 id="elixir-の既存のライブラリを-elchemy-で使えるの">Elixir の既存のライブラリを Elchemy で使えるの？</h4>
+<p>使える． 任意のモジュールの任意の関数を FFI 呼び出しすることが出来る． Elixir モジュール，Erlang モジュール，あるいはマクロであってしても自身の Elchemy コードに含むことが出来る． FFI 呼び出しは Elchemy 内で特別扱いされる． そして，<code>@spec</code> に基づいた型の解析を行うテストが生成されるため，Elixir コードの型安全性を損なうことは無い． 可読性を向上させるためにも FFI 呼び出しは可能な限り避け，常にドキュメント化と <code>doctest</code> をすることをお勧めする．</p>
+<h4 id="テストのような-elixir-のマクロは使えるの">テストのような Elixir のマクロは使えるの？</h4>
+<p>残念ながら，<code>do...end</code> ブロックのような任意のマクロを書くことはまだできない． 替わりとして，任意の関数に対して次のような Elixir のインラインコードを書くことが出来る．</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">{- ex</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co">  code_here</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">-}</span></span></code></pre></div>
+<p>しかし，それは最後の手段であり，乱用すべきではない．</p>
+<h4 id="elchemy-の-elm-ファイルをコンパイルするのに-elm-処理系をインストールする必要がある">Elchemy の <code>.elm</code> ファイルをコンパイルするのに Elm 処理系をインストールする必要がある？</h4>
+<p>(なんとなく解答的に Elixir 処理系だけで完結できないの？という意味っぽい)</p>
+<p>あなたは Elm のようなコードを書いて Elixir のコードを生成したいのに， Elixir コードの生成を Elixir コードを書いて作りたいですか？</p>
+<h4 id="elchemy-プロジェクト">Elchemy プロジェクト</h4>
+<p>作者はこの Elchemy プロジェクトそのものを可能な限り Elm で構築したいらしい． <a href="https://github.com/wende/elchemy#maturity-of-the-project">README にはその達成度が書かれている</a>． 処理系そのものは，ほとんど Elm になっているようだ(結果として世にも珍しい Elm で書かれたコンパイラが出来ている)． エフェクトや ErlangVM 回りが厳しいらしい．</p>
+<h2 id="dockerイメージ作成">Dockerイメージ作成</h2>
+<p>ココからが本題．</p>
+<p>新しい言語を軽く試すのに最適なのはやはり Docker だ． Elchemy の Docker イメージは見当たらなかったので作った．</p>
+<ul>
+<li><a href="https://hub.docker.com/r/matsubara0507/elchemy">matsubara0507/elchemy - Docker Hub</a></li>
+</ul>
+<h3 id="できるまで">できるまで</h3>
+<p>本家の README を読むとわかるように Elchemy でビルドするのに必要なモノは以下の4つ．</p>
+<ul>
+<li>Node (npm)</li>
+<li>Elixir (ErlangVM)</li>
+<li>Elm</li>
+<li>elm-github-install</li>
+</ul>
+<p>これらのうち，もっともめんどくさいのは Elixir もとい ErlangVM だと思う． なので base イメージを Elixir にし，ひとつずつ入れていった．</p>
+<p>base イメージにした <a href="https://hub.docker.com/_/elixir/">Elixir の Docker イメージは公式のモノ</a>を使う． <a href="https://github.com/erlang/docker-erlang-otp/blob/99ab1e150c3708ce81bc08073cf5793ef67c6a1c/20/Dockerfile#L1">OSは Debian9 だ</a>．</p>
+<p>Debian への Node のインストールには以下の記事を参考にした．</p>
+<ul>
+<li><a href="http://atomiyama.com/linux/page/debian-9-2-node-npm/">debian9.2にNode.jsとnpmをインストールする｜atominux</a></li>
+</ul>
+<p>こんな感じ</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> curl -sL https://deb.nodesource.com/setup_${NODE_VERSION} | bash - \</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  &amp;&amp; apt-get update &amp;&amp; apt-get install -y nodejs \</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  &amp;&amp; apt-get clean \</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  &amp;&amp; rm -rf /var/lib/apt/lists/*</span></code></pre></div>
+<p>後は簡単で Elm，elm-github-install，Elchemy は npm からインストールできる． ただし，Elm と elm-github-install には <code>--unsafe-perm=true --allow-root</code> という<a href="https://github.com/gdotdesign/elm-github-install/issues/21#issuecomment-332827661">オプションを付けないといけない</a>．</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> npm i -g elm@${ELM_VERSION} --unsafe-perm=true --allow-root</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> npm i -g elm-github-install@${ELM_GITHUB_INSTALL_VERSION} --unsafe-perm=true --allow-root</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> npm i -g elchemy@${ELCHEMY_VERSION}</span></code></pre></div>
+<h3 id="auto-build">Auto Build</h3>
+<p>Elchemy のリリースを眺めてると想像より開発スピードが速かったので，Elchemy の更新を観測して自動ビルドしてくれる仕組みを作ることにした． シェル芸を駆使すればなんとかなりそうだったが，サクッと Haskell 芸をかまして CLI を作った．</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/dockwright">matsubara0507/dockwright - GitHub</a></li>
+</ul>
+<p>(船大工が <code>shipwright</code> なので Dockerfile 大工ってことで <code>dockwright</code>)</p>
+<p>以下のような設定を書いておくと <code>dockwright</code> ってコマンドで GitHub の <code>release</code> API を叩いてリリースタグを取ってきてくれる． それを Docker 内の環境変数としてテンプレートに書き込む．</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">elchemy_version</span><span class="kw">:</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">github</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> wende/elchemy</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">hook</span><span class="kw">:</span><span class="at"> release</span></span></code></pre></div>
+<p>あとは git diff で更新をみて更新があればコミットする(コミットさえすれば Docker Hub が自動ビルドしてくれる)． 定期実行は例の如く TravisCI で回す．</p>
+<h2 id="tutorial-その１をやってみた">Tutorial その１をやってみた</h2>
+<p>以下の記事をやってみる．</p>
+<ul>
+<li><a href="https://hackernoon.com/elmchemy-write-type-safe-elixir-code-with-elms-syntax-part-1-introduction-8968b76d721d">Elmchemy — Write type-safe Elixir code with Elm's syntax — part 1 — Introduction</a></li>
+</ul>
+<p>まずは <code>article_example_elchemy</code> というプロジェクトを作る． 記事内では <code>mix new</code> をして <code>elchemy init</code> をしろと書いてあるが，最新の Elchemy では <code>elchemy new</code> をすることで一気にやってくれる．</p>
+<pre><code>$ elchemy new article_example_elchemy</code></pre>
+<p>Elchemy をコンパイルするためには，<code>mix.exs</code> を次のように<a href="https://wende.gitbooks.io/elchemy/content/INSTALLATION.html">書き換える必要がある</a>．</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">MyProject</span><span class="op">.</span><span class="cn">Mixfile</span> <span class="kw">do</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">Mix</span><span class="op">.</span><span class="cn">Project</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> project <span class="kw">do</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">app:</span> <span class="va">:my_project</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>      <span class="va">version:</span> <span class="st">&quot;0.1.0&quot;</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>      <span class="va">elixir:</span> <span class="st">&quot;~&gt; 1.5&quot;</span>,</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">start_permanent:</span> <span class="cn">Mix</span><span class="op">.</span>env <span class="op">==</span> <span class="va">:prod</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">deps:</span> deps()</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    ] <span class="op">|&gt;</span> <span class="cn">Code</span><span class="op">.</span>eval_file(<span class="st">&quot;elchemy.exs&quot;</span>)<span class="op">.</span>init <span class="co"># ココ!</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+<p><code>|&gt; Code.eval_file("elchemy.exs").ini</code> の部分を書き加えている．</p>
+<h3 id="ディレクトリ構成">ディレクトリ構成</h3>
+<p><code>elchemy new</code> した結果はこんな感じ(バージョンによっては違うかもしれない)．</p>
+<pre><code>projrct_name
+  |- .elchemy.exs
+  |- .formatter.exs
+  |- .gitignore
+  |- README.md
+  |- config
+  |   \- config.exs
+  |- elm
+  |   \- Hello.elm
+  |- elm-package.json
+  |- lib
+  |   \- project_name.ex
+  |- mix.exs
+  \- test
+      |- elchemy_test.exs
+      |- project_name_test.exs
+      \- test_helper.exs</code></pre>
+<p><code>.elchemy.exs</code> は <code>mix</code> コマンドを Elchemy で上書きするための <code>mix</code> 設定ファイルで，残りは Elixir と Elm のプロジェクトファイルが混ざっている． ちなみに <code>.formatter.exs</code> は Elixir 1.6 で追加された Elixir のフォーマッターの設定ファイルだ．</p>
+<h3 id="関数を定義してみる">関数を定義してみる</h3>
+<p>試しに，総和を求める <code>sum</code> 関数を書いてみる． <code>elm/Hello.elm</code> に書き加えるとして，まずはユニットテストを <code>test\elchemy_test.exs</code> に Elixir の文脈で書き加えてみる．</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">ElchemyTest</span> <span class="kw">do</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">ExUnit</span><span class="op">.</span><span class="cn">Case</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">Elchemy</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  doctest <span class="cn">Hello</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  test <span class="st">&quot;Hello&quot;</span> <span class="kw">do</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    assert <span class="cn">Hello</span><span class="op">.</span>hello() <span class="op">==</span> <span class="st">&quot;world!&quot;</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  test <span class="st">&quot;Sum of lists&quot;</span> <span class="kw">do</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>     assert <span class="cn">Hello</span><span class="op">.</span>sum([]) <span class="op">==</span> <span class="dv">0</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>     assert <span class="cn">Hello</span><span class="op">.</span>sum([<span class="dv">2</span>]) <span class="op">==</span> <span class="dv">2</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>     assert <span class="cn">Hello</span><span class="op">.</span>sum([<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="op">-</span><span class="dv">1</span>, <span class="op">-</span><span class="dv">2</span>, <span class="op">-</span><span class="dv">3</span>]) <span class="op">==</span> <span class="dv">0</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<p>次に <code>elm/Hello.elm</code> に以下の関数を書き加える．</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span> : <span class="dt">List</span> <span class="fu">a</span> <span class="op">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span> <span class="fu">list</span> <span class="op">=</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> <span class="fu">list</span> <span class="cf">of</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">first</span> <span class="op">::</span> <span class="fu">rest</span> <span class="op">-&gt;</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>            <span class="fu">first</span> <span class="op">+</span> <span class="fu">sum</span> <span class="fu">rest</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>        [] <span class="op">-&gt;</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>            <span class="dv">0</span></span></code></pre></div>
+<p>とりあえずビルドしてみる．</p>
+<pre><code>$ mix test
+warning: redefining module ElchemyInit (current version defined in memory)
+  elchemy.exs:1
+
+==&gt; elchemy
+Compiling 24 files (.ex)
+warning: unused alias XMaybe
+  lib/Elchemy/XRegex.elchemy.ex:28
+
+warning: unused import Elchemy.XBasics
+  lib/Elchemy/XChar.elchemy.ex:25
+
+warning: unused import Elchemy.XBasics
+  lib/Elchemy/XBitwise.elchemy.ex:6
+
+warning: unused import Elchemy.Macros
+  lib/Elchemy/Plugins/Ex_unit.elchemy.ex:7
+
+warning: unused import Elchemy.Macros
+  lib/Elchemy/Tests/Ex_unit_test.elchemy.ex:7
+
+Generated elchemy app
+==&gt; article_example_elchemy
+/usr/bin/elchemy
+-- Copying Elixir native files --
+-- Compiling Elm files --
+----------
+Type Checking elm/Hello.elm
+-- TYPE MISMATCH ------------------------------------------------- elm/Hello.elm
+
+The left argument of (+) is causing a type mismatch.
+
+21|             first + sum rest
+                ^^^^^
+(+) is expecting the left argument to be a:
+
+    number
+
+But the left argument is:
+
+    a
+
+Hint: Your type annotation uses type variable `a` which means any type of value
+can flow through. Your code is saying it CANNOT be anything though! Maybe change
+your type annotation to be more specific? Maybe the code has a problem? More at:
+&lt;https://github.com/elm-lang/elm-compiler/blob/0.18.0/hints/type-annotations.md&gt;
+
+Detected errors in 1 module.
+Type Check failed
+** (Mix) Elchemy failed the compilation with an error</code></pre>
+<p>いろいろ出ているが重要なのは <code>The left argument of (+) is causing a type mismatch.</code> の部分． 型検査した結果，型が合わなかったのだ． 念のため型検査器の言い分を補足しておくと，<code>sum</code> 関数の引数として <code>List a</code> 型の値 <code>list</code> の要素である <code>first</code> は <code>a</code> 型と推論されるが，加算 <code>(+)</code> は <code>number</code> 型じゃないといけない，ということだ(<code>number</code> 型は加算や乗算が実装されている多相型)．</p>
+<p>言われた通りに変えてみよう．</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span> : <span class="dt">List</span> <span class="fu">number</span> <span class="op">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span> <span class="fu">list</span> <span class="op">=</span> <span class="op">...</span></span></code></pre></div>
+<p>ビルドする．</p>
+<pre><code>$ mix test
+...
+Type Checking elm/Hello.elm
+-- TYPE MISMATCH ------------------------------------------------- elm/Hello.elm
+
+The right side of (+) is causing a type mismatch.
+
+21|             first + sum rest
+                        ^^^^^^^^
+(+) is expecting the right side to be a:
+
+    number
+
+But the right side is:
+
+    Int
+
+Hint: Your type annotation uses type variable `number` which means any type of
+value can flow through. Your code is saying it CANNOT be anything though! Maybe
+change your type annotation to be more specific? Maybe the code has a problem?
+More at:
+&lt;https://github.com/elm-lang/elm-compiler/blob/0.18.0/hints/type-annotations.md&gt;
+
+Hint: With operators like (+) I always check the left side first. If it seems
+fine, I assume it is correct and check the right side. So the problem may be in
+how the left and right arguments interact.
+
+Detected errors in 1 module.
+Type Check failed
+** (Mix) Elchemy failed the compilation with an error</code></pre>
+<p><code>(+) is expecting the right side to be a</code> というエラーメッセージに変わった． これは <code>sum</code> 関数の返り値の型が <code>Int</code> なので <code>sum rest</code> の型は <code>Int</code> と推論されたが，<code>first</code> の型が <code>number</code> なので <code>(+)</code> 演算子の左右の型が合わない，ということだ． なので， <code>sum : List Int -&gt; Int</code> とすると無事ビルドが通る．</p>
+<h3 id="変換された-elixir-コード">変換された Elixir コード</h3>
+<p>ちなみに，次のような Elixir コードに変換されている．</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">Hello</span> <span class="kw">do</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">Elchemy</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@spec</span> sum(list(integer)) :: integer</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  curry sum<span class="op">/</span><span class="dv">1</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> sum(list) <span class="kw">do</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> list <span class="kw">do</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>      [first <span class="op">|</span> rest] <span class="op">-&gt;</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>        (first <span class="op">+</span> sum(rest))</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>      [] <span class="op">-&gt;</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>        <span class="dv">0</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<h3 id="doctest">doctest</h3>
+<p>また，次のように書くことで doctest も変換してくれる．</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co">{-| Returns a sum of every integer int the function</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co">    sum [1,2,3] == 6</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co">    sum [10] == 10</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="co">    sum [] == 0</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="co">-}</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span> : <span class="dt">List</span> <span class="dt">Int</span> <span class="op">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span> <span class="fu">list</span> <span class="op">=</span> <span class="op">...</span></span></code></pre></div>
+<p>変換先はこうだ．</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@doc &quot;&quot;&quot;</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co">  Returns a sum of every integer int the function</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co">      iex&gt; import Hello</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co">      iex&gt; sum([</span><span class="ot">1, 2, 3</span><span class="co">])</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="co">      6</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="co">      iex&gt; import Hello</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="co">      iex&gt; sum([</span><span class="ot">10</span><span class="co">])</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="co">      10</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="co">      iex&gt; import Hello</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="co">      iex&gt; sum([])</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="co">      0</span></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a><span class="co">  </span><span class="ot">&quot;&quot;&quot;</span></span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>  <span class="ot">@spec</span> sum(list(integer)) :: integer</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>  curry sum<span class="op">/</span><span class="dv">1</span></span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> sum(list) <span class="kw">do</span></span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span></code></pre></div>
+<h2 id="おしまい">おしまい</h2>
+<p>次はアプリケーションを作りたい．</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

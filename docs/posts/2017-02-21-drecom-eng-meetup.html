@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="ドリコムの「エンジニアMEETUP!!」に行ってきた" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>ドリコムの「エンジニアMEETUP!!」に行ってきた</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">ドリコムの「エンジニアMEETUP!!」に行ってきた</h1>
+            </header>
+            <div class="post-content">
+              <p>ドリコムが企画した「<a href="https://drecom.connpass.com/event/50139/">エンジニアMEETUP!!</a>」に参加してきたので内容のメモ． 基本的にドリコムのエンジニアが学生向けにイロイロとプレゼンするって感じ． で，最後には懇親会．</p>
+<p>学生の LT 枠もあって発表してきた．</p>
+<h2 id="いきさつ">いきさつ</h2>
+<p>実はドリコムの選考を受けてる． その前後で人事の人とだべってたら紹介された．</p>
+<p>「学生のLTがあってもいいんじゃない？」って言ったら採用されてしまった(ぼくの意見が発端かどうかはわからんけど)． 言い出しっぺの法則で参加せざる得なくなり...(いやいやではないです)．</p>
+<h2 id="ハイライト">ハイライト</h2>
+<ul>
+<li>Xcode の話
+<ul>
+<li>Smith さん</li>
+<li>三角ボタンについて...???</li>
+<li>Rust(の構文で)で自己紹介
+<ul>
+<li><a href="https://github.com/dolow/rust-helloworld">自己紹介の安定板</a></li>
+</ul></li>
+<li>C#(Unity) で iOS/Android 開発前提</li>
+<li>三角ボタン(build やらをするボタン)のメンテ</li>
+<li>C# の DLL は JIT
+<ul>
+<li>iOS はできない</li>
+<li>iOS の規約上</li>
+</ul></li>
+<li>iOS の場合は AOT
+<ul>
+<li>C# -&gt; DLL -&gt; IL(逆アセンブル) -&gt; C++ -&gt; Object -&gt; iOS</li>
+<li>LLVM も似たようなパス
+<ul>
+<li>もはや <strong>C++ が中間言語</strong></li>
+</ul></li>
+</ul></li>
+<li>Unity には build target がない
+<ul>
+<li>Xcode にはある</li>
+<li>Solution: Xcode Setting と Unity build について知る</li>
+</ul></li>
+</ul></li>
+<li>RuboCop とマークダウン
+<ul>
+<li><a href="https://github.com/onk">onk</a> さん
+<ul>
+<li>名古屋 Ruby 会議 03 でたびたび話題になった <a href="https://github.com/onk/onkcop">onkcop</a> の作者だった</li>
+</ul></li>
+<li>Ruby の規約云々ツール <a href="http://batsov.com/rubocop/">RuboCop</a></li>
+<li>処理系の仕組み
+<ul>
+<li>コンパイラ
+<ul>
+<li>字句解析</li>
+<li>構文解析</li>
+<li>バイトコード生成</li>
+</ul></li>
+<li>ランタイム</li>
+<li>ライブラリ</li>
+</ul></li>
+<li>AST(抽象構文木)</li>
+<li>余談: あるゲームのデータ
+<ul>
+<li>ゲームの処理を JSON で AST を使って表現</li>
+<li>全ては木</li>
+</ul></li>
+<li>RuboCop で AST をたどる
+<ul>
+<li>パターンマッチ
+<ul>
+<li>メタプロで使いやすい API にする
+<ul>
+<li>メタプロは <strong>適切に</strong></li>
+</ul></li>
+</ul></li>
+</ul></li>
+<li>現状はルールベース
+<ul>
+<li>今後は機械学習させたい</li>
+</ul></li>
+<li>静的解析はいいぞ</li>
+</ul></li>
+<li>様々な言語を学ぼう
+<ul>
+<li>さっちゃん</li>
+<li>様々な言語で平均
+<ul>
+<li>Javascript</li>
+<li>Python</li>
+<li>Ruby</li>
+<li>Crystal</li>
+<li>Elixier</li>
+<li>Erlang</li>
+<li>Common Lisp</li>
+<li>Go</li>
+<li>Rust</li>
+<li>Scala</li>
+<li>Haskell</li>
+<li>Kitten</li>
+<li>NB J</li>
+</ul></li>
+<li><a href="http://jsoftware.com/">J 言語</a> の紹介 (本題)
+<ul>
+<li>術語</li>
+<li>ポイントフリースタイル推奨</li>
+<li>SKI コンビネーター みたいなのが...</li>
+<li>クイックソート: <code>(($:@(&lt;#[) , (=#[) , $:@(&gt;#[)) ({~ ?@#)) ^: (1&lt;#)</code>
+<ul>
+<li><strong>とてもきれい</strong></li>
+</ul></li>
+</ul></li>
+<li>J 言語をたたえた</li>
+</ul></li>
+<li>Windows で Javascript 環境 (学生 LT)
+<ul>
+<li>Hyper-V で Arch Linux (完)</li>
+<li>Vim : 必須 (宗教上の都合)</li>
+<li>IE 許すまじ</li>
+<li>「バベる」</li>
+</ul></li>
+</ul>
+<h2 id="自分の発表">自分の発表</h2>
+<p>Haskell で LINE Bot を作る話をした．</p>
+<p>スライドは<a href="http://www.slideshare.net/noob00/haskell-line-bot">コチラ</a>．</p>
+<p>せっかくだから奇をてらったつもりだったが，みなさまメタい話ばっかするので逆に...． 「寧ろ，Haskell で　Web 系のことするの普通に感じてしまった(前までの話的に)」って言われてしまった...orz</p>
+<h2 id="感想">感想</h2>
+<p>Web系のネタが多いのかと思ったら，AOT の話や，AST の話や，コンビネーターの話など処理系よりの話ばっかりだった(笑)． 私はそっちの話題が好きなの，寧ろ楽しめた．</p>
+<p>ギークは言語処理系に落ち着く節ある．</p>
+<h2 id="おしまい">おしまい</h2>
+<ul>
+<li>「メタい話が多いんですね．Web系の会社なんで意外でした．」</li>
+<li>「だって Web の技術は仕事で使えるから(今更プレゼンしても)面白くない」</li>
+<li>「なるほど」</li>
+</ul>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

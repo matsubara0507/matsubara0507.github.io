@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Elm でマークダウンプレゼンテーションエディタを作ってみた (その１)" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <meta property="og:image" content="/images//assets/create-elmdeck/elmdeck.jpg" />
+<title>Elm でマークダウンプレゼンテーションエディタを作ってみた (その１)</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">Elm でマークダウンプレゼンテーションエディタを作ってみた (その１)</h1>
+            </header>
+            <div class="post-content">
+              <p><a href="https://qiita.com/advent-calendar/2017/elm2">Elm Advent Calendar 2017 (その２)</a> の18日目の記事です．</p>
+<p>ぼくが18日目に登録したとき(12月6日ごろ)は半分以上が空いてたのに全部埋まってる(笑) みんなすごいなぁ．</p>
+<h2 id="section"></h2>
+<p>タイトルの通り，思い付きで作り始めたマークダウンプレゼンテーションエディタについて書きます． 全てのコードは以下にあります．</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/elmdeck">matsubara0507/elmdeck - GitHub</a></li>
+</ul>
+<p>まだ完成していないです． あと正直なこと言うと，まだ使える代物ではないです(笑) 徐々に改善していくつもりです．</p>
+<h2 id="md-でスライドづくり">MD でスライドづくり</h2>
+<p>自分はマークダウンでサクッとスライドを作るのが好きで，イロイロ試してみた結果，<a href="https://yhatt.github.io/marp/">Marp</a> というツールに落ち着いた． 基本的に不満は無いのだが，プレゼンテーションモード欲しいなーとか，もっと簡単にテーマを作りたいなーとかが微妙にある．</p>
+<p>しかし，最近は<a href="https://github.com/yhatt/marp/wiki/Roadmap-to-Marp-1.0.0">バージョン1</a>に向けて構成から書き直しているようで更新が止まっている(個人的には，急かすつもりは全くなく，ゆっくり好きなように作ればいいと思ってる)．</p>
+<h2 id="section-1"></h2>
+<p>なので，自分でイチから作ってみることにした． ちなみに，Marp が再リリースされて，そっちの方で全然満足出来たらそっちに移るつもり．</p>
+<p>個人的に最低限欲しい機能は</p>
+<ol>
+<li>シンタックスハイライト</li>
+<li>数式</li>
+<li>画像の拡縮</li>
+<li>PDF への出力</li>
+</ol>
+<p>があればよい． できればプレゼンテーションモードとか欲しいけど．</p>
+<h2 id="作ってく">作ってく</h2>
+<p>ちなみに，既にできているのは (1) シンタックスハイライト，(2) 数式 まで． あと，ローカルファイルの読み書きを Elm でする方法(というかブラウザでいい感じにする方法)が分からなかったので Electron にした．</p>
+<h3 id="markdown-をスライドへ">Markdown をスライドへ</h3>
+<p>戦略としては，テキストエリアで入力してもらったマークダウン表記のプレーンテキストを何らかのパッケージで構文木に変換し，さらに HTML に変換してもらうだけ． そして，変換したマークダウンの構文木を区切りワード <code>---</code> にしてスライド1枚1枚にするイメージ．</p>
+<p>今回は以下のパッケージを使った．</p>
+<ul>
+<li><a href="http://package.elm-lang.org/packages/pablohirafuji/elm-markdown">pablohirafuji/elm-markdown - elm packages</a></li>
+</ul>
+<p>マークダウンパーサーとしては他にも，<a href="http://package.elm-lang.org/packages/evancz/elm-markdown">Elm の作者が作ったモノ</a>があったが，これは Native モジュールで JS の <a href="https://github.com/chjj/marked">marked</a> を呼んでるだけなので，マークダウンの構文木をいじれない． なので，構文木も扱える pablohirafuji/elm-markdown を使った(その代わり速度は遅い...)．</p>
+<h2 id="section-2"></h2>
+<p>pablohirafuji/elm-markdown は <a href="http://package.elm-lang.org/packages/pablohirafuji/elm-markdown/2.0.4/Markdown-Block#parse"><code>parse</code></a> 関数を用いることで文字列から次の <code>Block b i</code> 型のリストに変換する．</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Block</span> <span class="fu">b</span> <span class="fu">i</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=</span> <span class="dt">BlankLine</span> <span class="dt">String</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">ThematicBreak</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">Heading</span> <span class="dt">String</span> <span class="dt">Int</span> (<span class="dt">List</span> (<span class="dt">Inline</span> <span class="fu">i</span>))</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">CodeBlock</span> <span class="dt">CodeBlock</span> <span class="dt">String</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">Paragraph</span> <span class="dt">String</span> (<span class="dt">List</span> (<span class="dt">Inline</span> <span class="fu">i</span>))</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">BlockQuote</span> (<span class="dt">List</span> (<span class="dt">Block</span> <span class="fu">b</span> <span class="fu">i</span>))</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">List</span> <span class="dt">ListBlock</span> (<span class="dt">List</span> (<span class="dt">List</span> (<span class="dt">Block</span> <span class="fu">b</span> <span class="fu">i</span>)))</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">PlainInlines</span> (<span class="dt">List</span> (<span class="dt">Inline</span> <span class="fu">i</span>))</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">Custom</span> <span class="fu">b</span> (<span class="dt">List</span> (<span class="dt">Block</span> <span class="fu">b</span> <span class="fu">i</span>))</span></code></pre></div>
+<p><code>Block b i</code> 型から <code>Html msg</code> へは <a href="http://package.elm-lang.org/packages/pablohirafuji/elm-markdown/2.0.4/Markdown-Block#toHtml"><code>toHtml</code></a> 関数を使えばよい．</p>
+<p><code>elm repl</code> で試した結果，<code>---</code> は <code>ThematicBreak</code> になることが分かった． なので，<code>ThematicBreak</code> で <code>List (Block b i)</code> を <code>List (List (Block b i))</code> に分割する． <code>(a -&gt; Bool) -&gt; List a -&gt; List (List a)</code> って感じの関数が無かったので<a href="https://github.com/matsubara0507/elmdeck/blob/6ff0520f65080c9a94ac85c99fc01e0374ca250e/src/Utils.elm#L9">自分で定義した</a>．</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">markdownView</span> : <span class="dt">Model</span> <span class="op">-&gt;</span> <span class="dt">Html</span> <span class="dt">Msg</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">markdownView</span> { <span class="fu">textarea</span><span class="op">,</span> <span class="fu">window</span> } <span class="op">=</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">textarea</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="dt">Block</span><span class="op">.</span><span class="fu">parse</span> <span class="dt">Nothing</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="dt">Utils</span><span class="op">.</span><span class="fu">split</span> ((<span class="op">==</span>) <span class="dt">Block</span><span class="op">.</span><span class="dt">ThematicBreak</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="dt">List</span><span class="op">.</span><span class="fu">map</span> (<span class="fu">toSlide</span> <span class="fu">window</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="fu">div</span> []</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="fu">toSlide</span> : <span class="dt">Window</span><span class="op">.</span><span class="dt">Size</span> <span class="op">-&gt;</span> <span class="dt">List</span> (<span class="dt">Block</span> <span class="fu">b</span> <span class="fu">i</span>) <span class="op">-&gt;</span> <span class="dt">Html</span> <span class="fu">msg</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="fu">toSlide</span> <span class="fu">window</span> <span class="fu">blocks</span> <span class="op">=</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">blocks</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="dt">List</span><span class="op">.</span><span class="fu">concatMap</span> <span class="fu">customHtmlBlock</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="fu">slideView</span> <span class="fu">window</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="fu">customHtmlBlock</span> : <span class="dt">Block</span> <span class="fu">b</span> <span class="fu">i</span> <span class="op">-&gt;</span> <span class="dt">List</span> (<span class="dt">Html</span> <span class="fu">msg</span>)</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="fu">customHtmlBlock</span> <span class="fu">block</span> <span class="op">=</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Block</span><span class="op">.</span><span class="fu">defaultHtml</span> (<span class="dt">Just</span> <span class="fu">customHtmlBlock</span>) <span class="dt">Nothing</span> <span class="fu">block</span></span></code></pre></div>
+<p>取りあえずは <code>customHtmlBlock</code> 関数では標準のを呼んでいる． <code>window</code> を引き回しているのは，ウィンドウサイズに合わせてスライドの大きさを拡縮するため．</p>
+<h3 id="シンタックスハイライト">シンタックスハイライト</h3>
+<p>シンタックスハイライトは皆さんご存知 <a href="https://highlightjs.org/">highlight.js</a> を使う． Elm 製のパッケージは見当たらなかったので，js のパッケージを使うことにした．</p>
+<p><a href="https://github.com/evancz/elm-markdown/blob/e395295cbe0b460ab051c4040011470628f05b72/src/Native/Markdown.js#L77">evancz/elm-markdown が highlight.js を使っていた</a>ので，それを参考に Native モジュールを作った．</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">// src/Native/Highlight.js</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> _matsubara0507$elmdeck$Native_Highlight <span class="op">=</span> <span class="kw">function</span>() {</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">function</span> <span class="fu">toHighlight</span>(lang<span class="op">,</span> code)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  {</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="kw">typeof</span> hljs <span class="op">!==</span> <span class="st">&#39;undefined&#39;</span> <span class="op">&amp;&amp;</span> lang <span class="op">&amp;&amp;</span> hljs<span class="op">.</span><span class="fu">listLanguages</span>()<span class="op">.</span><span class="fu">indexOf</span>(lang) <span class="op">&gt;=</span> <span class="dv">0</span>)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>      <span class="cf">return</span> hljs<span class="op">.</span><span class="fu">highlight</span>(lang<span class="op">,</span> code<span class="op">,</span> <span class="kw">true</span>)<span class="op">.</span><span class="at">value</span><span class="op">;</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> code<span class="op">;</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> {</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="dt">toHighlight</span><span class="op">:</span> <span class="fu">F2</span>(toHighlight)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>}()<span class="op">;</span></span></code></pre></div>
+<p>Elm 側はこんな感じ．</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Native</span><span class="op">.</span><span class="dt">Highlight</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">toHighlight</span> : <span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">String</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">toHighlight</span> <span class="op">=</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Native</span><span class="op">.</span><span class="dt">Highlight</span><span class="op">.</span><span class="fu">toHighlight</span></span></code></pre></div>
+<p>返ってくるのは <code>"&lt;div&gt;...&lt;/div&gt;"</code> のような HTML の文字列なので，これを <code>Html a</code> 型に変換してやる必要がある． それには jinjor 先生の <a href="http://package.elm-lang.org/packages/jinjor/elm-html-parser/latest">jinjor/elm-html-parser</a> を用いた．</p>
+<ul>
+<li><a href="http://jinjor-labo.hatenablog.com/entry/2016/09/11/222251">ElmでHTMLパーサを作って公開するまでの手順 - ジンジャー研究室</a></li>
+</ul>
+<p>これをこんな感じに呼び出す</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">customHtmlBlock</span> : <span class="dt">Block</span> <span class="fu">b</span> <span class="fu">i</span> <span class="op">-&gt;</span> <span class="dt">List</span> (<span class="dt">Html</span> <span class="fu">msg</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">customHtmlBlock</span> <span class="fu">block</span> <span class="op">=</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> <span class="fu">block</span> <span class="cf">of</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Block</span><span class="op">.</span><span class="dt">CodeBlock</span> (<span class="dt">Block</span><span class="op">.</span><span class="dt">Fenced</span> <span class="fu">_</span> <span class="fu">fence</span>) <span class="fu">code</span> <span class="op">-&gt;</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>            <span class="kw">let</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>                <span class="fu">language</span> <span class="op">=</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>                    <span class="dt">Maybe</span><span class="op">.</span><span class="fu">withDefault</span> <span class="st">&quot;&quot;</span> <span class="fu">fence</span><span class="op">.</span><span class="fu">language</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>            <span class="kw">in</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>            <span class="fu">code</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>                <span class="op">|&gt;</span> <span class="dt">Utils</span><span class="op">.</span><span class="fu">toHighlight</span> <span class="fu">language</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>                <span class="op">|&gt;</span> <span class="fu">precode</span> <span class="fu">language</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>                <span class="op">|&gt;</span> <span class="dt">Html</span><span class="op">.</span><span class="fu">parse</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>                <span class="op">|&gt;</span> <span class="dt">Html</span><span class="op">.</span><span class="fu">toVirtualDom</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>        <span class="fu">_</span> <span class="op">-&gt;</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>            <span class="dt">Block</span><span class="op">.</span><span class="fu">defaultHtml</span> (<span class="dt">Just</span> <span class="fu">customHtmlBlock</span>) <span class="dt">Nothing</span> <span class="fu">block</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="fu">precode</span> : <span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">String</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="fu">precode</span> <span class="fu">lang</span> <span class="fu">code</span> <span class="op">=</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;&lt;pre&gt;&lt;code class=\&quot;&quot;</span> <span class="op">++</span> <span class="fu">lang</span> <span class="op">++</span> <span class="st">&quot;\&quot;&gt;&quot;</span> <span class="op">++</span> <span class="fu">code</span> <span class="op">++</span> <span class="st">&quot;&lt;/code&gt;&lt;/pre&gt;&quot;</span></span></code></pre></div>
+<p>どう考えても効率悪いけど(笑)</p>
+<h3 id="数式">数式</h3>
+<p>Marp を参考にして <a href="https://khan.github.io/KaTeX/">KaTeX</a> を使うことにした． KaTeX も highlight.js と同じように文字列を受け取って HTML に変換した文字列を返す関数 <code>renderToString</code> がある． 注意点は，<code>renderToString</code> の場合は失敗すると例外を投げてくるところ．</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> _matsubara0507$elmdeck$Native_Katex <span class="op">=</span> <span class="kw">function</span>() {</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">function</span> <span class="fu">toKatex</span>(code)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  {</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="kw">typeof</span> katex <span class="op">!==</span> <span class="st">&#39;undefined&#39;</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>      <span class="cf">try</span> {</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> katex<span class="op">.</span><span class="fu">renderToString</span>(code)<span class="op">;</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>      } <span class="cf">catch</span> (e) {</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> code</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> code<span class="op">;</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> {</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    <span class="dt">toKatex</span><span class="op">:</span> toKatex</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>}()<span class="op">;</span></span></code></pre></div>
+<p>Elm 側はほぼ同じ．</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Native</span><span class="op">.</span><span class="dt">Katex</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">toKatex</span> : <span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">String</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="fu">toKatex</span> <span class="op">=</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Native</span><span class="op">.</span><span class="dt">Katex</span><span class="op">.</span><span class="fu">toKatex</span></span></code></pre></div>
+<p>最初は以下の LaTeX 表記ををパースしようと思った</p>
+<pre><code>$$
+  a + 1
+$$</code></pre>
+<p>が難しくてやめた(笑) 結局 <code>katex</code> のシンタックスハイライトを KaTeX にした．</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">customHtmlBlock</span> : <span class="dt">Block</span> <span class="fu">b</span> <span class="dt">Formula</span> <span class="op">-&gt;</span> <span class="dt">List</span> (<span class="dt">Html</span> <span class="fu">msg</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">customHtmlBlock</span> <span class="fu">block</span> <span class="op">=</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> <span class="fu">block</span> <span class="cf">of</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Block</span><span class="op">.</span><span class="dt">CodeBlock</span> (<span class="dt">Block</span><span class="op">.</span><span class="dt">Fenced</span> <span class="fu">_</span> <span class="fu">fence</span>) <span class="fu">code</span> <span class="op">-&gt;</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>            <span class="kw">let</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>                <span class="fu">language</span> <span class="op">=</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>                    <span class="dt">Maybe</span><span class="op">.</span><span class="fu">withDefault</span> <span class="st">&quot;&quot;</span> <span class="fu">fence</span><span class="op">.</span><span class="fu">language</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>                <span class="fu">toHighlight_</span> <span class="op">=</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">if</span> <span class="dt">List</span><span class="op">.</span><span class="fu">member</span> <span class="fu">language</span> [ <span class="st">&quot;katex&quot;</span><span class="op">,</span> <span class="st">&quot;Katex&quot;</span> ] <span class="cf">then</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>                        <span class="dt">Utils</span><span class="op">.</span><span class="fu">toKatex</span> <span class="op">&gt;&gt;</span> <span class="fu">divFormula</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">else</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>                        <span class="dt">Utils</span><span class="op">.</span><span class="fu">toHighlight</span> <span class="fu">language</span> <span class="op">&gt;&gt;</span> <span class="fu">precode</span> <span class="fu">language</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>            <span class="kw">in</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>            <span class="fu">code</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>                <span class="op">|&gt;</span> <span class="fu">toHighlight_</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>                <span class="op">|&gt;</span> <span class="dt">Html</span><span class="op">.</span><span class="fu">parse</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>                <span class="op">|&gt;</span> <span class="dt">Html</span><span class="op">.</span><span class="fu">toVirtualDom</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>        <span class="fu">_</span> <span class="op">-&gt;</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>            <span class="fu">block</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>                <span class="op">|&gt;</span> <span class="dt">Block</span><span class="op">.</span><span class="fu">defaultHtml</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>                    (<span class="dt">Just</span> <span class="fu">customHtmlBlock</span>)</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>                    <span class="dt">Nothing</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a><span class="fu">divFormula</span> : <span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">String</span></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a><span class="fu">divFormula</span> <span class="fu">code</span> <span class="op">=</span></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;&lt;div class=\&quot;formula\&quot;&gt;&quot;</span> <span class="op">++</span> <span class="fu">code</span> <span class="op">++</span> <span class="st">&quot;&lt;/div&gt;&quot;</span></span></code></pre></div>
+<h3 id="インラインの数式">インラインの数式</h3>
+<p>次はインラインの数式 <code>$a + 1$</code> を変換する． シンタックスハイライトと数式のブロック要素はかなり雑にやったが，ここはもう少し真面目にやらないといけない．</p>
+<p>インライン要素を追加する方法は <a href="https://github.com/pablohirafuji/elm-markdown/tree/2.0.4#implementing-gfm-task-list">pablohirafuji/elm-markdown に少し書いてある</a>． これを参考に拡張していった．</p>
+<h4 id="カスタムインライン要素">カスタムインライン要素</h4>
+<p>インライン要素の型 <code>Inline i</code> は次のようになっている．</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Inline</span> <span class="fu">i</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=</span> <span class="dt">Text</span> <span class="dt">String</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">HardLineBreak</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">CodeInline</span> <span class="dt">String</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">Link</span> <span class="dt">String</span> (<span class="dt">Maybe</span> <span class="dt">String</span>) (<span class="dt">List</span> (<span class="dt">Inline</span> <span class="fu">i</span>))</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">Image</span> <span class="dt">String</span> (<span class="dt">Maybe</span> <span class="dt">String</span>) (<span class="dt">List</span> (<span class="dt">Inline</span> <span class="fu">i</span>))</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">HtmlInline</span> <span class="dt">String</span> (<span class="dt">List</span> (<span class="dt">String</span><span class="op">,</span> <span class="dt">Maybe</span> <span class="dt">String</span>)) (<span class="dt">List</span> (<span class="dt">Inline</span> <span class="fu">i</span>))</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">Emphasis</span> <span class="dt">Int</span> (<span class="dt">List</span> (<span class="dt">Inline</span> <span class="fu">i</span>))</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">Custom</span> <span class="fu">i</span> (<span class="dt">List</span> (<span class="dt">Inline</span> <span class="fu">i</span>))</span></code></pre></div>
+<p>インライン要素を増やすには <code>Custom i (List (Inline i))</code> を用いる． <code>i</code> の部分に新しい型を追加すればよいのだ． なので，数式のインライン要素用の型を定義する．</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Formula</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=</span> <span class="dt">Formula</span> <span class="dt">String</span></span></code></pre></div>
+<p><code>Formula String</code> の <code>String</code> が数式に変換すべき文字列．</p>
+<p>そして <code>Block b i</code> だったところを <code>Block b Formula</code> に置き換える． 次に上から順に変えていこう．</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">customHtmlBlock</span> : <span class="dt">Block</span> <span class="fu">b</span> <span class="dt">Formula</span> <span class="op">-&gt;</span> <span class="dt">List</span> (<span class="dt">Html</span> <span class="fu">msg</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">customHtmlBlock</span> <span class="fu">block</span> <span class="op">=</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> <span class="fu">block</span> <span class="cf">of</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>        <span class="fu">_</span> <span class="op">-&gt;</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>            <span class="fu">block</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>                <span class="op">|&gt;</span> <span class="dt">Block</span><span class="op">.</span><span class="fu">defaultHtml</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>                    (<span class="dt">Just</span> <span class="fu">customHtmlBlock</span>)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>                    (<span class="dt">Just</span> <span class="fu">customHtmlInline</span>)</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="fu">customHtmlInline</span> : <span class="dt">Inline</span> <span class="dt">Formula</span> <span class="op">-&gt;</span> <span class="dt">Html</span> <span class="fu">msg</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="fu">customHtmlInline</span> <span class="fu">inline</span> <span class="op">=</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> <span class="fu">inline</span> <span class="cf">of</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Inline</span><span class="op">.</span><span class="dt">Custom</span> (<span class="dt">Formula</span> <span class="fu">txt</span>) <span class="fu">_</span> <span class="op">-&gt;</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>            <span class="dt">Utils</span><span class="op">.</span><span class="fu">toKatex</span> <span class="fu">txt</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>                <span class="op">|&gt;</span> <span class="dt">Html</span><span class="op">.</span><span class="fu">parse</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>                <span class="op">|&gt;</span> <span class="dt">Html</span><span class="op">.</span><span class="fu">toVirtualDom</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>                <span class="op">|&gt;</span> <span class="fu">span</span> []</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>        <span class="fu">_</span> <span class="op">-&gt;</span></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>            <span class="dt">Inline</span><span class="op">.</span><span class="fu">defaultHtml</span> (<span class="dt">Just</span> <span class="fu">customHtmlInline</span>) <span class="fu">inline</span></span></code></pre></div>
+<p>ここまでは難しくない． 問題は <code>Custom (Formula txt) blocks</code> な値をどうやって構築するか．</p>
+<h2 id="section-3"></h2>
+<p><code>Inline i</code> 型の <code>Text String</code> のうち <code>$...$</code> のモノを <code>Custom (Formula txt) []</code> に変換する．</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">parseFormulaInline</span> : <span class="dt">Inline</span> <span class="dt">Formula</span> <span class="op">-&gt;</span> <span class="dt">List</span> (<span class="dt">Inline</span> <span class="dt">Formula</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">parseFormulaInline</span> <span class="fu">inline</span> <span class="op">=</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> <span class="fu">inline</span> <span class="cf">of</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Inline</span><span class="op">.</span><span class="dt">Text</span> <span class="fu">text</span> <span class="op">-&gt;</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>            <span class="cf">case</span> <span class="fu">parseFormula</span> <span class="fu">text</span> <span class="cf">of</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>                [] <span class="op">-&gt;</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>                    [ <span class="fu">inline</span> ]</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>                [ <span class="fu">_</span> ] <span class="op">-&gt;</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>                    [ <span class="fu">inline</span> ]</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>                <span class="fu">inlines</span> <span class="op">-&gt;</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>                    <span class="fu">inlines</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>        <span class="fu">_</span> <span class="op">-&gt;</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>            [ <span class="fu">inline</span> ]</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="fu">parseFormula</span> : <span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">List</span> (<span class="dt">Inline</span> <span class="dt">Formula</span>)</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a><span class="fu">parseFormula</span> <span class="fu">text</span> <span class="op">=</span> <span class="fu">undefined</span> ()</span></code></pre></div>
+<p><code>abc$1+2$def</code> なども考えられるので <code>String -&gt; List (Inline Formula)</code> に変換している．</p>
+<h4 id="パーサーを作る">パーサーを作る</h4>
+<p>いよいよパーサーだ． カレンダーのいつぞやで jinjor 先生が <a href="http://package.elm-lang.org/packages/elm-tools/parser/latest">elm-tools/parser</a> を紹介してくれた．</p>
+<ul>
+<li><a href="https://qiita.com/jinjor/items/d0d4b83b530251df913e">Elm で構文解析しよう - Qiita</a></li>
+</ul>
+<p>が，自分には Haskell の Parsec 由来の <a href="http://package.elm-lang.org/packages/elm-community/parser-combinators/latest">elm-community/parser-combinators</a> の方が使いやすかったのでコッチに逃げた(ゴメンナサイ)．</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">withFormula</span> : <span class="dt">Parser</span> <span class="fu">s</span> ( <span class="dt">String</span><span class="op">,</span> <span class="dt">String</span> )</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">withFormula</span> <span class="op">=</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    (<span class="op">,</span>) <span class="op">&lt;$&gt;</span> (<span class="dt">String</span><span class="op">.</span><span class="fu">concat</span> <span class="op">&lt;$&gt;</span> <span class="fu">many</span> <span class="fu">noneDal</span>) <span class="op">&lt;*&gt;</span> <span class="fu">formula</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="fu">formula</span> : <span class="dt">Parser</span> <span class="fu">s</span> <span class="dt">String</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="fu">formula</span> <span class="op">=</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">String</span><span class="op">.</span><span class="fu">concat</span> <span class="op">&lt;$&gt;</span> <span class="fu">between</span> (<span class="fu">string</span> <span class="st">&quot;$&quot;</span>) (<span class="fu">string</span> <span class="st">&quot;$&quot;</span>) (<span class="fu">many</span> <span class="fu">term</span>)</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="fu">term</span> : <span class="dt">Parser</span> <span class="fu">s</span> <span class="dt">String</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="fu">term</span> <span class="op">=</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">escapedChar</span> <span class="op">&lt;|&gt;</span> <span class="fu">noneDal</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="fu">noneDal</span> : <span class="dt">Parser</span> <span class="fu">s</span> <span class="dt">String</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="fu">noneDal</span> <span class="op">=</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    <span class="dt">String</span><span class="op">.</span><span class="fu">fromChar</span> <span class="op">&lt;$&gt;</span> <span class="fu">noneOf</span> [ <span class="ch">&#39;$&#39;</span> ]</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="fu">escapedChar</span> : <span class="dt">Parser</span> <span class="fu">s</span> <span class="dt">String</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="fu">escapedChar</span> <span class="op">=</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>    <span class="dt">String</span><span class="op">.</span><span class="fu">append</span> <span class="op">&lt;$&gt;</span> <span class="fu">string</span> <span class="st">&quot;\\&quot;</span> <span class="op">&lt;*&gt;</span> (<span class="dt">String</span><span class="op">.</span><span class="fu">fromChar</span> <span class="op">&lt;$&gt;</span> <span class="fu">anyChar</span>)</span></code></pre></div>
+<p><code>abc$1+2$</code> が <code>("abc", "1+2")</code> になるようにパーサーを書いた(<code>$1+2$</code> は <code>("", "1+2")</code> となる)． このパーサーを再帰的に適用する．</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">parseFormula</span> : <span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">List</span> (<span class="dt">Inline</span> <span class="dt">Formula</span>)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">parseFormula</span> <span class="fu">text</span> <span class="op">=</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> <span class="dt">Combine</span><span class="op">.</span><span class="fu">parse</span> <span class="fu">withFormula</span> <span class="fu">text</span> <span class="cf">of</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Result</span><span class="op">.</span><span class="dt">Err</span> ( ()<span class="op">,</span> <span class="fu">stream</span><span class="op">,</span> <span class="fu">_</span> ) <span class="op">-&gt;</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="fu">stream</span><span class="op">.</span><span class="fu">data</span> <span class="op">==</span> <span class="st">&quot;&quot;</span> <span class="cf">then</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>                []</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>            <span class="cf">else</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>                [ <span class="dt">Inline</span><span class="op">.</span><span class="dt">Text</span> <span class="fu">stream</span><span class="op">.</span><span class="fu">data</span> ]</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Result</span><span class="op">.</span><span class="dt">Ok</span> ( ()<span class="op">,</span> <span class="fu">stream</span><span class="op">,</span> ( <span class="fu">txt</span><span class="op">,</span> <span class="fu">exp</span> ) ) <span class="op">-&gt;</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>            <span class="dt">Inline</span><span class="op">.</span><span class="dt">Text</span> <span class="fu">txt</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>                <span class="op">::</span> <span class="dt">Inline</span><span class="op">.</span><span class="dt">Custom</span> (<span class="dt">Formula</span> <span class="fu">exp</span>) []</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>                <span class="op">::</span> <span class="fu">parseFormula</span> <span class="fu">stream</span><span class="op">.</span><span class="fu">input</span></span></code></pre></div>
+<p><code>parse withFormula text</code> をすると，core の <a href="http://package.elm-lang.org/packages/elm-lang/core/latest/Result#Result"><code>Result</code></a> 型を返す． <code>stream</code> はパースした残りなので，パース成功 <code>Result.Ok</code> なら <code>stream</code> に再度パーサーをかけ，失敗 <code>Result.Err</code> ならそのまま返す．</p>
+<h4 id="高階関数">高階関数</h4>
+<p>pablohirafuji/elm-markdown には便利な高階関数がいくつか定義されている．</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">walk</span> : (<span class="dt">Block</span> <span class="fu">b</span> <span class="fu">i</span> <span class="op">-&gt;</span> <span class="dt">Block</span> <span class="fu">b</span> <span class="fu">i</span>) <span class="op">-&gt;</span> <span class="dt">Block</span> <span class="fu">b</span> <span class="fu">i</span> <span class="op">-&gt;</span> <span class="dt">Block</span> <span class="fu">b</span> <span class="fu">i</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">walkInlines</span> : (<span class="dt">Inline</span> <span class="fu">i</span> <span class="op">-&gt;</span> <span class="dt">Inline</span> <span class="fu">i</span>) <span class="op">-&gt;</span> <span class="dt">Block</span> <span class="fu">b</span> <span class="fu">i</span> <span class="op">-&gt;</span> <span class="dt">Block</span> <span class="fu">b</span> <span class="fu">i</span></span></code></pre></div>
+<p>前述したとおり <code>Block b i</code> 型は再帰型になっているので，<code>Block b i</code> や <code>Inline i</code> をリストで持っている． なので，<a href="http://package.elm-lang.org/packages/pablohirafuji/elm-markdown/2.0.4/Markdown-Block#walk"><code>walk</code></a> や <a href="http://package.elm-lang.org/packages/pablohirafuji/elm-markdown/2.0.4/Markdown-Block#walkInlines"><code>walkInlines</code></a> 関数はそれらに対し再帰的に関数を適用してくれる．</p>
+<p>しかし，用意した関数は <code>Inline Formula -&gt; List (Inline Formula)</code> なのでどちらも使えない． なので，<code>walkInlinesWithConcat : (Inline i -&gt; List (Inline i)) -&gt; Block b i -&gt; Block b i</code> というのを定義した．</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">parseFormulaInBlock</span> : <span class="dt">Block</span> <span class="fu">b</span> <span class="dt">Formula</span> <span class="op">-&gt;</span> <span class="dt">Block</span> <span class="fu">b</span> <span class="dt">Formula</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">parseFormulaInBlock</span> <span class="op">=</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Block</span><span class="op">.</span><span class="fu">walkInlinesWithConcat</span> <span class="fu">parseFormulaInline</span></span></code></pre></div>
+<p>あとはこれを呼ぶだけ</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">toSlide</span> : <span class="dt">Window</span><span class="op">.</span><span class="dt">Size</span> <span class="op">-&gt;</span> <span class="dt">List</span> (<span class="dt">Block</span> <span class="fu">b</span> <span class="dt">Formula</span>) <span class="op">-&gt;</span> <span class="dt">Html</span> <span class="fu">msg</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">toSlide</span> <span class="fu">window</span> <span class="fu">blocks</span> <span class="op">=</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">blocks</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="dt">List</span><span class="op">.</span><span class="fu">map</span> (<span class="dt">Block</span><span class="op">.</span><span class="fu">walk</span> <span class="fu">parseFormulaInBlock</span>)</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="dt">List</span><span class="op">.</span><span class="fu">concatMap</span> <span class="fu">customHtmlBlock</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="fu">slideView</span> <span class="fu">window</span></span></code></pre></div>
+<h2 id="demo">Demo</h2>
+<p>こんな感じ</p>
+<p><img src="/assets/create-elmdeck/elmdeck.jpg" /></p>
+<p><a href="https://matsubara0507.github.io/elmdeck/">GitHub Pages においた</a>．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>長くなったのでココまで． Electron の部分も面白いんだけどなぁ．</p>
+<p>頑張って作っていくぞ．</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

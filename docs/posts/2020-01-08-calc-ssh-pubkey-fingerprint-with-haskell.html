@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Haskell で SSH Public Key の FingerPrint を計算する" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>Haskell で SSH Public Key の FingerPrint を計算する</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">Haskell で SSH Public Key の FingerPrint を計算する</h1>
+            </header>
+            <div class="post-content">
+              <p>GitHub に登録している Public Key から <code>~/.ssh/authorized_key</code> を生成する簡易的な CLI ツールを作ろうと考えた． そして，Public Key をフィルタリングするために <code>https://github.com/settings/keys</code> で参照できる FingerPrint を使おうと考えたが，その場合は GitHub API で取得した Public Key から FingerPrint をプログラム側で計算しないといけない．</p>
+<p>もちろん，<code>ssh-keygen -l -E md5 -f ssh_host_ecdsa_key.pub</code> なんかで生成できるのだが可能なら素の Haskell プログラムでやりたいなと考えた． ということで，本記事はタイトルの通り Haskell で SSH Public Key の FingerPrint を計算することになったので，そのために色々調べたメモ書き．</p>
+<h2 id="fingerprint">FingerPrint</h2>
+<p>そもそもどういうアルゴリズムで出しているのか． ちょうど良い記事があった，ありがたい:</p>
+<ul>
+<li><a href="https://qiita.com/hotpepsi/items/128f3a660cee8b5467c6">RSA公開鍵のファイル形式とfingerprint - Qiita</a></li>
+</ul>
+<p>要するに Base64 デコードして MD5 ハッシュをかければ良いようだ（本来は SHA256 の方が良いっぽいけど）． 上記記事では Base64 デコードしてできた <a href="https://www.ietf.org/rfc/rfc4253.txt">RFC4253</a> の中身まで説明してくれており，最後の Ruby プログラムではバイナリをちゃんと読んだ上で FingerPrint を計算している．</p>
+<p>単純に RSA 形式の Public Key の FingerPrint を計算するだけならそこまでしなくて良さそうだ．</p>
+<h2 id="haskell-で計算する">Haskell で計算する</h2>
+<p>上述の通りやることは2つ</p>
+<ol>
+<li>Base64 デコード</li>
+<li>MD5 ハッシュ化</li>
+</ol>
+<p>あとその前に header と body を切り分ける．</p>
+<p>ちなみに，最終的なコードは <a href="https://github.com/haskell-jp/playground/pull/1">haskell-jp/playground</a> においた．</p>
+<h3 id="header-と-body-を切り分ける">header と body を切り分ける</h3>
+<p>RSA の Public Key は <code>ssh-rsa AAAAXXX...</code> となっている（<code>X</code> 以降は適当）． 欲しいのは空白よりあとだけなので，まずはそこを切り出す（ついでにバリデーションする）． 後々楽なので全部 <code>ByteString</code> を使うことにする:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.ByteString</span> (<span class="dt">ByteString</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.ByteString</span> <span class="kw">as</span> <span class="dt">B</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ot">pubkeyBody ::</span> <span class="dt">ByteString</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">ByteString</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>pubkeyBody content <span class="ot">=</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">case</span> B.split <span class="dv">32</span> content <span class="kw">of</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    [header, body] <span class="op">|</span> header <span class="op">==</span> <span class="st">&quot;ssh-rsa&quot;</span> <span class="op">&amp;&amp;</span> <span class="st">&quot;AAAA&quot;</span> <span class="ot">`B.isPrefixOf`</span> body <span class="ot">-&gt;</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Just</span> body</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    _ <span class="ot">-&gt;</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Nothing</span></span></code></pre></div>
+<p><code>Word8</code> 型の <code>32</code> は空白．</p>
+<h3 id="base64-デコード">Base64 デコード</h3>
+<p><a href="https://hackage.haskell.org/package/memory">memory</a> というパッケージを使う． なぜかというと，この後で使うあらゆる暗号アルゴリズムを詰め込んだ <a href="http://hackage.haskell.org/package/cryptonite">cryptonite</a> というパッケージがこれに依存していたからだ． cryptonite に習って Base64 デコードするとこんな感じだ（ついでにバリデーションする）:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- これが memory パッケージのモジュール</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.ByteArray.Encoding</span> (<span class="dt">Base</span> (<span class="dt">Base64</span>), convertFromBase)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="ot">decode ::</span> <span class="dt">ByteString</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">ByteString</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>decode body <span class="ot">=</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">case</span> convertFromBase <span class="dt">Base64</span> body <span class="kw">of</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Right</span> bin <span class="op">|</span> prefix <span class="ot">`B.isPrefixOf`</span> bin <span class="ot">-&gt;</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Just</span> bin</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    _ <span class="ot">-&gt;</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Nothing</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- \x00 \x00 \x00 \x07 ssh-rsa (00000007 というのは ssh-rsa の長さ)</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    prefix <span class="ot">=</span> <span class="st">&quot;\NUL\NUL\NUL\assh-rsa&quot;</span></span></code></pre></div>
+<h3 id="md5-ハッシュ化">MD5 ハッシュ化</h3>
+<p>上述の通り，cryptonite というのを用いる． ちなみにこれらのパッケージについては <a href="https://www.fpcomplete.com/blog/2017/09/cryptographic-hashing-haskell/">Cryptographic Hashing in Haskell - FPComplete</a> で紹介されてる(<a href="https://haskell.e-bigmoon.com/posts/2017/09-18-cryptographic-hashing-haskell.html">邦訳記事</a>)． 2017年と少し古い記事だが，このパッケージは今でも精力的にメンテナンスがされており，また個人ではなくチーム(<a href="https://github.com/haskell-crypto">Haskell Crypto</a>)で管理している点から信頼できるかなと考えた（暗号系のパッケージは結構シビアだから）．</p>
+<p>このパッケージで何らかのハッシュ関数を利用するには <code>Crypto.Hash.hash</code> 関数を利用すれば良い． アルゴリズム（MD5 か SHA256 かなど）は返り値の型を明示することで指定できる． 今回の場合は <code>Digest MD5</code> 型とすれば良い:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Crypto.Hash</span> (<span class="dt">Digest</span>, <span class="dt">MD5</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Crypto.Hash</span> <span class="kw">as</span> <span class="dt">Crypto</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ot">fingerprint ::</span> <span class="dt">ByteString</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (<span class="dt">Digest</span> <span class="dt">MD5</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>fingerprint content <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  body <span class="ot">&lt;-</span> pubkeyBody content</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  bin  <span class="ot">&lt;-</span> decode body</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pure</span> <span class="op">$</span> Crypto.hash bin</span></code></pre></div>
+<h2 id="試す">試す</h2>
+<p>GHCi で適当に:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;</span> <span class="op">:</span>set <span class="op">-</span><span class="dt">XOverloadedString</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;</span> <span class="kw">import</span> <span class="dt">Crypto.SSH.PubKey</span>      <span class="co">-- 今まで定義してた関数のモジュール</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;</span> fingerprint <span class="st">&quot;ssh-rsa AAAA...&quot;</span> <span class="co">-- 適当に public key の中身を貼り付ける</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="dt">Just</span> <span class="st">&quot;f3b17672020e4e8ad25516034facc12d&quot;</span></span></code></pre></div>
+<p>GitHub では8ビットごとに <code>:</code> で区切られてるが，まぁそれはいいでしょ．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>意外とこういう Crypto 系のテーマの Haskell コードの例って少ないよね． 全部コード読んで試したよ．</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Ruby のパターンマッチング機能を MinRuby で試す" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>Ruby のパターンマッチング機能を MinRuby で試す</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">Ruby のパターンマッチング機能を MinRuby で試す</h1>
+            </header>
+            <div class="post-content">
+              <p>Ruby 2.7 で導入予定で，すでに <a href="https://github.com/ruby/ruby">Ruby リポジトリ</a>の trunk (いわゆる master ブランチのこと) にマージ済みの「パターンマッチング」機能を試してみたので，そのメモ書きです． 特に包括的に検証したわけではないので注意してください．</p>
+<h2 id="パターンマッチング">パターンマッチング</h2>
+<p>(わざわざ解説することでもないけど)</p>
+<p>パターンマッチングは <code>if</code> 文や <code>case</code> 文のようなプログラムの分岐に使うプログラミング機能． <code>if</code> 文が真偽値を返す条件式 (e.g. <code>a &gt; 0 &amp;&amp; x == 'hoge'</code>) の結果により分岐し，<code>case</code> 文が指定した変数の値によって分岐するのに対し，パターンマッチングは指定した変数のデータ構造によって分岐する．</p>
+<p>例えば Ruby に導入されたパターンマッチングだと次のようになる:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="cf">case</span> var <span class="co"># var のデータ構造により分岐</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="cf">in</span> <span class="kw">[]</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">puts</span> <span class="st">&quot;var is empty list&quot;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="cf">in</span> <span class="kw">[</span>a<span class="kw">]</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">puts</span> <span class="st">&quot;var is singleton: </span><span class="sc">#{</span>a<span class="sc">}</span><span class="st">&quot;</span> <span class="co"># 変数 a に値を代入する</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="cf">in</span> <span class="kw">[</span><span class="wa">:hoge</span>, a, b<span class="kw">]</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">puts</span> <span class="st">&quot;var is hoge list: </span><span class="sc">#{</span><span class="kw">[</span>a, b<span class="kw">]</span><span class="sc">}</span><span class="st">&quot;</span> <span class="co"># 一要素目が :hoge の3要素リスト</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">puts</span> <span class="st">&quot;No match: </span><span class="sc">#{</span>var<span class="sc">}</span><span class="st">&quot;</span> <span class="co"># else はどれにもマッチしないとき</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code></pre></div>
+<p>このようにデータ構造(例えば配列の要素数など)によって分岐かつ変数への代入が可能になる． パターンマッチングは様々なデータを扱うようなプログラミングを行う時に極めて簡潔にかつ直感的にプログラムを記述することができる．</p>
+<p>ちなみに，パターンマッチングがあれば基本的に <code>if</code> 文も <code>case</code> 文も要らない． どちらもパターンマッチングの糖衣構文として表現でき，現に Haskell ではそうなっている(たぶん)．</p>
+<h3 id="ruby-のパターンマッチング">Ruby のパターンマッチング</h3>
+<p>ちょこちょこ既に記事があるが，RubyKaigi 2019 でも作者からの発表があり参考になる:</p>
+<ul>
+<li><a href="https://speakerdeck.com/k_tsj/pattern-matching-new-feature-in-ruby-2-dot-7">Pattern matching - New feature in Ruby 2.7</a></li>
+</ul>
+<p>すでに <a href="https://www.youtube.com/watch?v=paBlgsqoKk8">YouTube で動画も公開された</a>． ちなみに，2012 ぐらいからずっと作っていたらしい．</p>
+<p>Elixir のピンパターン(<code>^var</code>)など，数多くのパターンマッチング機能がある(後発の利点ですね)． ただし，変数のスコープが個人的には思ってたのと違った:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>irb(main):<span class="dv">001</span>:<span class="dv">0</span><span class="kw">&gt;</span> <span class="cf">case</span> <span class="kw">[</span><span class="dv">1</span>, <span class="dv">2</span><span class="kw">]</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>irb(main):<span class="dv">002</span>:<span class="dv">1</span><span class="kw">&gt;</span> <span class="cf">in</span> <span class="kw">[</span>a, <span class="dv">3</span><span class="kw">]</span> <span class="cf">then</span> <span class="fu">p</span> a</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>irb(main):<span class="dv">003</span>:<span class="dv">1</span><span class="kw">&gt;</span> <span class="cf">in</span> <span class="kw">[</span>b, c<span class="kw">]</span> <span class="cf">then</span> <span class="fu">p</span> c</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>irb(main):<span class="dv">004</span>:<span class="dv">1</span><span class="kw">&gt;</span> <span class="cf">end</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">=&gt;</span> <span class="dv">2</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>irb(main):<span class="dv">005</span>:<span class="dv">0</span><span class="kw">&gt;</span> <span class="kw">[</span>a,b,c<span class="kw">]</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="kw">=&gt;</span> <span class="kw">[</span><span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">2</span><span class="kw">]</span></span></code></pre></div>
+<p><code>in ..</code> ごとにスコープは閉じてるのが一般的な気がするけど Ruby でそれは難しいのだろうか(<code>if</code> 文や <code>case</code> 文でもこんな感じの挙動)．</p>
+<h2 id="試す">試す</h2>
+<h3 id="ruby27-dev">Ruby2.7-dev</h3>
+<p>前述した通り，パターンマッチングは trunk にマージされているので Ruby2.7-dev で試すことができる． trunk を試す方法はいくつかあると思うが，僕は手っ取り早く <a href="https://github.com/rbenv/rbenv">rbenv</a> を使った．</p>
+<pre><code>$ rbenv install 2.7.0-dev</code></pre>
+<h3 id="minruby">MinRuby</h3>
+<p>パターンマッチングを試す対象として，「<a href="https://ascii.jp/elem/000/001/230/1230449/">Ruby で学ぶ Ruby</a>」という連載で作っている，かなり簡易的な Ruby のサブセット処理系 MinRuby を利用する．</p>
+<p>最終的な処理系は <a href="https://github.com/matsubara0507/MinRuby.rb/blob/dbe9891f916877fc3c260135696f48344bceb98a/interp.rb">Ruby コード一枚</a>でできている(一番めんどくさい構文解析を <a href="https://github.com/ruby/ruby/tree/970a25b10415bc3735e6e3c165e167e6abc3d7f4/ext/ripper">ripper</a> とそのラッパー <a href="https://github.com/mame/minruby">minruby</a> というのに任せているので):</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># interp.rb</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">require</span> <span class="st">&quot;minruby&quot;</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="cf">def</span> evaluate(tree, genv, lenv)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> tree<span class="kw">[</span><span class="dv">0</span><span class="kw">]</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;lit&quot;</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    tree<span class="kw">[</span><span class="dv">1</span><span class="kw">]</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;+&quot;</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    evaluate(tree<span class="kw">[</span><span class="dv">1</span><span class="kw">]</span>, genv, lenv) <span class="kw">+</span> evaluate(tree<span class="kw">[</span><span class="dv">2</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;-&quot;</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    evaluate(tree<span class="kw">[</span><span class="dv">1</span><span class="kw">]</span>, genv, lenv) <span class="kw">-</span> evaluate(tree<span class="kw">[</span><span class="dv">2</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;*&quot;</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    evaluate(tree<span class="kw">[</span><span class="dv">1</span><span class="kw">]</span>, genv, lenv) <span class="kw">*</span> evaluate(tree<span class="kw">[</span><span class="dv">2</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;/&quot;</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    evaluate(tree<span class="kw">[</span><span class="dv">1</span><span class="kw">]</span>, genv, lenv) <span class="kw">/</span> evaluate(tree<span class="kw">[</span><span class="dv">2</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;%&quot;</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    evaluate(tree<span class="kw">[</span><span class="dv">1</span><span class="kw">]</span>, genv, lenv) <span class="kw">%</span> evaluate(tree<span class="kw">[</span><span class="dv">2</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;&lt;&quot;</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    evaluate(tree<span class="kw">[</span><span class="dv">1</span><span class="kw">]</span>, genv, lenv) <span class="kw">&lt;</span> evaluate(tree<span class="kw">[</span><span class="dv">2</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;&lt;=&quot;</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>    evaluate(tree<span class="kw">[</span><span class="dv">1</span><span class="kw">]</span>, genv, lenv) <span class="kw">&lt;=</span> evaluate(tree<span class="kw">[</span><span class="dv">2</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;==&quot;</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>    evaluate(tree<span class="kw">[</span><span class="dv">1</span><span class="kw">]</span>, genv, lenv) <span class="kw">==</span> evaluate(tree<span class="kw">[</span><span class="dv">2</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;!=&quot;</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>    evaluate(tree<span class="kw">[</span><span class="dv">1</span><span class="kw">]</span>, genv, lenv) !<span class="kw">=</span> evaluate(tree<span class="kw">[</span><span class="dv">2</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;&gt;=&quot;</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>    evaluate(tree<span class="kw">[</span><span class="dv">1</span><span class="kw">]</span>, genv, lenv) <span class="kw">&gt;=</span> evaluate(tree<span class="kw">[</span><span class="dv">2</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;&gt;&quot;</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>    evaluate(tree<span class="kw">[</span><span class="dv">1</span><span class="kw">]</span>, genv, lenv) <span class="kw">&gt;</span> evaluate(tree<span class="kw">[</span><span class="dv">2</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;stmts&quot;</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>    i <span class="kw">=</span> <span class="dv">1</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>    last <span class="kw">=</span> <span class="dv">nil</span></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> tree<span class="kw">[</span>i<span class="kw">]</span></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>      last <span class="kw">=</span> evaluate(tree<span class="kw">[</span>i<span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>      i <span class="kw">=</span> i <span class="kw">+</span> <span class="dv">1</span></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>    last</span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;var_assign&quot;</span></span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>    lenv<span class="kw">[</span>tree<span class="kw">[</span><span class="dv">1</span><span class="kw">]]</span> <span class="kw">=</span> evaluate(tree<span class="kw">[</span><span class="dv">2</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;var_ref&quot;</span></span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>    lenv<span class="kw">[</span>tree<span class="kw">[</span><span class="dv">1</span><span class="kw">]]</span></span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;if&quot;</span></span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> evaluate(tree<span class="kw">[</span><span class="dv">1</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>      evaluate(tree<span class="kw">[</span><span class="dv">2</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span></span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a>      evaluate(tree<span class="kw">[</span><span class="dv">3</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;while&quot;</span></span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> evaluate(tree<span class="kw">[</span><span class="dv">1</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a>      evaluate(tree<span class="kw">[</span><span class="dv">2</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;func_def&quot;</span></span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a>    genv<span class="kw">[</span>tree<span class="kw">[</span><span class="dv">1</span><span class="kw">]]</span> <span class="kw">=</span> <span class="kw">[</span><span class="st">&quot;user_defined&quot;</span>, tree<span class="kw">[</span><span class="dv">2</span><span class="kw">]</span>, tree<span class="kw">[</span><span class="dv">3</span><span class="kw">]]</span></span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;func_call&quot;</span></span>
+<span id="cb4-55"><a href="#cb4-55" aria-hidden="true" tabindex="-1"></a>    args <span class="kw">=</span> <span class="kw">[]</span></span>
+<span id="cb4-56"><a href="#cb4-56" aria-hidden="true" tabindex="-1"></a>    i <span class="kw">=</span> <span class="dv">0</span></span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> tree<span class="kw">[</span>i <span class="kw">+</span> <span class="dv">2</span><span class="kw">]</span></span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a>      args<span class="kw">[</span>i<span class="kw">]</span> <span class="kw">=</span> evaluate(tree<span class="kw">[</span>i <span class="kw">+</span> <span class="dv">2</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a>      i <span class="kw">=</span> i <span class="kw">+</span> <span class="dv">1</span></span>
+<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a>    mhd <span class="kw">=</span> genv<span class="kw">[</span>tree<span class="kw">[</span><span class="dv">1</span><span class="kw">]]</span></span>
+<span id="cb4-62"><a href="#cb4-62" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> mhd<span class="kw">[</span><span class="dv">0</span><span class="kw">]</span> <span class="kw">==</span> <span class="st">&quot;builtin&quot;</span></span>
+<span id="cb4-63"><a href="#cb4-63" aria-hidden="true" tabindex="-1"></a>      minruby_call(mhd<span class="kw">[</span><span class="dv">1</span><span class="kw">]</span>, args)</span>
+<span id="cb4-64"><a href="#cb4-64" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span></span>
+<span id="cb4-65"><a href="#cb4-65" aria-hidden="true" tabindex="-1"></a>      new_lenv <span class="kw">=</span> <span class="kw">{}</span></span>
+<span id="cb4-66"><a href="#cb4-66" aria-hidden="true" tabindex="-1"></a>      params <span class="kw">=</span> mhd<span class="kw">[</span><span class="dv">1</span><span class="kw">]</span></span>
+<span id="cb4-67"><a href="#cb4-67" aria-hidden="true" tabindex="-1"></a>      i <span class="kw">=</span> <span class="dv">0</span></span>
+<span id="cb4-68"><a href="#cb4-68" aria-hidden="true" tabindex="-1"></a>      <span class="cf">while</span> params<span class="kw">[</span>i<span class="kw">]</span></span>
+<span id="cb4-69"><a href="#cb4-69" aria-hidden="true" tabindex="-1"></a>        new_lenv<span class="kw">[</span>params<span class="kw">[</span>i<span class="kw">]]</span> <span class="kw">=</span> args<span class="kw">[</span>i<span class="kw">]</span></span>
+<span id="cb4-70"><a href="#cb4-70" aria-hidden="true" tabindex="-1"></a>        i <span class="kw">=</span> i <span class="kw">+</span> <span class="dv">1</span></span>
+<span id="cb4-71"><a href="#cb4-71" aria-hidden="true" tabindex="-1"></a>      <span class="cf">end</span></span>
+<span id="cb4-72"><a href="#cb4-72" aria-hidden="true" tabindex="-1"></a>      evaluate(mhd<span class="kw">[</span><span class="dv">2</span><span class="kw">]</span>, genv, new_lenv)</span>
+<span id="cb4-73"><a href="#cb4-73" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb4-74"><a href="#cb4-74" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;ary_new&quot;</span></span>
+<span id="cb4-75"><a href="#cb4-75" aria-hidden="true" tabindex="-1"></a>    ary <span class="kw">=</span> <span class="kw">[]</span></span>
+<span id="cb4-76"><a href="#cb4-76" aria-hidden="true" tabindex="-1"></a>    i <span class="kw">=</span> <span class="dv">0</span></span>
+<span id="cb4-77"><a href="#cb4-77" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> tree<span class="kw">[</span>i <span class="kw">+</span> <span class="dv">1</span><span class="kw">]</span></span>
+<span id="cb4-78"><a href="#cb4-78" aria-hidden="true" tabindex="-1"></a>      ary<span class="kw">[</span>i<span class="kw">]</span> <span class="kw">=</span> evaluate(tree<span class="kw">[</span>i <span class="kw">+</span> <span class="dv">1</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-79"><a href="#cb4-79" aria-hidden="true" tabindex="-1"></a>      i <span class="kw">=</span> i <span class="kw">+</span> <span class="dv">1</span></span>
+<span id="cb4-80"><a href="#cb4-80" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb4-81"><a href="#cb4-81" aria-hidden="true" tabindex="-1"></a>    ary</span>
+<span id="cb4-82"><a href="#cb4-82" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;ary_ref&quot;</span></span>
+<span id="cb4-83"><a href="#cb4-83" aria-hidden="true" tabindex="-1"></a>    ary <span class="kw">=</span> evaluate(tree<span class="kw">[</span><span class="dv">1</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-84"><a href="#cb4-84" aria-hidden="true" tabindex="-1"></a>    idx <span class="kw">=</span> evaluate(tree<span class="kw">[</span><span class="dv">2</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-85"><a href="#cb4-85" aria-hidden="true" tabindex="-1"></a>    ary<span class="kw">[</span>idx<span class="kw">]</span></span>
+<span id="cb4-86"><a href="#cb4-86" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;ary_assign&quot;</span></span>
+<span id="cb4-87"><a href="#cb4-87" aria-hidden="true" tabindex="-1"></a>    ary <span class="kw">=</span> evaluate(tree<span class="kw">[</span><span class="dv">1</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-88"><a href="#cb4-88" aria-hidden="true" tabindex="-1"></a>    idx <span class="kw">=</span> evaluate(tree<span class="kw">[</span><span class="dv">2</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-89"><a href="#cb4-89" aria-hidden="true" tabindex="-1"></a>    val <span class="kw">=</span> evaluate(tree<span class="kw">[</span><span class="dv">3</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-90"><a href="#cb4-90" aria-hidden="true" tabindex="-1"></a>    ary<span class="kw">[</span>idx<span class="kw">]</span> <span class="kw">=</span> val</span>
+<span id="cb4-91"><a href="#cb4-91" aria-hidden="true" tabindex="-1"></a>  <span class="cf">when</span> <span class="st">&quot;hash_new&quot;</span></span>
+<span id="cb4-92"><a href="#cb4-92" aria-hidden="true" tabindex="-1"></a>    hsh <span class="kw">=</span> <span class="kw">{}</span></span>
+<span id="cb4-93"><a href="#cb4-93" aria-hidden="true" tabindex="-1"></a>    i <span class="kw">=</span> <span class="dv">0</span></span>
+<span id="cb4-94"><a href="#cb4-94" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> tree<span class="kw">[</span>i <span class="kw">+</span> <span class="dv">1</span><span class="kw">]</span></span>
+<span id="cb4-95"><a href="#cb4-95" aria-hidden="true" tabindex="-1"></a>      key <span class="kw">=</span> evaluate(tree<span class="kw">[</span>i <span class="kw">+</span> <span class="dv">1</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-96"><a href="#cb4-96" aria-hidden="true" tabindex="-1"></a>      val <span class="kw">=</span> evaluate(tree<span class="kw">[</span>i <span class="kw">+</span> <span class="dv">2</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb4-97"><a href="#cb4-97" aria-hidden="true" tabindex="-1"></a>      hsh<span class="kw">[</span>key<span class="kw">]</span> <span class="kw">=</span> val</span>
+<span id="cb4-98"><a href="#cb4-98" aria-hidden="true" tabindex="-1"></a>      i <span class="kw">=</span> i <span class="kw">+</span> <span class="dv">2</span></span>
+<span id="cb4-99"><a href="#cb4-99" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb4-100"><a href="#cb4-100" aria-hidden="true" tabindex="-1"></a>    hsh</span>
+<span id="cb4-101"><a href="#cb4-101" aria-hidden="true" tabindex="-1"></a>  <span class="cf">end</span></span>
+<span id="cb4-102"><a href="#cb4-102" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
+<span id="cb4-103"><a href="#cb4-103" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-104"><a href="#cb4-104" aria-hidden="true" tabindex="-1"></a>str <span class="kw">=</span> minruby_load()</span>
+<span id="cb4-105"><a href="#cb4-105" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-106"><a href="#cb4-106" aria-hidden="true" tabindex="-1"></a>tree <span class="kw">=</span> minruby_parse(str)</span>
+<span id="cb4-107"><a href="#cb4-107" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-108"><a href="#cb4-108" aria-hidden="true" tabindex="-1"></a>genv <span class="kw">=</span> <span class="kw">{</span></span>
+<span id="cb4-109"><a href="#cb4-109" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;p&quot;</span> <span class="kw">=&gt;</span> <span class="kw">[</span><span class="st">&quot;builtin&quot;</span>, <span class="st">&quot;p&quot;</span><span class="kw">]</span>,</span>
+<span id="cb4-110"><a href="#cb4-110" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;require&quot;</span> <span class="kw">=&gt;</span> <span class="kw">[</span><span class="st">&quot;builtin&quot;</span>, <span class="st">&quot;require&quot;</span><span class="kw">]</span>,</span>
+<span id="cb4-111"><a href="#cb4-111" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;minruby_parse&quot;</span> <span class="kw">=&gt;</span> <span class="kw">[</span><span class="st">&quot;builtin&quot;</span>, <span class="st">&quot;minruby_parse&quot;</span><span class="kw">]</span>,</span>
+<span id="cb4-112"><a href="#cb4-112" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;minruby_load&quot;</span> <span class="kw">=&gt;</span> <span class="kw">[</span><span class="st">&quot;builtin&quot;</span>, <span class="st">&quot;minruby_load&quot;</span><span class="kw">]</span>,</span>
+<span id="cb4-113"><a href="#cb4-113" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;minruby_call&quot;</span> <span class="kw">=&gt;</span> <span class="kw">[</span><span class="st">&quot;builtin&quot;</span>, <span class="st">&quot;minruby_call&quot;</span><span class="kw">]</span>,</span>
+<span id="cb4-114"><a href="#cb4-114" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span>
+<span id="cb4-115"><a href="#cb4-115" aria-hidden="true" tabindex="-1"></a>lenv <span class="kw">=</span> <span class="kw">{}</span></span>
+<span id="cb4-116"><a href="#cb4-116" aria-hidden="true" tabindex="-1"></a>evaluate(tree, genv, lenv)</span></code></pre></div>
+<p>コードを見て分かるように(?)，配列の一引数目のリテラルで <code>case</code> 文による分岐をし，分岐先で配列の要素を引っ張っている． このようにデータ構造 + <code>case</code> 文による分岐はパターンマッチングにうってつけのユースケースだ．</p>
+<h3 id="minruby--パターンマッチング">MinRuby + パターンマッチング</h3>
+<p>作業リポジトリはこれ:</p>
+<iframe width="320" height="163" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/MinRuby.rb" >
+</iframe>
+<p><code>pattern-match</code> というブランチにパターンマッチングで書き換えたコードがある． パターンマッチングで書き換えたのは <code>evaluate</code> 関数だけなのでそこだけ載せる:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="cf">def</span> evaluate(tree, genv, lenv)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> tree</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;lit&quot;</span>, lit</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    lit</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;+&quot;</span>, exp1, exp2</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    evaluate(exp1, genv, lenv) <span class="kw">+</span> evaluate(exp2, genv, lenv)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;-&quot;</span>, exp1, exp2</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    evaluate(exp1, genv, lenv) <span class="kw">-</span> evaluate(exp2, genv, lenv)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;*&quot;</span>, exp1, exp2</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    evaluate(exp1, genv, lenv) <span class="kw">*</span> evaluate(exp2, genv, lenv)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;/&quot;</span>, exp1, exp2</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    evaluate(exp1, genv, lenv) <span class="kw">/</span> evaluate(exp2, genv, lenv)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;%&quot;</span>, exp1, exp2</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    evaluate(exp1, genv, lenv) <span class="kw">%</span> evaluate(exp2, genv, lenv)</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;&lt;&quot;</span>, exp1, exp2</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    evaluate(exp1, genv, lenv) <span class="kw">&lt;</span> evaluate(exp2, genv, lenv)</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;&lt;=&quot;</span>, exp1, exp2</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    evaluate(exp1, genv, lenv) <span class="kw">&lt;=</span> evaluate(exp2, genv, lenv)</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;==&quot;</span>, exp1, exp2</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    evaluate(exp1, genv, lenv) <span class="kw">==</span> evaluate(exp2, genv, lenv)</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;!=&quot;</span>, exp1, exp2</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>    evaluate(exp1, genv, lenv) !<span class="kw">=</span> evaluate(exp2, genv, lenv)</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;&gt;=&quot;</span>, exp1, exp2</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    evaluate(exp1, genv, lenv) <span class="kw">&gt;=</span> evaluate(exp2, genv, lenv)</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;&gt;&quot;</span>, exp1, exp2</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    evaluate(exp1, genv, lenv) <span class="kw">&gt;</span> evaluate(exp2, genv, lenv)</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;stmts&quot;</span>, <span class="kw">*</span>stmts</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>    last <span class="kw">=</span> <span class="dv">nil</span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>    i <span class="kw">=</span> <span class="dv">0</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> stmts<span class="kw">[</span>i<span class="kw">]</span></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>      last <span class="kw">=</span> evaluate(stmts<span class="kw">[</span>i<span class="kw">]</span>, genv, lenv)</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>      i <span class="kw">=</span> i <span class="kw">+</span> <span class="dv">1</span></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>    last</span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;var_assign&quot;</span>, var_name, var_value</span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>    lenv<span class="kw">[</span>var_name<span class="kw">]</span> <span class="kw">=</span> evaluate(var_value, genv, lenv)</span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;var_ref&quot;</span>, var_name</span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>    lenv<span class="kw">[</span>var_name<span class="kw">]</span></span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;if&quot;</span>, cond, exp1, exp2</span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> evaluate(cond, genv, lenv)</span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>      evaluate(exp1, genv, lenv)</span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span></span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a>      evaluate(exp2, genv, lenv)</span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;while&quot;</span>, cond, exp</span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> evaluate(cond, genv, lenv)</span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>      evaluate(exp, genv, lenv)</span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;func_def&quot;</span>, func_name, func_args, func_body</span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a>    genv<span class="kw">[</span>func_name<span class="kw">]</span> <span class="kw">=</span> <span class="kw">[</span><span class="st">&quot;user_defined&quot;</span>, func_args, func_body<span class="kw">]</span></span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;func_call&quot;</span>, func_name, <span class="kw">*</span>func_args</span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a>    args <span class="kw">=</span> <span class="kw">[]</span></span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a>    i <span class="kw">=</span> <span class="dv">0</span></span>
+<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> func_args<span class="kw">[</span>i<span class="kw">]</span></span>
+<span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a>      args<span class="kw">[</span>i<span class="kw">]</span> <span class="kw">=</span> evaluate(func_args<span class="kw">[</span>i<span class="kw">]</span>, genv, lenv)</span>
+<span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a>      i <span class="kw">=</span> i <span class="kw">+</span> <span class="dv">1</span></span>
+<span id="cb5-57"><a href="#cb5-57" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb5-58"><a href="#cb5-58" aria-hidden="true" tabindex="-1"></a>    mhd <span class="kw">=</span> genv<span class="kw">[</span>func_name<span class="kw">]</span></span>
+<span id="cb5-59"><a href="#cb5-59" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> mhd<span class="kw">[</span><span class="dv">0</span><span class="kw">]</span> <span class="kw">==</span> <span class="st">&quot;builtin&quot;</span></span>
+<span id="cb5-60"><a href="#cb5-60" aria-hidden="true" tabindex="-1"></a>      minruby_call(mhd<span class="kw">[</span><span class="dv">1</span><span class="kw">]</span>, args)</span>
+<span id="cb5-61"><a href="#cb5-61" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span></span>
+<span id="cb5-62"><a href="#cb5-62" aria-hidden="true" tabindex="-1"></a>      new_lenv <span class="kw">=</span> <span class="kw">{}</span></span>
+<span id="cb5-63"><a href="#cb5-63" aria-hidden="true" tabindex="-1"></a>      params <span class="kw">=</span> mhd<span class="kw">[</span><span class="dv">1</span><span class="kw">]</span></span>
+<span id="cb5-64"><a href="#cb5-64" aria-hidden="true" tabindex="-1"></a>      i <span class="kw">=</span> <span class="dv">0</span></span>
+<span id="cb5-65"><a href="#cb5-65" aria-hidden="true" tabindex="-1"></a>      <span class="cf">while</span> params<span class="kw">[</span>i<span class="kw">]</span></span>
+<span id="cb5-66"><a href="#cb5-66" aria-hidden="true" tabindex="-1"></a>        new_lenv<span class="kw">[</span>params<span class="kw">[</span>i<span class="kw">]]</span> <span class="kw">=</span> args<span class="kw">[</span>i<span class="kw">]</span></span>
+<span id="cb5-67"><a href="#cb5-67" aria-hidden="true" tabindex="-1"></a>        i <span class="kw">=</span> i <span class="kw">+</span> <span class="dv">1</span></span>
+<span id="cb5-68"><a href="#cb5-68" aria-hidden="true" tabindex="-1"></a>      <span class="cf">end</span></span>
+<span id="cb5-69"><a href="#cb5-69" aria-hidden="true" tabindex="-1"></a>      evaluate(mhd<span class="kw">[</span><span class="dv">2</span><span class="kw">]</span>, genv, new_lenv)</span>
+<span id="cb5-70"><a href="#cb5-70" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb5-71"><a href="#cb5-71" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;ary_new&quot;</span>, ary_values</span>
+<span id="cb5-72"><a href="#cb5-72" aria-hidden="true" tabindex="-1"></a>    ary <span class="kw">=</span> <span class="kw">[]</span></span>
+<span id="cb5-73"><a href="#cb5-73" aria-hidden="true" tabindex="-1"></a>    i <span class="kw">=</span> <span class="dv">0</span></span>
+<span id="cb5-74"><a href="#cb5-74" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> ary_values<span class="kw">[</span>i<span class="kw">]</span></span>
+<span id="cb5-75"><a href="#cb5-75" aria-hidden="true" tabindex="-1"></a>      ary <span class="kw">[</span>i<span class="kw">]</span> <span class="kw">=</span> evaluate(ary_values<span class="kw">[</span>i<span class="kw">]</span>, genv, lenv)</span>
+<span id="cb5-76"><a href="#cb5-76" aria-hidden="true" tabindex="-1"></a>      i <span class="kw">=</span> i <span class="kw">+</span> <span class="dv">1</span></span>
+<span id="cb5-77"><a href="#cb5-77" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb5-78"><a href="#cb5-78" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;ary_ref&quot;</span>, ary_exp, idx_exp</span>
+<span id="cb5-79"><a href="#cb5-79" aria-hidden="true" tabindex="-1"></a>    ary <span class="kw">=</span> evaluate(ary_exp, genv, lenv)</span>
+<span id="cb5-80"><a href="#cb5-80" aria-hidden="true" tabindex="-1"></a>    idx <span class="kw">=</span> evaluate(idx_exp, genv, lenv)</span>
+<span id="cb5-81"><a href="#cb5-81" aria-hidden="true" tabindex="-1"></a>    ary<span class="kw">[</span>idx<span class="kw">]</span></span>
+<span id="cb5-82"><a href="#cb5-82" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;ary_assign&quot;</span>, ary_exp, idx_exp, value_exp</span>
+<span id="cb5-83"><a href="#cb5-83" aria-hidden="true" tabindex="-1"></a>    ary <span class="kw">=</span> evaluate(ary_exp, genv, lenv)</span>
+<span id="cb5-84"><a href="#cb5-84" aria-hidden="true" tabindex="-1"></a>    idx <span class="kw">=</span> evaluate(idx_exp, genv, lenv)</span>
+<span id="cb5-85"><a href="#cb5-85" aria-hidden="true" tabindex="-1"></a>    val <span class="kw">=</span> evaluate(value_exp, genv, lenv)</span>
+<span id="cb5-86"><a href="#cb5-86" aria-hidden="true" tabindex="-1"></a>    ary<span class="kw">[</span>idx<span class="kw">]</span> <span class="kw">=</span> val</span>
+<span id="cb5-87"><a href="#cb5-87" aria-hidden="true" tabindex="-1"></a>  <span class="cf">in</span> <span class="st">&quot;hash_new&quot;</span>, <span class="kw">*</span>key_values</span>
+<span id="cb5-88"><a href="#cb5-88" aria-hidden="true" tabindex="-1"></a>    hsh <span class="kw">=</span> <span class="kw">{}</span></span>
+<span id="cb5-89"><a href="#cb5-89" aria-hidden="true" tabindex="-1"></a>    i <span class="kw">=</span> <span class="dv">0</span></span>
+<span id="cb5-90"><a href="#cb5-90" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> key_values<span class="kw">[</span>i<span class="kw">]</span></span>
+<span id="cb5-91"><a href="#cb5-91" aria-hidden="true" tabindex="-1"></a>      key <span class="kw">=</span> evaluate(key_values<span class="kw">[</span>i<span class="kw">]</span>, genv, lenv)</span>
+<span id="cb5-92"><a href="#cb5-92" aria-hidden="true" tabindex="-1"></a>      val <span class="kw">=</span> evaluate(key_values<span class="kw">[</span>i <span class="kw">+</span> <span class="dv">1</span><span class="kw">]</span>, genv, lenv)</span>
+<span id="cb5-93"><a href="#cb5-93" aria-hidden="true" tabindex="-1"></a>      hsh<span class="kw">[</span>key<span class="kw">]</span> <span class="kw">=</span> val</span>
+<span id="cb5-94"><a href="#cb5-94" aria-hidden="true" tabindex="-1"></a>      i <span class="kw">=</span> i <span class="kw">+</span> <span class="dv">2</span></span>
+<span id="cb5-95"><a href="#cb5-95" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb5-96"><a href="#cb5-96" aria-hidden="true" tabindex="-1"></a>    hsh</span>
+<span id="cb5-97"><a href="#cb5-97" aria-hidden="true" tabindex="-1"></a>  <span class="cf">end</span></span>
+<span id="cb5-98"><a href="#cb5-98" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code></pre></div>
+<p>配列にマッチさせる場合，<code>in [a, b, c]</code> の <code>[]</code> を省くことができる． また，<code>in "hoge", *rest</code> は配列の残りの要素全てを <code>*rest</code> にマッチさせる構文だ． 他は特別な機能を使ってないのできっと読めるでしょう．</p>
+<h2 id="おまけ-minruby--パターンマッチング">おまけ: minruby + パターンマッチング</h2>
+<p>試しに <code>minruby</code> もパターンマッチで書き換えてみた． 差分は<a href="https://github.com/matsubara0507/minruby-gem/pull/1">これ</a>． めちゃくちゃやっつけで作ったので穴があるかもしれない．</p>
+<p>ここでは新しく Alternative Pattern を使っている． こういうのだ:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Alternative Pattern: hoge | fuga</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="cf">in</span> (<span class="wa">:program</span> <span class="kw">|</span> <span class="wa">:bodystmt</span>), exp1, <span class="kw">*</span>_</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    make_stmts(exp1)</span></code></pre></div>
+<p>Alternative Pattern には注意点があって，このパターンでは変数へのマッチを利用することができない:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Error: illegal variable in alternative pattern</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="cf">in</span> (<span class="wa">:program</span> exp1, <span class="kw">*</span>_ <span class="kw">|</span> <span class="wa">:bodystmt</span> exp1, <span class="kw">*</span>_),</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    make_stmts(exp1)</span></code></pre></div>
+<p>ここからは余談． MinRuby は <code>ruby interp.rb interp.rb fizzbuzz.rb</code> のように自身を自身で評価することが可能だ(そのため <code>map</code> や <code>foreach</code> などを使わずに少し冗長なコードになっている)． しかし，パターンマッチングを導入しちゃうとこれができない． なんとかできないかなぁと思って <code>minruby</code> をパターンマッチングで書き換えてみたけど，まぁ無理でした． いいアイデアあったら教えて．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>次は型検査も試したいですね．</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

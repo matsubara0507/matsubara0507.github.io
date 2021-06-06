@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  {{>site/templates/partial/head.html}}
+  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    {{>site/templates/partial/header.html}}
+    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">{{title}}</h1>
+            </header>
+            <div class="post-content">
+              {{{content}}}
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    {{>site/templates/partial/footer.html}}
+  </div>
+</body>

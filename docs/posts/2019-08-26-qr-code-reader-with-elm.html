@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Elm で QR コードリーダー" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>Elm で QR コードリーダー</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">Elm で QR コードリーダー</h1>
+            </header>
+            <div class="post-content">
+              <p>タイトル通りです． ただし，jsQR とポートを使ってるだけです． Elm 側で QR コードのデコードをするわけじゃないので，そういうのを期待した人はすいません．</p>
+<p>今回の実装は下記のリポジトリにあります:</p>
+<h4 id="section"><iframe width="320" height="215" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/anaqram-web-samples" ></iframe></h4>
+<p>リポジトリの詳細のとこを読むとわかるんですけど，実はこの話は書典7のネタの一部を抜粋したものです(典の方はもっと丁寧に書いてます)．</p>
+<h2 id="elm-からカメラを使う">Elm からカメラを使う</h2>
+<p>ブラウザからカメラを使うには JavaScript の <a href="https://developer.mozilla.org/ja/docs/Web/API/MediaDevices/getUserMedia"><code>MediaDevices.getUserMedia()</code></a> を使う． このメソッドを使うには <a href="https://webrtc.github.io/samples/src/content/getusermedia/gum">WebRTC のサンプルコード</a>を参考に次のように書く:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> constraints <span class="op">=</span> { <span class="dt">audio</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">video</span><span class="op">:</span> <span class="kw">true</span> }<span class="op">;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">async</span> <span class="kw">function</span> <span class="fu">initCamera</span>(videoId) {</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">try</span> {</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> stream <span class="op">=</span> <span class="cf">await</span> <span class="bu">navigator</span><span class="op">.</span><span class="at">mediaDevices</span><span class="op">.</span><span class="fu">getUserMedia</span>(constraints)<span class="op">;</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">document</span><span class="op">.</span><span class="fu">getElementById</span>(videoId)<span class="op">.</span><span class="at">srcObject</span> <span class="op">=</span> stream<span class="op">;</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">catch</span> (e) {</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">handleError</span>(e)<span class="op">;</span> <span class="co">// ここの実装は割愛</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>HTML 側は <code>id=videoId</code> を設定した <code>video</code> タグを用意するだけで良い． <code>initCamera</code> メソッドを Elm から使うにはポート機能を使って呼び出す:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- QRCode.elm</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">port</span> <span class="kw">module</span> <span class="dt">QRCode</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">port</span> <span class="fu">startCamera</span> : () <span class="op">-&gt;</span> <span class="dt">Cmd</span> <span class="fu">msg</span></span></code></pre></div>
+<p>純粋関数型プログラミング言語である Elm にとって JavaScript のコードを直接呼び出すことは非純粋な行為(<code>Cmd a</code> 型は非純粋な型)であり，<code>port</code> プレフィックスを使って普通の関数とは全く別に管理される(<code>port</code> が付くモジュール・関数はパッケージに含めることができない)． より詳しいポート機能については <a href="https://guide.elm-lang.jp/interop/ports.html">guide.elm-lang.jp のポートのページ</a>を読むと良いだろう．</p>
+<p>さて，<code>startCamera</code> 関数の実装は JavaScript 側で次のように行った:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">// flags は Elm コードの JavaScript 側から与える初期値</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> flags <span class="op">=</span> {</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">ids</span><span class="op">:</span> { <span class="dt">video</span><span class="op">:</span> <span class="st">&#39;video_area&#39;</span> }<span class="op">,</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">size</span><span class="op">:</span> { <span class="dt">width</span><span class="op">:</span> <span class="dv">300</span><span class="op">,</span> <span class="dt">height</span><span class="op">:</span> <span class="dv">300</span> }</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>}<span class="op">;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co">// true だけではなくカメラのサイズとリアカメラ優先フラグ(facingMode)を与える</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> constraints <span class="op">=</span> {</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">audio</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="dt">video</span><span class="op">:</span> {<span class="op">...</span>flags<span class="op">.</span><span class="at">size</span><span class="op">,</span> <span class="dt">facingMode</span><span class="op">:</span> <span class="st">&quot;environment&quot;</span> }</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>}<span class="op">;</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> app <span class="op">=</span> Elm<span class="op">.</span><span class="at">Main</span><span class="op">.</span><span class="fu">init</span>({</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>  <span class="dt">node</span><span class="op">:</span> <span class="bu">document</span><span class="op">.</span><span class="fu">getElementById</span>(<span class="st">&#39;main&#39;</span>)<span class="op">,</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  <span class="dt">flags</span><span class="op">:</span> flags</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">startCamera</span><span class="op">.</span><span class="fu">subscribe</span>(<span class="kw">function</span>() { <span class="fu">initCamera</span>(flags<span class="op">.</span><span class="at">ids</span><span class="op">.</span><span class="at">video</span>) })<span class="op">;</span></span></code></pre></div>
+<p>あとはこんな感じに Elm 側で呼び出す:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">exposing</span> (<span class="fu">main</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">QRCode</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Browser</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Html</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Html</span><span class="op">.</span><span class="dt">Attributes</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Html</span><span class="op">.</span><span class="dt">Events</span> <span class="kw">exposing</span> (<span class="fu">onClick</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="fu">main</span> : <span class="dt">Program</span> <span class="dt">Config</span> <span class="dt">Model</span> <span class="dt">Msg</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="fu">main</span> <span class="op">=</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Browser</span><span class="op">.</span><span class="fu">element</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    { <span class="fu">init</span> <span class="op">=</span> <span class="fu">init</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">view</span> <span class="op">=</span> <span class="fu">view</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">update</span> <span class="op">=</span> <span class="fu">update</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">subscriptions</span> <span class="op">=</span> \<span class="fu">_</span> <span class="op">-&gt;</span> <span class="dt">Sub</span><span class="op">.</span><span class="fu">none</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Config</span> <span class="op">=</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>  { <span class="fu">ids</span> : { <span class="fu">video</span> : <span class="dt">String</span> }<span class="op">,</span> <span class="fu">size</span> : { <span class="fu">width</span> : <span class="dt">Int</span><span class="op">,</span> <span class="fu">height</span> : <span class="dt">Int</span> } }</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Model</span> <span class="op">=</span> { <span class="fu">config</span> : <span class="dt">Config</span> }</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="fu">init</span> : <span class="dt">Config</span> <span class="op">-&gt;</span> (<span class="dt">Model</span><span class="op">,</span> <span class="dt">Cmd</span> <span class="dt">Msg</span>)</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="fu">init</span> <span class="fu">config</span> <span class="op">=</span> (<span class="dt">Model</span> <span class="fu">config</span><span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span>)</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Msg</span> <span class="op">=</span> <span class="dt">EnableCamera</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a><span class="fu">update</span> : <span class="dt">Msg</span> <span class="op">-&gt;</span> <span class="dt">Model</span> <span class="op">-&gt;</span> (<span class="dt">Model</span><span class="op">,</span> <span class="dt">Cmd</span> <span class="dt">Msg</span>)</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a><span class="fu">update</span> <span class="fu">msg</span> <span class="fu">model</span> <span class="op">=</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> <span class="fu">msg</span> <span class="cf">of</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>    <span class="dt">EnableCamera</span> <span class="op">-&gt;</span> (<span class="fu">model</span><span class="op">,</span> <span class="dt">QRCode</span><span class="op">.</span><span class="fu">startCamera</span> ())</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a><span class="fu">view</span> : <span class="dt">Model</span> <span class="op">-&gt;</span> <span class="dt">Html</span> <span class="dt">Msg</span></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a><span class="fu">view</span> <span class="fu">model</span> <span class="op">=</span></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">div</span> []</span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>    [ <span class="fu">video</span></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>        [ <span class="fu">id</span> <span class="fu">model</span><span class="op">.</span><span class="fu">config</span><span class="op">.</span><span class="fu">ids</span><span class="op">.</span><span class="fu">video</span><span class="op">,</span> <span class="fu">style</span> <span class="st">&quot;background-color&quot;</span> <span class="st">&quot;#000&quot;</span><span class="op">,</span> <span class="fu">autoplay</span> <span class="dt">True</span></span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">width</span> <span class="fu">model</span><span class="op">.</span><span class="fu">config</span><span class="op">.</span><span class="fu">size</span><span class="op">.</span><span class="fu">width</span><span class="op">,</span> <span class="fu">height</span> <span class="fu">model</span><span class="op">.</span><span class="fu">config</span><span class="op">.</span><span class="fu">size</span><span class="op">.</span><span class="fu">height</span></span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>        <span class="co">-- iOS のために必要</span></span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">attribute</span> <span class="st">&quot;playsinline&quot;</span> <span class="st">&quot;&quot;</span></span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>        ] []</span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">p</span> [] [ <span class="fu">button</span> [ <span class="fu">onClick</span> <span class="dt">EnableCamera</span> ] [ <span class="fu">text</span> <span class="st">&quot;Enable Camera&quot;</span> ] ]</span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>    ]</span></code></pre></div>
+<p>ボタンの <code>onClick</code> でイベントハンドラを受け取り，<code>startCamera</code> ポート関数を呼び出しているだけ． また，<code>Flags</code> 機能を使って <code>video</code> タグに必要な id を JavaScript 側と共有している． <a href="https://matsubara0507.github.io/anaqram-web-samples/step1/">ここ</a>で実際にビルド結果を触れる．</p>
+<h2 id="qr-コードを読み取る">QR コードを読み取る</h2>
+<p>Elm からカメラを起動できたので，次に QR コードを読み取る． 冒頭で述べた通り，QR コードのでコードには <a href="https://github.com/cozmo/jsQR">jsQR</a> という JavaScript のライブラリを利用する． jsQR の使い方は簡単で，<code>jsQR</code> というメソッドに <code>ImageData</code> オブジェクト(とサイズ)を渡してあげるだけ:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">// jsQR の README に載っているサンプルコード</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> code <span class="op">=</span> <span class="fu">jsQR</span>(imageData<span class="op">,</span> width<span class="op">,</span> height)<span class="op">;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">// QR コードがなければ null になるようです</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (code) {</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="st">&quot;Found QR code&quot;</span><span class="op">,</span> code)<span class="op">;</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p><code>ImageData</code> オブジェクトはカメラ画像をいったん Canvas に退避させることで取得できる:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">captureImage</span>(videoId<span class="op">,</span> captureId) {</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">var</span> canvas <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">getElementById</span>(captureId)<span class="op">;</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">var</span> video <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">getElementById</span>(videoId)<span class="op">;</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  canvas<span class="op">.</span><span class="at">width</span>  <span class="op">=</span> video<span class="op">.</span><span class="at">videoWidth</span><span class="op">;</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  canvas<span class="op">.</span><span class="at">height</span> <span class="op">=</span> video<span class="op">.</span><span class="at">videoHeight</span><span class="op">;</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> ctx <span class="op">=</span> canvas<span class="op">.</span><span class="fu">getContext</span>(<span class="st">&#39;2d&#39;</span>)<span class="op">;</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  ctx<span class="op">.</span><span class="fu">drawImage</span>(video<span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>)<span class="op">;</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> ctx<span class="op">.</span><span class="fu">getImageData</span>(<span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> video<span class="op">.</span><span class="at">videoWidth</span><span class="op">,</span> video<span class="op">.</span><span class="at">videoHeight</span>)<span class="op">;</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>さて，後はこれを Elm で呼び出す． ただし，カメラを起動する <code>startCamera</code> 関数の時と違い，ボタンを押したらQRコードのデコード結果の文字列を取得したい． なので JavaScript 側から実行されることを想定した「内向き」のポート関数も定義する:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- QRCode.elm</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">port</span> <span class="kw">module</span> <span class="dt">QRCode</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Json</span><span class="op">.</span><span class="dt">Decode</span> <span class="kw">as</span> <span class="dt">D</span> <span class="kw">exposing</span> (<span class="dt">Decoder</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Json</span><span class="op">.</span><span class="dt">Encode</span> <span class="kw">as</span> <span class="dt">E</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">QRCode</span> <span class="op">=</span> { <span class="fu">data</span> : <span class="dt">String</span> }</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="fu">decoder</span> : <span class="dt">Decoder</span> <span class="dt">QRCode</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="fu">decoder</span> <span class="op">=</span> <span class="dt">D</span><span class="op">.</span><span class="fu">map</span> <span class="dt">QRCode</span> (<span class="dt">D</span><span class="op">.</span><span class="fu">field</span> <span class="st">&quot;data&quot;</span> <span class="dt">D</span><span class="op">.</span><span class="fu">string</span>)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="kw">port</span> <span class="fu">startCamera</span> : () <span class="op">-&gt;</span> <span class="dt">Cmd</span> <span class="fu">msg</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="kw">port</span> <span class="fu">captureImage</span> : () <span class="op">-&gt;</span> <span class="dt">Cmd</span> <span class="fu">msg</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co">-- JS とは JSON データでやり取りするのが良いらしい</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="kw">port</span> <span class="fu">updateQRCode</span> : (<span class="dt">E</span><span class="op">.</span><span class="dt">Value</span> <span class="op">-&gt;</span> <span class="fu">msg</span>) <span class="op">-&gt;</span> <span class="dt">Sub</span> <span class="fu">msg</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="fu">updateQRCodeWithDecode</span> : (<span class="dt">Result</span> <span class="dt">D</span><span class="op">.</span><span class="dt">Error</span> (<span class="dt">Maybe</span> <span class="dt">QRCode</span>) <span class="op">-&gt;</span> <span class="fu">msg</span>) <span class="op">-&gt;</span> <span class="dt">Sub</span> <span class="fu">msg</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="fu">updateQRCodeWithDecode</span> <span class="fu">msg</span> <span class="op">=</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">updateQRCode</span> (<span class="fu">msg</span> <span class="op">&lt;&lt;</span> <span class="dt">D</span><span class="op">.</span><span class="fu">decodeValue</span> (<span class="dt">D</span><span class="op">.</span><span class="fu">nullable</span> <span class="fu">decoder</span>))</span></code></pre></div>
+<p><code>updateQRCode</code> 関数が内向きのポート関数だ． <code>Sub a</code> 型はタイマーやマウスの動作など外部から非同期に送られてくるメッセージを取得するための型だ． 次のように，JS 側で実装する <code>captureImage</code> 関数の最後で <code>updateQRCode</code> 関数が呼ばれ <code>QRCode</code> 型を表す JS オブジェクトが送られてくる:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">// canvas の id を追加</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> flags <span class="op">=</span> {</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">ids</span><span class="op">:</span> { <span class="dt">video</span><span class="op">:</span> <span class="st">&#39;video_area&#39;</span><span class="op">,</span> <span class="dt">capture</span><span class="op">:</span> <span class="st">&#39;capture_image&#39;</span> }<span class="op">,</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">size</span><span class="op">:</span> { <span class="dt">width</span><span class="op">:</span> <span class="dv">300</span><span class="op">,</span> <span class="dt">height</span><span class="op">:</span> <span class="dv">300</span> }</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>}<span class="op">;</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">captureImage</span><span class="op">.</span><span class="fu">subscribe</span>(<span class="kw">function</span>() {</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> imageData <span class="op">=</span> <span class="fu">captureImage</span>(flags<span class="op">.</span><span class="at">ids</span><span class="op">.</span><span class="at">video</span><span class="op">,</span> flags<span class="op">.</span><span class="at">ids</span><span class="op">.</span><span class="at">capture</span>)<span class="op">;</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> qrcode <span class="op">=</span> <span class="fu">jsQR</span>(imageData<span class="op">.</span><span class="at">data</span><span class="op">,</span> imageData<span class="op">.</span><span class="at">width</span><span class="op">,</span> imageData<span class="op">.</span><span class="at">height</span>)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  app<span class="op">.</span><span class="at">ports</span><span class="op">.</span><span class="at">updateQRCode</span><span class="op">.</span><span class="fu">send</span>(qrcode)<span class="op">;</span> <span class="co">// ココ</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div>
+<p>Elm 側は次のように書き換える:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">exposing</span> (<span class="fu">main</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">AnaQRam</span><span class="op">.</span><span class="dt">QRCode</span> <span class="kw">as</span> <span class="dt">QRCode</span> <span class="kw">exposing</span> (<span class="dt">QRCode</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Json</span><span class="op">.</span><span class="dt">Decode</span> <span class="kw">exposing</span> (<span class="dt">Error</span><span class="op">,</span> <span class="fu">errorToString</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="fu">main</span> : <span class="dt">Program</span> <span class="dt">Config</span> <span class="dt">Model</span> <span class="dt">Msg</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="fu">main</span> <span class="op">=</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Browser</span><span class="op">.</span><span class="fu">element</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    { <span class="op">..</span> <span class="co">-- 割愛</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">subscriptions</span> <span class="op">=</span> <span class="fu">subscriptions</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="co">-- capture を追加</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Config</span> <span class="op">=</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>  { <span class="fu">ids</span> : { <span class="fu">video</span> : <span class="dt">String</span><span class="op">,</span> <span class="fu">capture</span> : <span class="dt">String</span> }</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>  <span class="op">,</span> <span class="fu">size</span> : { <span class="fu">width</span> : <span class="dt">Int</span><span class="op">,</span> <span class="fu">height</span> : <span class="dt">Int</span> }</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Model</span> <span class="op">=</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>  { <span class="fu">config</span> : <span class="dt">Config</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>  <span class="op">,</span> <span class="fu">qrcode</span> : <span class="dt">Maybe</span> <span class="dt">QRCode</span> <span class="co">-- QRコードのデコード結果</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>  <span class="op">,</span> <span class="fu">error</span> : <span class="dt">String</span>        <span class="co">-- JSONのデコード失敗結果</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a><span class="fu">init</span> : <span class="dt">Config</span> <span class="op">-&gt;</span> (<span class="dt">Model</span><span class="op">,</span> <span class="dt">Cmd</span> <span class="dt">Msg</span>)</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a><span class="fu">init</span> <span class="fu">config</span> <span class="op">=</span> (<span class="dt">Model</span> <span class="fu">config</span> <span class="dt">Nothing</span> <span class="st">&quot;&quot;</span><span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span>)</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Msg</span></span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>  <span class="op">=</span> <span class="dt">EnableCamera</span></span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">CaptureImage</span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">UpdateQRCode</span> (<span class="dt">Result</span> <span class="dt">Error</span> (<span class="dt">Maybe</span> <span class="dt">QRCode</span>))</span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a><span class="fu">update</span> : <span class="dt">Msg</span> <span class="op">-&gt;</span> <span class="dt">Model</span> <span class="op">-&gt;</span> (<span class="dt">Model</span><span class="op">,</span> <span class="dt">Cmd</span> <span class="dt">Msg</span>)</span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a><span class="fu">update</span> <span class="fu">msg</span> <span class="fu">model</span> <span class="op">=</span></span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> <span class="fu">msg</span> <span class="cf">of</span></span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span> <span class="co">-- 割愛</span></span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>    <span class="dt">CaptureImage</span> <span class="op">-&gt;</span> (<span class="fu">model</span><span class="op">,</span> <span class="dt">QRCode</span><span class="op">.</span><span class="fu">captureImage</span> ())</span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- QRコードがなかった場合(null が返ってくるので)</span></span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>    <span class="dt">UpdateQRCode</span> (<span class="dt">Ok</span> <span class="dt">Nothing</span>) <span class="op">-&gt;</span> ({ <span class="fu">model</span> <span class="op">|</span> <span class="fu">error</span> <span class="op">=</span> <span class="st">&quot;QR code is not found&quot;</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span>)</span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- QRコードのデコード成功</span></span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>    <span class="dt">UpdateQRCode</span> (<span class="dt">Ok</span> <span class="fu">qrcode</span>) <span class="op">-&gt;</span> ({ <span class="fu">model</span> <span class="op">|</span> <span class="fu">qrcode</span> <span class="op">=</span> <span class="fu">qrcode</span><span class="op">,</span> <span class="fu">error</span> <span class="op">=</span> <span class="st">&quot;&quot;</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span>)</span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- JSONのデコード失敗</span></span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>    <span class="dt">UpdateQRCode</span> (<span class="dt">Err</span> <span class="fu">message</span>) <span class="op">-&gt;</span> ({ <span class="fu">model</span> <span class="op">|</span> <span class="fu">error</span> <span class="op">=</span> <span class="fu">errorToString</span> <span class="fu">message</span> }<span class="op">,</span> <span class="dt">Cmd</span><span class="op">.</span><span class="fu">none</span>)</span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a><span class="fu">view</span> : <span class="dt">Model</span> <span class="op">-&gt;</span> <span class="dt">Html</span> <span class="dt">Msg</span></span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a><span class="fu">view</span> <span class="fu">model</span> <span class="op">=</span></span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">div</span> []</span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>    [ <span class="fu">video</span> <span class="co">-- 割愛</span></span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">p</span> [] [ <span class="fu">button</span> [ <span class="fu">onClick</span> <span class="dt">EnableCamera</span> ] [ <span class="fu">text</span> <span class="st">&quot;Enable Camera&quot;</span> ] ]</span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">p</span> [] [ <span class="fu">button</span> [ <span class="fu">onClick</span> <span class="dt">CaptureImage</span> ] [ <span class="fu">text</span> <span class="st">&quot;Decode QR&quot;</span> ] ]</span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">canvas</span> [ <span class="fu">id</span> <span class="fu">model</span><span class="op">.</span><span class="fu">config</span><span class="op">.</span><span class="fu">ids</span><span class="op">.</span><span class="fu">capture</span><span class="op">,</span> <span class="fu">hidden</span> <span class="dt">True</span> ] [] <span class="co">-- カメラ画像退避用</span></span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">viewResult</span> <span class="fu">model</span></span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a><span class="fu">viewResult</span> : <span class="dt">Model</span> <span class="op">-&gt;</span> <span class="dt">Html</span> <span class="dt">Msg</span></span>
+<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a><span class="fu">viewResult</span> <span class="fu">model</span> <span class="op">=</span></span>
+<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="dt">String</span><span class="op">.</span><span class="fu">isEmpty</span> <span class="fu">model</span><span class="op">.</span><span class="fu">error</span> <span class="cf">then</span></span>
+<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a>    <span class="fu">p</span> [] [ <span class="fu">text</span> (<span class="st">&quot;QR code: &quot;</span> <span class="op">++</span> <span class="dt">Maybe</span><span class="op">.</span><span class="fu">withDefault</span> <span class="st">&quot;&quot;</span> (<span class="dt">Maybe</span><span class="op">.</span><span class="fu">map</span> <span class="op">.</span><span class="fu">data</span> <span class="fu">model</span><span class="op">.</span><span class="fu">qrcode</span>)) ]</span>
+<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span></span>
+<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a>    <span class="fu">p</span> [] [ <span class="fu">text</span> <span class="fu">model</span><span class="op">.</span><span class="fu">error</span> ]</span>
+<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a><span class="fu">subscriptions</span> : <span class="dt">Model</span> <span class="op">-&gt;</span> <span class="dt">Sub</span> <span class="dt">Msg</span></span>
+<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a><span class="fu">subscriptions</span> <span class="fu">_</span> <span class="op">=</span> <span class="dt">QRCode</span><span class="op">.</span><span class="fu">updateQRCodeWithDecode</span> <span class="dt">UpdateQRCode</span></span></code></pre></div>
+<p>出来上がったのが<a href="https://matsubara0507.github.io/anaqram-web-samples/step2">こんな感じ</a>． ほんとはここがゴールじゃないんだが結果的に QR コードリーダーができた．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>Elm 側でデコードする話は気が向いたらそのうち頑張るかもしれない(画像データをポートでやりとりするのは，あまり効率的ではないと思うけど)．</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

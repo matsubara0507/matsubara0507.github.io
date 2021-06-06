@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Haskell Servant で Slack からの署名付きリクエストを受ける" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <meta property="og:image" content="/images//assets/servant-auth-with-github-apps/sample.jpg" />
+<title>Haskell Servant で Slack からの署名付きリクエストを受ける</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">Haskell Servant で Slack からの署名付きリクエストを受ける</h1>
+            </header>
+            <div class="post-content">
+              <p>Slack のスラッシュコマンドなどで利用される署名付きリクエストを Haskell Servant で受ける方法を考えて実装しました． 実装は slackell という Haskell の Slack API パッケージにしてあります：</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/slackell">matsubara0507/slackell - GitHub</a></li>
+</ul>
+<p><a href="https://github.com/matsubara0507/slackell/pull/1">該当 PR はこれです</a>．</p>
+<h2 id="署名付きリクエスト">署名付きリクエスト</h2>
+<p>スラッシュコマンドなどで Slack からのリクエストを受け取るときに，そのリクエストが本当に該当のスラッシュコマンドから送られてきた正しいリクエストかを検証するには，リクエストパラメーターとして送られてきた検証トークンを確認していた． しかし，この方法は現在では非推奨になっており，代わりにリクエストヘッダーに付いている署名を確認する． 公式ドキュメントは以下：</p>
+<ul>
+<li><a href="https://api.slack.com/authentication/verifying-requests-from-slack">Verifying requests from Slack | Slack</a></li>
+</ul>
+<p>署名は <code>X-Slack-Signature</code> というヘッダーに <code>v0=</code> というプレフィックス付きで含まれている． このリクエストを受け取ったアプリケーション側は以下の方法で署名をエンコードして比較することで，そのリクエストの正当性を保証する：</p>
+<ol>
+<li><code>X-Slack-Request-Timestamp</code> リクエストヘッダーに含まれているタイムスタンプを読む</li>
+<li>バージョン番号・1のタイムスタンプ・リクエストボディの3つを <code>:</code> 区切りで連結する
+<ul>
+<li>e.g. <code>v0:123456789:command=/weather&amp;text=94070</code></li>
+<li>バージョン番号は今のところ全て <code>v0</code></li>
+</ul></li>
+<li>2の文字列を Slack Apps で取得できる <code>Signing Secret</code> を使って HMAC SHA256 でエンコード</li>
+</ol>
+<h3 id="haskellでエンコードする">Haskellでエンコードする</h3>
+<p>このアルゴリズムを Haskell プログラムで実装する． HMAC SHA256 エンコードには <a href="https://hackage.haskell.org/package/cryptonite">cryptonite</a> パッケージを使った． 2と3の部分を行って署名をエンコードする関数は以下：</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">Web.Slack.Verify</span> <span class="kw">where</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Crypto.Hash</span> (<span class="dt">Digest</span>, <span class="dt">SHA256</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Crypto.MAC.HMAC</span> (<span class="dt">HMAC</span> (..), hmac)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">SigningSecret</span> <span class="ot">=</span> <span class="dt">SigningSecret</span> <span class="dt">Text</span> <span class="kw">deriving</span> (<span class="dt">IsString</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">RequestTimestamp</span> <span class="ot">=</span> <span class="dt">Text</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co">-- | シークレット・タイムスタンプ・リクエストボディは引数でもらう</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="ot">encodeSignature ::</span> <span class="dt">SigningSecret</span> <span class="ot">-&gt;</span> <span class="dt">RequestTimestamp</span> <span class="ot">-&gt;</span> <span class="dt">ByteString</span> <span class="ot">-&gt;</span> <span class="dt">Digest</span> <span class="dt">SHA256</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>encodeSignature (<span class="dt">SigningSecret</span> secret) ts body <span class="ot">=</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  hmacGetDigest <span class="op">$</span> hmac (Text.encodeUtf8 secret) basestr</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    basestr <span class="ot">=</span> BS.intercalate <span class="st">&quot;:&quot;</span> [Text.encodeUtf8 version, Text.encodeUtf8 ts, body]</span></code></pre></div>
+<p>最終的な型が <code>Digest SHA256</code> なので，ヘッダーの方の署名と比較しやすいように文字列からの変換関数も用意しておく：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Crypto.Hash</span> (<span class="dt">Digest</span>, <span class="dt">SHA256</span>, digestFromByteString)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.ByteArray.Encoding</span> (<span class="dt">Base</span> (..), convertFromBase)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">SignatureHeader</span> <span class="ot">=</span> <span class="dt">Text</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="ot">convertSignatureHeader ::</span> <span class="dt">SignatureHeader</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (<span class="dt">Digest</span> <span class="dt">SHA256</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>convertSignatureHeader sign <span class="ot">=</span> <span class="fu">either</span> (<span class="fu">const</span> <span class="dt">Nothing</span>) digestFromByteString bs</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    (_, sign&#39;) <span class="ot">=</span> Text.breakOnEnd (version <span class="op">&lt;&gt;</span> <span class="st">&quot;=&quot;</span>) sign</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    bs <span class="ot">=</span> convertFromBase <span class="dt">Base16</span> (Text.encodeUtf8 sign&#39;)<span class="ot"> ::</span> <span class="dt">Either</span> <span class="dt">String</span> <span class="dt">ByteString</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="ot">version ::</span> <span class="dt">Text</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>version <span class="ot">=</span> <span class="st">&quot;v0&quot;</span></span></code></pre></div>
+<p>ここで注意しなければいけないのが <code>digestFromByteString</code> 関数に食わせる <code>ByteString</code> 型の値は， <code>memory</code> パッケージの関数を利用して16進数表現から直す必要がある．</p>
+<h2 id="slash-command-を受け取る">Slash Command を受け取る</h2>
+<p>署名をエンコードする関数はできたので，あとは Servant でスラッシュコマンドを受け取る方法を考える． まずはスラッシュコマンドから送られてくるリクエストボディの型を宣言しておこう：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">Web.Slack.SlashCommand</span> <span class="kw">where</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.Extensible</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">RequestData</span> <span class="ot">=</span> <span class="dt">Record</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  &#39;[ <span class="st">&quot;token&quot;</span>           <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;command&quot;</span>         <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;text&quot;</span>            <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;response_url&quot;</span>    <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;trigger_id&quot;</span>      <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;user_id&quot;</span>         <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;user_name&quot;</span>       <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;team_id&quot;</span>         <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;team_domain&quot;</span>     <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;channel_id&quot;</span>      <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;channel_name&quot;</span>    <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;enterprise_id&quot;</span>   <span class="op">&gt;:</span> <span class="dt">Maybe</span> <span class="dt">Text</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;enterprise_name&quot;</span> <span class="op">&gt;:</span> <span class="dt">Maybe</span> <span class="dt">Text</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>   ]</span></code></pre></div>
+<p>正直，これを調べるのも大変だった． 公式ドキュメントにはどんなパラメータがあるか割愛されてる部分があるからだ．</p>
+<p>で，API の型は雰囲気としてはこんな感じ：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Web.Slack は slackell</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Web.Slack.Verify</span> <span class="kw">as</span> <span class="dt">Slack</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Web.Slack.SlashCommand</span> <span class="kw">as</span> <span class="dt">SlashCmd</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">API</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> <span class="st">&quot;slash&quot;</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>      <span class="op">:&gt;</span> <span class="dt">ReqBody</span> &#39;[<span class="dt">FormUrlEncoded</span>] <span class="dt">RequestData</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>      <span class="op">:&gt;</span> <span class="dt">Header</span> <span class="st">&quot;X-Slack-Request-Timestamp&quot;</span> <span class="dt">Slack.RequestTimestamp</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>      <span class="op">:&gt;</span> <span class="dt">Header</span> <span class="st">&quot;X-Slack-Signature&quot;</span> <span class="dt">Slack.SignatureHeader</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>      <span class="op">:&gt;</span> <span class="dt">Post</span> &#39;[<span class="dt">JSON</span>] <span class="dt">NoContent</span></span></code></pre></div>
+<p>ここで問題が1つ． 署名をエンコードするのに必要なのはデータ型 <code>SlachCmd.RequestData</code> に変換される前の文字列だ． <code>ToForm</code> 型クラスを使って元の形（<code>=</code> と <code>&amp;</code> で連結するやつ）に戻せば良いと思うかも知れないが，これだと key の順番が変わってしまう可能性があり，順番が変わると別のエンコード結果になってしまう． 逆に文字列のまんま受け取れば良いかと思うかも知れないが，Servant は正しい ContentType な型を指定しないと 400 を返してしまう（スラッシュコマンドは <code>application/x-www-form-urlencoded</code> でリクエストしてくる）． 困った． 色々調べたが，後から素のリクエストボディを取得する方法がわからなかった...</p>
+<h3 id="contenttypeを自作する">ContentTypeを自作する</h3>
+<p>まぁ無いなら自作するしかない． 素の文字列を返してくれて <code>application/x-www-form-urlencoded</code> メディアタイプを表している ContentType な型を作る． どのメディアタイプかは <code>Accept</code> 型クラスで定義し，どの型で返してくれるかは <code>MimeUnrender</code> 型クラスで定義する：</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">Web.Slack.SlashCommand</span> <span class="kw">where</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">RequestData</span> <span class="ot">=</span> <span class="op">...</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">SlashCommand</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Accept</span> <span class="dt">SlashCommand</span> <span class="kw">where</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="ot">  contentType ::</span> <span class="dt">Proxy</span> <span class="dt">SlashCommand</span> <span class="ot">-&gt;</span> <span class="dt">MediaType</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  contentType _ <span class="ot">=</span> <span class="st">&quot;application&quot;</span> <span class="op">M.//</span> <span class="st">&quot;x-www-form-urlencoded&quot;</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">MimeUnrender</span> <span class="dt">SlashCommand</span> (<span class="dt">ByteString</span>, <span class="dt">RequestData</span>) <span class="kw">where</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="ot">  mimeUnrender ::</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Proxy</span> <span class="dt">SlashCommand</span> <span class="ot">-&gt;</span> <span class="dt">Lazy.ByteString</span> <span class="ot">-&gt;</span> <span class="dt">Either</span> <span class="dt">String</span> (<span class="dt">ByteString</span>, <span class="dt">RequestData</span>)</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  mimeUnrender _ bs <span class="ot">=</span> Text.unpack <span class="op">+++</span> (bs,) <span class="op">$</span> urlDecodeAsForm bs</span></code></pre></div>
+<p>どーせ後から <code>RequestData</code> 型に変換するので両方を返すことにした． あとはこれを使うだけ：</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Web.Slack は slackell</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Web.Slack.Verify</span> <span class="kw">as</span> <span class="dt">Slack</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Web.Slack.SlashCommand</span> <span class="kw">as</span> <span class="dt">SlashCmd</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span>           <span class="dt">Web.Slack.SlashCommand</span> (<span class="dt">SlashCommand</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">API</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> <span class="st">&quot;slash&quot;</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>      <span class="op">:&gt;</span> <span class="dt">ReqBody</span> &#39;[<span class="dt">SlashCommand</span>] <span class="dt">RequestData</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>      <span class="op">:&gt;</span> <span class="dt">Header</span> <span class="st">&quot;X-Slack-Request-Timestamp&quot;</span> <span class="dt">Slack.RequestTimestamp</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>      <span class="op">:&gt;</span> <span class="dt">Header</span> <span class="st">&quot;X-Slack-Signature&quot;</span> <span class="dt">Slack.SignatureHeader</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>      <span class="op">:&gt;</span> <span class="dt">Post</span> &#39;[<span class="dt">JSON</span>] <span class="dt">NoContent</span></span></code></pre></div>
+<h3 id="apiの実装">APIの実装</h3>
+<p>残りは今までのを使うだけなので簡単：</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ot">server ::</span> <span class="dt">Slack.SigningSecret</span> <span class="ot">-&gt;</span> <span class="dt">Server</span> <span class="dt">API</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>server secret <span class="ot">=</span> slashCommand</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    slashCommand (lbs, body) (<span class="dt">Just</span> ts) (<span class="dt">Just</span> sign) <span class="ot">=</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>      <span class="kw">let</span> digest <span class="ot">=</span> Slack.encodeSignature secret ts (LBS.toStrict lbs) <span class="kw">in</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>      <span class="kw">if</span> <span class="dt">Just</span> digest <span class="op">==</span> Slack.convertSignatureHeader sign <span class="kw">then</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>        liftIO <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>          _ <span class="ot">&lt;-</span> forkIO <span class="op">$</span> action body <span class="co">-- タイムアウトがあるので処理自体は fork する</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>          <span class="fu">pure</span> <span class="dt">NoContent</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>      <span class="kw">else</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>        throwError err401</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    slashCommand _ _ _ <span class="ot">=</span> throwError err401</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="ot">    action ::</span> <span class="dt">SlashCmd.RequestData</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    action body <span class="ot">=</span> <span class="op">...</span></span></code></pre></div>
+<h2 id="おまけfromformインスタンス">おまけ：FromFormインスタンス</h2>
+<p>実はこれだkではビルドが通らない． というのも，拡張可能データ型の <code>FromForm</code> 型クラスインスタンスが無いからだ． しょうがないので自作した：</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Web.FormUrlEncoded</span> (<span class="dt">FromForm</span> (..))</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Web.HttpApiData</span> (<span class="dt">FromHttpApiData</span> (..), parseUnique)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Forall</span> (<span class="dt">KeyTargetAre</span> <span class="dt">KnownSymbol</span> <span class="dt">FromFormData</span>) xs <span class="ot">=&gt;</span> <span class="dt">FromForm</span> (<span class="dt">Record</span> xs) <span class="kw">where</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  fromForm form <span class="ot">=</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    hgenerateFor (<span class="dt">Proxy</span> <span class="op">@</span> (<span class="dt">KeyTargetAre</span> <span class="dt">KnownSymbol</span> <span class="dt">FromFormData</span>)) <span class="op">$</span> \m <span class="ot">-&gt;</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>      <span class="dt">Field</span> <span class="op">&lt;$&gt;</span> parseUnique (stringKeyOf m) form</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co">-- Identity のインスタンスぐらい宣言しておいてよ</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">FromHttpApiData</span> a <span class="ot">=&gt;</span> <span class="dt">FromHttpApiData</span> (<span class="dt">Identity</span> a) <span class="kw">where</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  parseUrlPiece <span class="ot">=</span> <span class="fu">fmap</span> <span class="fu">pure</span> <span class="op">.</span> parseUrlPiece</span></code></pre></div>
+<p>これの欠点が1つ． <code>parseUnique</code> 関数の <code>Maybe a</code> 型に関する振る舞いだ． <code>Maybe a</code> 型なら該当の key が含まれなければ <code>Nothing</code> で key があれば <code>Just v</code> になって欲しい． しかし実際はこうだ：</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> parseUnique <span class="st">&quot;age&quot;</span> [(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;Just 25&quot;</span>)]<span class="ot"> ::</span> <span class="dt">Either</span> <span class="dt">Text</span> (<span class="dt">Maybe</span> <span class="dt">Int</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="dt">Right</span> (<span class="dt">Just</span> <span class="dv">25</span>)</span></code></pre></div>
+<p>現実のリクエストが <code>"Just hoge"</code> なんて送ってくるわけが無い！ しょうがないので自作した：</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">FromFormData</span> a <span class="kw">where</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ot">  parseUnique&#39; ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Form</span> <span class="ot">-&gt;</span> <span class="dt">Either</span> <span class="dt">Text</span> a</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">FromFormData</span> <span class="dt">Int</span>   <span class="kw">where</span> parseUnique&#39; <span class="ot">=</span> parseUnique</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">FromFormData</span> <span class="dt">Float</span> <span class="kw">where</span> parseUnique&#39; <span class="ot">=</span> parseUnique</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">FromFormData</span> <span class="dt">Bool</span>  <span class="kw">where</span> parseUnique&#39; <span class="ot">=</span> parseUnique</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">FromFormData</span> <span class="dt">Char</span>  <span class="kw">where</span> parseUnique&#39; <span class="ot">=</span> parseUnique</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">FromFormData</span> <span class="dt">Text</span>  <span class="kw">where</span> parseUnique&#39; <span class="ot">=</span> parseUnique</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">FromHttpApiData</span> a <span class="ot">=&gt;</span> <span class="dt">FromFormData</span> (<span class="dt">Maybe</span> a) <span class="kw">where</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  parseUnique&#39; key form <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    mv <span class="ot">&lt;-</span> lookupMaybe key form</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> mv <span class="kw">of</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>      <span class="dt">Just</span> v  <span class="ot">-&gt;</span> <span class="dt">Just</span> <span class="op">&lt;$&gt;</span> parseQueryParam v</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>      <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="fu">pure</span> <span class="dt">Nothing</span></span></code></pre></div>
+<p>で，<code>parseUnique</code> の代わりに <code>parseUnique'</code> を使うように <code>FromForm</code> 型クラスのインスタンスを書き換えるだけだ． これは汎用的なので<a href="https://github.com/matsubara0507/extensible-ext/tree/master/extensible-http-api-data">別のリポジトリに切り分けた</a>．</p>
+<h2 id="おしまい">おしまい</h2>
+<p><a href="https://github.com/matsubara0507/slackell/tree/master/example">サンプルコード</a>を作ってスラッシュコマンドのデバッグをしたが，間にちゃんとリクエスト・レスポンスをロギングする仕組みを省いたせいで超大変だった笑．</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

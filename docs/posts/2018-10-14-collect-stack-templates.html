@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="stack-templates を集める with GraphQL" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>stack-templates を集める with GraphQL</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">stack-templates を集める with GraphQL</h1>
+            </header>
+            <div class="post-content">
+              <p>Haskell Day の仕込みパート1です(2があるかは知らない)． stack の次期バージョン v1.9 で追加される namespaced template を試してみました．</p>
+<p>ちなみに，現在 v1.9 はプレリリースになったので，下記コマンドで簡単にアップデートできます．</p>
+<pre><code>$ stack upgrade --binary-version 1.9.0.1</code></pre>
+<h2 id="namespaced-template">namespaced template</h2>
+<p><code>stack new</code> で指定できるテンプレートを，GitHub などのオンラインからも取ってこれるようになった機能． 詳しくは開発段階からキャッチアップしてる e-bigmoon さんの記事を読むと良い．</p>
+<ul>
+<li><a href="https://haskell.e-bigmoon.com/posts/2018/06-27-namespaced-templates.html">namespaced templates - BIGMOON haskellers blog</a></li>
+</ul>
+<h3 id="作ってみた">作ってみた</h3>
+<p>GitHub などで <code>stack-templates</code> という名前のリポジトリを作り，<code>hsfiles</code> という拡張子のテンプレートファイルをトップレベルに置く． 今回ぼくは <a href="https://github.com/matsubara0507/stack-templates">matsubara0507/stack-templates</a> というリポジトリを作り，２つ程作ってみた．</p>
+<ul>
+<li><code>get-opt-cli.hsfiles</code> : <a href="http://hackage.haskell.org/package/base/docs/System-Console-GetOpt.html"><code>System.Console.GetOpt</code></a> を用いたCLIのテンプレート</li>
+<li><code>optparse-applicative-cli.hsfiles</code> : <a href="http://hackage.haskell.org/package/optparse-applicative">optparse-applicative</a> を用いたCLIのテンプレート</li>
+</ul>
+<p>どちらも，よくCLIを作るときの書き方をテンプレートとして起こしたもの． 普段は <a href="http://hackage.haskell.org/package/rio">rio</a> と <a href="http://hackage.haskell.org/package/extensible">extensible</a> を使っているので，単純に optparse-applicative などを使ったテンプレートという訳でもない．</p>
+<h3 id="テストする">テストする</h3>
+<p>できれば，テンプレートを <code>stack new</code> して <code>stack build</code> した時点ではコンパイルを通ってほしい． ということで <code>stack new</code> して <code>stack build</code> を試してくれるテストを <a href="https://github.com/matsubara0507/stack-templates/blob/7abc95184241c2df9f81ec1a45f9a662a98db05a/.travis.yml">TravisCI</a> に書いた．</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">matrix</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">include</span><span class="kw">:</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">env</span><span class="kw">:</span><span class="at"> TEMPLATE=&quot;get-opt-cli&quot; ARGS=&quot;--resolver lts-12&quot;</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">compiler</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;: #stack 8.4.3&quot;</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">addons</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">apt</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">packages</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">libgmp-dev</span><span class="kw">]}}</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">env</span><span class="kw">:</span><span class="at"> TEMPLATE=&quot;optparse-applicative-cli&quot; ARGS=&quot;--resolver lts-12&quot;</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">compiler</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;: #stack 8.4.3&quot;</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">addons</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">apt</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">packages</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">libgmp-dev</span><span class="kw">]}}</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="fu">before_install</span><span class="kw">:</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co"># install stack</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="fu">install</span><span class="kw">:</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> stack new sample &quot;./$TEMPLATE&quot;</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="kw">- </span><span class="ch">|</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  set -ex</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>  cd sample</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>  stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>  set +ex</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="fu">script</span><span class="kw">:</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="kw">- </span><span class="ch">|</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>  set -ex</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>  stack --no-terminal $ARGS test --bench --no-run-benchmarks --no-haddock-deps</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>  set +ex</span></code></pre></div>
+<p><a href="https://github.com/commercialhaskell/stack-templates/blob/879f95dc44b24201bc64fcf8f4b9e2192c23dad4/test-templates.hs">commercialhaskell/stack-templates でもテストは書いてある</a>がぼくのはすごいシンプルだ．</p>
+<h2 id="stack-templates-を集める">stack-templates を集める</h2>
+<p>さて，これだけでは完全に e-bigmoon さんの劣化記事だ． なので，stack-templates を GitHub から集めてくる CLI ツールを作ることにした．</p>
+<p>試したところ，GitHub の検索で <code>stack-template in:name</code> と検索すれば，それなりにヒットすることがわかった(間違いも多いが)． なので，ざっくりとした手順は:</p>
+<ol>
+<li>検索系の GitHub API を叩く</li>
+<li>stack-templates という名前のリポジトリの <code>*.hsfiles</code> というファイルだけ抽出</li>
+<li>それらを出力</li>
+</ol>
+<p>ここで GitHub API v3 (RESTful API)を利用すると，リポジトリのファイル群を取得するのに検索系の API を叩いてから，各リポジトリの API を叩く必要がある． それは面倒だ． なので，ここ数年注目を集めている(？) GraphQL API (GitHub API v4)を試してみることにした．</p>
+<h3 id="graphql">GraphQL</h3>
+<p>ちょうどこの前に，友人から「GraphQL はいいぞ，API をなんども叩く必要がない．」と紹介されたので試してみた．</p>
+<p>GitHub の API では <code>api.github.com/graphql</code> というエンドポイントに対し，POST メソッドでクエリを送信する．</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> curl <span class="dt">\</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">-H</span> <span class="st">&quot;Authorization: bearer token&quot;</span> <span class="dt">\</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">-X</span> POST <span class="dt">\</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> <span class="st">&quot;{ </span><span class="dt">\&quot;</span><span class="st">query</span><span class="dt">\&quot;</span><span class="st">: </span><span class="dt">\&quot;</span><span class="st"> ... </span><span class="dt">\&quot;</span><span class="st"> }&quot;</span> <span class="dt">\</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  https://api.github.com/graphql</span></code></pre></div>
+<p><code>...</code> のところにクエリを記述する． クエリは簡単な DSL のようになっており，クエリによってどんな形の JSON が返ってくるか(型のようなもの)やどんな値が返ってくるかが決まる． 例えば <code>stack-template in:name</code> 検索してヒットしたリポジトリの名前だけを取得してみよう． その場合は次のようなクエリを書く．</p>
+<pre><code>query{
+  search(query: &quot;stack-template in:name&quot;, type: REPOSITORY, first: 2) {
+    repositoryCount,
+    edges{
+      node{ ... on Repository{ nameWithOwner } }
+    }
+  }
+}</code></pre>
+<p><code>first</code> は検索にヒットした最初の2つを返すという意味． 上限は 100 で，<code>first</code> ないしは逆の意味の <code>last</code> のどちらかは指定をする必要がある(そういうエラーが返ってくる)． <code>repositoryCount</code> は検索でヒットしたリポジトリの総数で，<code>edges</code> のところはリポジトリの <code>nameWithOwner</code> を返すように指定している． このように <code>{}</code> の中ではカンマ区切りで，返す JSON の形を指定できる． 具体的に何が指定できるかは <a href="https://developer.github.com/v4/query/">GitHub API v4 のドキュメント</a>を見ると良い． 試しに curl で叩いてみる(クエリ内の <code>"</code> をエスケープすることを忘れずに):</p>
+<pre><code>$ curl -H &quot;Authorization: bearer XXX&quot; -X POST -d &quot;{ \&quot;query\&quot;: \&quot; ... \&quot; }&quot; https://api.github.com/graphql
+{&quot;data&quot;:{&quot;search&quot;:{&quot;repositoryCount&quot;:76,&quot;edges&quot;:[{&quot;node&quot;:{&quot;nameWithOwner&quot;:&quot;Azure/AzureStack-QuickStart-Templates&quot;}},{&quot;node&quot;:{&quot;nameWithOwner&quot;:&quot;commercialhaskell/stack-templates&quot;}}]}}}</code></pre>
+<p>Connection とか Fields とかの用語については自分もよくわかってないので自分で調べてください． 今のところ，雰囲気で使ってる(笑)</p>
+<h3 id="ファイルを集める">ファイルを集める</h3>
+<p>さて，前述した結果(リポジトリ名)だけが欲しいなら GitHub API v3 でも十分だ． さらに，ファイルも取得してみよう． <a href="https://developer.github.com/v4/object/repository/">Repository のドキュメント</a> を眺めると <code>object</code> という Field がある． 察するに，リポジトリの任意のブランチ(<code>expression</code> で指定したもの)のコミットオブジェクトを返してくれるのだろう． (たぶん)stack-templates は全部 master が前提なので，master のコミットオブジェクトを取ってくる．</p>
+<pre><code>... on Repository{
+  nameWithOwner,
+  object(expression:&quot;master&quot;){
+    ... on Commit { }
+  }
+}</code></pre>
+<p>ちなみに <code>... on Commit</code> というのは Inline Fragments と呼ばれるもので，object の型(サブタイプ？)が <code>Commit</code> だった場合に <code>Commit{}</code> 以下の Field を返すそうだ． git オブジェクトなので他にも <code>Tree</code> や <code>Blob</code> がある．</p>
+<p>さて，あとは git オブジェクトの知識があれば簡単にかける． コミットオブジェクトにはツリーオブジェクト，要するにトップレベルのディレクトリのハッシュが記載されているので<a href="https://developer.github.com/v4/object/commit/">ドキュメント</a>からそれっぽいのを見つける． ツリーオブジェクトには，そのディレクトリに含まれるブロブオブジェクト(ファイル)とツリーオブジェクト(ディレクトリ)のハッシュが記載されてる． stack-templates は(今のところ)トップレベルに <code>*.hsfiles</code> を置かないといけないので，トップレベルのオブジェクトたちの名前を取得しよう:</p>
+<pre><code>... on Repository{
+  nameWithOwner,
+  object(expression:&quot;master&quot;){
+    ... on Commit { tree{ entries{ name, type } } }
+  }
+}</code></pre>
+<p><code>type</code> には <code>blob</code> やら <code>tree</code> やらが入る． これで，検索にヒットした全てのリポジトリから <code>master</code> のトップレベルにあるファイルを取得するクエリが出来上がった．</p>
+<h3 id="ページネーション">ページネーション</h3>
+<p>今のところ，検索にヒットするリポジトリ数は76個なので <code>first: 100</code> とすれば全て取得できるが，今後ヒット数が100を超えたときようにページネーションの仕組みを整えておく． やり方は簡単で，<code>search</code> Connection のところで <a href=""><code>pageInfo</code></a> という Field を追加する．</p>
+<pre><code>search(query: &quot;stack-template in:name&quot;, type: REPOSITORY, first: 1) {
+  repositoryCount,
+  pageInfo{
+    endCursor,
+    hasNextPage
+  },
+  edges{
+    node{ ... on Repository{ .... } }
+  }
+}</code></pre>
+<p><code>hasNextPage</code> は次のページが存在するかどうかを真偽値で返してくれる． <code>endCursor</code> はこのページの最後を表すハッシュ値？で，<code>search</code> Connection の引数(<code>type</code> とか <code>first</code> とかのとこ)に <code>after</code> で指定することで，それ以降の結果を取ってくる． このような <code>pageInfo</code> の情報さえあれば，プログラム内でループさせることは容易だろう．</p>
+<h3 id="まとめると">まとめると</h3>
+<p>次のようなクエリになった:</p>
+<pre><code>query{
+  search(query: &quot;stack-template in:name&quot;, type: REPOSITORY, first: 100) {
+    repositoryCount,
+    pageInfo{
+      endCursor,
+      hasNextPage
+    },
+    edges{
+      node{ ... on Repository{
+        nameWithOwner,
+        object(expression:&quot;master&quot;){
+          ... on Commit { tree{ entries{ name, type } } }
+        }
+      } }
+    }
+  }
+}</code></pre>
+<p>これを curl の引数に与えて叩くだけで 100 個分のリポジトリの全てのトップレベルファイル群を取得できる．</p>
+<h3 id="stack-tpls">stack-tpls</h3>
+<p>実際に作った CLI ツールは <a href="https://github.com/matsubara0507/stack-tpls"><code>matsubara0507/stack-tpls</code></a> というリポジトリに置いてある． 使い方は README に書いてある． 一覧を取得するには <code>stack-tpls --list</code> と打てば良い．</p>
+<pre><code>$ stack-tpls --list
+github:commercialhaskell/chrisdone.hsfiles
+github:commercialhaskell/foundation.hsfiles
+ .
+ .
+ .</code></pre>
+<p>この結果を <code>stack new</code> の引数に与えることでそのまま利用できる． また，テンプレートの中身を確認したい場合は，<code>stack-tpls github:commercialhaskell/chrisdone.hsfiles</code> と引数に与えることで Raw を取ってきてくれる． リンクだけが欲しい場合は <code>--link</code> オプションを指定すると良い．</p>
+<pre><code>$ stack-tpls --link github:commercialhaskell/rio.hsfiles
+https://github.com/commercialhaskell/stack-templates/blob/master/rio.hsfiles</code></pre>
+<h3 id="todo">ToDo</h3>
+<p>一週間ほど前の思いつきからの突貫で作ったのでイロイロと抜けてる箇所があって:</p>
+<ul>
+<li>エラーハンドリングが雑</li>
+<li>GitLab と BitBucket には対応していない</li>
+<li>GraphQL の使い方がエレガントじゃない</li>
+</ul>
+<p>特に最後のがすごい気になっていて，現状は完全に文字列を埋め込んでいるだけなのだ． できれば，強力な型システムを利用した GitHub GraphQL Client ライブラリを作りたい(なんか昔に Haskell-jp で話題に上がったなぁ)．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>GraphQL，クライアント側に取ってすごい便利．</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

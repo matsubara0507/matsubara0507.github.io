@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Featherweight Go を読んでみた" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <meta property="og:image" content="/images//assets/read-featherweight-go/fg.jpg" />
+<title>Featherweight Go を読んでみた</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">Featherweight Go を読んでみた</h1>
+            </header>
+            <div class="post-content">
+              <p>Go言語にジェネリクスを導入するために，その形式的な議論を研究した論文「<a href="https://arxiv.org/abs/2005.11710">Featherweight Go</a>」が6月頭に発表されました． せっかくなので（久々に）全訳をしながら丁寧に読んでみたので，それを簡単にまとめることにします．</p>
+<p>可能な限りGo言語に馴染みのない人や，プログラミング言語の形式的な議論に馴染みのない人でも理解できるようにしてみます．</p>
+<h4 id="注意">注意</h4>
+<ul>
+<li>僕は英語がとても苦手です（DeepLを駆使しても3週間かかりました）</li>
+<li>僕はGoでアプリケーションを少し書いていますがコアについては全く詳しくありません</li>
+<li>僕は言語の形式的な議論を院生時代にやってましたが卒業して数年経ちます</li>
+</ul>
+<p>なので間違ってる可能性も十分に考慮してください．</p>
+<h2 id="tldr">TL;DR</h2>
+<ul>
+<li>Goにジェネリクスを導入する新しいデザインを提案：
+<ul>
+<li>インターフェースと型アサーションを駆使する方法</li>
+</ul></li>
+<li>新デザインを形式的に議論するために FG と FGG を定義
+<ul>
+<li>FG：Goの極めて小さいモデル</li>
+<li>FGG：FG をジェネリクスで拡張</li>
+</ul></li>
+<li>単相化（Monomorphisation）というFGGからFGの変換を定義
+<ul>
+<li>単相化は型パラメーターを具体化した実装を必要な型だけ完全に列挙する方法</li>
+</ul></li>
+<li><a href="https://github.com/rhu1/fgg">これらは全てGoでプロトタイプ実装した</a></li>
+</ul>
+<p>加えて，この Go のジェネリクスは Expression Problem の解法にもなり得るという議論もある．</p>
+<h2 id="前提知識">前提知識</h2>
+<h3 id="featherweight-java">Featherweight Java</h3>
+<p>1999年に出された論文に「<a href="https://dl.acm.org/doi/abs/10.1145/320385.320395">Featherweight Java</a>」というものがある． 僕はこの論文を読んではいないがどうやら，この論文も FJ という Java の小さな言語モデルを定義し，それをジェネリクスで拡張した FGJ を定義し，FGJ から FJ への変換の仕方を定義して形式的な議論を与えている．</p>
+<p>Featherweight Go でも言及されているとおり，Featherweight Go は議論の展開の仕方に Featherweight Java を参考としている．</p>
+<h3 id="goの型">Goの型</h3>
+<p>Goで型と呼べるものは大きく分けて2つ，構造体（structure）とインターフェース（interface）がある：</p>
+<ul>
+<li>構造体：
+<ul>
+<li><code>type [name] structure { ... }</code> という形で宣言</li>
+<li><code>...</code> にフィールド名と型を列挙（いわゆるレコード型）</li>
+<li>フィールドアクセスはドット記法（e.g. <code>x.m()</code>）</li>
+</ul></li>
+<li>インターフェース：
+<ul>
+<li><code>type [name] interface { ... }</code> という形で宣言</li>
+<li><code>...</code> にメソッド仕様（method specification，メソッド名 + 型）を列挙</li>
+<li>列挙したメソッドを定義した型はインターフェースのサブタイプになる（いわゆる構造的部分型）</li>
+</ul></li>
+</ul>
+<h3 id="型アサーション">型アサーション</h3>
+<p>Goでの型キャストっぽい機能． インターフェースで指定されてる型からサブタイプへと変換する．</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Hoge <span class="kw">interface</span> <span class="op">{</span> <span class="op">...</span> <span class="op">}</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Fuga <span class="kw">struct</span> <span class="op">{</span> <span class="op">...</span> <span class="op">}</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co">// Fuga は Hoge を実装しているとする</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> piyo<span class="op">(</span>x Hoge<span class="op">)</span> <span class="op">*</span>Fuga <span class="op">{</span>  <span class="co">// *X はX型のポインタ型</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    y<span class="op">,</span> ok <span class="op">:=</span> x<span class="op">.(</span>Fuga<span class="op">)</span>      <span class="co">// これが型アサーション</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> <span class="op">!</span>ok <span class="op">{</span>               <span class="co">// 型アサーションに失敗したときに false を返す</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="ot">nil</span>         <span class="co">// nil はポインタのゼロ値</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="op">&amp;</span>y</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p><code>piyo</code> 関数は <code>Hoge</code> インターフェースを実装した型の値であれば，なんでも引数として与えることができる． 型アサーションの <code>ok</code> は省略することができ，その場合は型アサーションに失敗したときに実行時エラーとなる．</p>
+<h3 id="用語と翻訳">用語と翻訳</h3>
+<p>基本的に，この分野の入門書として名高い[要出典]「型システム入門（原題：Type and Programming Language，略して TaPL）」の訳し方を参考にする． TaPL には無い用語は次のように翻訳したが，Go ジェネリクスが市民権を得たときには別の翻訳が宛てがわれるかもしれない：</p>
+<ul>
+<li>Monomorphisation：単相化
+<ul>
+<li>Polymorphism（多相性）の対義語が Monomorphism（単相性）というらしい</li>
+<li>Rust でも Monomorphization という用語を単相化と訳していた</li>
+<li>（この表記の揺れはおそらくイギリス綴りかアメリカ綴りかの差？）</li>
+</ul></li>
+<li>Bound：境界
+<ul>
+<li>機能は Java の Bounded Types（境界型などと訳されている）に近い</li>
+<li><a href="https://github.com/rust-lang-ja/the-rust-programming-language-ja/issues/153">Rust でも色々議論した結果 Bound を「境界」と訳した</a></li>
+</ul></li>
+</ul>
+<p>また，プログラミング言語の形式的な議論で頻出する用語について簡単に解説する：</p>
+<ul>
+<li>構文（Syntax）:
+<ul>
+<li>ある言語においてプログラムの「正しい記述方法」を定義したもの</li>
+<li>一般的に BNF（バッカス・ナウア記法）で定義する</li>
+</ul></li>
+<li>意味論（Semantics）:
+<ul>
+<li>ある言語においてプログラムが「どのように実行されるか」を定義したもの</li>
+<li>いくつか定義の仕方があるがこの論文では簡約規則（操作的意味論）を利用している</li>
+</ul></li>
+<li>型付け規則（Typing Rule）:
+<ul>
+<li>式 $e$ に対して「正しい」型の付け方の規則</li>
+<li>正しく型付けされているとはつまり静的型検査が通るような状態</li>
+<li>一般的に $\Gamma \vdash e : t$ とかく（$\Gamma$ は環境で変数がなんの型なのかを保存している）</li>
+</ul></li>
+<li>簡約（Reduction）:
+<ul>
+<li>ある式 $e$ から別の式（値）への変換</li>
+<li>一般的に $e \to e'$ のように矢印を使う</li>
+<li>例: $1 + 2 * 3 \to 1 + 6 \to 7$</li>
+</ul></li>
+<li>型安全性（Safety）:
+<ul>
+<li>健全性（Soundness）とも呼ぶ</li>
+<li>正しく型付けされた項は「おかしくなる」ことがないということ</li>
+<li>「おかしくなる」の定義は言語モデルによって異なる（例：行き詰まり状態）</li>
+<li>進行定理 + 保存定理 なのでこの2つを証明するのが一般的</li>
+</ul></li>
+<li>進行定理（Progress）:
+<ul>
+<li>正しく型付けされた項は行き詰まり状態では無い</li>
+<li>行き詰まり状態：値でもないし簡約もできない状態</li>
+</ul></li>
+<li>保存定理（Preservation）:
+<ul>
+<li>正しく型付けされた項が評価できるならば，評価後の項も正しく型付けされる</li>
+</ul></li>
+<li>双模倣性（Bisimulation）:
+<ul>
+<li>並行モデルでよく出てくる性質（今回の中では最もマイナーな性質）</li>
+<li>ざっくりいうと，2つのモデルが同じように振舞うという性質</li>
+</ul></li>
+</ul>
+<h3 id="プログラミング言語の形式的な議論">プログラミング言語の形式的な議論</h3>
+<p>なぜ，わざわざ形式的な議論（証明を与える）をするのか． TaPL の第19章「事例: Featherweight Java」にはこう書いてある：</p>
+<blockquote>
+<p>プログラミング言語のような現実世界の複雑な人工物を設計するには，形式的にモデル化することが大きな手助けとなる．形式モデルを使うと，設計のある側面を正確に説明したり，その性質を記述・証明したり，そこまでしないと見落としかねない問題に注意を向けたりできる．</p>
+</blockquote>
+<p>現に，Featherweight Go ではFGGがある「前提条件」のもとで必ず単相化できることを証明しており，その結果，実際のジェネリクス付きGoの「正しい」静的検査（コンパイル）を定義できた（この条件がないと，単相化が停止しない可能性がある）．</p>
+<h3 id="expression-problem">Expression Problem</h3>
+<p>今回は割愛する（ググって）が，本論文で提案するジェネリクス付きGoは Expression Problem に対する解法になっていると主張している（個人的には，あまり Go っぽい書き方じゃない気がするけど笑）．</p>
+<h2 id="goで多相的な実装をする">Goで多相的な実装をする</h2>
+<p>現状のGoでも多相的な実装をする方法がいくつかある． 今回目を付けたのが，インターフェースと型アサーションを使った方法だ．</p>
+<p>例えば，高階関数を次のように表現できる：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Any <span class="kw">interface</span> <span class="op">{}</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Function <span class="kw">interface</span> <span class="op">{</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    Apply<span class="op">(</span>x Any<span class="op">)</span> Any</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co">// g(f(x)) を表現</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> compose <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    f Function</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    g Function</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>this compose<span class="op">)</span> Apply<span class="op">(</span>x Any<span class="op">)</span> Any <span class="op">{</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> this<span class="op">.</span>g<span class="op">.</span>Apply<span class="op">(</span>this<span class="op">.</span>f<span class="op">.</span>Apply<span class="op">(</span>x<span class="op">))</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> incr <span class="kw">struct</span> <span class="op">{</span> n <span class="dt">int</span> <span class="op">}</span> <span class="co">// nだけインクリメントする</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>this incr<span class="op">)</span> Apply<span class="op">(</span>x Any<span class="op">)</span> Any <span class="op">{</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> x<span class="op">.(</span><span class="dt">int</span><span class="op">)</span> <span class="op">+</span> this<span class="op">.</span>n</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> pos <span class="kw">struct</span> <span class="op">{}</span> <span class="co">// 正数なら真が返る</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>this pos<span class="op">)</span> Apply<span class="op">(</span>x Any<span class="op">)</span> Any <span class="op">{</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> x<span class="op">.(</span><span class="dt">int</span><span class="op">)</span> <span class="op">&gt;</span> <span class="dv">0</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> main<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> f Function <span class="op">=</span> compose<span class="op">{</span>incr<span class="op">{-</span><span class="dv">5</span><span class="op">},</span> pos<span class="op">{}}</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> b <span class="dt">bool</span> <span class="op">=</span> f<span class="op">.</span>Apply<span class="op">(</span><span class="dv">3</span><span class="op">).(</span><span class="dt">bool</span><span class="op">)</span> <span class="co">// false</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>このコードは，既存の Go としても完全に正しい． <code>Any</code> インターフェースは実装すべきメソッド仕様を一つも持たないので，全ての型が実装していることになる． 無論，本当は <code>int</code> や <code>bool</code> であるべきところが <code>Any</code> になっていたり，<code>Any</code> な型同士の区別が付かなくなっていたりする問題がある． だがしかし，それがコンパイル時に検査できるようになったらどうだろうか．新しいデザインがまさにそういう形式になっている．</p>
+<h2 id="fg-と-fgg">FG と FGG</h2>
+<p>論文では，それぞれの構文と型付け規則，簡約規則を定義し，構文的正しさの検証規則の定義と，保存定理と進行定理を証明している（すなわち型安全であることを示している）． ここでは2つの構文だけ紹介する．</p>
+<h3 id="fgの構文">FGの構文</h3>
+<p>$\bar{x}$ のような上線付きの記法は，ある形式の項の「列」であることを示している． 例えば $\bar{x}$ の場合は $x<em>1,x</em>2,...x_n$ を意味している．</p>
+<p><img src="/assets/read-featherweight-go/fg.jpg" /></p>
+<p>プログラム $P$ は，Go の形式にならって定義されているが，論文中では諸々省略して $\bar{D} \vartriangleright e$ と記述することもある．</p>
+<p>FG は極めてコンパクトな Go のサブセットである． そのため，有効な式は変数・メソッド呼び出し・構造体リテラル・フィールド選択・型アサーションの5つしかない． 対して型（構造体・インターフェース）に関する構文はかなり充実している．</p>
+<h2 id="section"></h2>
+<p>FG には他に型付け規則と簡約規則がある．特に型付け規則の一部である，構造的部分型を表現した規則 $t &lt;: u$ は重要だ：</p>
+<ul>
+<li>$u$ が構造体 $t<em>S$ の場合は $t</em>S$ 自信のみがサブタイプになる（i.e. $t<em>S &lt;: t</em>S$）</li>
+<li>$u$ がインターフェース $t<em>I$ の場合は $methods(t) \supseteq methods(t</em>I)$ を満たすような $t$ のみがサブタイプになる（i.e. $t<em>S &lt;: t</em>I$）</li>
+</ul>
+<p>ここで $methods(t)$ という補助関数は型 $t$ に定義されているメソッドのメソッド仕様の集合である（重複しないという前提）． また，メソッド仕様の等価性には変数名は関係しない（つまり，メソッド名・引数の型・返り値の型が一致するかどうかをみる）． この部分型関係 $&lt;:$ は，メソッド呼び出しや構造体リテラルの引数を適用する部分や，型アサーションの型付け規則で利用される．</p>
+<h3 id="fggの構文">FGGの構文</h3>
+<p>前述したとおり，FGG は FG をジェネリクスで拡張した言語である． なので下記の構文規則のうち，FG からの拡張に当たる部分を赤でハイライトしてある．</p>
+<p><img src="/assets/read-featherweight-go/fgg.jpg" /></p>
+<p>最も大きな変更として型宣言とメソッド宣言（メソッドシグネチャ）が型引数 $\Phi$ も取りうるようになったことだ． この型引数がまさにジェネリクスである． 手っ取り早く具体的なコードを見てみよう． 下記のコードは「Goで多相的な実装をする」を FGG 風の記法で置き換えたものだ（風というのは <code>+</code> や <code>&gt;</code> や <code>int</code> や <code>bool</code> は FGG にはまだ無いため）：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Any <span class="kw">interface</span> <span class="op">{}</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Function<span class="op">(</span><span class="kw">type</span> a Any<span class="op">,</span> b Any<span class="op">)</span> <span class="kw">interface</span> <span class="op">{</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    Apply<span class="op">(</span>x a<span class="op">)</span> b</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co">// g(f(x)) を表現</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> compose<span class="op">(</span><span class="kw">type</span> a Any<span class="op">,</span> b Any<span class="op">,</span> c Any<span class="op">)</span> <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    f Function<span class="op">(</span>a<span class="op">,</span> b<span class="op">)</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    g Function<span class="op">(</span>b<span class="op">,</span> c<span class="op">)</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>this compose<span class="op">(</span><span class="kw">type</span> a Any<span class="op">,</span> b Any<span class="op">,</span> c Any<span class="op">))</span> Apply<span class="op">(</span>x a<span class="op">)</span> c <span class="op">{</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> this<span class="op">.</span>g<span class="op">.</span>Apply<span class="op">(</span>this<span class="op">.</span>f<span class="op">.</span>Apply<span class="op">(</span>x<span class="op">))</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> incr <span class="kw">struct</span> <span class="op">{</span> n <span class="dt">int</span> <span class="op">}</span> <span class="co">// nだけインクリメントする</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>this incr<span class="op">)</span> Apply<span class="op">(</span>x <span class="dt">int</span><span class="op">)</span> <span class="dt">int</span> <span class="op">{</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> x <span class="op">+</span> this<span class="op">.</span>n</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> pos <span class="kw">struct</span> <span class="op">{}</span> <span class="co">// 正数なら真が返る</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>this pos<span class="op">)</span> Apply<span class="op">(</span>x <span class="dt">int</span><span class="op">)</span> <span class="dt">bool</span> <span class="op">{</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> x <span class="op">&gt;</span> <span class="dv">0</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> main<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> f Function<span class="op">(</span><span class="dt">int</span><span class="op">,</span> <span class="dt">bool</span><span class="op">)</span> <span class="op">=</span> compose<span class="op">(</span><span class="dt">int</span><span class="op">,</span> <span class="dt">int</span><span class="op">,</span> <span class="dt">bool</span><span class="op">){</span>incr<span class="op">{-</span><span class="dv">5</span><span class="op">},</span> pos<span class="op">{}}</span></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> b <span class="dt">bool</span> <span class="op">=</span> f<span class="op">.</span>Apply<span class="op">(</span><span class="dv">3</span><span class="op">)</span> <span class="co">// false</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>なんと，このコードには型アサーションが一切出てこない． また，高階関数を表現するインターフェースで，ちゃんと引数と戻り値の型を区別することができている．</p>
+<p>構文の本質的な変更を見てみよう． インターフェースや構造体，メソッドの宣言に <code>(type a Any, b Any)</code> というのが出てくるようになった． これがまさに型引数 $\Phi$ や $\Psi$ に当たる． <code>a</code> や <code>b</code> の型パラメーターの後に記述している <code>Any</code> は <strong>境界（bound）</strong> と呼び，自由にインターフェースを置くことができる． 構造体リテラルやメソッド呼び出しで型引数に型を適用する場合や，部分型関係が成り立つ場合（<code>Apply(x int) bool</code> の <code>int</code> や <code>bool</code> のこと）は，与えた型が境界のインターフェースのサブタイプになっている必要がある（今回の場合は <code>Any</code> なのでどんな型でも良いが）． ここで重要になるのが，型引数の型パラメーターのスコープである：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">// 型名やメソッド名の型パラメーターは内部のメソッドシグネチャで利用できる</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> List<span class="op">(</span><span class="kw">type</span> a Any<span class="op">)</span> <span class="kw">interface</span> <span class="op">{</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    Map<span class="op">(</span><span class="kw">type</span> b Any<span class="op">)(</span>f Function<span class="op">(</span>a<span class="op">,</span> b<span class="op">))</span> List<span class="op">(</span>b<span class="op">)</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co">// 型パラメーターを自身の境界で利用することもできる</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Eq<span class="op">(</span><span class="kw">type</span> a Eq<span class="op">(</span>a<span class="op">))</span> <span class="kw">interface</span> <span class="op">{</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    Equal<span class="op">(</span>that a<span class="op">)</span> <span class="dt">bool</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>インターフェースの型引数はメソッド仕様の型引数でも使うことはできるが，その逆はできない．</p>
+<h2 id="単相化">単相化</h2>
+<p>いよいよ FGG から FG への変換方法をみていく． 論文では，単相化の規則を形式的に定義し，単相化したコードは構文的正しさが保存されることと，双模倣性を証明した．ここでは形式的な議論を割愛する．</p>
+<h3 id="単相化の例">単相化の例</h3>
+<p>まずは例を見てみよう． 前述した FGG の <code>Function</code> などの例を「単相化」で FG に変換すると次のようになる．</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Top <span class="kw">struct</span> <span class="op">{}</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> main<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> f Function<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span> <span class="dt">bool</span><span class="op">&gt;</span> <span class="op">=</span> compose<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span> <span class="dt">int</span><span class="op">,</span> <span class="dt">bool</span><span class="op">&gt;{</span>incr<span class="op">{-</span><span class="dv">5</span><span class="op">},</span> pos<span class="op">{}}</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> b <span class="dt">bool</span> <span class="op">=</span> f<span class="op">.</span>Apply<span class="op">(</span><span class="dv">3</span><span class="op">)</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> compose<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span> <span class="dt">int</span><span class="op">,</span> <span class="dt">bool</span><span class="op">&gt;</span> <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    f Function<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span> <span class="dt">int</span><span class="op">&gt;</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    g Function<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span> <span class="dt">bool</span><span class="op">&gt;</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Function<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span> <span class="dt">int</span><span class="op">&gt;</span> <span class="kw">interface</span> <span class="op">{</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    Apply<span class="op">&lt;</span><span class="dv">0</span><span class="op">&gt;</span> Top</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    Apply<span class="op">(</span>x <span class="dt">int</span><span class="op">)</span> <span class="dt">int</span>    </span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Function<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span> <span class="dt">bool</span><span class="op">&gt;</span> <span class="kw">interface</span> <span class="op">{</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    Apply<span class="op">&lt;</span><span class="dv">1</span><span class="op">&gt;</span> Top</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    Apply<span class="op">(</span>x <span class="dt">int</span><span class="op">)</span> <span class="dt">bool</span>    </span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="op">(</span>this compose<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span> <span class="dt">int</span><span class="op">,</span> <span class="dt">bool</span><span class="op">&gt;)</span> Apply<span class="op">(</span>x <span class="dt">int</span><span class="op">)</span> <span class="dt">bool</span> <span class="op">{</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> this<span class="op">.</span>g<span class="op">.</span>Apply<span class="op">(</span>this<span class="op">.</span>f<span class="op">.</span>Apply<span class="op">(</span>x<span class="op">))</span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="op">(</span>this compose<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span> <span class="dt">int</span><span class="op">,</span> <span class="dt">bool</span><span class="op">&gt;)</span> Apply<span class="op">&lt;</span><span class="dv">1</span><span class="op">&gt;()</span> Top <span class="op">{</span></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> Top<span class="op">{}</span></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> incr <span class="kw">struct</span> <span class="op">{</span> n <span class="dt">int</span> <span class="op">}</span></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="op">(</span>this incr<span class="op">)</span> Apply<span class="op">(</span>x <span class="dt">int</span><span class="op">)</span> <span class="dt">int</span> <span class="op">{</span></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> x <span class="op">+</span> this<span class="op">.</span>n</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>this incr<span class="op">)</span> Apply<span class="op">&lt;</span><span class="dv">0</span><span class="op">&gt;()</span> Top <span class="op">{</span></span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> Top<span class="op">{}</span></span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> pos strcut <span class="op">{}</span></span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>this pos<span class="op">)</span> Apply<span class="op">(</span>x <span class="dt">int</span><span class="op">)</span> <span class="dt">bool</span> <span class="op">{</span></span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> x <span class="op">&gt;</span> <span class="dv">0</span></span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>this incr<span class="op">)</span> Apply<span class="op">&lt;</span><span class="dv">1</span><span class="op">&gt;()</span> Top <span class="op">{</span></span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> Top<span class="op">{}</span></span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>大きな変更箇所として，<code>Function&lt;int, int&gt;</code> のように <code>(,)</code> が <code>&lt;,&gt;</code> へ至る所でなっている． FGG のときの <code>(,)</code> は内部の型は個別の型として認識されていたが，<code>&lt;,&gt;</code> は <code>Function&lt;int, int&gt;</code> で一つの型となり内部の型は区別されない．</p>
+<p>また，<code>Apply&lt;0&gt; Top</code> のようなメソッドやメソッド仕様が追加されている． これは，部分型関係を正しく解決するためのダミーメソッドだ． 全てのメソッド宣言に対してダミーメソッドは追加で宣言され，インターフェースの全てのメソッド仕様に対してダミーメソッドのメソッド仕様が追加される． メソッド仕様の数字（<code>&lt;0&gt;</code> とか <code>&lt;1&gt;</code> とか）はメソッドの引数の型と返り値の型に対して一意に定まる（そのため <code>compose</code> と <code>pos</code> の <code>Apply</code> メソッドの数字は同じになる）．</p>
+<p>ちなみに <code>Top</code> 構造体はダミーメソッドのために追加された構造体だ．</p>
+<h3 id="ダミーメソッドが有効な例">ダミーメソッドが有効な例</h3>
+<p>さて，上記の例ではダミーメソッドの有効性がわからないので，もう一つ例を示す． 前にちょっとだけ出てきた <code>List</code> インターフェースの完全な例を示す． 下記は FGG でのコードだ．</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> List<span class="op">(</span><span class="kw">type</span> a Any<span class="op">)</span> <span class="kw">interface</span> <span class="op">{</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    Map<span class="op">(</span><span class="kw">type</span> b Any<span class="op">)(</span>f Function<span class="op">(</span>a<span class="op">,</span> b<span class="op">))</span> List<span class="op">(</span>b<span class="op">)</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Nil<span class="op">(</span><span class="kw">type</span> a Any<span class="op">)</span> <span class="kw">struct</span> <span class="op">{}</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Cons<span class="op">(</span><span class="kw">type</span> a Any<span class="op">)</span> <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    head a</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    tail List<span class="op">(</span>a<span class="op">)</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>xs Nil<span class="op">(</span><span class="kw">type</span> a Any<span class="op">))</span> Map<span class="op">(</span><span class="kw">type</span> b Any<span class="op">)(</span>f Function<span class="op">(</span>a<span class="op">,</span>b<span class="op">))</span> List<span class="op">(</span>b<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> Nil<span class="op">(</span>b<span class="op">){}</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>xs Cons<span class="op">(</span><span class="kw">type</span> a Any<span class="op">))</span> Map<span class="op">(</span><span class="kw">type</span> b Any<span class="op">)(</span>f Function<span class="op">(</span>a<span class="op">,</span>b<span class="op">))</span> List<span class="op">(</span>b<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> Cons<span class="op">(</span>b<span class="op">){</span>f<span class="op">.</span>Apply<span class="op">(</span>xs<span class="op">.</span>head<span class="op">),</span> xs<span class="op">.</span>tail<span class="op">.</span>Map<span class="op">(</span>b<span class="op">)(</span>f<span class="op">)}</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> main<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> xs List<span class="op">(</span><span class="dt">int</span><span class="op">)</span> <span class="op">=</span> Cons<span class="op">(</span><span class="dt">int</span><span class="op">){</span><span class="dv">3</span><span class="op">,</span> Cons<span class="op">(</span><span class="dt">int</span><span class="op">){</span><span class="dv">6</span><span class="op">,</span> Nil<span class="op">(</span><span class="dt">int</span><span class="op">){}}}</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> ys List<span class="op">(</span><span class="dt">int</span><span class="op">)</span> <span class="op">=</span> xs<span class="op">.</span>Map<span class="op">(</span><span class="dt">int</span><span class="op">)(</span>incr<span class="op">{-</span><span class="dv">5</span><span class="op">})</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> _ List<span class="op">(</span><span class="dt">bool</span><span class="op">)</span> <span class="op">=</span> ys<span class="op">.</span>Map<span class="op">(</span><span class="dt">bool</span><span class="op">)(</span>pos<span class="op">{})</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p><code>List</code> インターフェースは，配列のようなコンテナ型の各要素に同じメソッドを適用する高階関数を提供する． <code>Nil</code> と <code>Cons</code> 構造体は線形リストを表したものだ． ちなみに，Go の構造体は構造体による再帰的な構造を宣言することはできないが，インターフェースを介する場合は可能だ．</p>
+<p>さて，これを単相化すると次のようになる．</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> main<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> xs List<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> <span class="op">=</span> Cons<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;{</span><span class="dv">3</span><span class="op">,</span> Cons<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;{</span><span class="dv">6</span><span class="op">,</span> Nil<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;}}</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> ys List<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> <span class="op">=</span> xs<span class="op">.</span>Map<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;(</span>incr<span class="op">{-</span><span class="dv">5</span><span class="op">})</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> _ List<span class="op">&lt;</span><span class="dt">bool</span><span class="op">&gt;</span> <span class="op">=</span> ys<span class="op">.</span>Map<span class="op">&lt;</span><span class="dt">bool</span><span class="op">&gt;(</span>pos<span class="op">{})</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> List<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> <span class="kw">interface</span> <span class="op">{</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    Map<span class="op">&lt;</span><span class="dv">2</span><span class="op">&gt;()</span> Top <span class="co">// これは `(f Function(int, b)) List(b)` からの数字</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    Map<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;(</span>f Function<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span><span class="dt">int</span><span class="op">&gt;)</span> List<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    Map<span class="op">&lt;</span><span class="dt">bool</span><span class="op">&gt;(</span>f Function<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span><span class="dt">bool</span><span class="op">&gt;)</span> List<span class="op">&lt;</span><span class="dt">bool</span><span class="op">&gt;</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Nil<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> <span class="kw">struct</span> <span class="op">{}</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>xs Nil<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;)</span> Map<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;(</span>f Function<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span><span class="dt">int</span><span class="op">&gt;)</span> List<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> <span class="op">{</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> Nil<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;{}</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>xs Nil<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;)</span> Map<span class="op">&lt;</span><span class="dt">bool</span><span class="op">&gt;(</span>f Function<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span><span class="dt">bool</span><span class="op">&gt;)</span> List<span class="op">&lt;</span><span class="dt">bool</span><span class="op">&gt;</span> <span class="op">{</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> Nil<span class="op">&lt;</span><span class="dt">bool</span><span class="op">&gt;{}</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>xs Nil<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;)</span> Map<span class="op">&lt;</span><span class="dv">2</span><span class="op">&gt;()</span> Top <span class="op">{</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> Top<span class="op">{}</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Cons<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>    head <span class="dt">int</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>    tail List<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>xs Cons<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;)</span> Map<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;(</span>f Function<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span><span class="dt">int</span><span class="op">&gt;)</span> List<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> <span class="op">{</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> Cons<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;{</span>f<span class="op">.</span>Apply<span class="op">(</span>xs<span class="op">.</span>head<span class="op">),</span> xs<span class="op">.</span>tail<span class="op">.</span>Map<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;(</span>f<span class="op">)}</span></span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>xs Cons<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;)</span> Map<span class="op">&lt;</span><span class="dt">bool</span><span class="op">&gt;(</span>f Function<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span><span class="dt">bool</span><span class="op">&gt;)</span> List<span class="op">&lt;</span><span class="dt">bool</span><span class="op">&gt;</span> <span class="op">{</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> Cons<span class="op">&lt;</span><span class="dt">bool</span><span class="op">&gt;{</span>f<span class="op">.</span>Apply<span class="op">(</span>xs<span class="op">.</span>head<span class="op">),</span> xs<span class="op">.</span>tail<span class="op">.</span>Map<span class="op">&lt;</span><span class="dt">bool</span><span class="op">&gt;(</span>f<span class="op">)}</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>xs Cons<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;)</span> Map<span class="op">&lt;</span><span class="dv">2</span><span class="op">&gt;()</span> Top <span class="op">{</span></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> Top<span class="op">{}</span></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> List<span class="op">&lt;</span><span class="dt">bool</span><span class="op">&gt;</span> <span class="kw">interface</span> <span class="op">{</span></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>    Map<span class="op">&lt;</span><span class="dv">3</span><span class="op">&gt;()</span> Top</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Nil<span class="op">&lt;</span><span class="dt">bool</span><span class="op">&gt;</span> <span class="kw">struct</span> <span class="op">{}</span></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>xs Nil<span class="op">&lt;</span><span class="dt">bool</span><span class="op">&gt;)</span> Map<span class="op">&lt;</span><span class="dv">3</span><span class="op">&gt;()</span> Top <span class="op">{</span></span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> Top<span class="op">{}</span></span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Cons<span class="op">&lt;</span><span class="dt">bool</span><span class="op">&gt;</span> <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>    head <span class="dt">bool</span></span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>    tail List<span class="op">&lt;</span><span class="dt">bool</span><span class="op">&gt;</span></span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>xs Cons<span class="op">&lt;</span><span class="dt">bool</span><span class="op">&gt;)</span> Map<span class="op">&lt;</span><span class="dv">3</span><span class="op">&gt;()</span> Top <span class="op">{</span></span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> Top<span class="op">{}</span></span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p><code>List&lt;int&gt;</code> の <code>Map</code> メソッドは <code>main</code> のところで <code>int -&gt; int</code> と <code>int -&gt; bool</code> の2パターンで使われていたため，2つもインターフェースのメソッドとして宣言されている． 対して <code>List&lt;bool&gt;</code> は <code>ys.Map&lt;bool&gt;(pos{})</code> で生成されるものの，<code>Map</code> メソッドを呼んでいないため，インターフェースのメソッドは1つもない． このようにインターフェースのメソッドは，実際に利用された型のものしか生成されない． これにより，メソッドの無いインターフェースが生成されることがある（正確にはダミーメソッド以外には無い，だが）． ダミーメソッドはこのような振る舞いに対して有効だ．例えば，変数 <code>f</code> に <code>incr{1}</code> が束縛されているときを考える． 型アサーション <code>f.(List&lt;bool&gt;)</code> はダミーメソッドがあることで失敗するが，ダミーメソッドがないと成功してしまう．</p>
+<h3 id="単相化ができない場合">単相化ができない場合</h3>
+<p>全ての型付け可能な FGG のコードが単相化可能かというとそうではない． 例えば，次のような FGG のコードは単相化できない．</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Box<span class="op">(</span><span class="kw">type</span> a Any<span class="op">)</span> <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    value a</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>this Box<span class="op">(</span><span class="kw">type</span> a Any<span class="op">))</span> Nest<span class="op">(</span>n <span class="dt">int</span><span class="op">)</span> Any <span class="op">{</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> <span class="op">(</span>n <span class="op">==</span> <span class="dv">0</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> this</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> Box<span class="op">(</span>Box<span class="op">(</span>a<span class="op">)){</span>this<span class="op">}.</span>Nest<span class="op">(</span>n<span class="dv">-1</span><span class="op">)</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>これは多相再帰（polymorphic recursion），ある型で呼び出されたメソッドが別の型で再帰呼び出しをするもの，をしているプログラムの例である．<code>Box(a)</code> 型をレシーバーとするメソッド <code>Nest</code> を呼び出すと <code>Box(Box(a))</code> 型のレシーバーで再帰的に呼び出される． この例は型がどれだけ深くネストするかを事前に決定することができないので単相化することができない．</p>
+<p>逆に，このような多相再帰なコードが含まれていない場合は，全ての FGG のコードを単相化することができる（ことを論文で証明していた）． なので，実際のコンパイラでは多相再帰が含まれてるかどうかの検査をするようだ．</p>
+<h3 id="単相化の仕組み">単相化の仕組み</h3>
+<p>単相化のプロセスは2つのフェーズから構成されている． 第一フェーズは，FGG プログラムから型とメソッドのインスタンス（型パラメーターを具体化したものだと思う）を取集する． 第二フェーズでは，第一フェーズで収集したインスタンスをもとにして，FGG プログラムを等価な FG プログラムへと変換する．</p>
+<p>FGG のプログラム $P$ から，各インスタンスの集合 $\Omega$ を収集した場合は $P \blacktriangleright \Omega$ と記述する（これが第一フェーズ）．FGG のプログラム $P$ から FG のプログラム $P'$ への変換は $\vdash P \mapsto P'$ と記述する．</p>
+<p>論文ではこれらの規則を形式的に定義している（がここでは割愛）．</p>
+<h3 id="他言語と単相化">他言語と単相化</h3>
+<p>7章の「RELATED WORK」では，他のプログラミング言語での単相化の事例について紹介されていた．興味深いので論文から引用する．</p>
+<ul>
+<li>Bracha 氏らは「Making the Future Safe for the Past: Adding Genericity to the Java Programming Language」という論文でジェネリクス付きの Java からジェネリクスなしの Java へ，全ての型パラメーターの情報を消去することで変換する方法を提案した（これは単相化では無い）．消去の欠点として消去されたコードは単相化されたコードに比べて（実行？）効率が悪くなることがよくある．一方，消去はコードサイズの増加が線形であるのに対して，単相化はコードサイズが爆発的に増加する可能性がある．</li>
+<li>Kennedy 氏と Syme 氏は「Design and Implementation of Generics for the .NET Common Language Runtime」で .NET Common Language Runtime (CLR) と C# の拡張を開発してジェネリクスをサポートした．これらは特化したコードと共有したコードを混ぜたものを生成する．前者は，各プリミティブ型ごとに個別にコンパイルする（これは単相化に似ている）．後者は，全てのオブジェクト型に対してひとつにコンパイルされる（これは消去に似ている）．</li>
+<li>Stroustrup 氏は「The C++ Programming Language」という書籍の16章で，C++ におけるテンプレートのインスタンス化について述べている（実質，単相化）．これは広く使われているがコードが肥大化するとして悪名高い．</li>
+<li>Benton 氏らは「Compiling Standard ML to Java Bytecodes」という論文で SML’97 プログラムから Java バイトコードへ変換するコンパイラについて述べており，ここで多相性は完全に単相化される．Standard ML では多相的な再帰を禁止しているため，常に単相化することが可能．</li>
+<li>Fluet 氏は <a href="http://mlton.org/Monomorphise">MLton のウェブページ</a>で，SML の最適化コンパイラ MLton で利用している同様のアプローチを紹介している．</li>
+<li>Tolmach 氏と Oliva 氏は「From ML to Ada: Strongly-Typed Language Interoperability via Source Translation」という論文で，MLライクな言語から Agda への型付きの変換を単相化ベースで開発し，その詳細を発表した．FGGのとは異なりサブタイピングに対応しておらず多相再帰もない．</li>
+<li>Jones 氏は「Dictionary-free overloading by partial evaluation」という論文で，Haskell用の型クラスを効率的にコンパイルする方法について述べており，これは単相化に多少似ている．</li>
+<li>Yu 氏らは「Formalization of generics for the .NET common language runtime」で，.NET JIT コンパイラの特化と共有を混ぜるメカニズムの形式化している．この論文では，型と意味論を保持した多相的な .NET の中間言語（IL）への変換を記述している．</li>
+<li>Siek 氏と Taha 氏は「A Semantic Analysis of C++ Templates」という論文で，C++テンプレートのインスタンス化メカニズムを形式化している．</li>
+<li>田中氏らは「Safe Low-level Code Generation in Coq Using Monomorphization and Monadification」という論文で，低レベルのCコードを生成する Coq (Gallina) のための単相化アルゴリズムをレポートしている．</li>
+</ul>
+<h2 id="実装について">実装について</h2>
+<ul>
+<li>FGとFGGの型検査器とインタプリタ</li>
+<li>FGG から FG への変換器（monomorphiser）のプロトタイプ実装（単相化可能かの検査も含む）</li>
+</ul>
+<p>を Go で実装して公開したそうだ． Go で実装したのは Go の設計者やコミュニティとの議論を容易にするためらしい． さらに，これらの実装を使い多くのテストを行ったようだ．</p>
+<ul>
+<li>FG の評価結果を公式の Go コンパイラを使用したものと比較</li>
+<li>FG と FGG インタプリタは保存定理と進行定理の動的な検査をサポート</li>
+<li>単相化をテストするために双模倣性のテストを追加</li>
+</ul>
+<p>また，<a href="https://doi.org/10.1017/s0956796815000143">NEAT</a> を利用して FGG のサブセットから全ての正しく型付けされたプログラム（ただし，メソッドと型の出現巣の合計を指定して，ある程度のサイズまでに限定した上で）を列挙もしたらしい（SmallCheck に似ているらしい）． このサブセットに含まれる全ての FGG プログラムをサイズ20まで生成して，上述した双模倣性のテストが通ったことを確認したそうだ．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>今後は C# のような，型のランタイム表現を渡すことに基づいた実装を検討して，単相化と組み合わせる方法を模索するらしい． あと，代入・配列・スライス・パッケージなどの他の重要な機能のモデル化も計画してるらしく，これを Bantamweight Go と呼ぶつもりらしい． さらに，「goroutines」とメッセージパッシングに基づくGoの並行メカニズムのモデル化も計画していて，これを Cruiserweight Go と呼ぶらしい． いったい素の Go は何級なんだろう笑</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

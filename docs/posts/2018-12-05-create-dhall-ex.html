@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Dhall を試して物足りない部分を補うツールを自作した" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>Dhall を試して物足りない部分を補うツールを自作した</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">Dhall を試して物足りない部分を補うツールを自作した</h1>
+            </header>
+            <div class="post-content">
+              <p>本稿は <a href="https://qiita.com/advent-calendar/2018/haskell">Haskell Advent Calendar 2018</a> 5日目の記事です．</p>
+<p>Haskell Day 2018 の発表をきっかけに，兼ねてから気になっていた Dhall を試した． いくつかツールが欲しくなったので作りましたっていう話です．</p>
+<p>作ったものはこれ:</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/yaml-to-dhall">matsubara0507/yaml-to-dhall - GitHub</a></li>
+<li><a href="https://github.com/matsubara0507/dhall-ex">matsubara0507/dhall-ex - GitHub</a></li>
+</ul>
+<p>ちなみに，今回作ったツールは現状の stack の stable resolver にある v1.5.1 を利用している．</p>
+<h2 id="dhall">Dhall</h2>
+<p><a href="https://github.com/dhall-lang/dhall-lang">Dhall</a> は静的型付けされた設定記述言語である． 多くの場合，プログラミング言語やアプリケーションに使われる設定ファイルには JSON や YAML が利用されている． プログラミング言語のビルドシステムのような設定ファイル一つ程度なら問題ないが，Kubernetes や Ansible のような膨大な設定ファイルが依存しあう場合，静的型付けプログラミング言語のようにコンパイルによる型検査を導入したくなるだろう． Dhall はそのための言語であり，また便利な関数が用意されているため，非常に再利用性の高い設定ファイルを記述できる．</p>
+<h3 id="例">例:</h3>
+<p>Dhall は静的片付け言語なので，まずは型を定義しよう:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>$ cat ./User.dhall</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>{ homeDirectory : Text, privateKeyFile : Text, publicKeyFile : Text }</span></code></pre></div>
+<p>このユーザ型の値はユーザ名から一意に生成されることは容易に想像できるだろう:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>$ cat ./makeUser.dhall</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  \(user_name : Text)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>-&gt;    <span class="kw">let</span> homeDirectory = <span class="st">&quot;/home/${user_name}&quot;</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">in</span>  <span class="kw">let</span> privateKeyFile = <span class="st">&quot;${homeDirectory}/id_rsa&quot;</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">in</span>  <span class="kw">let</span> publicKeyFile = <span class="st">&quot;${privateKeyFile}.pub&quot;</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">in</span>    { homeDirectory =</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>            homeDirectory</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        , privateKeyFile =</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>            privateKeyFile</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        , publicKeyFile =</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>            publicKeyFile</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>      : ./User.dhall</span></code></pre></div>
+<p>この <code>./makeUser.dhall</code> は任意の文字列を与えると，それをユーザ名として <code>./User.dhall</code> 型の値を生成してくれる． さらに，高階関数を使って複数のユーザに対し一気に適用してみよう．</p>
+<pre class="dhall"><code>$ cat ./users.dhall
+let User = ./User.dhall
+
+in  let map =
+      https://raw.githubusercontent.com/dhall-lang/dhall-lang/0a7f596d03b3ea760a96a8e03935f4baa64274e1/Prelude/List/map
+
+in  map Text User ./makeUser.dhall [ &quot;alice&quot;, &quot;bob&quot;, &quot;curry&quot; ] : List User</code></pre>
+<p><code>map</code> には <a href="https://github.com/dhall-lang/dhall-lang/blob/master/Prelude/List/map">dhall のリポジトリにある標準パッケージの関数</a>を直接インポートしている． <code>map</code> の型は <code>∀(a : Type) → ∀(b : Type) → (a → b) → List a → List b</code> となっている． 基本的に Dhall で多相な高階関数を利用するときは，引数から直接型を与えてあげる必要がある．</p>
+<p>さて，これを dhall でビルドすると次のような結果を得る:</p>
+<pre class="dhall"><code>$ dhall &lt;&lt;&lt; ./users.dhall
+[ { homeDirectory =
+      &quot;/home/alice&quot;
+  , privateKeyFile =
+      &quot;/home/alice/id_rsa&quot;
+  , publicKeyFile =
+      &quot;/home/alice/id_rsa.pub&quot;
+  }
+, { homeDirectory =
+      &quot;/home/bob&quot;
+  , privateKeyFile =
+      &quot;/home/bob/id_rsa&quot;
+  , publicKeyFile =
+      &quot;/home/bob/id_rsa.pub&quot;
+  }
+, { homeDirectory =
+      &quot;/home/curry&quot;
+  , privateKeyFile =
+      &quot;/home/curry/id_rsa&quot;
+  , publicKeyFile =
+      &quot;/home/curry/id_rsa.pub&quot;
+  }
+]</code></pre>
+<p>これは次のようなYAMLに対応し，<code>dhall-to-yaml</code> などのツールで変換可能だ:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">privateKeyFile</span><span class="kw">:</span><span class="at"> /home/alice/id_rsa</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">publicKeyFile</span><span class="kw">:</span><span class="at"> /home/alice/id_rsa.pub</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">homeDirectory</span><span class="kw">:</span><span class="at"> /home/alice</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">privateKeyFile</span><span class="kw">:</span><span class="at"> /home/bob/id_rsa</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">publicKeyFile</span><span class="kw">:</span><span class="at"> /home/bob/id_rsa.pub</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">homeDirectory</span><span class="kw">:</span><span class="at"> /home/bob</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">privateKeyFile</span><span class="kw">:</span><span class="at"> /home/curry/id_rsa</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">publicKeyFile</span><span class="kw">:</span><span class="at"> /home/curry/id_rsa.pub</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">homeDirectory</span><span class="kw">:</span><span class="at"> /home/curry</span></span></code></pre></div>
+<h2 id="section"></h2>
+<p>また，ざっくりとしたイメージを得るには、先日あった <a href="https://wiki.haskell.jp/Workshop/HaskellDay/2018">Haskell Day 2018</a> での<a href="https://speakerdeck.com/syocy/dhall-haskellfalsexin-tanakiraapuri">発表資料</a>がわかりやすくてオススメ．</p>
+<h3 id="使ってみて思うところ">使ってみて思うところ</h3>
+<p>もしかしたら最新のバージョンであれば改善しているものもあるかもしれない．</p>
+<ul>
+<li>基本的な高階関数があり便利
+<ul>
+<li>map,fold,filter など</li>
+</ul></li>
+<li>普通のプログラミングのように式を再利用できる</li>
+<li>型推論がザコい
+<ul>
+<li>パラメトリック多相を挟むとダメみたいですね</li>
+</ul></li>
+<li>結構ビルドエラーがエスパー
+<ul>
+<li>慣れの問題か？</li>
+</ul></li>
+<li>YAML のいわゆる連想配列への変換ができない</li>
+<li>日本語が化ける ;;
+<ul>
+<li>まぁ原因はわかるので最新でも治ってなかったらPRしてみるか</li>
+</ul></li>
+</ul>
+<h2 id="何に導入したか">何に導入したか</h2>
+<p>弊社が企画してる学生向けの競技型イベントに関するシステムの設定ファイルを Dhall に置き換えてみた． そのシステムは，インフラ・スコアボード・デプロイツールの3つのリポジトリに別れており，ところどころ重複した設定が3つのリポジトリに存在する． そこで，設定用のリポジトリを作って，そこに Dhall で記述した設定を置き，そこから各リポジトリに設定を撒くような仕組みを考えることにした．</p>
+<p><img src="/assets/create-dhall-ex/system-with-dhall.png" /></p>
+<p>別に Dhall にしたからといって劇的に何かがよくなるわけでは無いのだが，ちょうど良いサンドボックスがあったのでイロイロと試してみる，というのが本音です（笑）</p>
+<h2 id="yaml-to-dhall">yaml-to-dhall</h2>
+<p>最初の方はせっせと手作業で変換していたが，何個かやって変換の仕方の勘所がわかって来た． そうなると後は作業でしか無いので，なんとかして大量にある設定ファイルを一括変換したい．</p>
+<p>調べた限り，YAML から Dhall に変換するプログラムは無さそう(逆はもちろんあるけど)． なのですっごい雑なものを作った．</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/yaml-to-dhall">matsubara0507/yaml-to-dhall - GitHub</a></li>
+</ul>
+<p>これは極めて単純なことしかできない． 数値は全て Float に変換されるし，Optional や空リストの書き方が間違っている． とりあえず変換して，手元のエディタで置換すればいいかなと思ったので雑なままである．</p>
+<p>時間ができたらそのうち直すかも．</p>
+<h2 id="dhall-ex">dhall-ex</h2>
+<p>前述した通り，一組の設定ファイル群から複数のリポジトリの設定ファイルを生成したかったのでその仕組みを作った． dhall-ex は次のような設定ファイルを記述する:</p>
+<pre class="dhall"><code>{ GH_TOKEN =
+      [ &quot;matsubara0507:XXXX&quot; ] : Optional Text
+  , root =
+      &quot;configs&quot;
+  , exports =
+      [ { name =
+            &quot;deploy-tool&quot;
+        , repo =
+            [ &quot;git-challenge/deploy-tool&quot; ] : Optional Text
+        , paths =
+            [ &quot;settings/orgs/orgs.yml&quot;
+            , &quot;settings/orgs/review.yml&quot;
+            ...
+            ]
+        }
+      ...
+      ]
+}</code></pre>
+<p>別にどっちでもよかったのだが，せっかくなので dhall-ex の設定ファイルも Dhall で記述するようにした． なので，具体例より<a href="https://github.com/matsubara0507/dhall-ex/blob/master/dhall/dhall-ex-type.dhall">型</a>を見た方が早いだろう．</p>
+<pre class="dhall"><code>let Export = { name : Text, repo : Optional Text, paths : List Text }
+in  { GH_TOKEN : Optional Text, root : Text, exports : List Export }</code></pre>
+<p><code>root</code> は設定ファイル群を置くパスで，<code>exports</code> が設定ファイル群の更新先のリポジトリなどの情報だ． <code>repo</code> で GitHub リポジトリを指定し，<code>paths</code> で関連する設定ファイルを列挙する． 例の場合 <code>./config/settings/orgs/orgs.yml.dhall</code> を <code>./.dhall-ex/git-challenge/deploy-tool/settings/orgs/orgs.yml</code> に dhall でビルドする．</p>
+<p>ちなみに Dhall のバージョンが古いので <code>Optional</code> がリストのリテラルを利用しているが，最新の Dhall には <code>Some</code> と <code>None</code> があるはず．</p>
+<h3 id="機能">機能</h3>
+<p>現状はこんな感じ:</p>
+<pre><code>$ dhall-ex --help
+dhall-ex - cli tool to support dhall
+
+Usage: dhall-ex [-v|--verbose] [-c|--config PATH] [--only NAME] COMMAND
+                [--version]
+
+Available options:
+  -v,--verbose             Enable verbose mode: verbosity level &quot;debug&quot;
+  -c,--config PATH         Configuration file
+  --only NAME              Exec subcommand only NAME in config
+  --version                Show version
+  -h,--help                Show this help text
+
+Available commands:
+  sort                     Sort record keys in dhall file
+  echo                     Echo TEXT
+  init                     Init dhall-ex work directory
+  build                    Build Dhall file to YAML or JSON
+  deploy                   Deploy builded config file to remote repository
+  checkout                 Checkout repository in dhall workspace
+  pull                     Pull repository in dhall workspace</code></pre>
+<p><code>echo</code> は設定が正しく読み取れるかどうかにだけ使う雑機能． <code>sort</code> レコードのフィールドの順番を型に合わせて並び替えてくれるコマンドだ． 前述した <code>yaml-to-dhall</code> などを使った後に使った(並び変える必要はないんだけど，なんか読みやすいように)．</p>
+<p><code>init</code> でリポジトリなどの初期化をし，<code>build</code> で設定ファイルを変換し，<code>deploy</code> でコミットとプッシュを行ってくれる． <code>checkout</code> や <code>pull</code> はただの git コマンドのラッパーだ．</p>
+<p>また，<code>--only deploy-tool</code> などとすることでコマンドの実行を特定のリポジトリに限定できる．</p>
+<h3 id="実装">実装</h3>
+<p>実は内部実装はそこまで難しいことをしていない． Dhall のファイルを読み込み，ビルドし，それを dhall-ex の設定ファイルに則って出力するだけだ． <code>build</code> 以外のコマンドは <a href="http://hackage.haskell.org/package/shelly"><code>shelly</code></a> を使ってシェルスクリプトもどきを実行している．</p>
+<h3 id="todo">ToDo</h3>
+<ul>
+<li>例外処理が雑なのを直す
+<ul>
+<li>だいたいこの部分が残る（笑）</li>
+</ul></li>
+<li>任意のコマンドを各リポジトリのワークスペースで実行できるようにする
+<ul>
+<li>なんか <code>git status</code> とか <code>git branch</code> とかしたい</li>
+</ul></li>
+<li>並行処理</li>
+</ul>
+<h1 id="おしまい">おしまい</h1>
+<p>随分雑な記事になってしまった．</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

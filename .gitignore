@@ -1,5 +1,3 @@
-_cache/
-_site/
 .stack-work/
-.draft
-*.cabal
+*~
+.shake

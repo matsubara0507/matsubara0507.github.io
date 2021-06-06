@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="「積み木の水槽」問題の Haskell での回答を読み解く" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <meta property="og:image" content="/images//assets/water-towers-hs/water-tank.jpg" />
+<title>「積み木の水槽」問題の Haskell での回答を読み解く</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">「積み木の水槽」問題の Haskell での回答を読み解く</h1>
+            </header>
+            <div class="post-content">
+              <p>今朝，バイト先で<a href="http://nabetani.sakura.ne.jp/hena/ord13blocktup/">「積み木の水槽」問題</a>の <a href="https://rosettacode.org/wiki/Water_collected_between_towers#Haskell">Haskell での回答</a>について話題になりました． リンク先の解答を見ると，恐ろしいことに，一行で書けてしまいます(正しくは，この解答では <code>nabetani</code> さんの問題は解けませんが...)．</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- 2 == solve [1,5,3,7,2]</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>solve <span class="ot">=</span> <span class="fu">sum</span> <span class="op">.</span> <span class="fu">filter</span> (<span class="op">&gt;</span> <span class="dv">0</span>) <span class="op">.</span> (<span class="fu">zipWith</span> (<span class="op">-</span>) <span class="op">=&lt;&lt;</span> (<span class="fu">zipWith</span> <span class="fu">min</span> <span class="op">.</span> <span class="fu">scanl1</span> <span class="fu">max</span> <span class="op">&lt;*&gt;</span> <span class="fu">scanr1</span> <span class="fu">max</span>))</span></code></pre></div>
+<p>普通の Haskeller であれば，これぐらい目コンパイルして振る舞いを読み解くのは朝飯前でしょうが，Haskell 初学者のために簡単な解説を残しておこうかなと思います．</p>
+<h2 id="手直し">手直し</h2>
+<p>前述したとおり，そもそもこれでは <code>nabetani</code> さんの問題は解けないので，解けるように手直しします． もちろん <strong>1行で</strong> ．</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>solve <span class="ot">=</span> <span class="fu">sum</span> <span class="op">.</span> <span class="fu">fmap</span> (<span class="fu">sum</span> <span class="op">.</span> (<span class="fu">zipWith</span> (<span class="op">-</span>) <span class="op">=&lt;&lt;</span> (<span class="fu">zipWith</span> <span class="fu">min</span> <span class="op">.</span> <span class="fu">scanl1</span> <span class="fu">max</span> <span class="op">&lt;*&gt;</span> <span class="fu">scanr1</span> <span class="fu">max</span>)) <span class="op">.</span> <span class="fu">fmap</span> (<span class="fu">read</span> <span class="op">.</span> (<span class="op">:</span> []))) <span class="op">.</span> <span class="fu">words</span> <span class="op">.</span> <span class="fu">fmap</span> (bool <span class="ch">&#39; &#39;</span> <span class="op">&lt;*&gt;</span> (<span class="op">/=</span>) <span class="ch">&#39;0&#39;</span>)</span></code></pre></div>
+<p><code>Data.List</code> と <code>Data.Bool</code> を <code>import</code> してる前提だが，一応一行で書けた． 雑に直したのでもう少し短くできるような気もしますが，まぁそもそも本質的なところでないので勘弁してください．</p>
+<p>ちなみに，そもそもなんで元のコードでは解けないのかというと，<code>nabetani</code> さんの問題には <code>0</code> が含むからだ． しかし，<code>0</code> で水槽を切り分けてあげて，元の解答を <code>map</code> してあげれば良いだけなのでコアのところはそのまんま(<code>filter (&gt; 0)</code> は要らない気がしたので消したけど)．</p>
+<h2 id="読み解く">読み解く</h2>
+<p>手直しした最終的なコードはテストコードと共に<a href="https://gist.github.com/matsubara0507/10a44fb2a9676bde9658c3eeec456676">ココ</a>にあげた．</p>
+<h3 id="トップダウンに">トップダウンに</h3>
+<p>順に読み解く． Haskell でプログラミングするとき(というか関数型プログラミング)はトップダウンに書いていくのが基本なので，読み解くときも上から順に切り分けてく．</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ot">solve ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>solve <span class="ot">=</span> <span class="fu">sum</span> <span class="op">.</span> <span class="fu">fmap</span> countWater <span class="op">.</span> splitTank</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ot">splitTank ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> [<span class="dt">String</span>]</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>splitTank <span class="ot">=</span>  <span class="fu">words</span> <span class="op">.</span> <span class="fu">fmap</span> (bool <span class="ch">&#39; &#39;</span> <span class="op">&lt;*&gt;</span> (<span class="op">/=</span>) <span class="ch">&#39;0&#39;</span>)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="ot">countWater ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>countWater <span class="ot">=</span> <span class="fu">sum</span> <span class="op">.</span> (<span class="fu">zipWith</span> (<span class="op">-</span>) <span class="op">=&lt;&lt;</span> (<span class="fu">zipWith</span> <span class="fu">min</span> <span class="op">.</span> <span class="fu">scanl1</span> <span class="fu">max</span> <span class="op">&lt;*&gt;</span> <span class="fu">scanr1</span> <span class="fu">max</span>)) <span class="op">.</span> <span class="fu">fmap</span> (<span class="fu">read</span> <span class="op">.</span> (<span class="op">:</span> []))</span></code></pre></div>
+<p><code>splitTank</code> 関数は <code>0</code> を区切り文字として文字列を切り分けてるだけだ． 悲しいことに，Haskell (というか GHC)の標準モジュールには「任意の文字で文字列を切り分ける」関数がない． なので，<code>0</code> だけを空白 <code>' '</code> に置換してから，<code>words</code> で切り分けている(空白で切り分ける関数 <code>words</code> は何故か標準にある)．</p>
+<p><code>countWater</code> 関数が各水槽の水の数を数え上げており，それを最後に総和 <code>sum</code> しているだけだ．</p>
+<h3 id="fmap-はわかるよね"><code>fmap</code> はわかるよね？</h3>
+<p>ちなみに，さっきから出てきている <code>fmap</code> という関数はわかりますよね？ 多くの言語でも導入されている，リストや配列の各要素に関数を適用する関数(あるいはメソッド) <code>map :: (a -&gt; b) -&gt; [a] -&gt; [b]</code> をより一般化したものだ． 今回はリストにしか使わないので <code>map</code> と同義だと考えてくれていい(hlint で注意されるので，<code>fmap</code> と書く癖がついた)．</p>
+<h3 id="コアの部分">コアの部分</h3>
+<p>さて，本題でもある <code>countWater</code> 関数を読み解く． まずは切り分けよう．</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ot">countWater ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>countWater <span class="ot">=</span> <span class="fu">sum</span> <span class="op">.</span> toWaterLine <span class="op">.</span> toInts</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="ot">toInts ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> [<span class="dt">Int</span>]</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>toInts <span class="ot">=</span> <span class="fu">fmap</span> (<span class="fu">read</span> <span class="op">.</span> (<span class="op">:</span> []))</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="ot">toWaterLine ::</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> [<span class="dt">Int</span>]</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>toWaterLine <span class="ot">=</span> <span class="fu">zipWith</span> (<span class="op">-</span>) <span class="op">=&lt;&lt;</span> (<span class="fu">zipWith</span> <span class="fu">min</span> <span class="op">.</span> <span class="fu">scanl1</span> <span class="fu">max</span> <span class="op">&lt;*&gt;</span> <span class="fu">scanr1</span> <span class="fu">max</span>)</span></code></pre></div>
+<p><code>toInts</code> 関数は数列の文字列から数値のリストに変換している． Haskell で文字列を任意の型に変換するには <code>read :: String -&gt; a</code> 関数を使う． Haskell において <code>String = [Char]</code> なので，<code>fmap (: [])</code> をして <code>String</code> のリストに変換し，各文字列を <code>read</code> をしているというわけだ(<code>singleton</code> みたいな関数が標準にあればいいのに)．</p>
+<p><code>toWaterLine</code> 関数が水槽の各列の水の量を計算し，<code>sum</code> で総和している． なので，重要なのは <code>toWaterLine</code> 関数だ． <code>(&lt;*&gt;)</code> 演算子や <code>(=&lt;&lt;)</code> 演算子などがあって意味不明かもしれないが，この辺りはポイントフリーにするためのツールみたいなもので，アルゴリズムの本質的な部分ではないよ．</p>
+<h3 id="関数も-monad-型クラスのインスタンス">関数も <code>Monad</code> 型クラスのインスタンス</h3>
+<p><code>(&lt;*&gt;)</code> 演算子や <code>(=&lt;&lt;)</code> 演算子が何をしているかと言うのは <strong>関数型 <code>(-&gt;) a</code> も <code>Monad</code> 型クラスのインスタンス</strong> だという事実を知っていれば簡単に読めますね． Haskell 界隈では常識(要出典)なので，説明しなくても良いかもしれないが，初学者のために念のためしておく．</p>
+<p>それぞれの演算子の型は以下の通り(めんどいので <code>Monad</code> で統一)．</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ot">(&lt;*&gt;) ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> m (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> m a <span class="ot">-&gt;</span> m b</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ot">(=&lt;&lt;) ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> m a <span class="ot">-&gt;</span> m b</span></code></pre></div>
+<p>で，前述したとおり，関数型 <code>(c -&gt;)</code> も <code>Monad</code> 型クラスのインスタンスなので，<code>m = (c -&gt;)</code> と置き換えれる．</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ot">(&lt;*&gt;) ::</span> (c <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> b)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ot">(=&lt;&lt;) ::</span> (a <span class="ot">-&gt;</span> c <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> b)</span></code></pre></div>
+<p>便利そうなコンビネーターになった． なので，<code>toWaterLine</code> 関数のこれらの演算子を同様のラムダ式で置き換えてあげよう．</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ot">toWaterLine ::</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> [<span class="dt">Int</span>]</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>toWaterLine</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> \xs <span class="ot">-&gt;</span> <span class="fu">zipWith</span> (<span class="op">-</span>) ((\ys <span class="ot">-&gt;</span> (<span class="fu">zipWith</span> <span class="fu">min</span> <span class="op">.</span> <span class="fu">scanl1</span> <span class="fu">max</span> <span class="op">$</span> ys) (<span class="fu">scanr1</span> <span class="fu">max</span> ys)) xs) xs</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> \xs <span class="ot">-&gt;</span> <span class="fu">zipWith</span> (<span class="op">-</span>) ((\ys <span class="ot">-&gt;</span> <span class="fu">zipWith</span> <span class="fu">min</span> (<span class="fu">scanl1</span> <span class="fu">max</span> ys) (<span class="fu">scanr1</span> <span class="fu">max</span> ys)) xs) xs</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> \xs <span class="ot">-&gt;</span> <span class="fu">zipWith</span> (<span class="op">-</span>) (<span class="fu">zipWith</span> <span class="fu">min</span> (<span class="fu">scanl1</span> <span class="fu">max</span> xs) (<span class="fu">scanr1</span> <span class="fu">max</span> xs)) xs</span></code></pre></div>
+<p>ついでに，他の言語の人では分かりにくい演算子も置き換えたので，これでどの言語の人でも読めるはずだ．</p>
+<h3 id="アルゴリズム">アルゴリズム</h3>
+<p>ここからは Haskell 関係ない． ひとつひとつ見ていこう．</p>
+<p><code>scanl :: (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; [b]</code> 関数は左畳み込み関数 <code>foldl :: (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; b</code> の途中経過もリストで残したような関数だ． つまり <code>foldl f x xs = last $ scanl f x xs</code> が成り立つ． <code>scanl1 :: (a -&gt; a -&gt; a) -&gt; [a] -&gt; [a]</code> 関数は初期値を無くしたバージョンだ． <code>scanr1</code> は <code>scanl1</code> の右畳み込みバージョン．</p>
+<h2 id="section"></h2>
+<p><code>scanl max xs</code> は左から順に，水槽の高さを比較して高い方を残しているので，各列の最も高い左側が残る． <code>scanr1 max xs</code> は各列の最も高い右側が残る．</p>
+<p><img src="/assets/water-towers-hs/water1.gif" /></p>
+<p>そして，それらの低い方を残して，もとの高さを引く．</p>
+<p><img src="/assets/water-towers-hs/water2.gif" /></p>
+<p>すごいできた！</p>
+<h2 id="試しに">試しに</h2>
+<p>次のテストコードを走らせてみた．</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- WalterTowers.hs</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>main <span class="ot">=</span> <span class="fu">print</span> <span class="op">$</span> <span class="fu">all</span> ((<span class="op">==</span>) <span class="op">&lt;$&gt;</span> <span class="fu">snd</span> <span class="op">&lt;*&gt;</span> (<span class="fu">show</span> <span class="op">.</span> solve <span class="op">.</span> <span class="fu">fst</span>)) testSet</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>solve <span class="ot">=</span> <span class="op">...</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="ot">testSet ::</span> [(<span class="dt">String</span>, <span class="dt">String</span>)]</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>testSet <span class="ot">=</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  [ (<span class="st">&quot;83141310145169154671122&quot;</span>, <span class="st">&quot;24&quot;</span>)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;923111128&quot;</span>, <span class="st">&quot;45&quot;</span>)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;923101128&quot;</span>, <span class="st">&quot;1&quot;</span>)</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;903111128&quot;</span>, <span class="st">&quot;9&quot;</span>)</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;3&quot;</span>, <span class="st">&quot;0&quot;</span>)</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;31&quot;</span>, <span class="st">&quot;0&quot;</span>)</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;412&quot;</span>, <span class="st">&quot;1&quot;</span>)</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;3124&quot;</span>, <span class="st">&quot;3&quot;</span>)</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;11111&quot;</span>, <span class="st">&quot;0&quot;</span>)</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;222111&quot;</span>, <span class="st">&quot;0&quot;</span>)</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;335544&quot;</span>, <span class="st">&quot;0&quot;</span>)</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;1223455321&quot;</span>, <span class="st">&quot;0&quot;</span>)</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;000&quot;</span>, <span class="st">&quot;0&quot;</span>)</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;000100020003121&quot;</span>, <span class="st">&quot;1&quot;</span>)</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;1213141516171819181716151413121&quot;</span>, <span class="st">&quot;56&quot;</span>)</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;712131415161718191817161514131216&quot;</span>, <span class="st">&quot;117&quot;</span>)</span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;712131405161718191817161514031216&quot;</span>, <span class="st">&quot;64&quot;</span>)</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;03205301204342100&quot;</span>, <span class="st">&quot;1&quot;</span>)</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;0912830485711120342&quot;</span>, <span class="st">&quot;18&quot;</span>)</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;1113241120998943327631001&quot;</span>, <span class="st">&quot;20&quot;</span>)</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;7688167781598943035023813337019904732&quot;</span>, <span class="st">&quot;41&quot;</span>)</span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;2032075902729233234129146823006063388&quot;</span>, <span class="st">&quot;79&quot;</span>)</span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;8323636570846582397534533&quot;</span>, <span class="st">&quot;44&quot;</span>)</span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;2142555257761672319599209190604843&quot;</span>, <span class="st">&quot;41&quot;</span>)</span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;06424633785085474133925235&quot;</span>, <span class="st">&quot;51&quot;</span>)</span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;503144400846933212134&quot;</span>, <span class="st">&quot;21&quot;</span>)</span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;1204706243676306476295999864&quot;</span>, <span class="st">&quot;21&quot;</span>)</span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;050527640248767717738306306596466224&quot;</span>, <span class="st">&quot;29&quot;</span>)</span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;5926294098216193922825&quot;</span>, <span class="st">&quot;65&quot;</span>)</span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;655589141599534035&quot;</span>, <span class="st">&quot;29&quot;</span>)</span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;7411279689677738&quot;</span>, <span class="st">&quot;34&quot;</span>)</span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a>  , (<span class="st">&quot;268131111165754619136819109839402&quot;</span>, <span class="st">&quot;102&quot;</span>)</span>
+<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a>  ]</span></code></pre></div>
+<p><code>stack runghc</code> で走らせると．</p>
+<pre><code>$ stack runghc WalterTowers.hs
+True</code></pre>
+<h2 id="おしまい">おしまい</h2>
+<p>こういうのを自分で思いつけるようになりたいね...</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

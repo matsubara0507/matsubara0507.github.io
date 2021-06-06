@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="IHaskell on Docker on Arukas" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <meta property="og:image" content="/images//assets/ihaskell-arukas/local.jpg" />
+<title>IHaskell on Docker on Arukas</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">IHaskell on Docker on Arukas</h1>
+            </header>
+            <div class="post-content">
+              <p><a href="http://www.adventar.org/calendars/1572">IGGG アドベントカレンダー 2016</a> 6日目の記事です．</p>
+<p>やっと手に入れた Arukas のアカウント使って簡易的なテストをしました（注意：Arukas はサービス終了してサイトも無くなっています）．</p>
+<p>タイトル通り，使ったコンテナは <a href="https://github.com/gibiansky/IHaskell">IHaskell</a> です．</p>
+<p>結論を先に言うと，結局 Arukas ではうまくいってません． しかし，ローカルで試したところうまく行きました． サービスが重いせいかもしれませんが，今後うまくいったら追記します．</p>
+<h2 id="arukas">Arukas</h2>
+<p>Arukas とはさくらインターネットさんが運営する Web サービスの一つで，Docker コンテナ専用のホスティングサービスです．</p>
+<p>Docker とは任意の用途に特化させた軽量な仮想環境(コンテナ)という感じのモノです． 自分も触り始めたばっかでちっっっとも詳しくないので自分でググって調べてください．</p>
+<p>現在 Arukas はまだ試験運用中(β版)であり，そのため3月までコンテナを10個まで無償で作成できます．</p>
+<p>10月中旬位に登録ユーザーが予想以上になったため，<a href="https://twitter.com/arukas_io/status/788314127684898817">一時的に新規ユーザー登録を停止</a>していましたが，11月末日に再開始されました．</p>
+<p>どうやら，以前にも停止していた(ニュースのリンクを張っていたがリンク切れになった...)みたいなので，新規登録はお早めに．</p>
+<h2 id="ihaskell">IHaskell</h2>
+<p>IHaskell とは <a href="https://ipython.org/">IPython</a> で有名な Jupyter Notebook 上で動作する Haskell のことです． IPython は強力でインタラクティブな Python の実行環境です．</p>
+<p>コッチの方も自分はちっっっとも詳しくないのでググってみてください．</p>
+<p>試しに，公式のデモを使ってみるのも良いのかもしれません <a href="https://try.jupyter.org">try.jupyter.org</a> ．</p>
+<h2 id="アプリケーションを作成">アプリケーションを作成</h2>
+<p>アカウント登録したら，アプリを新しく作成をします．</p>
+<p><img src="/assets/ihaskell-arukas/new_app.jpg" /></p>
+<p>のように設定しました． (エンドポイントを指定しない場合ランダムに生成される)</p>
+<p>現状，Arukas は Docker Hub に公開されているパブリックなコンテナしか Docker イメージしか使えない点に注意です．</p>
+<p>今後，他の方法も可能になるかはわかりません．</p>
+<p>なので使い方としては，完成したモノをアップロードするために使うべきなんですかね． テストは別の環境で行って．</p>
+<p>あとは，<code>Apps</code> のところの今作ったアプリ名をクリックして，<code>デプロイ</code> (起動) を押し，<code>Endpoint</code> の URL にアクセスすれば良い．</p>
+<p><img src="/assets/ihaskell-arukas/home.jpg" /></p>
+<h2 id="テスト">テスト</h2>
+<p>適当に有名な <a href="https://ja.wikipedia.org/wiki/Fizz_Buzz">FizzBuzz</a> プログラムでも実行してみます．</p>
+<p>全体のコードはこんな感じ．</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Control.Monad</span> (guard)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.Maybe</span> (fromMaybe)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.Monoid</span> ((&lt;&gt;))</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ot">fizzbuzz ::</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">String</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>fizzbuzz <span class="ot">=</span> fromMaybe <span class="op">.</span> <span class="fu">show</span> <span class="op">&lt;*&gt;</span> <span class="dv">3</span> <span class="op">~&gt;</span> <span class="st">&quot;Fizz&quot;</span> <span class="op">&lt;&gt;</span> <span class="dv">5</span> <span class="op">~&gt;</span> <span class="st">&quot;Buzz&quot;</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    (d <span class="op">~&gt;</span> s) n <span class="ot">=</span> s <span class="op">&lt;$</span> guard (n <span class="ot">`mod`</span> d <span class="op">==</span> <span class="dv">0</span>)</span></code></pre></div>
+<p><a href="https://www.reddit.com/r/haskell/comments/2cum9p/i_did_a_haskell_fizzbuzz/">ココ</a>より参照した(自分は解説しません)．</p>
+<p>これを Jupyter に書き加えて実行．</p>
+<p><img src="/assets/ihaskell-arukas/error.jpg" /></p>
+<p>え，エラー？</p>
+<p>IPython (2系) の方ではうまくいくのに....</p>
+<p>ローカルでやってみた．</p>
+<p><img src="/assets/ihaskell-arukas/local.jpg" /></p>
+<p>うまくいった． なかなか遅いが，一応動く．</p>
+<p>Arukas の方はときおりコンテナのデプロイすらうまくいかない(時間がめちゃくちゃかかる)ようになったので，向こうの負荷がひどいのかも．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>結果，うまくいかなかったという話． カレンダー用にとはいえ，手抜きですいません． 前述したとおり，うまくいったら追記します．</p>
+<p>ホントは Arukas を LINE Bot に使おうかと思ったけど，別の案を考えたほうがよさそうだなぁ．</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

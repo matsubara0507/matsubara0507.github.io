@@ -1,0 +1,39 @@
+name:                matsubara0507-ghpages
+version:             1.0.0
+github:              "matsubara0507/matsubara0507.github.io"
+license:             MIT
+author:              "MATSUBARA Nobutada"
+copyright:           "2021 MATSUBARA Nobutada"
+category:            Web
+
+extra-source-files:
+- README.md
+- CHANGELOG.md
+
+ghc-options:
+- -Wall
+- -Wcompat
+- -Wincomplete-record-updates
+- -Wincomplete-uni-patterns
+- -Wredundant-constraints
+
+dependencies:
+- aeson
+- base >= 4.7 && < 5
+- binary
+- constraints
+- containers
+- extensible
+- microlens
+- mustache
+- shake
+- skylighting
+- slick
+- text
+- time
+- unordered-containers
+
+executables:
+  build-site:
+    main: Main.hs
+    source-dirs: app

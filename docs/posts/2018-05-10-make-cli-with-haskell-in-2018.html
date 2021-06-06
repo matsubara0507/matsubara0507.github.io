@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="オレ的 Haskell で CLI を作る方法 2018" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>オレ的 Haskell で CLI を作る方法 2018</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">オレ的 Haskell で CLI を作る方法 2018</h1>
+            </header>
+            <div class="post-content">
+              <p>現在 <a href="https://github.com/matsubara0507/taskpad">TaskPad</a> という簡易的なタスク管理(編集)ツールを Haskell で作っていて，少し CLI を作るうえでのオレ的ノウハウが溜まったのでメモっとく．</p>
+<h2 id="taskpad">TaskPad</h2>
+<p>先に，何を作ってるかを書いておく． まだ完成していないが，気持ちは次のような Yaml ファイルを編集して自身のタスク管理をしようかなと考えている．</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">memo</span><span class="kw">:</span><span class="at"> </span><span class="kw">[]</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tasks</span><span class="kw">:</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">1</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">done</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">children</span><span class="kw">:</span><span class="at"> </span><span class="kw">[]</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> hello</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">2</span><span class="kw">:</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">done</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">children</span><span class="kw">:</span><span class="at"> </span><span class="kw">[]</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> world</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">date</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;20180504&#39;</span></span></code></pre></div>
+<p>現状できている CLI は次のような感じ</p>
+<pre><code>$ taskpad --help
+taskpad - operate daily tasks
+
+Usage: taskpad [-v|--verbose] [-d|--date DATE] COMMAND [--version]
+
+Available options:
+  -v,--verbose             Enable verbose mode: verbosity level &quot;debug&quot;
+  -d,--date DATE           Task&#39;s date
+  --version                Show version
+  -h,--help                Show this help text
+
+Available commands:
+  new                      Create a new task file. Note: if don&#39;t use --date
+                           option then use today&#39;s date.
+  add                      Add Task
+  done                     Done Task
+  tasks                    Show Tasks</code></pre>
+<p><code>taskpad new</code> で Yaml ファイルを生成し，<code>taskpad add "hoge"</code> "hoge" というタスクを追加し，<code>taskpad done 1</code> で1番目のタスクを完了したことにし，<code>taskpad tasks</code> でタスクの一覧を出力する．</p>
+<h2 id="ノウハウ">ノウハウ？</h2>
+<p>たぶん他ではあんまり書いてない，いくつかのことを書いておく．</p>
+<ul>
+<li>optparse-applicative + extensible を使った CLI のオプションパーサー
+<ul>
+<li>特にサブコマンドをバリアントで表現しているのが面白い</li>
+</ul></li>
+<li>optparse-applicative でバージョンを表示</li>
+<li>バリアントと型クラスを用いた分岐</li>
+<li>rio + extensible で大域変数</li>
+<li>rio を用いてロギング</li>
+</ul>
+<p>オプションパーサーに <a href="https://hackage.haskell.org/package/optparse-applicative">optparse-applicative</a> を用いている． オプションパーサーには <a href="https://hackage.haskell.org/package/optparse-simple">optparse-simple</a> や <a href="https://hackage.haskell.org/package/optparse-generic">optparse-generics</a> など他にもいくつかあるが，サブコマンドのような多少込み入ったコトをしようとすると optparse-applicative が欲しくなる． <a href="https://hackage.haskell.org/package/rio">rio</a> ライブラリは，なんとなく最近使っている alt. Prelude ライブラリ(詳しくは<a href="https://github.com/commercialhaskell/rio#readme">本家の README</a> か<a href="https://matsubara0507.github.io/posts/2018-04-13-try-rio-1.html">前の僕の記事</a>を読んで)． <a href="https://hackage.haskell.org/package/extensible">extensible</a> は Haskell の残念なレコード構文や直和型の代わりに，拡張可能なレコード・バリアント型を提供してくれる面白いパッケージだ．</p>
+<h3 id="import-と言語拡張">import と言語拡張</h3>
+<p>extensible はかなり言語拡張を用いる． 以降では，めんどくさいので <code>import</code> も含め明示的に扱わない． 以下のコードが先頭にくっついてるとビルドはできるはずだ(たぶん，試してない)．</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE DataKinds             #-}</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE FlexibleContexts      #-}</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE MultiParamTypeClasses #-}</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE OverloadedLabels      #-}</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE TemplateHaskell       #-}</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE TypeApplications      #-}</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE TypeFamilies          #-}</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE TypeOperators         #-}</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span>           <span class="dt">RIO</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">RIO.Text</span>          <span class="kw">as</span> <span class="dt">Text</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span>           <span class="dt">RIO.Time</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span>           <span class="dt">Data.Extensible</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span>           <span class="dt">Data.Functor.Identity</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span>           <span class="dt">Data.Proxy</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span>           <span class="dt">GHC.TypeLits</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span>           <span class="dt">Options.Applicative</span></span></code></pre></div>
+<h3 id="extensible-で-optparse-applicative">extensible で optparse-applicative</h3>
+<p>少しだけ <code>optparse-applicative</code> について説明しておく． optparse-applicative は CLI オプションをパースして任意の型にマッピングしてくれる． 主に次のようにして用いる．</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>main <span class="ot">=</span> run <span class="op">=&lt;&lt;</span> execParser opts</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    opts <span class="ot">=</span> info (options <span class="op">&lt;**&gt;</span> helper)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>         <span class="op">$</span> fullDesc</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>        <span class="op">&lt;&gt;</span> header <span class="st">&quot;taskpad - operate daily tasks&quot;</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="ot">options ::</span> <span class="dt">Parser</span> <span class="dt">Options</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>options <span class="ot">=</span> <span class="fu">undefined</span></span></code></pre></div>
+<p><a href="http://hackage.haskell.org/package/optparse-applicative-0.14.2.0/docs/Options-Applicative.html#v:execParser"><code>execParser</code></a> 関数は <code>ParserInfo a -&gt; IO a</code> という型を持つ． <a href="http://hackage.haskell.org/package/optparse-applicative-0.14.2.0/docs/Options-Applicative.html#v:helper"><code>helper :: Parser (a -&gt; a)</code></a> は <code>--help</code> オプションを与えてくれる関数だ． <code>info</code> 関数と <code>fullDesc</code> や <code>header</code> により，<code>Parser a</code> 型のパーサーに対し <code>--help</code> で出力する情報を追加して <code>ParserInfo a</code> 型に変換する．</p>
+<h4 id="型の定義">型の定義</h4>
+<p><code>extensible</code> で <code>optparse-applicative</code> を使うとは即ち，任意の型，ここでいう <code>Options</code> 型が拡張可能レコードや拡張可能バリアントであるというシチュエーションだ． 今回は <code>Options</code> 型をまずは次のように定義した．</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Options</span> <span class="ot">=</span> <span class="dt">Record</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  &#39;[ <span class="st">&quot;verbose&quot;</span> <span class="op">&gt;:</span> <span class="dt">Bool</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;date&quot;</span>    <span class="op">&gt;:</span> <span class="dt">Maybe</span> <span class="dt">Date</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;subcmd&quot;</span>  <span class="op">&gt;:</span> <span class="dt">SubCmd</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>   ]</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">SubCmd</span> <span class="ot">=</span> <span class="dt">Variant</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  &#39;[ <span class="st">&quot;new&quot;</span>   <span class="op">&gt;:</span> ()</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;add&quot;</span>   <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;done&quot;</span>  <span class="op">&gt;:</span> <span class="dt">Int</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;tasks&quot;</span> <span class="op">&gt;:</span> ()</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>   ]</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Date</span> <span class="ot">=</span> <span class="dt">Text</span></span></code></pre></div>
+<p><code>SubCmd</code> 型が拡張可能なバリアント型だ． ちなみに，Haskell のプリミティブな代数型データ構造で記述すると以下のようになる．</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Options</span> <span class="ot">=</span> <span class="dt">Options</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  {<span class="ot"> verbose ::</span> <span class="dt">Bool</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> date    ::</span> <span class="dt">Maybe</span> <span class="dt">Date</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> subcmd  ::</span> <span class="dt">SubCmd</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">SubCmd</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">New</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">Add</span> <span class="dt">Text</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">Done</span> <span class="dt">Int</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">Tasks</span></span></code></pre></div>
+<p>自分的に，extensible を使う利点は3つある．</p>
+<ol>
+<li>フィールド名と関数名の名前空間が別なので衝突が無い</li>
+<li><code>type</code> 宣言によりレコードに対しいちいち型クラスのインスタンスを定義する必要が無い(既にあるものは)</li>
+<li>型レベルリストによってフィールド全体に対する走査を行える</li>
+</ol>
+<p>逆にデメリットは，(2) にも関係するのだが，<code>type</code> 宣言のためインスタンスの定義が衝突することがしばしばある(これはインスタンスのスコープをコントロールできないという Haskell 全体での問題でもある)．</p>
+<h4 id="拡張可能レコードのパーサー">拡張可能レコードのパーサー</h4>
+<p>まずは拡張可能レコード(<code>Options</code> 型)のパーサーを書いてみる． バリアント(<code>SubCmd</code> 型)のは <code>undefined</code> としておこう． 細かい <code>optparse-applicative</code> の構文は割愛する．</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ot">options ::</span> <span class="dt">Parser</span> <span class="dt">Options</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>options <span class="ot">=</span> hsequence</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">$</span> <span class="op">#</span>verbose <span class="op">&lt;@=&gt;</span> switch (long <span class="st">&quot;verbose&quot;</span> <span class="op">&lt;&gt;</span> short <span class="ch">&#39;v&#39;</span> <span class="op">&lt;&gt;</span> help <span class="st">&quot;Enable verbose mode: verbosity level \&quot;debug\&quot;&quot;</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>   <span class="op">&lt;:</span> <span class="op">#</span>date    <span class="op">&lt;@=&gt;</span> optional (strOption (long <span class="st">&quot;date&quot;</span> <span class="op">&lt;&gt;</span> short <span class="ch">&#39;d&#39;</span> <span class="op">&lt;&gt;</span> metavar <span class="st">&quot;DATE&quot;</span> <span class="op">&lt;&gt;</span> help <span class="st">&quot;Task&#39;s date&quot;</span>))</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>   <span class="op">&lt;:</span> <span class="op">#</span>subcmd  <span class="op">&lt;@=&gt;</span> subcmdParser</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>   <span class="op">&lt;:</span> nil</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="ot">subcmdParser ::</span> <span class="dt">Parser</span> <span class="dt">SubCmd</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>subcmdParser <span class="ot">=</span> <span class="fu">undefined</span></span></code></pre></div>
+<p>拡張可能レコードの値を構築するには <code>#fieldName @= fieldValue</code> というの <code>&lt;:</code> で直列につないでいく(細かくは extensible の解説記事を読んで)． <code>&lt;@=&gt;</code> 演算子はモナドなフィールドの値を持ち上げてくれるバージョンの <code>@=</code> 演算子だ． <code>$</code> の右側は，正確には違うが，次の型のようなイメージとなる．</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>&#39;[ <span class="dt">Parser</span> (<span class="st">&quot;verbose&quot;</span> <span class="op">&gt;:</span> <span class="dt">Bool</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a> , <span class="dt">Parser</span> (<span class="st">&quot;date&quot;</span>    <span class="op">&gt;:</span> <span class="dt">Maybe</span> <span class="dt">Date</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a> , <span class="dt">Parser</span> (<span class="st">&quot;subcmd&quot;</span>  <span class="op">&gt;:</span> <span class="dt">SubCmd</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a> ]</span></code></pre></div>
+<p>Haskeller っであれば，後はリスト型で言う <code>sequence</code> できれば良さそうとわかるだろう． その型レベルリスト版が <code>hsequence</code> だ．</p>
+<h4 id="拡張可能バリアントのパーサー">拡張可能バリアントのパーサー</h4>
+<p>さて，今回の自分的なメインディッシュだ． 仮に通常の直和型であれば次のように書くだろう．</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ot">subcmdParser ::</span> <span class="dt">Parser</span> <span class="dt">SubCmd</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>subcmdParser <span class="ot">=</span> subparser</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">$</span> command <span class="st">&quot;new&quot;</span>   (<span class="fu">pure</span> <span class="dt">New</span> <span class="ot">`withInfo`</span> <span class="st">&quot;...&quot;</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>   <span class="op">&lt;&gt;</span> command <span class="st">&quot;add&quot;</span>   (<span class="dt">Add</span> <span class="op">&lt;$&gt;</span> strArgument (metavar <span class="st">&quot;TEXT&quot;</span>) <span class="ot">`withInfo`</span> <span class="st">&quot;...&quot;</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>   <span class="op">&lt;&gt;</span> command <span class="st">&quot;done&quot;</span>  (<span class="dt">Done</span> <span class="op">&lt;$&gt;</span> argument auto (metavar <span class="st">&quot;ID&quot;</span>) <span class="ot">`withInfo`</span> <span class="st">&quot;...&quot;</span>)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>   <span class="op">&lt;&gt;</span> command <span class="st">&quot;tasks&quot;</span> (<span class="fu">pure</span> <span class="dt">Tasks</span> <span class="ot">`withInfo`</span> <span class="st">&quot;...&quot;</span>)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="ot">withInfo ::</span> <span class="dt">Parser</span> a <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">ParserInfo</span> a</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>withInfo opts <span class="ot">=</span> info (helper <span class="op">&lt;*&gt;</span> opts) <span class="op">.</span> progDesc</span></code></pre></div>
+<p>この程度のサブコマンドならそこまで複雑じゃなく書けた． しかし悲しいことに，例えば <code>command "tasks"</code> の行が無くてもビルドは通る． 即ち，<strong>直和型に対し網羅性を型検査で保証することが出来ない</strong>．</p>
+<h2 id="section"></h2>
+<p>対して extensible のバリアントならどうだろうか． 理想的にはバリアントと同じフィールドを持つレコードの各要素が <code>ParserInfo a</code> であるような値から自動で導出してくれると良い． つまり次のように扱いたい．</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ot">subcmdParser ::</span> <span class="dt">Parser</span> <span class="dt">SubCmd</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>subcmdParser <span class="ot">=</span> variantFrom</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">$</span> <span class="op">#</span>new   <span class="op">@=</span> (<span class="fu">pure</span> () <span class="ot">`withInfo`</span> <span class="st">&quot;Create a new task file. Note: if don&#39;t use --date option then use today&#39;s date.&quot;</span>)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>   <span class="op">&lt;:</span> <span class="op">#</span>add   <span class="op">@=</span> (strArgument (metavar <span class="st">&quot;TEXT&quot;</span> <span class="op">&lt;&gt;</span> help <span class="st">&quot;Task contents&quot;</span>) <span class="ot">`withInfo`</span> <span class="st">&quot;Add Task&quot;</span>)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>   <span class="op">&lt;:</span> <span class="op">#</span>done  <span class="op">@=</span> (argument auto (metavar <span class="st">&quot;ID&quot;</span> <span class="op">&lt;&gt;</span> help <span class="st">&quot;Done task from id&quot;</span>) <span class="ot">`withInfo`</span> <span class="st">&quot;Done Task&quot;</span>)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>   <span class="op">&lt;:</span> <span class="op">#</span>tasks <span class="op">@=</span> (<span class="fu">pure</span> () <span class="ot">`withInfo`</span> <span class="st">&quot;Show Tasks&quot;</span>)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>   <span class="op">&lt;:</span> nil</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="ot">variantFrom ::</span> <span class="dt">RecordOf</span> <span class="dt">ParserInfo</span> xs <span class="ot">-&gt;</span> <span class="dt">Parser</span> (<span class="dt">Variant</span> xs)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>variantFrom <span class="ot">=</span> <span class="fu">undefined</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Wrapper</span> <span class="dt">ParserInfo</span> <span class="kw">where</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">type</span> <span class="dt">Repr</span> <span class="dt">ParserInfo</span> a <span class="ot">=</span> <span class="dt">ParserInfo</span> a</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>  _Wrapper <span class="ot">=</span> <span class="fu">id</span></span></code></pre></div>
+<p><code>@=</code> と <code>&lt;:</code> で構築したレコードが <code>Record = RecordOf Identity</code> ではなく，<code>RecordOf h</code> であるためには <code>h</code> が <a href="https://hackage.haskell.org/package/extensible-0.4.8/docs/Data-Extensible-Wrapper.html#t:Wrapper"><code>Wrapper</code></a> 型クラスのインスタンスである必要がある(というかインスタンスでありさえすれば良い)．</p>
+<h2 id="section-1"></h2>
+<p>さてキモは <code>variantFrom</code> だ． 通常の直和型版の <code>subcmdParser</code> 関数を見ればわかるように，<code>command</code> 関数で作成した値をモノイドで畳み込めばいいので，お察しの通り(??) <a href="https://hackage.haskell.org/package/extensible-0.4.8/docs/Data-Extensible-Product.html#v:hfoldMap"><code>hfoldMap</code></a> を使う． ついでに <code>command</code> の一引数目に渡すサブコマンドの文字列はフィールド名から取得するようにしよう． この場合，インデックスと <code>KnownSymbol</code> 制約を渡す必要があるので <code>hfoldMap</code> の代わりに <code>hfoldMapWithIndexFor</code> 関数を使う．</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ot">variantFrom ::</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Forall</span> (<span class="dt">KeyIs</span> <span class="dt">KnownSymbol</span>) xs <span class="ot">=&gt;</span> <span class="dt">RecordOf</span> <span class="dt">ParserInfo</span> xs <span class="ot">-&gt;</span> <span class="dt">Parser</span> (<span class="dt">Variant</span> xs)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>variantFrom <span class="ot">=</span> subparser <span class="op">.</span> subcmdVariant</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    subcmdVariant <span class="ot">=</span> hfoldMapWithIndexFor (<span class="dt">Proxy</span> <span class="op">@</span> (<span class="dt">KeyIs</span> <span class="dt">KnownSymbol</span>)) <span class="op">$</span> \m x <span class="ot">-&gt;</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>      <span class="kw">let</span> k <span class="ot">=</span> symbolVal (proxyAssocKey m)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>      <span class="kw">in</span> command k ((<span class="dt">EmbedAt</span> m <span class="op">.</span> <span class="dt">Field</span> <span class="op">.</span> <span class="fu">pure</span>) <span class="op">&lt;$&gt;</span> getField x)</span></code></pre></div>
+<p>結果として，<strong>extensible のバリアント版は網羅性を型検査によって検証できるようになった！</strong></p>
+<h3 id="バージョンの表示">バージョンの表示</h3>
+<p>バージョンの表示は他のコマンドと違い，コマンドが間違って(例えばサブコマンドが無い)いても <code>--version</code> という引数さえあれば優先的にバージョンを表示する必要がある． そのようなオプションを追加する場合には <a href="http://hackage.haskell.org/package/optparse-applicative-0.14.2.0/docs/Options-Applicative.html#v:infoOption"><code>infoOption</code></a> 関数を使う．</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Paths_taskpad</span>       <span class="kw">as</span> <span class="dt">Meta</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span>           <span class="dt">Data.Version</span>        (<span class="dt">Version</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Version</span>        <span class="kw">as</span> <span class="dt">Version</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span>           <span class="dt">Development.GitRev</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>main <span class="ot">=</span> run <span class="op">=&lt;&lt;</span> execParser opts</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    opts <span class="ot">=</span> info (options <span class="op">&lt;**&gt;</span> version Meta.version <span class="op">&lt;**&gt;</span> helper)</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>         <span class="op">$</span> <span class="op">...</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="ot">version ::</span> <span class="dt">Version</span> <span class="ot">-&gt;</span> <span class="dt">Parser</span> (a <span class="ot">-&gt;</span> a)</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>version v <span class="ot">=</span> infoOption (showVersion v)</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">$</span> long <span class="st">&quot;version&quot;</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>   <span class="op">&lt;&gt;</span> help <span class="st">&quot;Show version&quot;</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="ot">showVersion ::</span> <span class="dt">Version</span> <span class="ot">-&gt;</span> <span class="dt">String</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>showVersion v <span class="ot">=</span> <span class="fu">unwords</span></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>  [ <span class="st">&quot;Version&quot;</span></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>  , Version.showVersion v <span class="op">++</span> <span class="st">&quot;,&quot;</span></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>  , <span class="st">&quot;Git revision&quot;</span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>  , <span class="op">$</span>(gitHash)</span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>  , <span class="st">&quot;(&quot;</span> <span class="op">++</span> <span class="op">$</span>(gitCommitCount) <span class="op">++</span> <span class="st">&quot; commits)&quot;</span></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>  ]</span></code></pre></div>
+<p><code>&lt;**&gt;</code> 演算子はただの <code>flip (&lt;*&gt;)</code> だ． ちなみに，<code>version</code> と <code>helper</code> の適用順を入れ替えると <code>--help</code> の表示がほんの少しだけ変わる．</p>
+<h3 id="バリアントと型クラス">バリアントと型クラス</h3>
+<p>こっからは <code>run :: Options -&gt; IO ()</code> 関数を考える．</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ot">run ::</span> <span class="dt">Options</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>run opts <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  date <span class="ot">&lt;-</span> <span class="fu">maybe</span> getTodaysDate <span class="fu">pure</span> <span class="op">$</span> opts <span class="op">^.</span> <span class="op">#</span>date</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  matchField</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">undefined</span> <span class="co">-- ???</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    (opts <span class="op">^.</span> <span class="op">#</span>subcmd)</span></code></pre></div>
+<p><code>getTodaysDate</code> 関数は自身で定義しているとする． <code>--date</code> オプションを指定しなかった場合には今日の日付を取得する． 問題はサブコマンドの分岐だ．</p>
+<p>バリアントの分岐には <a href="https://hackage.haskell.org/package/extensible-0.4.8/docs/Data-Extensible-Field.html#v:matchField"><code>matchField</code></a> 関数を用いる． <code>matchField</code> 関数の型は <code>RecordOf (Match h r) xs -&gt; VariantOf h xs -&gt; r</code> となる． 一引数目のレコードと二引数目のバリアントの <code>xs</code> が等しいということから共通のフィールドを期待しているのが分かるだろう． レコード側の各フィールドに，各バリアントに対するフィールドの値を受け取り <code>r</code> 型の返り値の関数を記述するといった具合だ(この部分が <code>Match h r</code> に集約されている)．</p>
+<h2 id="section-2"></h2>
+<p>今回は，このレコードの構築に型クラスを用いる． 以下のような型クラスを定義する．</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">Run</span> kv <span class="kw">where</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="ot">  run&#39; ::</span> proxy kv <span class="ot">-&gt;</span> <span class="dt">Date</span> <span class="ot">-&gt;</span> <span class="dt">AssocValue</span> kv <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</span></code></pre></div>
+<p>実装は置いておいて，インスタンスを与えてみよう．</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Run</span> (<span class="st">&quot;new&quot;</span> <span class="op">&gt;:</span> ()) <span class="kw">where</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  run&#39; _ _ _ <span class="ot">=</span> <span class="fu">undefined</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Run</span> (<span class="st">&quot;add&quot;</span> <span class="op">&gt;:</span> <span class="dt">Text</span>) <span class="kw">where</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  run&#39; _ _ _ <span class="ot">=</span> <span class="fu">undefined</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Run</span> (<span class="st">&quot;done&quot;</span> <span class="op">&gt;:</span> <span class="dt">Int</span>) <span class="kw">where</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>  run&#39; _ _ _ <span class="ot">=</span> <span class="fu">undefined</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Run</span> (<span class="st">&quot;tasks&quot;</span> <span class="op">&gt;:</span> ()) <span class="kw">where</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>  run&#39; _ _ _ <span class="ot">=</span> <span class="fu">undefined</span></span></code></pre></div>
+<p><code>run</code> 関数の <code>matchField</code> 関数の引数は次のようになる．</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ot">run ::</span> <span class="dt">Options</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>run opts <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  date <span class="ot">&lt;-</span> <span class="fu">maybe</span> getTodaysDate <span class="fu">pure</span> <span class="op">$</span> opts <span class="op">^.</span> <span class="op">#</span>date</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  matchField</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    (htabulateFor (<span class="dt">Proxy</span> <span class="op">@</span> <span class="dt">Run</span>) <span class="op">$</span> \m <span class="ot">-&gt;</span> <span class="dt">Field</span> (<span class="dt">Match</span> <span class="op">$</span> run&#39; m date <span class="op">.</span> runIdentity))</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    (opts <span class="op">^.</span> <span class="op">#</span>subcmd)</span></code></pre></div>
+<p><code>Proxy @ Run</code> の <code>@</code> の部分は <code>TypeApplications</code> 拡張のモノだ． フィールドの値は <code>Identity x</code> 型として来るので <code>runIdentity</code> 関数を用いて剥がし，<code>run' m date</code> へと適用する． もちろんサブコマンドのインスタンスを書き忘れていた場合は，ちゃんと型検査に引っかかる！</p>
+<h3 id="rio-で大域変数">rio で大域変数</h3>
+<p><code>rio</code> で大域変数を扱うには <code>RIO env</code> モナドを用いる． 適当なアプリケーションモナドを定義してやろう． 今回はひとつしか大域変数が無いのであんまりメリットを感じないかもしれないが...</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">TaskPad</span> <span class="ot">=</span> <span class="dt">RIO</span> <span class="dt">Env</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Env</span> <span class="ot">=</span> <span class="dt">Record</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  &#39;[ <span class="st">&quot;date&quot;</span> <span class="op">&gt;:</span> <span class="dt">Date</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>   ]</span></code></pre></div>
+<p><code>run</code> 関数も書き直してやる．</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ot">run ::</span> <span class="dt">MonadUnliftIO</span> m <span class="ot">=&gt;</span> <span class="dt">Options</span> <span class="ot">-&gt;</span> m ()</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>run opts <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  date <span class="ot">&lt;-</span> <span class="fu">maybe</span> getTodaysDate <span class="fu">pure</span> <span class="op">$</span> opts <span class="op">^.</span> <span class="op">#</span>date</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> env <span class="ot">=</span> <span class="op">#</span>date   <span class="op">@=</span> date</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>         <span class="op">&lt;:</span> nil</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  runRIO env <span class="op">$</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    matchField</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>      (htabulateFor (<span class="dt">Proxy</span> <span class="op">@</span> <span class="dt">Run</span>) <span class="op">$</span> \m <span class="ot">-&gt;</span> <span class="dt">Field</span> (<span class="dt">Match</span> <span class="op">$</span> run&#39; m <span class="op">.</span> runIdentity))</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>      (opts <span class="op">^.</span> <span class="op">#</span>subcmd)</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">Run</span> kv <span class="kw">where</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="ot">  run&#39; ::</span> proxy kv <span class="ot">-&gt;</span> <span class="dt">AssocValue</span> kv <span class="ot">-&gt;</span> <span class="dt">TaskPad</span> ()</span></code></pre></div>
+<p>試しに <code>new</code> サブコマンドを書いてみよう．</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Run</span> (<span class="st">&quot;new&quot;</span> <span class="op">&gt;:</span> ()) <span class="kw">where</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  run&#39; _ _ <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    date <span class="ot">&lt;-</span> asks (view <span class="op">#</span>date)</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    writeMemo <span class="op">$</span> mkMemo date</span></code></pre></div>
+<p><code>mkMemo</code> や <code>writeMemo</code> については次のように定義している． <code>Memo</code> 型も拡張可能レコードだ． 最近の extensible のアップデートで拡張可能レコードが <code>ToJson</code> 型クラスと <code>FromJson</code> 型クラスのインスタンスになったので，Yaml への変換は特にインスタンスを書くことなく行えるようになった．</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Yaml</span> <span class="kw">as</span> <span class="dt">Y</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Memo</span> <span class="ot">=</span> <span class="dt">Record</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  &#39;[ <span class="st">&quot;date&quot;</span>  <span class="op">&gt;:</span> <span class="dt">Date</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;tasks&quot;</span> <span class="op">&gt;:</span> <span class="dt">Map</span> <span class="dt">Int</span> <span class="dt">Task</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;memo&quot;</span>  <span class="op">&gt;:</span> [<span class="dt">Text</span>]</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>   ]</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Task</span> <span class="ot">=</span> <span class="dt">Record</span> (<span class="dt">TaskFields</span> <span class="op">++</span> &#39;[<span class="st">&quot;children&quot;</span> <span class="op">&gt;:</span> [<span class="dt">SubTask</span>]])</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">SubTask</span> <span class="ot">=</span> <span class="dt">Record</span> <span class="dt">TaskFields</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">TaskFields</span> <span class="ot">=</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>  &#39;[ <span class="st">&quot;name&quot;</span> <span class="op">&gt;:</span> <span class="dt">Text</span></span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;done&quot;</span> <span class="op">&gt;:</span> <span class="dt">Bool</span></span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>   ]</span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a><span class="ot">mkMemo ::</span> <span class="dt">Date</span> <span class="ot">-&gt;</span> <span class="dt">Memo</span></span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>mkMemo date</span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> <span class="op">#</span>date  <span class="op">@=</span> date</span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a>   <span class="op">&lt;:</span> <span class="op">#</span>tasks <span class="op">@=</span> <span class="fu">mempty</span></span>
+<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>   <span class="op">&lt;:</span> <span class="op">#</span>memo  <span class="op">@=</span> <span class="fu">mempty</span></span>
+<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a>   <span class="op">&lt;:</span> nil</span>
+<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a><span class="ot">writeMemo ::</span> <span class="dt">MonadIO</span> m <span class="ot">=&gt;</span> <span class="dt">Memo</span> <span class="ot">-&gt;</span> m ()</span>
+<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a>writeMemo memo <span class="ot">=</span></span>
+<span id="cb20-26"><a href="#cb20-26" aria-hidden="true" tabindex="-1"></a>  writeFileBinary (Text.unpack <span class="op">$</span> memo <span class="op">^.</span> <span class="op">#</span>date <span class="op">&lt;&gt;</span> <span class="st">&quot;.yaml&quot;</span>) (Y.encode memo)</span></code></pre></div>
+<h3 id="rio-でロギング">rio でロギング</h3>
+<p>ロギングは実用アプリケーションの重要な要素だろう． <code>rio</code> であればまぁまぁ簡単に書ける．</p>
+<p>まずは <code>Env</code> にロギング用の関数を足してやる． <a href="https://hackage.haskell.org/package/rio-0.1.2.0/docs/RIO.html#t:LogFunc"><code>LogFunc</code></a> 型や <a href="https://hackage.haskell.org/package/rio-0.1.2.0/docs/RIO.html#t:HasLogFunc"><code>HasLogFunc</code></a> 型クラスは <code>rio</code> ライブラリに定義されているものだ．</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Env</span> <span class="ot">=</span> <span class="dt">Record</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  &#39;[ <span class="st">&quot;date&quot;</span>   <span class="op">&gt;:</span> <span class="dt">Date</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;logger&quot;</span> <span class="op">&gt;:</span> <span class="dt">LogFunc</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>   ]</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">HasLogFunc</span> <span class="dt">Env</span> <span class="kw">where</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>  logFuncL <span class="ot">=</span> lens (view <span class="op">#</span>logger) (\x y <span class="ot">-&gt;</span> x <span class="op">&amp;</span> <span class="op">#</span>logger <span class="ot">`set`</span> y)</span></code></pre></div>
+<p>実はこれだけで <code>TaskPad</code> モナド(すなわち <code>RIO Env</code> モナド)の中で自由にロギング関数を呼べるようになる． 試しに <code>new</code> サブコマンドにロギングを足してみよう． <a href="https://hackage.haskell.org/package/rio-0.1.2.0/docs/RIO.html#v:logInfo"><code>logInfo</code></a> 関数がロギング関数のひとつだ．</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Run</span> (<span class="st">&quot;new&quot;</span> <span class="op">&gt;:</span> ()) <span class="kw">where</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  run&#39; _ _ <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    date <span class="ot">&lt;-</span> asks (view <span class="op">#</span>date)</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    writeMemo <span class="op">$</span> mkMemo date</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>    logInfo (display <span class="op">$</span> <span class="st">&quot;create new task&#39;s file: &quot;</span> <span class="op">&lt;&gt;</span> date <span class="op">&lt;&gt;</span> <span class="st">&quot;.yaml&quot;</span>)</span></code></pre></div>
+<p>あとは <code>run</code> 関数を書き換えよう(<code>Env</code> 型の中身が変わったので)．</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ot">run ::</span> <span class="dt">MonadUnliftIO</span> m <span class="ot">=&gt;</span> <span class="dt">Options</span> <span class="ot">-&gt;</span> m ()</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>run opts <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  date    <span class="ot">&lt;-</span> <span class="fu">maybe</span> getTodaysDate <span class="fu">pure</span> <span class="op">$</span> opts <span class="op">^.</span> <span class="op">#</span>date</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  logOpts <span class="ot">&lt;-</span> logOptionsHandle stdout (opts <span class="op">^.</span> <span class="op">#</span>verbose)</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>  withLogFunc logOpts <span class="op">$</span> \logger <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> env <span class="ot">=</span> <span class="op">#</span>date   <span class="op">@=</span> date</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>           <span class="op">&lt;:</span> <span class="op">#</span>logger <span class="op">@=</span> logger</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>           <span class="op">&lt;:</span> nil</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>    runRIO env <span class="op">$</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>      matchField</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>        (htabulateFor (<span class="dt">Proxy</span> <span class="op">@</span> <span class="dt">Run</span>) <span class="op">$</span> \m <span class="ot">-&gt;</span> <span class="dt">Field</span> (<span class="dt">Match</span> <span class="op">$</span> run&#39; m <span class="op">.</span> runIdentity))</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>        (opts <span class="op">^.</span> <span class="op">#</span>subcmd)</span></code></pre></div>
+<p><code>LogFunc</code> 型の値を得るには <a href="https://hackage.haskell.org/package/rio-0.1.2.0/docs/RIO.html#v:withLogFunc"><code>withLogFunc</code></a> 関数を用いるのが良いだろう． <a href="https://hackage.haskell.org/package/rio-0.1.2.0/docs/RIO.html#t:LogOptions"><code>LogOptions</code></a> 型の値(ここでいう <code>logOpts</code>)を生成する <a href="https://hackage.haskell.org/package/rio-0.1.2.0/docs/RIO.html#v:logOptionsHandle"><code>logOptionsHandle</code></a> 関数の二引数目に <code>True</code> を与えることでログがデバッグ仕様になる(そういえば <code>Options</code> 型には <code>--verbose</code> オプションがあった)． ちなみに，デバッグ仕様のときにだけ表示するロギング関数として <a href="https://hackage.haskell.org/package/rio-0.1.2.0/docs/RIO.html#v:logDebug"><code>logDebug</code></a> 関数がある．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>早く完成させるぞ</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

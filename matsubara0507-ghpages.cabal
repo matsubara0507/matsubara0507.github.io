@@ -1,0 +1,49 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           matsubara0507-ghpages
+version:        1.0.0
+category:       Web
+homepage:       https://github.com/matsubara0507/matsubara0507.github.io#readme
+bug-reports:    https://github.com/matsubara0507/matsubara0507.github.io/issues
+author:         MATSUBARA Nobutada
+maintainer:     MATSUBARA Nobutada
+copyright:      2021 MATSUBARA Nobutada
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/matsubara0507/matsubara0507.github.io
+
+executable build-site
+  main-is: Main.hs
+  other-modules:
+      Orphan
+      Paths_matsubara0507_ghpages
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , binary
+    , constraints
+    , containers
+    , extensible
+    , microlens
+    , mustache
+    , shake
+    , skylighting
+    , slick
+    , text
+    , time
+    , unordered-containers
+  default-language: Haskell2010

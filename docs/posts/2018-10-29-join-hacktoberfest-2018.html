@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Hacktoberfest 2018 なので PR を5つ以上出してみた" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <meta property="og:image" content="/images//assets/join-hacktoberfest-2018/status.png" />
+<title>Hacktoberfest 2018 なので PR を5つ以上出してみた</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">Hacktoberfest 2018 なので PR を5つ以上出してみた</h1>
+            </header>
+            <div class="post-content">
+              <p>去年に引き続き，Hacktoberfest に参加しました． 2017 は PR を4つでしたが，2018 は5つになったようです．</p>
+<p>ちなみに Hacktoberfest がなんなのかや，参加方法については<a href="https://matsubara0507.github.io/posts/2017-10-11-join-hacktoberfest-2017.html">過去記事</a>を見てください（多分変わってなかったはず）．</p>
+<h2 id="マイステータス">マイステータス</h2>
+<p>10月29日時点のステータスはこんな感じ．</p>
+<p><img src="/assets/join-hacktoberfest-2018/status.png" /></p>
+<p>~ここから見れるが，毎年同じリンクを使ってるっぽいので，2019年にこの記事を見にきた人は役に立たないリンクです(笑)~ 2019年になりました。</p>
+<h2 id="出した-pr">出した PR</h2>
+<p>自分のリポジトリに対する PR もカウントされてしまうので，それを除くと4リポジトリ7PRです．</p>
+<ul>
+<li><a href="https://github.com/haskell-jp/makeMistakesToLearnHaskell/pull/10">haskell-jp/makeMistakesToLearnHaskell ＃10</a></li>
+<li><a href="https://github.com/haskell-jp/makeMistakesToLearnHaskell/pull/14">haskell-jp/makeMistakesToLearnHaskell ＃14</a></li>
+<li><a href="https://github.com/haskell-jp/makeMistakesToLearnHaskell/pull/16">haskell-jp/makeMistakesToLearnHaskell ＃16</a></li>
+<li><a href="https://github.com/haskell-jp/makeMistakesToLearnHaskell/pull/30">haskell-jp/makeMistakesToLearnHaskell ＃30</a></li>
+<li><a href="https://github.com/commercialhaskell/stackage/pull/4078">commercialhaskell/stackage ＃4078</a></li>
+<li><a href="https://github.com/Hacktoberfest-2018/Hello-world/pull/2483">Hacktoberfest-2018/Hello-world ＃2483</a></li>
+<li><a href="https://github.com/stackbuilders/dotenv-hs/pull/101">stackbuilders/dotenv-hs ＃101</a></li>
+</ul>
+<p>とはいえ，haskell-jp は僕が活動しているコミュニティだし，stackage は Haskell 版 Gem の登録申請みたいなものだし，Hacktoberfest-2018/Hello-world はただの遊びだし． ちゃんと OSS に出した PR は一つだ...</p>
+<h3 id="haskell-jpmakemistakestolearnhaskell">haskell-jp/makeMistakesToLearnHaskell</h3>
+<p>このリポジトリは，2018/11/10 に開催予定の <a href="https://haskell-jp.connpass.com/event/92617/">Haskell Day 2018</a> の午前中で行われる予定のハンズオンで使うものです． <a href="https://github.com/igrep">igrep</a> 氏がメインで作っており，僕は CI を設定したり，Cabal から hpack に移行したり，コンテンツをいじるより環境周りをいじった．</p>
+<h3 id="commercialhaskellstackage">commercialhaskell/stackage</h3>
+<p>このリポジトリは Haskell のパッケージマネージャーである <a href="https://www.stackage.org/">Stackage</a> の管理リポジトリだ． <a href="http://hackage.haskell.org/">Hackage</a> というのもあるが，Hackage はパッケージストレージで，Stackage は Hackage にある各パッケージのバージョンのリゾルバを提供している（ビルド可能な組み合わせのこと）． 他の言語と異なり，リゾルバがあることで Haskell アプリケーションの作者が常に各パッケージ間のバージョンなどを細かく管理する必要はなく，特定のリゾルバを設定するだけで良い．</p>
+<p>最近，Haskell のデファクトスタンダードなコンパイラ，GHC の最新バージョンである GHC 8.6 がリリースされた． それに伴い，Stackage の Nightly 版が GHC 8.6 へ移行され，多くのパッケージが disable された． 徐々にメジャーパッケージが reenable されたので，<a href="http://hackage.haskell.org/package/servant-kotlin">僕の作成したパッケージ</a>も reenable する PR を送ったのだ．</p>
+<h3 id="hacktoberfest-2018hello-world">Hacktoberfest-2018/Hello-world</h3>
+<p>これは Hacktoberfest が作ったお遊びリポジトリだ（多分）． いろんな言語の <code>Hello, world!</code> と出力するプログラムを集めるリポジトリのようだ．</p>
+<p>僕は Hacktoberfest のグローバルステータスの「Highest Pull Request Count Repos」で見かけた（今は read-only になっているので PR は出せない）． 面白そうだったので，まだ無かった <a href="https://www.egison.org/">Egison</a> のプログラムを PR として出した．</p>
+<pre class="egison"><code>(define $main
+  (lambda [$args]
+    (write &quot;Hello, world!\n&quot;)))</code></pre>
+<p>Egison は江木さんという方が学生のころから作ってるパターンマッチ志向という独特のパラダイムを持つプログラミング言語だ． 全然関係ない話だが，今度<a href="https://connpass.com/event/102061/">ワークショップ</a>も行われる．</p>
+<h3 id="stackbuildersdotenv-hs">stackbuilders/dotenv-hs</h3>
+<p>唯一のまともな OSS な PR． <a href="http://hackage.haskell.org/package/dotenv">dotenv</a> という Haskell パッケージのリポジトリだ． 自分が作ってる <a href="https://github.com/matsubara0507/stack-tpls">CLI ツール</a>に使おうと思って README に書いてある通りに書いて見たら，動かなかったので，その修正 PR を出した．</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Configuration.Dotenv</span> (loadFile, defaultConfig)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>loadFile defaultConfig</span></code></pre></div>
+<p>こう書くと <code>defaultConfig</code> が無いと怒られる．</p>
+<pre class="shell"><code>Main.hs:17:42: error:
+    Module ‘Configuration.Dotenv’ does not export ‘defaultConfig’
+   |                             
+17 | import           Configuration.Dotenv   (defaultConfig, loadFile)
+   |                                          ^^^^^^^^^^^^^</code></pre>
+<p>コードを見に行ったら <code>defaultConfig</code> を Reexport し忘れていたので，Reexport し直す PR を出した． 無事マージされ，最新バージョンでリリースされたので，もし同じバグを踏んだ人がいた場合はバージョン <code>0.6.0.3</code> 以上を試してほしい．</p>
+<h2 id="t-shirt">T-shirt</h2>
+<p>去年と同様に「You've completed the Hacktoberfest challenge!」というメールが届いた（10/27に）． メール本文にあるユニークなリンクを踏んでTシャツのリクエストを出せる． Tシャツのサイズと，自分の住所などを英語で記載するだけだ．</p>
+<p>アメリカ以外はだいたいひと月ほどで届くらしい． ちなみに，去年は12月20日ぐらいに届いてた．</p>
+<h3 id="おしまい">おしまい</h3>
+<p>あんまり OSS っぽい PR を出せなくて残念...</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="詳解 elm/url !!" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>詳解 elm/url !!</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">詳解 elm/url !!</h1>
+            </header>
+            <div class="post-content">
+              <p>本記事は <a href="https://qiita.com/advent-calendar/2018/elm">Elm Advent Calendar 2018</a> の11日目の記事です． elm-jp の Discord で突如無茶振りされたので頑張ります．</p>
+<h2 id="elmurl">elm/url</h2>
+<p><a href="https://package.elm-lang.org/packages/elm/url/1.0.0/">elm/url</a> は Elm 0.19 で刷新されたパッケージ群にしれっと混ざってきた URL に関するパッケージ． <a href="https://package.elm-lang.org/packages/elm/browser/latest/Browser#application">Browser.application</a> でも使われているのでみなさんも頑張って使えるようになりましょう．</p>
+<p>ちなみに本記事では ver1.0.0 の elm/url を想定している．</p>
+<h2 id="url-の型">Url の型</h2>
+<p>こんな風に定義されている:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Url</span> <span class="op">=</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    { <span class="fu">protocol</span> : <span class="dt">Protocol</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">host</span> : <span class="dt">String</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">port_</span> : <span class="dt">Maybe</span> <span class="dt">Int</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">path</span> : <span class="dt">String</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">query</span> : <span class="dt">Maybe</span> <span class="dt">String</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">fragment</span> : <span class="dt">Maybe</span> <span class="dt">String</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Protocol</span> <span class="op">=</span> <span class="dt">Http</span> <span class="op">|</span> <span class="dt">Https</span></span></code></pre></div>
+<p>超絶わかりやすい ASCII アートまでありエヴァン様神って感じ:</p>
+<pre><code>  https://example.com:8042/over/there?name=ferret#nose
+  \___/   \______________/\_________/ \_________/ \__/
+    |            |            |            |        |
+  scheme     authority       path        query   fragment</code></pre>
+<p><code>host</code> は <code>example.com</code> の部分で <code>port_</code> は <code>8042</code> の部分． 試しに REPL で <code>Url.fromString</code> してみよう:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> <span class="kw">import</span> <span class="dt">Url</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> <span class="dt">Url</span><span class="op">.</span><span class="fu">fromString</span> <span class="st">&quot;https://example.com:8042/over/there?name=ferret#nose&quot;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="dt">Just</span> { <span class="fu">fragment</span> <span class="op">=</span> <span class="dt">Just</span> <span class="st">&quot;nose&quot;</span><span class="op">,</span> <span class="fu">host</span> <span class="op">=</span> <span class="st">&quot;example.com&quot;</span><span class="op">,</span> <span class="fu">path</span> <span class="op">=</span> <span class="st">&quot;/over/there&quot;</span><span class="op">,</span> <span class="fu">port_</span> <span class="op">=</span> <span class="dt">Just</span> <span class="dv">8042</span><span class="op">,</span> <span class="fu">protocol</span> <span class="op">=</span> <span class="dt">Https</span><span class="op">,</span> <span class="fu">query</span> <span class="op">=</span> <span class="dt">Just</span> <span class="st">&quot;name=ferret&quot;</span> }</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    : <span class="dt">Maybe</span> <span class="dt">Url</span><span class="op">.</span><span class="dt">Url</span></span></code></pre></div>
+<h2 id="urlparser-の使い方">Url.Parser の使い方</h2>
+<p>さて，ここからが本番． <code>Url.Parser</code> モジュールを利用して <code>Browser.application</code> などから受け取った URL をパースして，任意の型に変換するパーサーを記述する．</p>
+<h3 id="パーサーの例">パーサーの例</h3>
+<p>次のような型にパースするパーサーを記述する:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Post</span> <span class="op">=</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  { <span class="fu">id</span> : <span class="dt">Int</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">,</span> <span class="fu">name</span> : <span class="dt">Maybe</span> <span class="dt">String</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div>
+<p>入力には <code>http://localhost/hoge/1234?name=fuga</code> URL というのを想定している．</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Url</span><span class="op">.</span><span class="dt">Parser</span> <span class="kw">as</span> <span class="dt">Url</span> <span class="kw">exposing</span> ((<span class="op">&lt;/&gt;</span>)<span class="op">,</span> (<span class="op">&lt;?&gt;</span>))</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Url</span><span class="op">.</span><span class="dt">Parser</span><span class="op">.</span><span class="dt">Query</span> <span class="kw">as</span> <span class="dt">Query</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="fu">parser1</span> : <span class="dt">Url</span><span class="op">.</span><span class="dt">Parser</span> (<span class="dt">Post</span> <span class="op">-&gt;</span> <span class="fu">a</span>) <span class="fu">a</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="fu">parser1</span> <span class="op">=</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Url</span><span class="op">.</span><span class="fu">map</span> <span class="dt">Post</span> (<span class="dt">Url</span><span class="op">.</span><span class="fu">s</span> <span class="st">&quot;hoge&quot;</span> <span class="op">&lt;/&gt;</span> <span class="dt">Url</span><span class="op">.</span><span class="fu">string</span> <span class="op">&lt;?&gt;</span> <span class="dt">Query</span><span class="op">.</span><span class="fu">string</span> <span class="st">&quot;name&quot;</span>)</span></code></pre></div>
+<p>これを使ってみると:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> <span class="dt">Url</span><span class="op">.</span><span class="fu">fromString</span> <span class="st">&quot;http://localhost/hoge/1234?name=fuga&quot;</span> <span class="op">|&gt;</span> <span class="dt">Maybe</span><span class="op">.</span><span class="fu">andThen</span> (<span class="dt">Url</span><span class="op">.</span><span class="fu">parse</span> <span class="fu">parser1</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="dt">Just</span> { <span class="fu">id</span> <span class="op">=</span> <span class="dv">1234</span><span class="op">,</span> <span class="fu">name</span> <span class="op">=</span> <span class="dt">Just</span> <span class="st">&quot;fuga&quot;</span> }</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    : <span class="dt">Maybe</span> <span class="dt">Post</span></span></code></pre></div>
+<h3 id="基本的な関数と型">基本的な関数と型</h3>
+<p>まずは肝となる <code>Url.parse</code> 関数の型を見てみる:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">parse</span> : <span class="dt">Parser</span> (<span class="fu">a</span> <span class="op">-&gt;</span> <span class="fu">a</span>) <span class="fu">a</span> <span class="op">-&gt;</span> <span class="dt">Url</span> <span class="op">-&gt;</span> <span class="dt">Maybe</span> <span class="fu">a</span></span></code></pre></div>
+<p><code>Parser a b</code> というのがパーサーの型だ(<code>a</code> と <code>b</code> が何を意味しているかは後述，無論 <code>a</code> と <code>b</code> が同じでもいい)． <code>Parser (a -&gt; a) a</code> という型(この <code>a</code> は全て同じ型)のパーサーを与えて <code>Url</code> という入力を食わせることで <code>Maybe a</code> という結果を受け取れる． 途中でパース失敗した場合は <code>Nothing</code> が返り，成功すると <code>Just a</code> の値が返る．</p>
+<h2 id="section"></h2>
+<p>次のような関数を組み合わせて，パーサーを構築する:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">string</span> : <span class="dt">Parser</span> (<span class="dt">String</span> <span class="op">-&gt;</span> <span class="fu">a</span>) <span class="fu">a</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">int</span>    : <span class="dt">Parser</span> (<span class="dt">Int</span> <span class="op">-&gt;</span> <span class="fu">a</span>) <span class="fu">a</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">s</span>      : <span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> <span class="fu">a</span> <span class="fu">a</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">top</span>    : <span class="dt">Parser</span> <span class="fu">a</span> <span class="fu">a</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>(<span class="op">&lt;/&gt;</span>)  : <span class="dt">Parser</span> <span class="fu">a</span> <span class="fu">b</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> <span class="fu">b</span> <span class="fu">c</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> <span class="fu">a</span> <span class="fu">c</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span>    : <span class="fu">a</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> <span class="fu">a</span> <span class="fu">b</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> (<span class="fu">b</span> <span class="op">-&gt;</span> <span class="fu">c</span>) <span class="fu">c</span></span></code></pre></div>
+<p><code>Parser</code> の型が <code>Parser a b</code> の場合と <code>Parser (a -&gt; b) b</code> の場合の2パターンがあることに気づいただろうか？ <code>string</code> や <code>int</code> のような <code>(a -&gt; b)</code> のようなパーサーの場合は， <code>a</code> の部分がパース結果の型と考えられる． 対して <code>s</code> や <code>top</code> のような関数は入力(<code>Url</code>)を消費するだけでパース結果の型(<code>parse</code> の <code>Maybe a</code> の <code>a</code> の部分)に影響を与えない． そして <code>(&lt;/&gt;)</code> が URL の区切り文字(<code>/</code>) である．</p>
+<h2 id="section-1"></h2>
+<p>試しにいくつか組み合わせてみよう:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> <span class="fu">parser2</span> <span class="op">=</span> <span class="dt">Url</span><span class="op">.</span><span class="fu">s</span> <span class="st">&quot;hoge&quot;</span> <span class="op">&lt;/&gt;</span> <span class="dt">Url</span><span class="op">.</span><span class="fu">string</span> <span class="op">&lt;/&gt;</span> <span class="dt">Url</span><span class="op">.</span><span class="fu">int</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="dt">Parser</span> <span class="op">&lt;</span><span class="fu">function</span><span class="op">&gt;</span> : <span class="dt">Url</span><span class="op">.</span><span class="dt">Parser</span> (<span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">Int</span> <span class="op">-&gt;</span> <span class="fu">c</span>) <span class="fu">c</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> <span class="fu">parser3</span> <span class="op">=</span> <span class="fu">parser2</span> <span class="op">&lt;/&gt;</span> <span class="dt">Url</span><span class="op">.</span><span class="fu">int</span> <span class="op">&lt;/&gt;</span> <span class="dt">Url</span><span class="op">.</span><span class="fu">top</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="dt">Parser</span> <span class="op">&lt;</span><span class="fu">function</span><span class="op">&gt;</span> : <span class="dt">Url</span><span class="op">.</span><span class="dt">Parser</span> (<span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">Int</span> <span class="op">-&gt;</span> <span class="dt">Int</span> <span class="op">-&gt;</span> <span class="fu">c</span>) <span class="fu">c</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> <span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Hoge1</span> <span class="op">=</span> { <span class="fu">hoge1</span> : <span class="dt">String</span><span class="op">,</span> <span class="fu">hoge2</span> : <span class="dt">Int</span><span class="op">,</span> <span class="fu">hoge3</span> : <span class="dt">Int</span> }</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> <span class="fu">parser4</span> <span class="op">=</span> <span class="dt">Url</span><span class="op">.</span><span class="fu">map</span> <span class="dt">Hoge1</span> <span class="fu">parser3</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="dt">Parser</span> <span class="op">&lt;</span><span class="fu">function</span><span class="op">&gt;</span> : <span class="dt">Url</span><span class="op">.</span><span class="dt">Parser</span> (<span class="dt">Hoge1</span> <span class="op">-&gt;</span> <span class="fu">c</span>) <span class="fu">c</span></span></code></pre></div>
+<p>このように <code>&lt;/&gt;</code> でパーサーを連結することで <code>Parser a b</code> の <code>a</code> の部分がどんどん伸びてくる． ちなみに，<code>top</code> はURLの末尾かどうかのチェックするパーサーだ:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> <span class="kw">type</span> <span class="dt">Hoge2</span> <span class="op">=</span> <span class="dt">Hoge2</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> <span class="dt">Url</span><span class="op">.</span><span class="fu">fromString</span> <span class="st">&quot;http://localhost/&quot;</span> <span class="op">|&gt;</span> <span class="dt">Maybe</span><span class="op">.</span><span class="fu">andThen</span> (<span class="dt">Url</span><span class="op">.</span><span class="fu">parse</span> (<span class="dt">Url</span><span class="op">.</span><span class="fu">map</span> <span class="dt">Hoge2</span> <span class="dt">Url</span><span class="op">.</span><span class="fu">top</span>))</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="dt">Just</span> <span class="dt">Hoge2</span> : <span class="dt">Maybe</span> <span class="dt">Hoge2</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> <span class="dt">Url</span><span class="op">.</span><span class="fu">fromString</span> <span class="st">&quot;http://localhost/1&quot;</span> <span class="op">|&gt;</span> <span class="dt">Maybe</span><span class="op">.</span><span class="fu">andThen</span> (<span class="dt">Url</span><span class="op">.</span><span class="fu">parse</span> (<span class="dt">Url</span><span class="op">.</span><span class="fu">map</span> <span class="dt">Hoge2</span> <span class="dt">Url</span><span class="op">.</span><span class="fu">top</span>))</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="dt">Nothing</span> : <span class="dt">Maybe</span> <span class="dt">Hoge2</span></span></code></pre></div>
+<h2 id="urlparserquery-の使い方">Url.Parser.Query の使い方</h2>
+<p><code>Parser a b</code> の <code>b</code> 側が仕事をするのはクエリに関するパーサーがある場合だ． なので次にクエリのパーサーを見てみる． 便宜上以降ではクエリの型や関数には <code>Query</code> を付けるようにする．</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(<span class="op">&lt;?&gt;</span>)  : <span class="dt">Parser</span> <span class="fu">a</span> (<span class="fu">query</span> <span class="op">-&gt;</span> <span class="fu">b</span>) <span class="op">-&gt;</span> <span class="dt">Query</span><span class="op">.</span><span class="dt">Parser</span> <span class="fu">query</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> <span class="fu">a</span> <span class="fu">b</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">string</span> : <span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">Query</span><span class="op">.</span><span class="dt">Parser</span> (<span class="dt">Maybe</span> <span class="dt">String</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">int</span>    : <span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">Query</span><span class="op">.</span><span class="dt">Parser</span> (<span class="dt">Maybe</span> <span class="dt">Int</span>)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span>    : (<span class="fu">a</span> <span class="op">-&gt;</span> <span class="fu">b</span>) <span class="op">-&gt;</span> <span class="dt">Query</span><span class="op">.</span><span class="dt">Parser</span> <span class="fu">a</span> <span class="op">-&gt;</span> <span class="dt">Query</span><span class="op">.</span><span class="dt">Parser</span> <span class="fu">b</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="fu">map2</span>   : (<span class="fu">a</span> <span class="op">-&gt;</span> <span class="fu">b</span> <span class="op">-&gt;</span> <span class="fu">result</span>) <span class="op">-&gt;</span> <span class="dt">Query</span><span class="op">.</span><span class="dt">Parser</span> <span class="fu">a</span> <span class="op">-&gt;</span> <span class="dt">Query</span><span class="op">.</span><span class="dt">Parser</span> <span class="fu">b</span> <span class="op">-&gt;</span> <span class="dt">Query</span><span class="op">.</span><span class="dt">Parser</span> <span class="fu">result</span></span></code></pre></div>
+<p><code>(&lt;?&gt;)</code> という演算子が Url のパーサーとクエリのパーサーを繋ぐ． クエリのパーサーの型は <code>Parser a</code> と JSON デコーダーのような型と同じ仕組みだ．</p>
+<p><code>map</code> で連結したものを <code>(&lt;?&gt;)</code> で一気に繋げても良いし，<code>(&lt;?&gt;)</code> で一つずつ繋げても良い:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> <span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Fuga1</span> <span class="op">=</span> { <span class="fu">fuga1</span> : <span class="dt">Maybe</span> <span class="dt">String</span><span class="op">,</span> <span class="fu">fuga2</span> : <span class="dt">Maybe</span> <span class="dt">Int</span> }</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> <span class="fu">parser5</span> <span class="op">=</span> <span class="dt">Url</span><span class="op">.</span><span class="fu">top</span> <span class="op">&lt;?&gt;</span> <span class="dt">Query</span><span class="op">.</span><span class="fu">map2</span> <span class="dt">Fuga1</span> (<span class="dt">Query</span><span class="op">.</span><span class="fu">string</span> <span class="st">&quot;fuga1&quot;</span>) (<span class="dt">Query</span><span class="op">.</span><span class="fu">int</span> <span class="st">&quot;fuga2&quot;</span>)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="dt">Parser</span> <span class="op">&lt;</span><span class="fu">function</span><span class="op">&gt;</span> : <span class="dt">Url</span><span class="op">.</span><span class="dt">Parser</span> (<span class="dt">Fuga1</span> <span class="op">-&gt;</span> <span class="fu">b</span>) <span class="fu">b</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> <span class="fu">parser5</span> <span class="op">=</span> <span class="dt">Url</span><span class="op">.</span><span class="fu">map</span> <span class="dt">Fuga1</span> (<span class="dt">Url</span><span class="op">.</span><span class="fu">top</span> <span class="op">&lt;?&gt;</span> <span class="dt">Query</span><span class="op">.</span><span class="fu">string</span> <span class="st">&quot;fuga1&quot;</span> <span class="op">&lt;?&gt;</span> <span class="dt">Query</span><span class="op">.</span><span class="fu">int</span> <span class="st">&quot;fuga2&quot;</span>)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="dt">Parser</span> <span class="op">&lt;</span><span class="fu">function</span><span class="op">&gt;</span> : <span class="dt">Url</span><span class="op">.</span><span class="dt">Parser</span> (<span class="dt">Fuga1</span> <span class="op">-&gt;</span> <span class="fu">c</span>) <span class="fu">c</span></span></code></pre></div>
+<h2 id="fragment">Fragment</h2>
+<p>フラグメントの部分をパースするには <code>fragment</code> 関数を使う:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fragment</span> : (<span class="dt">Maybe</span> <span class="dt">String</span> <span class="op">-&gt;</span> <span class="fu">fragment</span>) <span class="op">-&gt;</span> <span class="dt">Parser</span> (<span class="fu">fragment</span> <span class="op">-&gt;</span> <span class="fu">a</span>) <span class="fu">a</span></span></code></pre></div>
+<p>なんでもよければ <code>identity</code> を使えば良い:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> <span class="fu">parser6</span> <span class="op">=</span> <span class="dt">Url</span><span class="op">.</span><span class="fu">top</span> <span class="op">&lt;/&gt;</span> <span class="dt">Url</span><span class="op">.</span><span class="fu">fragment</span> <span class="fu">identity</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="dt">Parser</span> <span class="op">&lt;</span><span class="fu">function</span><span class="op">&gt;</span> : <span class="dt">Url</span><span class="op">.</span><span class="dt">Parser</span> (<span class="dt">Maybe</span> <span class="dt">String</span> <span class="op">-&gt;</span> <span class="fu">c</span>) <span class="fu">c</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> <span class="dt">Url</span><span class="op">.</span><span class="fu">fromString</span> <span class="st">&quot;http://localhost#abc&quot;</span> <span class="op">|&gt;</span> <span class="dt">Maybe</span><span class="op">.</span><span class="fu">andThen</span> (<span class="dt">Url</span><span class="op">.</span><span class="fu">parse</span> <span class="fu">parser6</span>)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="dt">Just</span> (<span class="dt">Just</span> <span class="st">&quot;abc&quot;</span>) : <span class="dt">Maybe</span> (<span class="dt">Maybe</span> <span class="dt">String</span>)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> <span class="dt">Url</span><span class="op">.</span><span class="fu">fromString</span> <span class="st">&quot;http://localhost&quot;</span> <span class="op">|&gt;</span> <span class="dt">Maybe</span><span class="op">.</span><span class="fu">andThen</span> (<span class="dt">Url</span><span class="op">.</span><span class="fu">parse</span> <span class="fu">parser6</span>)</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="dt">Just</span> <span class="dt">Nothing</span> : <span class="dt">Maybe</span> (<span class="dt">Maybe</span> <span class="dt">String</span>)</span></code></pre></div>
+<h2 id="中身を読んでいく">中身を読んでいく</h2>
+<p>今までの話でなんとなく使い方はわかっただろう． ここからは elm/url の実装について読み解いていく． なので，使い方が分かればもう十分勢の人は以降を読む必要はない．</p>
+<h3 id="余談-参考にしたもの">余談: 参考にしたもの</h3>
+<p><a href="https://github.com/elm/url#related-work">README曰く</a>，<code>Url.Parser</code> の実装の着想は下記の記事によって得たようだ．</p>
+<ul>
+<li><a href="https://chrisdone.com/posts/formatting">Formatting in Haskell</a></li>
+<li><a href="http://rgrinberg.com/posts/primitive-type-safe-routing/">Type Safe Routing - Baby Steps</a></li>
+</ul>
+<p>前者は Haskell の <code>printf</code> のようなフォーマット出力ライブラリで，後者は OCaml のルーティングのライブラリに関する記事．</p>
+<h3 id="パーサーの型">パーサーの型</h3>
+<p>まずは型の中身を見てみる:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Parser</span> <span class="fu">a</span> <span class="fu">b</span> <span class="op">=</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Parser</span> (<span class="dt">State</span> <span class="fu">a</span> <span class="op">-&gt;</span> <span class="dt">List</span> (<span class="dt">State</span> <span class="fu">b</span>))</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">State</span> <span class="fu">value</span> <span class="op">=</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  { <span class="fu">visited</span> : <span class="dt">List</span> <span class="dt">String</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">,</span> <span class="fu">unvisited</span> : <span class="dt">List</span> <span class="dt">String</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  <span class="op">,</span> <span class="fu">params</span> : <span class="dt">Dict</span> <span class="dt">String</span> (<span class="dt">List</span> <span class="dt">String</span>)</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>  <span class="op">,</span> <span class="fu">frag</span> : <span class="dt">Maybe</span> <span class="dt">String</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>  <span class="op">,</span> <span class="fu">value</span> : <span class="fu">value</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div>
+<p><code>State a -&gt; List (State b)</code> というのは関数型パーサー(パーサーコンビネーター)でよくある型だ(<code>Functional Parser</code> や <code>Parser Combinator</code> などで調べると良い)． 入力の状態が <code>State a</code> で出力の状態が <code>State b</code>，出力がリストになっているが <code>Maybe</code> と考えて問題ないはずだ．</p>
+<p><code>Url.parse</code> や簡単なパーサーの中身を見てみればそれぞれのフィールドの意味がわかるはずだ:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">parse</span> : <span class="dt">Parser</span> (<span class="fu">a</span> <span class="op">-&gt;</span> <span class="fu">a</span>) <span class="fu">a</span> <span class="op">-&gt;</span> <span class="dt">Url</span> <span class="op">-&gt;</span> <span class="dt">Maybe</span> <span class="fu">a</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">parse</span> (<span class="dt">Parser</span> <span class="fu">parser</span>) <span class="fu">url</span> <span class="op">=</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">getFirstMatch</span> <span class="op">&lt;|</span> <span class="fu">parser</span> <span class="op">&lt;|</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">State</span> [] (<span class="fu">preparePath</span> <span class="fu">url</span><span class="op">.</span><span class="fu">path</span>) (<span class="fu">prepareQuery</span> <span class="fu">url</span><span class="op">.</span><span class="fu">query</span>) <span class="fu">url</span><span class="op">.</span><span class="fu">fragment</span> <span class="fu">identity</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="fu">getFirstMatch</span> : <span class="dt">List</span> (<span class="dt">State</span> <span class="fu">a</span>) <span class="op">-&gt;</span> <span class="dt">Maybe</span> <span class="fu">a</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="fu">getFirstMatch</span> <span class="fu">states</span> <span class="op">=</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> <span class="fu">states</span> <span class="cf">of</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>    [] <span class="op">-&gt;</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>      <span class="dt">Nothing</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">state</span> <span class="op">::</span> <span class="fu">rest</span> <span class="op">-&gt;</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>      <span class="cf">case</span> <span class="fu">state</span><span class="op">.</span><span class="fu">unvisited</span> <span class="cf">of</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>        [] <span class="op">-&gt;</span></span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>          <span class="dt">Just</span> <span class="fu">state</span><span class="op">.</span><span class="fu">value</span></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>        [<span class="st">&quot;&quot;</span>] <span class="op">-&gt;</span></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>          <span class="dt">Just</span> <span class="fu">state</span><span class="op">.</span><span class="fu">value</span></span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>        <span class="fu">_</span> <span class="op">-&gt;</span></span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>          <span class="fu">getFirstMatch</span> <span class="fu">rest</span></span></code></pre></div>
+<p><code>parse</code> の定義より，<code>unvisited</code> と <code>params</code> と <code>frag</code> はそれぞれパスとクエリとフラグメントを与えているのがわかる． <code>getFirstMatch</code> の定義を見ると，最後に <code>Just state.value</code> をしているので，<code>value</code> フィールドが最終的な結果となる． では <code>visited</code> はなんだろうか？ パーサーの実装を見てみる．</p>
+<h3 id="組み込みのパーサー">組み込みのパーサー</h3>
+<p>例えば <code>Url.string</code> を見てみる:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">string</span> : <span class="dt">Parser</span> (<span class="dt">String</span> <span class="op">-&gt;</span> <span class="fu">a</span>) <span class="fu">a</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">string</span> <span class="op">=</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">custom</span> <span class="st">&quot;STRING&quot;</span> <span class="dt">Just</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="fu">custom</span> : <span class="dt">String</span> <span class="op">-&gt;</span> (<span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">Maybe</span> <span class="fu">a</span>) <span class="op">-&gt;</span> <span class="dt">Parser</span> (<span class="fu">a</span> <span class="op">-&gt;</span> <span class="fu">b</span>) <span class="fu">b</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="fu">custom</span> <span class="fu">tipe</span> <span class="fu">stringToSomething</span> <span class="op">=</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Parser</span> <span class="op">&lt;|</span> \{ <span class="fu">visited</span><span class="op">,</span> <span class="fu">unvisited</span><span class="op">,</span> <span class="fu">params</span><span class="op">,</span> <span class="fu">frag</span><span class="op">,</span> <span class="fu">value</span> } <span class="op">-&gt;</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> <span class="fu">unvisited</span> <span class="cf">of</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>      [] <span class="op">-&gt;</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>        []</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>      <span class="fu">next</span> <span class="op">::</span> <span class="fu">rest</span> <span class="op">-&gt;</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>        <span class="cf">case</span> <span class="fu">stringToSomething</span> <span class="fu">next</span> <span class="cf">of</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>          <span class="dt">Just</span> <span class="fu">nextValue</span> <span class="op">-&gt;</span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>            [ <span class="dt">State</span> (<span class="fu">next</span> <span class="op">::</span> <span class="fu">visited</span>) <span class="fu">rest</span> <span class="fu">params</span> <span class="fu">frag</span> (<span class="fu">value</span> <span class="fu">nextValue</span>) ]</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>          <span class="dt">Nothing</span> <span class="op">-&gt;</span></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>            []</span></code></pre></div>
+<p><code>custom</code> 関数の定義からわかるように，<code>unvisited</code> を入力にして <code>stringToSomething</code> というパーサーを咬ませて，その結果を <code>value</code> に追加し，元の文字列を <code>visited</code> に追加している． すなわち，<code>visited</code> はパースできたパスをためている． しかし，elm/url のコードを探しても <code>visited</code> が使われているところはないので，今の実装では無くても良いフィールドのはずだ(パースエラーをわかりやすくするときに使えそう)．</p>
+<h2 id="section-2"></h2>
+<p>ちなみに，クエリやフラグメントのパーサーは入力が違う(<code>unvisited</code> を使うのではない)だけだ:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">query</span> : <span class="dt">Query</span><span class="op">.</span><span class="dt">Parser</span> <span class="fu">query</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> (<span class="fu">query</span> <span class="op">-&gt;</span> <span class="fu">a</span>) <span class="fu">a</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">query</span> (<span class="dt">Q</span><span class="op">.</span><span class="dt">Parser</span> <span class="fu">queryParser</span>) <span class="op">=</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Parser</span> <span class="op">&lt;|</span> \{ <span class="fu">visited</span><span class="op">,</span> <span class="fu">unvisited</span><span class="op">,</span> <span class="fu">params</span><span class="op">,</span> <span class="fu">frag</span><span class="op">,</span> <span class="fu">value</span> } <span class="op">-&gt;</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    [ <span class="dt">State</span> <span class="fu">visited</span> <span class="fu">unvisited</span> <span class="fu">params</span> <span class="fu">frag</span> (<span class="fu">value</span> (<span class="fu">queryParser</span> <span class="fu">params</span>))</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="fu">fragment</span> : (<span class="dt">Maybe</span> <span class="dt">String</span> <span class="op">-&gt;</span> <span class="fu">fragment</span>) <span class="op">-&gt;</span> <span class="dt">Parser</span> (<span class="fu">fragment</span> <span class="op">-&gt;</span> <span class="fu">a</span>) <span class="fu">a</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="fu">fragment</span> <span class="fu">toFrag</span> <span class="op">=</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Parser</span> <span class="op">&lt;|</span> \{ <span class="fu">visited</span><span class="op">,</span> <span class="fu">unvisited</span><span class="op">,</span> <span class="fu">params</span><span class="op">,</span> <span class="fu">frag</span><span class="op">,</span> <span class="fu">value</span> } <span class="op">-&gt;</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    [ <span class="dt">State</span> <span class="fu">visited</span> <span class="fu">unvisited</span> <span class="fu">params</span> <span class="fu">frag</span> (<span class="fu">value</span> (<span class="fu">toFrag</span> <span class="fu">frag</span>))</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    ]</span></code></pre></div>
+<h3 id="コンビネーター">コンビネーター</h3>
+<p>ちなみに，コンビネーター(<code>(&lt;/&gt;)</code>)の定義も見てみる:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">slash</span> : <span class="dt">Parser</span> <span class="fu">a</span> <span class="fu">b</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> <span class="fu">b</span> <span class="fu">c</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> <span class="fu">a</span> <span class="fu">c</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">slash</span> (<span class="dt">Parser</span> <span class="fu">parseBefore</span>) (<span class="dt">Parser</span> <span class="fu">parseAfter</span>) <span class="op">=</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Parser</span> <span class="op">&lt;|</span> \<span class="fu">state</span> <span class="op">-&gt;</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">List</span><span class="op">.</span><span class="fu">concatMap</span> <span class="fu">parseAfter</span> (<span class="fu">parseBefore</span> <span class="fu">state</span>)</span></code></pre></div>
+<p><code>(&lt;/&gt;)</code> は <code>slash</code> のエイリアスになっている． <code>Parser</code> の型は <code>State a -&gt; [State b]</code> のラップなので，パーサーの連結は <code>concatMap</code> をするだけになっている．</p>
+<p>また，<code>Url.map</code> も見てみる:</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span> : <span class="fu">a</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> <span class="fu">a</span> <span class="fu">b</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> (<span class="fu">b</span> <span class="op">-&gt;</span> <span class="fu">c</span>) <span class="fu">c</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span> <span class="fu">subValue</span> (<span class="dt">Parser</span> <span class="fu">parseArg</span>) <span class="op">=</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Parser</span> <span class="op">&lt;|</span> \{ <span class="fu">visited</span><span class="op">,</span> <span class="fu">unvisited</span><span class="op">,</span> <span class="fu">params</span><span class="op">,</span> <span class="fu">frag</span><span class="op">,</span> <span class="fu">value</span> } <span class="op">-&gt;</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">List</span><span class="op">.</span><span class="fu">map</span> (<span class="fu">mapState</span> <span class="fu">value</span>) <span class="op">&lt;|</span> <span class="fu">parseArg</span> <span class="op">&lt;|</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>      <span class="dt">State</span> <span class="fu">visited</span> <span class="fu">unvisited</span> <span class="fu">params</span> <span class="fu">frag</span> <span class="fu">subValue</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="fu">mapState</span> : (<span class="fu">a</span> <span class="op">-&gt;</span> <span class="fu">b</span>) <span class="op">-&gt;</span> <span class="dt">State</span> <span class="fu">a</span> <span class="op">-&gt;</span> <span class="dt">State</span> <span class="fu">b</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="fu">mapState</span> <span class="fu">func</span> { <span class="fu">visited</span><span class="op">,</span> <span class="fu">unvisited</span><span class="op">,</span> <span class="fu">params</span><span class="op">,</span> <span class="fu">frag</span><span class="op">,</span> <span class="fu">value</span> } <span class="op">=</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">State</span> <span class="fu">visited</span> <span class="fu">unvisited</span> <span class="fu">params</span> <span class="fu">frag</span> (<span class="fu">func</span> <span class="fu">value</span>)</span></code></pre></div>
+<p><code>map</code> を利用する場合，各型変数は次のようになっていることが多いだろう:</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- parseArg : State (x -&gt; y) -&gt; List (State y)</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- value を identity と考えれば良い</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span> : (<span class="fu">x</span> <span class="op">-&gt;</span> <span class="fu">y</span>) <span class="op">-&gt;</span> <span class="dt">Parser</span> (<span class="fu">x</span> <span class="op">-&gt;</span> <span class="fu">y</span>) <span class="fu">y</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> (<span class="fu">y</span> <span class="op">-&gt;</span> <span class="fu">z</span>) <span class="fu">z</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span> <span class="fu">subValue</span> (<span class="dt">Parser</span> <span class="fu">parseArg</span>) <span class="op">=</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Parser</span> <span class="op">&lt;|</span> \{ <span class="fu">visited</span><span class="op">,</span> <span class="fu">unvisited</span><span class="op">,</span> <span class="fu">params</span><span class="op">,</span> <span class="fu">frag</span><span class="op">,</span> <span class="fu">value</span> } <span class="op">-&gt;</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">List</span><span class="op">.</span><span class="fu">map</span> (<span class="fu">mapState</span> <span class="fu">value</span>) <span class="op">&lt;|</span> <span class="fu">parseArg</span> <span class="op">&lt;|</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>      <span class="dt">State</span> <span class="fu">visited</span> <span class="fu">unvisited</span> <span class="fu">params</span> <span class="fu">frag</span> <span class="fu">subValue</span></span></code></pre></div>
+<p>こう考えれば <code>map</code> 関数の定義も読めるはずだ．</p>
+<h2 id="結局">結局</h2>
+<p>最後に <code>Parser a b</code> の各型変数は何を意味して，従来の <code>Parser a</code> 方式のパーサーではなぜダメなのかについて議論する(まぁあくまでも，実際に実装などを読んでの個人的な肌感なんですけど)．</p>
+<h3 id="型変数の意味">型変数の意味</h3>
+<p><code>Parser a b</code> の意味は <code>State a -&gt; List (State b)</code> からわかるように，パーサーの入力の状態に使われる型 <code>a</code> と出力の状態に使われる型 <code>b</code> である． ここで，「使われる」というのが肝で，<code>a</code> それ自体は入力ではない． 入力にせよ，出力にせよ，パーサーが行うのは状態 <code>State r1</code> から <code>State r2</code> への変換だ(ただしそれは失敗するかもしれないので <code>List</code> でラップされている)． <code>State r</code> にとって <code>r</code> は <strong>パースの最終結果</strong> を意味している(変化する状態の最終結果)．</p>
+<p>なので <code>Parser a b</code> のパーサーがあった場合，このパーサーの最終結果は <code>b</code> であり，<code>a</code> は入力の状態が想定している最終結果である． ただし，<code>Parser (String -&gt; b) b</code> というパーサーの場合，<code>b</code> は <code>String</code> でも良く，このパーサーを <code>Url.parse</code> で実行する場合は <code>b = String</code> と推論される．</p>
+<h3 id="parser-a-との違い"><code>Parser a</code> との違い</h3>
+<p>大きな違いは <code>map</code> の振る舞いだ． <code>Parser a</code> の場合，レコード型 <code>Hoge = { hoge1 : Int, hoge2 : String }</code> のパーサーを記述するのには次のように書く:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">intParser</span> : <span class="dt">Parser</span> <span class="dt">Int</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">stringParser</span> : <span class="dt">Parser</span> <span class="dt">String</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="fu">parser1</span> : <span class="dt">Parser</span> <span class="dt">Hoge</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="fu">parser1</span> <span class="op">=</span> <span class="fu">map2</span> <span class="dt">Hoge</span> <span class="fu">intParser</span> <span class="fu">stringParser</span></span></code></pre></div>
+<p>フィールドの個数が3つ4つと増えるたびに，<code>map3</code> <code>map4</code> と作る必要がある． また，parser1 を再利用して <code>Fuga = { hoge1 : Int, hoge2 : String, hoge3 : Int }</code> 型のパーサーを記述することはできない．</p>
+<h2 id="section-3"></h2>
+<p>対して <code>Parser a b</code> の場合は <code>(&lt;/&gt;)</code> を用いて <code>intParser</code> や <code>stringParser</code> をどんどん連結していき，最終的に <code>map</code> をする．</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">parser0</span> : <span class="dt">Parser</span> (<span class="dt">Int</span> <span class="op">-&gt;</span> <span class="dt">String</span>  <span class="op">-&gt;</span> <span class="fu">a</span>) <span class="fu">a</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">parser0</span> <span class="op">=</span> <span class="fu">intParser</span> <span class="op">&lt;/&gt;</span> <span class="fu">stringParser</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="fu">parser1</span> : <span class="dt">Parser</span> (<span class="dt">Hoge</span> <span class="op">-&gt;</span> <span class="fu">a</span>) <span class="fu">a</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="fu">parser1</span> <span class="op">=</span> <span class="fu">map</span> <span class="dt">Hoge</span> <span class="fu">parser0</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="fu">parser2</span> : <span class="dt">Parser</span> (<span class="dt">Fuga</span> <span class="op">-&gt;</span> <span class="fu">a</span>) <span class="fu">a</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a><span class="fu">parser2</span> <span class="op">=</span> <span class="fu">map</span> <span class="dt">Fuga</span> (<span class="fu">parser0</span> <span class="op">&lt;/&gt;</span> <span class="fu">intParser</span>)</span></code></pre></div>
+<p>すなわち利点は:</p>
+<ol>
+<li>引数ごとの <code>map</code> がいらない</li>
+<li><code>(&lt;/&gt;)</code> で繋いだパーサーの再利用性が高い</li>
+</ol>
+<h3 id="applicative-スタイル">Applicative スタイル</h3>
+<p>Elm で一般的かどうかはわからないが，Haskell では一般的な Applicative スタイルというのがある． ちなみに elm/url を Applicative スタイルにしたパッケージは GitHub に揚げてある．</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/elm-url-applicative">matsubara0507/elm-url-applicative - GitHub</a></li>
+</ul>
+<p>Applicative スタイルとは，次のようなコンビネーターを使って関数を構築する:</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span>   : (<span class="fu">a</span> <span class="op">-&gt;</span> <span class="fu">b</span>) <span class="op">-&gt;</span> <span class="dt">Parser</span> <span class="fu">a</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> <span class="fu">b</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="fu">apply</span> : <span class="dt">Parser</span> (<span class="fu">a</span> <span class="op">-&gt;</span> <span class="fu">b</span>) <span class="op">-&gt;</span> <span class="dt">Parser</span> <span class="fu">a</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> <span class="fu">b</span></span></code></pre></div>
+<p>ちなみに，今回の話の流れ上 <code>Parser</code> を用いたが，ここが <code>Maybe</code> だろうと <code>List</code> だろうと同じに扱える． この場合，パーサーの構築は次のようになる:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">parser2</span> : <span class="dt">Parser</span> <span class="dt">Fuga</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="fu">parser2</span> <span class="op">=</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">apply</span> (<span class="fu">apply</span> (<span class="fu">map</span> <span class="dt">Fuga</span> <span class="fu">intParser</span>) <span class="fu">stringParser</span>) <span class="fu">intParser</span></span></code></pre></div>
+<p>Elm 的にはパイプで連結できるので <code>app</code> の引数の順番を変えた方がいいかもしれない．</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">andApply</span> : <span class="dt">Parser</span> <span class="fu">a</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> (<span class="fu">a</span> <span class="op">-&gt;</span> <span class="fu">b</span>) <span class="op">-&gt;</span> <span class="dt">Parser</span> <span class="fu">b</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="fu">parser2</span> : <span class="dt">Parser</span> <span class="dt">Fuga</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="fu">parser2</span> <span class="op">=</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">map</span> <span class="dt">Fuga</span> <span class="fu">intParser</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="fu">andApply</span> <span class="fu">stringParser</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="fu">andApply</span> <span class="fu">intParser</span></span></code></pre></div>
+<p>一見問題なさそうだ． しかし，今回でいう <code>Url.s : String -&gt; Parser a a</code> のような入力を消費するだけで結果に反映しないパーサーがあるとうまく行かない． <code>ignore</code> のようなコンビネーターが必要になる(ちなみに Haskell の Applicative にはもちろんある):</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">s</span> : <span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> ()</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ignore</span> : <span class="dt">Parser</span> <span class="fu">b</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> <span class="fu">a</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> <span class="fu">a</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="fu">parser3</span> : <span class="dt">Parser</span> <span class="dt">Fuga</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="fu">parser3</span> <span class="op">=</span></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">map</span> <span class="dt">Fuga</span> <span class="fu">intParser</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="fu">andApply</span> <span class="fu">stringParser</span></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="fu">ignore</span> (<span class="fu">s</span> <span class="st">&quot;fuga&quot;</span>)</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">|&gt;</span> <span class="fu">andApply</span> <span class="fu">intParser</span></span></code></pre></div>
+<p>ちなみに，再利用の方もうまくいく:</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">parser0</span> : (<span class="dt">Int</span> <span class="op">-&gt;</span> <span class="dt">String</span> <span class="op">-&gt;</span> <span class="fu">a</span>) <span class="op">-&gt;</span> <span class="dt">Parser</span> <span class="fu">a</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="fu">parser0</span> <span class="fu">f</span> <span class="op">=</span> <span class="fu">map</span> <span class="fu">f</span> <span class="fu">intParser</span> <span class="op">|&gt;</span> <span class="fu">andApply</span> <span class="fu">stringParser</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="fu">parser1</span> : <span class="dt">Parser</span> <span class="dt">Hoge</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="fu">parser1</span> <span class="op">=</span> <span class="fu">parser0</span> <span class="dt">Hoge</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="fu">parser2</span> : <span class="dt">Parser</span> <span class="dt">Fuga</span></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="fu">parser2</span> <span class="op">=</span> <span class="fu">parser0</span> <span class="dt">Fuga</span> <span class="op">|&gt;</span> <span class="fu">andApply</span> <span class="fu">intParser</span></span></code></pre></div>
+<p>これで <code>Parser a b</code> の場合と同等の能力を持つはずだ． すなわち，<code>Parser a b</code> と Applicative スタイルは見た目以上の差異はない（はず）．</p>
+<h1 id="おしまい">おしまい</h1>
+<p>Elm には珍しく型がテクニカルなパッケージということで，細かく中を読んでみました． 色々試した結果，Haskell の Applicative スタイルの見た目を変えてるだけのようでした． まだ，エヴァンさんが参考にしたという記事をちゃんと読んでないので，もしかしたら間違っているかも． 時間ができたら読んでみます．</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

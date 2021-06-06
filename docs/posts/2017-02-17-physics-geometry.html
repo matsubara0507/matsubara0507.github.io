@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="「量子と古典物理と幾何」研究会に行ってきた" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>「量子と古典物理と幾何」研究会に行ってきた</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">「量子と古典物理と幾何」研究会に行ってきた</h1>
+            </header>
+            <div class="post-content">
+              <p>2月12日(日) に名古屋大学であった，「量子と古典物理と幾何」研究会に行ってきた話（イベントページはATNDだったが無くなった...）． 2月11日からやってたが，その日は名古屋 Ruby 会議があったので断念．</p>
+<h2 id="いきさつ">いきさつ</h2>
+<p>ヤフーニュースで スパコン京 用のプログラミング言語を作ったというニュースを発見(記事はもうなくなってた．<a href="http://www.riken.jp/pr/press/2016/20161202_3/">この記事</a>を使ったんだと思う．)． 言語オタク(仮)としては，ぜひ仕様を読みたいと探し回ったところ，最終的にこの研究会に行きついた．</p>
+<p>この言語を作った村主さんという理研のエンジニアの方が来てくれるとのコトで，速攻で申し込んだ．</p>
+<p>内容も量子論が半分(2/11)と圏論が半分(2/12)ぐらいだったので，Haskeller にとっては惹かれる内容であった．</p>
+<h2 id="ハイライト">ハイライト</h2>
+<p>講演者は4人． 一人持ち時間は1時間半． 最初はノートパソコンでメモを取ってたが，ホワイトボードをメインで使い始めたので，諦めてノートにメモを取った． 大学の講義みたい．</p>
+<ul>
+<li>物理学者のための圏論入門
+<ul>
+<li>谷村先生
+<ul>
+<li>名大の先生</li>
+</ul></li>
+<li>圏論は物理との相性が良い
+<ul>
+<li>対象の構造や構成要素(内側)を考えるのが集合論</li>
+<li>対象の操作や影響(外側)に観点を置くのが圏論</li>
+<li>物理(特に熱力学や量子論)は観測して，その影響を捉えて判断する(特徴付ける)
+<ul>
+<li>まんま圏論の考え方</li>
+</ul></li>
+</ul></li>
+<li>圏論の3本の矢
+<ul>
+<li>射(arrow)</li>
+<li>関手(functor)</li>
+<li>自然変換(natural transformation)</li>
+</ul></li>
+<li>圏(Category)の定義
+i. 対象(Object)がある - <strong>集合である必要は無い</strong> - 構成要素は関係ない - 始域(domain)と終域(codomain) - 集合である必要は無いのでエンドポイント的なイメージ
+ii. 射(Arrow)がある - 対象から対象へのなんらかの写像のようなモノ - 対象 a から b への射が複数あってよい - 圏にとってもっとも中心的な構成要素
+iii. 合成(composite)が定義可能 - <code>f : a -&gt; b</code>, <code>g : b' -&gt; c</code> のとき <code>b = b'</code> ならば <code>g . f : a -&gt; c</code> (合成射) - 対象の等価性は対象ごとで
+iv. 結合律が成り立つ - <code>h . (g . f) = (h . g) . f</code>
+v. 恒等射が定義できる - <code>f = f . id_a</code></li>
+<li>関手(Functor)の定義
+<ul>
+<li>関手 <code>F</code> はある圏の射をある圏の射に写像する
+<ul>
+<li><code>f : a -&gt; b</code>, <code>Ff : Fa -&gt; Fb</code> ならば <code>F(f) = Ff</code></li>
+</ul></li>
+</ul>
+i. 共変関手と反変換手 - 共変性: <code>F(g . f) = F(g) . F(f)</code> - 反変性: <code>F(g . f) = F(f) . F(g)</code>
+ii. 恒等射を保存する - <code>F(id_a) = id_Fa</code></li>
+<li>自然変換(natural transformation)の定義
+<ul>
+<li>特定の圏間にある2つの共変関手を写像する <code>t : F -&gt; F'</code></li>
+<li>始域の各対象ごとに <code>t_a : Fa -&gt; F'a</code> が定まる</li>
+<li><code>t_a</code> は <code>f : a -&gt; b</code> に依存しない
+<ul>
+<li><code>t_b . Ff = F'f . t_a</code> (<code>: Fa -&gt; F'b</code>)</li>
+</ul></li>
+</ul></li>
+<li>普遍射(universal arrow)
+<ul>
+<li>始域には対応する対象が無い終域の対象を，そうでない対象に写像する射</li>
+</ul></li>
+</ul></li>
+<li>事例とストリング図によるn-圏への入門
+<ul>
+<li>檜山先生
+<ul>
+<li>圏論(やHaskell)についてWebで調べるとだいたいこの方に行きつく(笑)</li>
+</ul></li>
+<li><a href="http://d.hatena.ne.jp/m-hiyama/20170213/1486961362">参照</a></li>
+<li>ハイブ(映画バイオハザード1でのアンブレラの秘密基地)におけるゾンビラン(後述)をストリング圏にモデル化してハイブの不変量を求めるという話
+<ul>
+<li>要するに別種のハイブ同士がゾンビランにおいて等価かどうかを判定する方法を定義したいらしい</li>
+<li>バイオハザード(もといゾンビネタ？)が好きらしい</li>
+</ul></li>
+<li>問題定義
+<ul>
+<li>ハイブ : 三角分割された二次元多角形
+<ul>
+<li>三角分割 : 立体も含む多面体を三角形で分割する手法</li>
+<li>条件: DAFTO Graph</li>
+<li>各三角形には入口なる辺と出口になる辺がある(必ず1つ以上)</li>
+<li>ループする経路は無い</li>
+</ul></li>
+<li>ゾンビラン
+<ul>
+<li>ハイドの入り口から任意の数のゾンビを放す</li>
+<li>ゾンビはハイブ(三角形に分割された)の規則に従って <strong>非決定的に移動を繰り返す</strong>
+<ul>
+<li><strong>ゾンビは利口じゃないから！</strong></li>
+</ul></li>
+<li>放した量と同じだけのゾンビが出口から出てくる</li>
+<li>複数の入り口に対する放し方(例えば A, B の入り口に何対何で放すか)と出口からの出方(C,D の出口から何対何で出てくるか)を観測する</li>
+</ul></li>
+<li>内部構造を無視してハイブの構造(入口の数と出口の数)より観測結果は一意に定まるか？
+<ul>
+<li>ハイブを関数と考えれる</li>
+<li>それを圏と考える
+<ul>
+<li>結果: 定まらない</li>
+</ul></li>
+</ul></li>
+</ul></li>
+<li>N圏を導入する
+<ul>
+<li>ある意味再帰的に圏を定義する</li>
+<li>結局今回は3圏だった</li>
+<li>ちなみに圏を圏と考えた場合(射を対象とする)は2圏となる
+<ul>
+<li>射と関手</li>
+<li>関手と自然変換</li>
+</ul></li>
+</ul></li>
+<li>記号な違いは思想的に対立している(<code>g . f</code> と <code>f ; g</code>)</li>
+</ul></li>
+<li>複雑ネットワークと圏論
+<ul>
+<li>春名先生
+<ul>
+<li>圏論の歩き方の著者の一人(15章)</li>
+</ul></li>
+<li>雑話
+<ul>
+<li>良く新入生をお説教する謎のおじさんにあった話(名大では有名らしい(笑))</li>
+<li><a href="https://www.amazon.co.jp/dp/0815344325">the cell</a> の表紙(3版 -&gt; 6版)
+<ul>
+<li>数理ネットワークっぽくなってる</li>
+</ul></li>
+</ul></li>
+<li>"Networks as Things" vs "Networks as Processes"
+<ul>
+<li>前者は複雑ネットワークの科学
+<ul>
+<li>ネットワーク自体の構造を研究</li>
+<li>入出力は明示的に扱わない</li>
+</ul></li>
+<li>後者は圏論的ネットワーク理論
+<ul>
+<li>Hypergraph category</li>
+<li>(一部の話..「開いた」ネットワークをつなげるためのフレームワーク)</li>
+</ul></li>
+</ul></li>
+<li>本日な話題は上2つをつなげたい</li>
+<li>(難しく，これ以上はよくわからなかった)</li>
+</ul></li>
+<li>偏微分方程式から高性能プログラムへの自動変換
+<ul>
+<li>村主さん
+<ul>
+<li>すごいH本の訳者のひとり</li>
+<li>すごうでHaskellr</li>
+</ul></li>
+<li>スパコン京用に作った DSL "Formuru" の話
+<ul>
+<li>(よくわからないけど)</li>
+<li>ステンシル計算ステンシル計算という最適化？？をどーのこーのして</li>
+<li>Fortran と C++ のコードを吐く</li>
+<li>ユニコードをサポート(数式で良く出るギリシャ文字がそのまま使える)</li>
+<li>処理系は Haskell で書いた</li>
+</ul></li>
+<li><a href="https://github.com/nushio3/formura">GitHub にて公開中</a>
+<ul>
+<li>論文や，いつぞやのスライドもあるので詳しくはそれを見ると良い</li>
+</ul></li>
+<li>Haskeller なら Haskell の(型クラスを使いまくって)内部DSLを作ったのではだめなの？
+<ul>
+<li>構文の制約が強い
+<ul>
+<li>UTF-8 を含む構文</li>
+<li>記号を中置で使わない</li>
+<li>etc...</li>
+</ul></li>
+<li>Haskell 使える人がいない</li>
+<li><strong>新しく作った方が楽</strong></li>
+</ul></li>
+<li>細かい仕様の希望は，どーせオープンソースなんだから勝手に変更して使って</li>
+<li>名前の由来:
+<ul>
+<li>Muranushi の Fortran でいいんじゃね？から</li>
+<li>Formula とのバッティングを避ける(検索するうえでの)
+<ul>
+<li>しかし，現状は「次の検索結果を表示しています: formula」となる</li>
+<li>こうならないようなぐらい有名になるといいなぁ</li>
+</ul></li>
+</ul></li>
+<li>これを手土産に宇宙系に戻りたい(好きな分野は宇宙系らしい)</li>
+</ul></li>
+</ul>
+<h2 id="感想">感想</h2>
+<p>研究会というのは初めて出たかも． もともと講演会は大好きだったのでめちゃくちゃ楽しかった． まぁ，すごい場違い感はあったけど(たぶん回りの人たちは物理系のガチ研究者)．</p>
+<p>でも，また出たい． あわよくば，もっとお話ししたかった．</p>
+<h2 id="おしまい">おしまい</h2>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

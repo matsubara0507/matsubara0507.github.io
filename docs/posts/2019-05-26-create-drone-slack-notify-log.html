@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Drone Plugin を作ってみた: slack-notify-log" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>Drone Plugin を作ってみた: slack-notify-log</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">Drone Plugin を作ってみた: slack-notify-log</h1>
+            </header>
+            <div class="post-content">
+              <p>とある事情で Drone CI のビルドログを Slack にスニペットとして通知したくなった． 公式の <a href="https://github.com/drone-plugins/drone-slack"><code>plugin/slack</code></a> では出来なそうだったので，Plugin を自作した，というお話．</p>
+<h2 id="作ったもの">作ったもの</h2>
+<iframe width="320" height="163" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/drone-slack-notify-log" >
+</iframe>
+<p>色々調べてみたものの，同じビルド中の別のステップでのログを取得する方法がわからなかった... ので，最終手段として Drone API を使って引っ張ってくる方法をとった． ほぼほぼドキュメントは無いが，Drone API は <a href="https://github.com/drone/drone-go">drone/drone-go</a> を使うことで簡単に呼び出すことができる． ざっくりと次のような感じで呼び出している:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>	<span class="st">&quot;context&quot;</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>	<span class="st">&quot;fmt&quot;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>	<span class="st">&quot;github.com/drone/drone-go/drone&quot;</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>	<span class="st">&quot;github.com/pkg/errors&quot;</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>	log <span class="st">&quot;github.com/sirupsen/logrus&quot;</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>	<span class="st">&quot;golang.org/x/oauth2&quot;</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>p Plugin<span class="op">)</span> Exec<span class="op">()</span> <span class="dt">error</span> <span class="op">{</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  config <span class="op">:=</span> <span class="bu">new</span><span class="op">(</span>oauth2<span class="op">.</span>Config<span class="op">)</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  client <span class="op">:=</span> drone<span class="op">.</span>NewClient<span class="op">(</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    p<span class="op">.</span>Config<span class="op">.</span>DroneHost<span class="op">,</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    config<span class="op">.</span>Client<span class="op">(</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>      context<span class="op">.</span>Background<span class="op">(),</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>      <span class="op">&amp;</span>oauth2<span class="op">.</span>Token<span class="op">{</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>        AccessToken<span class="op">:</span> p<span class="op">.</span>Config<span class="op">.</span>DroneToken<span class="op">,</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>      <span class="op">},</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">),</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>  <span class="op">)</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>  logs<span class="op">,</span> err <span class="op">:=</span> client<span class="op">.</span>Logs<span class="op">(</span>p<span class="op">.</span>Repo<span class="op">.</span>Owner<span class="op">,</span> p<span class="op">.</span>Repo<span class="op">.</span>Name<span class="op">,</span> p<span class="op">.</span>Build<span class="op">.</span>Number<span class="op">,</span> p<span class="op">.</span>Build<span class="op">.</span>Stage<span class="op">,</span> p<span class="op">.</span>Config<span class="op">.</span>StepNum<span class="op">)</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>  <span class="kw">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> errors<span class="op">.</span>Wrapf<span class="op">(</span>err<span class="op">,</span> <span class="st">&quot;can&#39;t fetch drone logs: builds/%d/logs/%d/%d&quot;</span><span class="op">,</span> p<span class="op">.</span>Build<span class="op">.</span>Number<span class="op">,</span> p<span class="op">.</span>Build<span class="op">.</span>Stage<span class="op">,</span> p<span class="op">.</span>Config<span class="op">.</span>StepNum<span class="op">)</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>  log<span class="op">.</span>Infof<span class="op">(</span><span class="st">&quot;Success: fetch drone logs (lines num is %d)&quot;</span><span class="op">,</span> <span class="bu">len</span><span class="op">(</span>logs<span class="op">))</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>で，実際の Plugin の使い方はこんな感じ:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  ...</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> notify drone log to slack</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">image</span><span class="kw">:</span><span class="at"> matsubara0507/slack-notify-log</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">settings</span><span class="kw">:</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">    template</span><span class="kw">: </span><span class="ch">&gt;</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>      {{#success build.status}}</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>        {{repo.name}} is Success!</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>      {{else}}</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        {{repo.name}} is Failure...</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>      {{/success}}</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">token</span><span class="kw">:</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">from_secret</span><span class="kw">:</span><span class="at"> slack_token</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">channel</span><span class="kw">:</span><span class="at"> bot-test</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">step_number</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">drone_host</span><span class="kw">:</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">from_secret</span><span class="kw">:</span><span class="at"> drone_host</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">drone_token</span><span class="kw">:</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">from_secret</span><span class="kw">:</span><span class="at"> drone_token</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">when</span><span class="kw">:</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">status</span><span class="kw">:</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> success</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> failure</span></span></code></pre></div>
+<p>各 <code>settings</code> は:</p>
+<ul>
+<li><code>template</code> : スニペットのコメント</li>
+<li><code>token</code> : slack にポストするための API トークン
+<ul>
+<li>個人トークンや <a href="https://slack.com/apps/A0F7YS25R-bots">Bots App</a> などから生成する</li>
+</ul></li>
+<li><code>channel</code> : 通知先チャンネル
+<ul>
+<li>無駄にテンプレートを利用できるようにした(ブランチやビルド結果によって通知先を変えるため)</li>
+</ul></li>
+<li><code>step_number</code> : 何ステップ目のログを通知したいか
+<ul>
+<li><code>step_number: 1</code> は git clone になる点に注意</li>
+</ul></li>
+<li><code>drone_host</code> : この CI を実行したい Drone のホスト
+<ul>
+<li>別にシークレットにする必要はないけど</li>
+<li><code>https://cloud.drone.io</code> とか</li>
+</ul></li>
+<li><code>drone_token</code> : この CI を実行したい Drone の API トークン</li>
+</ul>
+<p>実行結果はこんな感じ:</p>
+<p><img src="/assets/create-drone-slack-notify-log/example.jpg" /></p>
+<p>これは matsubara0507/drone-slack-notify-log のビルドステップ．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>なんか他に良い方法が絶対にある気がするんだけどな...</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Elchemy 入門 : その２" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>Elchemy 入門 : その２</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">Elchemy 入門 : その２</h1>
+            </header>
+            <div class="post-content">
+              <p>Elm から Elixir のトランスパイラ，<a href="https://github.com/wende/elmchemy">Elchemy</a> についてイロイロと調べたのでまとめていきます． <a href="https://matsubara0507.github.io/posts/2018-06-15-introduce-elchemy-part1.html">前回はコチラ</a>． 今回は</p>
+<ul>
+<li><a href="https://hackernoon.com/elmchemy-write-type-safe-elixir-code-with-elms-syntax-part-2-our-own-rpg-character-module-cedbf7da138d">Tutorial その２</a>をやってみた</li>
+<li>Phoenix で ToDo アプリを作る</li>
+</ul>
+<p>の2本立てです． ちなみに，現在のバージョンは 0.7.4 です．</p>
+<h2 id="tutorial-その２をやってみた">Tutorial その２をやってみた</h2>
+<p>Tutorial その２では Elchemy を利用した独自ライブラリを作成する． 以下の手順で行うそうだ．</p>
+<ol>
+<li>エイリアス型を定義</li>
+<li>ユニオン型を定義</li>
+<li>関数としてエイリアスやタグを用いる</li>
+<li>ユニオン型でのパターンマッチ</li>
+<li>関数として演算子を使う・独自の演算子を定義する</li>
+<li>別のモジュールから型やエイリアス型をインポートする</li>
+</ol>
+<p>基本的に Elm の書き方講座みたいなものなので，最悪っ困ったら Elm を勉強してください(丸投げ)． ちなみに，元記事の全てを細かく追従せず，ざっくりと掻い摘んで書き出している． なので細かくは元記事を読んでね．</p>
+<h2 id="section"></h2>
+<p>あと，<a href="https://github.com/wende/elmchemy-article-example">このコードは全て作者さんが GitHub に挙げている</a>．</p>
+<h3 id="その前に">その前に</h3>
+<p>テストを書こう，ということでテストを Elixir で書いている． 今回の作成するライブラリはどうやら，ゲームか何かのキャラを制御する物らしい</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># character_test.exs</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">CharacterTest</span> <span class="kw">do</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">ExUnit</span><span class="op">.</span><span class="cn">Case</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">Elchemy</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  test <span class="st">&quot;Character has name, last name and such&quot;</span> <span class="kw">do</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>      gordon <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>new(<span class="st">&quot;Gordon&quot;</span>, <span class="st">&quot;Freemonad&quot;</span>, <span class="va">:male</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>      assert gordon<span class="op">.</span>name <span class="op">==</span> <span class="st">&quot;Gordon&quot;</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>      assert gordon<span class="op">.</span>surname <span class="op">==</span> <span class="st">&quot;Freemonad&quot;</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>      assert gordon<span class="op">.</span>gender <span class="op">==</span> <span class="va">:male</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  test <span class="st">&quot;Has stats&quot;</span> <span class="kw">do</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    gordon <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>new(<span class="st">&quot;Gordon&quot;</span>, <span class="st">&quot;Freemonad&quot;</span>, <span class="va">:male</span>)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    stats <span class="op">=</span> [<span class="va">:strength</span>, <span class="va">:intelligence</span>, <span class="va">:vitality</span>]</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> s <span class="op">&lt;-</span> stats <span class="kw">do</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>      assert is_integer(gordon<span class="op">.</span>stats[s]), <span class="st">&quot;No </span><span class="ot">#{</span>s<span class="ot">}</span><span class="st"> stat in </span><span class="ot">#{</span>inspect gordon<span class="ot">}</span><span class="st">&quot;</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    assert <span class="cn">Character</span><span class="op">.</span>set_stat(<span class="va">:vitality</span>, <span class="dv">10</span>, gordon)<span class="op">.</span>stats<span class="op">.</span>vitality <span class="op">==</span> <span class="dv">10</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>  test <span class="st">&quot;Boosting visality boosts health&quot;</span> <span class="kw">do</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    gordon <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>new(<span class="st">&quot;Gordon&quot;</span>, <span class="st">&quot;Freemonad&quot;</span>, <span class="va">:male</span>)</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    { hp, packed_gordon_max } <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>set_stat(<span class="va">:vitality</span>, <span class="dv">10</span>, gordon)<span class="op">.</span>health</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>    { _, weak_gordon_max }    <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>set_stat(<span class="va">:vitality</span>, <span class="dv">0</span>, gordon)<span class="op">.</span>health</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>    assert packed_gordon_max <span class="op">&gt;</span> weak_gordon_max</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>    assert hp <span class="op">==</span> packed_gordon_max</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>  test <span class="st">&quot;Can equip weapon only if intelligence is enough&quot;</span> <span class="kw">do</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>    gordon <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>new(<span class="st">&quot;Gordon&quot;</span>, <span class="st">&quot;Freemonad&quot;</span>, <span class="va">:male</span>)</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>    weapon <span class="op">=</span> <span class="cn">Weapon</span><span class="op">.</span>new(<span class="st">&quot;Sci fi blaster thingy&quot;</span>, <span class="dv">9</span> ,<span class="dv">100</span>)</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>    dumb_gordon <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>set_stat(<span class="va">:intelligence</span>, <span class="dv">0</span>, gordon)</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>    smart_gordon <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>set_stat(<span class="va">:intelligence</span>, <span class="dv">10</span>, gordon)</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>    assert {<span class="va">:error</span>, <span class="st">&quot;Too dumb&quot;</span>} <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>equip(weapon, dumb_gordon)</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>    assert {<span class="va">:ok</span>, equipped_gordon} <span class="op">=</span> <span class="cn">Character</span><span class="op">.</span>equip(weapon, smart_gordon)</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>    assert equipped_gordon<span class="op">.</span>arm <span class="op">==</span> {weapon}</span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<h3 id="キャラクターを定義">キャラクターを定義</h3>
+<h4 id="1-型エイリアス">1. 型エイリアス</h4>
+<p>関数型なのでまずはドメインモデルの型を定義する． テストより，<code>name</code> <code>surname</code> <code>gender</code> をフィールドとして持っているのが分かるので次のような型を定義した．</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">Character</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Character</span> <span class="op">=</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    { <span class="fu">name</span> : <span class="dt">String</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">surname</span> : <span class="dt">String</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">gender</span> : <span class="dt">Gender</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    }</span></code></pre></div>
+<p>何故エイリアスなのかというと，構造的サブタイピイングが出来るようにだと思う(たぶん)．</p>
+<h4 id="2-ユニオン型">2. ユニオン型</h4>
+<p><code>Gender</code> 型が無いので定義する． こっちは列挙型みたいなのが欲しいので、ユニオン型を用いる．</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Gender</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=</span> <span class="dt">Male</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">Female</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">Other</span></span></code></pre></div>
+<h4 id="3-関数としての型エイリアス">3. 関数としての型エイリアス</h4>
+<p>Elixir っぽい <code>new</code> 関数を定義してやろう． Elm の場合，エイリアス型を定義すれば同名の値コンストラクタができるので，それをラップすればよい</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">new</span> : <span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">Gender</span> <span class="op">-&gt;</span> <span class="dt">Character</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">new</span> <span class="fu">name</span> <span class="fu">surname</span> <span class="fu">gender</span> <span class="op">=</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Character</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>      <span class="fu">name</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">surname</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>      <span class="fu">gender</span></span></code></pre></div>
+<h3 id="キャラクターにステータスを持たせる">キャラクターにステータスを持たせる</h3>
+<p>キャラクターにいくつかのステータスを持たせよう．</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Character</span> <span class="op">=</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    { <span class="fu">name</span> : <span class="dt">String</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">surname</span> : <span class="dt">String</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">gender</span> : <span class="dt">Gender</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">health</span> : (<span class="dt">Int</span><span class="op">,</span> <span class="dt">Int</span>)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">stats</span> : <span class="dt">Stats</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Stats</span> <span class="op">=</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    { <span class="fu">strength</span> : <span class="dt">Int</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">intelligence</span> : <span class="dt">Int</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">vitality</span> : <span class="dt">Int</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="fu">new</span> : <span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">Gender</span> <span class="op">-&gt;</span> <span class="dt">Character</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="fu">new</span> <span class="fu">name</span> <span class="fu">surname</span> <span class="fu">gender</span> <span class="op">=</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Character</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>      <span class="fu">name</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>      <span class="fu">surname</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>      <span class="fu">gender</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>      (<span class="dv">100</span><span class="op">,</span><span class="dv">100</span>)</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>      (<span class="dt">Stats</span> <span class="dv">0</span> <span class="dv">0</span> <span class="dv">0</span>)</span></code></pre></div>
+<p><code>health</code> はどうやら HP みたいなものらしい(現在のHPと上限)．</p>
+<h3 id="4-パターンマッチ">4. パターンマッチ</h3>
+<p>ステータスを更新する関数を定義しよう．</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Stat</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">=</span> <span class="dt">Strength</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">Intelligence</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">Vitality</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="fu">setStat</span> : <span class="dt">Stat</span> <span class="op">-&gt;</span> <span class="dt">Int</span> <span class="op">-&gt;</span> <span class="dt">Character</span> <span class="op">-&gt;</span> <span class="dt">Character</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="fu">setStat</span> <span class="fu">stat</span> <span class="fu">value</span> <span class="fu">character</span> <span class="op">=</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">stats</span> <span class="op">=</span> <span class="fu">character</span><span class="op">.</span><span class="fu">stats</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">in</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> <span class="fu">stat</span> <span class="cf">of</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Strength</span> <span class="op">-&gt;</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>            { <span class="fu">character</span> <span class="op">|</span> <span class="fu">stats</span> <span class="op">=</span> { <span class="fu">stats</span> <span class="op">|</span> <span class="fu">strength</span> <span class="op">=</span> <span class="fu">value</span> } }</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Intelligence</span> <span class="op">-&gt;</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>            { <span class="fu">character</span> <span class="op">|</span> <span class="fu">stats</span> <span class="op">=</span> { <span class="fu">stats</span> <span class="op">|</span> <span class="fu">intelligence</span> <span class="op">=</span> <span class="fu">value</span> } }</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Vitality</span> <span class="op">-&gt;</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>            { <span class="fu">character</span> <span class="op">|</span> <span class="fu">stats</span> <span class="op">=</span> { <span class="fu">stats</span> <span class="op">|</span> <span class="fu">vitality</span> <span class="op">=</span> <span class="fu">value</span> } }        </span></code></pre></div>
+<p>残念ながらこの <code>setStat</code> は正しくない． テストを見ればわかるが <code>Vitality</code> を更新した場合は <code>health</code> も更新する必要がある．</p>
+<h4 id="5-演算子">5. 演算子</h4>
+<p><code>health</code> はタプル型だ． タプルの更新をいい感じにするために，カスタム演算子を定義してみよう．</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(<span class="op">&lt;$</span>) : (<span class="fu">a</span><span class="op">,</span> <span class="fu">b</span>) <span class="op">-&gt;</span> (<span class="fu">a</span> <span class="op">-&gt;</span> <span class="fu">c</span>) <span class="op">-&gt;</span> (<span class="fu">c</span><span class="op">,</span> <span class="fu">b</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>(<span class="op">&lt;$</span>) <span class="fu">tuple</span> <span class="fu">f</span> <span class="op">=</span> <span class="dt">Tuple</span><span class="op">.</span><span class="fu">mapFirst</span> <span class="fu">f</span> <span class="fu">tuple</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>(<span class="op">$&gt;</span>) : (<span class="fu">a</span><span class="op">,</span> <span class="fu">b</span>) <span class="op">-&gt;</span> (<span class="fu">b</span> <span class="op">-&gt;</span> <span class="fu">c</span>) <span class="op">-&gt;</span> (<span class="fu">a</span><span class="op">,</span> <span class="fu">c</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>(<span class="op">$&gt;</span>) <span class="fu">tuple</span> <span class="fu">f</span> <span class="op">=</span> <span class="dt">Tuple</span><span class="op">.</span><span class="fu">mapSecond</span> <span class="fu">f</span> <span class="fu">tuple</span></span></code></pre></div>
+<p>これを使って <code>setStat</code> の <code>Vitality</code> の部分を正しく修正する．</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">setStat</span> : <span class="dt">Stat</span> <span class="op">-&gt;</span> <span class="dt">Int</span> <span class="op">-&gt;</span> <span class="dt">Character</span> <span class="op">-&gt;</span> <span class="dt">Character</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">setStat</span> <span class="fu">stat</span> <span class="fu">value</span> <span class="fu">character</span> <span class="op">=</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>      <span class="fu">stats</span> <span class="op">=</span> <span class="fu">character</span><span class="op">.</span><span class="fu">stats</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">in</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> <span class="fu">stat</span> <span class="cf">of</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Vitality</span> <span class="op">-&gt;</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>            { <span class="fu">character</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>                <span class="op">|</span> <span class="fu">stats</span> <span class="op">=</span> { <span class="fu">stats</span> <span class="op">|</span> <span class="fu">vitality</span> <span class="op">=</span> <span class="fu">value</span> }</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>                <span class="op">,</span> <span class="fu">health</span> <span class="op">=</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>                    <span class="fu">character</span><span class="op">.</span><span class="fu">health</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>                      <span class="op">&lt;$</span> (<span class="op">+</span>) ((<span class="fu">value</span> <span class="op">-</span> <span class="fu">stats</span><span class="op">.</span><span class="fu">vitality</span>) <span class="op">*</span> <span class="dv">10</span>)</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>                      <span class="op">$&gt;</span> <span class="fu">always</span> (<span class="dv">100</span> <span class="op">+</span> <span class="dv">10</span> <span class="op">*</span> <span class="fu">value</span>)</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>            }                </span></code></pre></div>
+<h3 id="ウェポンを持たせる">ウェポンを持たせる</h3>
+<h4 id="インポート">インポート</h4>
+<p>新しく <code>Weapon.elm</code> ファイルを作り，新しいモジュール定義する．</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">Weapon</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Weapon</span> <span class="op">=</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    { <span class="fu">name</span> : <span class="dt">String</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">level</span> : <span class="dt">Int</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">damage</span> : <span class="dt">Int</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="fu">new</span> : <span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">Int</span> <span class="op">-&gt;</span> <span class="dt">Int</span> <span class="op">-&gt;</span> <span class="dt">Weapon</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="fu">new</span> <span class="fu">name</span> <span class="fu">level</span> <span class="fu">damage</span> <span class="op">=</span> <span class="dt">Weapon</span> <span class="fu">name</span> <span class="fu">level</span> <span class="fu">damage</span></span></code></pre></div>
+<p>このモジュールをインポートして <code>Character</code> 型を拡張しよう</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Weapon</span> <span class="kw">exposing</span> (<span class="dt">Weapon</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Character</span> <span class="op">=</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    { <span class="fu">name</span> : <span class="dt">String</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">surname</span> : <span class="dt">String</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">gender</span> : <span class="dt">Gender</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">health</span> : (<span class="dt">Int</span><span class="op">,</span> <span class="dt">Int</span>)</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">stats</span> : <span class="dt">Stats</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">arm</span> : <span class="dt">Maybe</span> <span class="dt">Weapon</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="fu">new</span> : <span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">Gender</span> <span class="op">-&gt;</span> <span class="dt">Character</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="fu">new</span> <span class="fu">name</span> <span class="fu">surname</span> <span class="fu">gender</span> <span class="op">=</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Character</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>      <span class="fu">name</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>      <span class="fu">surname</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>      <span class="fu">gender</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>      (<span class="dv">100</span><span class="op">,</span><span class="dv">100</span>)</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>      (<span class="dt">Stats</span> <span class="dv">0</span> <span class="dv">0</span> <span class="dv">0</span>)</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>      <span class="dt">Nothing</span></span></code></pre></div>
+<p>最後に <code>equip</code> 関数を作って完成． これで全てのテストが通るはずだ．</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">equip</span> : <span class="dt">Weapon</span> <span class="op">-&gt;</span> <span class="dt">Character</span> <span class="op">-&gt;</span> <span class="dt">Result</span> <span class="dt">String</span> <span class="dt">Character</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">equip</span> <span class="fu">weapon</span> <span class="fu">character</span> <span class="op">=</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="fu">weapon</span><span class="op">.</span><span class="fu">level</span> <span class="op">&lt;</span> <span class="fu">character</span><span class="op">.</span><span class="fu">status</span><span class="op">.</span><span class="fu">intelligence</span> <span class="cf">then</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Ok</span> { <span class="fu">character</span> <span class="op">|</span> <span class="fu">arm</span> <span class="op">=</span> <span class="dt">Just</span> <span class="fu">weapon</span> }</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Err</span> <span class="st">&quot;Too dumb&quot;</span></span></code></pre></div>
+<p>「頭悪すぎ」ってひどい(笑)</p>
+<h2 id="phoenix-で-todo-アプリを作る">Phoenix で ToDo アプリを作る</h2>
+<p>Elchemy が実際にどの程度有用かを感じるために，Elchemy + Elm + Phoenix で超簡易的な Todo アプリを作ってみた．</p>
+<ul>
+<li><a href="https://gitlab.com/matsubara0507/elchemy_todo_app">MATSUBARA Nobutada / elchemy<em>todo</em>app · GitLab</a></li>
+</ul>
+<p>過去に <a href="https://github.com/matsubara0507/patissier-test">Elm + Phoenix で社内ツールを作ったり</a>，<a href="https://matsubara0507.github.io/posts/2017-12-13-elm-and-haskell-for-elmer.html">Elm + Haskell で Todo アプリを書いてみたり</a>したので，その辺りからコードや構成はパクッて来てます． GitLab に置いてるのは，モノは試しってやつ(笑)．</p>
+<h3 id="phoenix-をインストール">Phoenix をインストール</h3>
+<p>Elchemy (および Elixir・Elm・npm) はインストールされているとする． <a href="https://hexdocs.pm/phoenix/installation.html">Phoenix のサイト</a>にある通りにやればよい．</p>
+<pre><code>$ mix archive.install https://github.com/phoenixframework/archives/raw/master/phx_new.ez</code></pre>
+<h3 id="project-を作成">Project を作成</h3>
+<p>こんな時のために <code>elchemy init</code> というコマンドがある(？)．</p>
+<pre><code>$ mix phx.new elchemy_todo_app --no-ecto
+$ cd elchemy_todo_app
+$ elchemy init</code></pre>
+<p><code>elchemy new</code> との違いは，<code>mix.exs</code> の Elixir のバージョンが古いのと <code>.formatter.exs</code> ぐらいかな？ 今回は DB をわざわざ使うのがめんどくさいので，ストレージっぽい GenServer を定義する(なので <code>--no-ecto</code>)．</p>
+<h3 id="crud-を作る">CRUD を作る</h3>
+<p>Phoenix に CRUD を追加するには，まず<code>router.ex</code> にルーティングを足す.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">ElchemyTodoAppWeb</span><span class="op">.</span><span class="cn">Router</span> <span class="kw">do</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">ElchemyTodoAppWeb</span>, <span class="va">:router</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  pipeline <span class="va">:api</span> <span class="kw">do</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    plug(<span class="va">:accepts</span>, [<span class="st">&quot;json&quot;</span>])</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>  scope <span class="st">&quot;/api&quot;</span>, <span class="cn">ElchemyTodoAppWeb</span> <span class="kw">do</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    pipe_through(<span class="va">:api</span>)</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    resources(<span class="st">&quot;/todos&quot;</span>, <span class="cn">TodoController</span>, <span class="va">only:</span> [<span class="va">:index</span>, <span class="va">:create</span>, <span class="va">:update</span>, <span class="va">:delete</span>])</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<p>次にコントロラーを定義し，</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">ElchemyTodoAppWeb</span><span class="op">.</span><span class="cn">TodoController</span> <span class="kw">do</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">alias</span> <span class="cn">Models</span><span class="op">.</span><span class="cn">Todo</span>, <span class="va">as:</span> <span class="cn">Todo</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">ElchemyTodoAppWeb</span>, <span class="va">:controller</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> index(conn, _params), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="op">...</span> })</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> create(conn, params), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="op">...</span> })</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> update(conn, params), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="op">...</span> })</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> delete(conn, %{<span class="st">&quot;id&quot;</span> <span class="op">=&gt;</span> id}), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="op">...</span> })</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<p>(<code>...</code> の部分は後で埋める) そして View を定義する。</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">defmodule</span> <span class="cn">ElchemyTodoAppWeb</span><span class="op">.</span><span class="cn">TodoView</span> <span class="kw">do</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="im">use</span> <span class="cn">ElchemyTodoAppWeb</span>, <span class="va">:view</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> render(<span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> todos}), <span class="kw">do</span>: todos</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<p>さてここから　Elchemy だ。 モデルを Elchemy で定義する. というかモデル以外はマクロ色が強過ぎてうまくいかなかった.</p>
+<h3 id="elchemy-でモデルを">Elchemy でモデルを</h3>
+<p>まずは型を定義.</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">Data</span><span class="op">.</span><span class="dt">Todo</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Dict</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Todo</span> <span class="op">=</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    { <span class="fu">id</span> : <span class="dt">String</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">title</span> : <span class="dt">String</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">done</span> : <span class="dt">Bool</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Todos</span> <span class="op">=</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Dict</span><span class="op">.</span><span class="dt">Dict</span> <span class="dt">String</span> <span class="dt">Todo</span></span></code></pre></div>
+<p>ここはフロント共有したいので別途切り出しておく. DBをサボるために GenServer なモデルを定義する.</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">Models</span><span class="op">.</span><span class="dt">Todo</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data</span><span class="op">.</span><span class="dt">Todo</span> <span class="kw">exposing</span> (<span class="dt">Todo</span><span class="op">,</span> <span class="dt">Todos</span>)</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Dict</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Elchemy</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="co">{- ex</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="co">   use GenServer</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="co">   def start_link(init \\ %{ todos: %{}, cnt: 0 }), do: GenServer.start_link(__MODULE__, init, name: :todos)</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="co">   def init(state), do: {:ok, state}</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a><span class="co">   def handle_call(:get, _client, state), do: {:reply, state, state}</span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="co">   def handle_cast({:set, new_state}, _state), do: {:noreply, new_state}</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a><span class="co">   def gen_(params) do</span></span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a><span class="co">     %{</span></span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a><span class="co">       id: params[&quot;id&quot;],</span></span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a><span class="co">       title: params[&quot;title&quot;],</span></span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a><span class="co">       done: params[&quot;done&quot;]</span></span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a><span class="co">     }</span></span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a><span class="co">   end</span></span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a><span class="co">-}</span></span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">State</span> <span class="op">=</span></span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>    { <span class="fu">todos</span> : <span class="dt">Todos</span></span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a>    <span class="op">,</span> <span class="fu">cnt</span> : <span class="dt">Int</span></span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Name</span></span>
+<span id="cb18-33"><a href="#cb18-33" aria-hidden="true" tabindex="-1"></a>    <span class="op">=</span> <span class="dt">Todos</span></span>
+<span id="cb18-34"><a href="#cb18-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-35"><a href="#cb18-35" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Action</span></span>
+<span id="cb18-36"><a href="#cb18-36" aria-hidden="true" tabindex="-1"></a>    <span class="op">=</span> <span class="dt">Get</span></span>
+<span id="cb18-37"><a href="#cb18-37" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">Set</span> <span class="dt">State</span></span>
+<span id="cb18-38"><a href="#cb18-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-39"><a href="#cb18-39" aria-hidden="true" tabindex="-1"></a><span class="fu">gen</span> : <span class="fu">params</span> <span class="op">-&gt;</span> <span class="dt">Todo</span></span>
+<span id="cb18-40"><a href="#cb18-40" aria-hidden="true" tabindex="-1"></a><span class="fu">gen</span> <span class="op">=</span> <span class="fu">ffi</span> <span class="st">&quot;Models.Todo&quot;</span> <span class="st">&quot;gen_&quot;</span></span>
+<span id="cb18-41"><a href="#cb18-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-42"><a href="#cb18-42" aria-hidden="true" tabindex="-1"></a><span class="fu">getState</span> : <span class="dt">State</span></span>
+<span id="cb18-43"><a href="#cb18-43" aria-hidden="true" tabindex="-1"></a><span class="fu">getState</span> <span class="op">=</span> <span class="fu">call_</span> <span class="dt">Todos</span> <span class="dt">Get</span></span>
+<span id="cb18-44"><a href="#cb18-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-45"><a href="#cb18-45" aria-hidden="true" tabindex="-1"></a><span class="fu">setState</span> : <span class="dt">State</span> <span class="op">-&gt;</span> <span class="dt">State</span></span>
+<span id="cb18-46"><a href="#cb18-46" aria-hidden="true" tabindex="-1"></a><span class="fu">setState</span> <span class="fu">state</span> <span class="op">=</span> <span class="fu">cast_</span> <span class="dt">Todos</span> (<span class="dt">Set</span> <span class="fu">state</span>) <span class="op">|&gt;</span> <span class="fu">always</span> <span class="fu">state</span></span>
+<span id="cb18-47"><a href="#cb18-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-48"><a href="#cb18-48" aria-hidden="true" tabindex="-1"></a><span class="fu">call_</span> : <span class="dt">Name</span> <span class="op">-&gt;</span> <span class="dt">Action</span> <span class="op">-&gt;</span> <span class="fu">a</span></span>
+<span id="cb18-49"><a href="#cb18-49" aria-hidden="true" tabindex="-1"></a><span class="fu">call_</span> <span class="op">=</span> <span class="fu">ffi</span> <span class="st">&quot;GenServer&quot;</span> <span class="st">&quot;call&quot;</span></span>
+<span id="cb18-50"><a href="#cb18-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-51"><a href="#cb18-51" aria-hidden="true" tabindex="-1"></a><span class="fu">cast_</span> : <span class="dt">Name</span> <span class="op">-&gt;</span> <span class="dt">Action</span> <span class="op">-&gt;</span> <span class="fu">a</span></span>
+<span id="cb18-52"><a href="#cb18-52" aria-hidden="true" tabindex="-1"></a><span class="fu">cast_</span> <span class="op">=</span> <span class="fu">ffi</span> <span class="st">&quot;GenServer&quot;</span> <span class="st">&quot;cast&quot;</span></span></code></pre></div>
+<p><code>Todos</code> と削除された <code>Todo</code> も含めた総数を表した <code>Int</code> を持った <code>State</code> 型を状態として GenServer に保持して欲しい． 出力した Elixir コードにだけモジュールをインポートさせたり，うまく型付けできない関数を Elixir コードに張り付けるには，コメントアウト <code>{- ex ... -}</code> 使う． この中に書いた Elixir コードはそのまま出力先に貼り付けられる(濫用厳禁！)．</p>
+<p>Elixir モジュールの関数を呼び出すには <code>Elchemy</code> モジュールにある <code>ffi</code> 関数を使う． ただし，<code>ffi</code> 関数をファーストクラスには扱えない． 次のようなエラーが出る．</p>
+<pre><code>Ffi inside function body is deprecated since Elchemy 0.3</code></pre>
+<p><code>Name</code> 型や <code>Action</code> 型は Elchemy が代数的データ型をアトムとタプルに変換することと，GenServer の使い方を知っていれば意図するところが分かるだろう． 逆にそれらを知っていなければ読みとれないと思う…</p>
+<h2 id="section-1"></h2>
+<p>コントローラーから呼ばれるインターフェースは <code>getState</code> と <code>setState</code> を用いることで簡単に書けた．</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">gets</span> : <span class="dt">List</span> <span class="dt">Todo</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">gets</span> <span class="op">=</span> <span class="dt">Dict</span><span class="op">.</span><span class="fu">values</span> (<span class="op">.</span><span class="fu">todos</span> <span class="fu">getState</span>)</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="fu">add</span> : <span class="dt">Todo</span> <span class="op">-&gt;</span> <span class="dt">List</span> <span class="dt">Todo</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="fu">add</span> <span class="fu">todo</span> <span class="op">=</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>        { <span class="fu">todos</span><span class="op">,</span> <span class="fu">cnt</span> } <span class="op">=</span> <span class="fu">getState</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>        <span class="fu">newId</span>   <span class="op">=</span> <span class="fu">toString</span> <span class="fu">cnt</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>        <span class="fu">newTodo</span> <span class="op">=</span> { <span class="fu">todo</span> <span class="op">|</span> <span class="fu">id</span> <span class="op">=</span> <span class="fu">newId</span> }</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>        <span class="fu">state</span>   <span class="op">=</span> { <span class="fu">todos</span> <span class="op">=</span> <span class="dt">Dict</span><span class="op">.</span><span class="fu">insert</span> <span class="fu">newId</span> <span class="fu">newTodo</span> <span class="fu">todos</span><span class="op">,</span> <span class="fu">cnt</span> <span class="op">=</span> <span class="fu">cnt</span> <span class="op">+</span> <span class="dv">1</span> }</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">in</span></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">setState</span> <span class="fu">state</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="op">.</span><span class="fu">todos</span></span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="dt">Dict</span><span class="op">.</span><span class="fu">values</span></span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a><span class="fu">update</span> : <span class="dt">Todo</span> <span class="op">-&gt;</span> <span class="dt">List</span> <span class="dt">Todo</span></span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a><span class="fu">update</span> <span class="fu">todo</span> <span class="op">=</span></span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span></span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>        { <span class="fu">todos</span><span class="op">,</span> <span class="fu">cnt</span> } <span class="op">=</span> <span class="fu">getState</span></span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a>        <span class="fu">state</span> <span class="op">=</span> { <span class="fu">todos</span> <span class="op">=</span> <span class="dt">Dict</span><span class="op">.</span><span class="fu">update</span> <span class="fu">todo</span><span class="op">.</span><span class="fu">id</span> (<span class="dt">Maybe</span><span class="op">.</span><span class="fu">map</span> <span class="op">&lt;|</span> <span class="fu">always</span> <span class="fu">todo</span>) <span class="fu">todos</span><span class="op">,</span> <span class="fu">cnt</span> <span class="op">=</span> <span class="fu">cnt</span> }</span>
+<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">in</span></span>
+<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">setState</span> <span class="fu">state</span></span>
+<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="op">.</span><span class="fu">todos</span></span>
+<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="dt">Dict</span><span class="op">.</span><span class="fu">values</span></span>
+<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-26"><a href="#cb20-26" aria-hidden="true" tabindex="-1"></a><span class="fu">remove</span> : <span class="dt">String</span> <span class="op">-&gt;</span> <span class="dt">List</span> <span class="dt">Todo</span></span>
+<span id="cb20-27"><a href="#cb20-27" aria-hidden="true" tabindex="-1"></a><span class="fu">remove</span> <span class="fu">todoId</span> <span class="op">=</span></span>
+<span id="cb20-28"><a href="#cb20-28" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span></span>
+<span id="cb20-29"><a href="#cb20-29" aria-hidden="true" tabindex="-1"></a>        { <span class="fu">todos</span><span class="op">,</span> <span class="fu">cnt</span> } <span class="op">=</span></span>
+<span id="cb20-30"><a href="#cb20-30" aria-hidden="true" tabindex="-1"></a>            <span class="fu">getState</span></span>
+<span id="cb20-31"><a href="#cb20-31" aria-hidden="true" tabindex="-1"></a>        <span class="fu">state</span> <span class="op">=</span></span>
+<span id="cb20-32"><a href="#cb20-32" aria-hidden="true" tabindex="-1"></a>            { <span class="fu">todos</span> <span class="op">=</span> <span class="dt">Dict</span><span class="op">.</span><span class="fu">remove</span> <span class="fu">todoId</span> <span class="fu">todos</span><span class="op">,</span> <span class="fu">cnt</span> <span class="op">=</span> <span class="fu">cnt</span> }</span>
+<span id="cb20-33"><a href="#cb20-33" aria-hidden="true" tabindex="-1"></a>    <span class="kw">in</span></span>
+<span id="cb20-34"><a href="#cb20-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">setState</span> <span class="fu">state</span></span>
+<span id="cb20-35"><a href="#cb20-35" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="op">.</span><span class="fu">todos</span></span>
+<span id="cb20-36"><a href="#cb20-36" aria-hidden="true" tabindex="-1"></a>        <span class="op">|&gt;</span> <span class="dt">Dict</span><span class="op">.</span><span class="fu">values</span></span></code></pre></div>
+<p>コントローラーの <code>...</code> を書き換えてやれば完成だ．</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode elixir"><code class="sourceCode elixir"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> index(conn, _params), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="cn">Todo</span><span class="op">.</span>gets()})</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> create(conn, params), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="cn">Todo</span><span class="op">.</span>add(<span class="cn">Todo</span><span class="op">.</span>gen(params))})</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> update(conn, params), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="cn">Todo</span><span class="op">.</span>update(<span class="cn">Todo</span><span class="op">.</span>gen(params))})</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> delete(conn, %{<span class="st">&quot;id&quot;</span> <span class="op">=&gt;</span> id}), <span class="kw">do</span>: render(conn, <span class="st">&quot;todos.json&quot;</span>, %{<span class="va">todos:</span> <span class="cn">Todo</span><span class="op">.</span>remove(id)})</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<p>ちなみに出力された Elixir コードは<a href="https://gitlab.com/matsubara0507/elchemy_todo_app/blob/443777cee3e8435ee15f04ada6437e41e3af064b/lib/data/todo.elchemy.ex">ココ</a>と<a href="https://gitlab.com/matsubara0507/elchemy_todo_app/blob/443777cee3e8435ee15f04ada6437e41e3af064b/lib/models/todo.elchemy.ex">ココ</a>です． 興味がある人は見てください．</p>
+<h3 id="elm-brunch">Elm Brunch</h3>
+<p>Brunch 設定が難しかったので，本質的には Elchemy と関係ないけど残しておく．</p>
+<p>Phoenix 1.3 系ではトップレベルに <code>assets</code> というディレクトリがあり，HTML/JS/CSS/画像 のような静的ファイルはここに置いておく． Brunch を使って複数の JS や CSS を合わせることが出来る． <a href="https://github.com/madsflensted/elm-brunch">elm-brunch</a> を使うことで Elm を JS にコンパイルしてくれる．</p>
+<p>branch-config に次のような設定を書き加えてあげる． Elm のフロントコードは <code>lib/web/elm</code> に置いてある．</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>exports<span class="op">.</span><span class="at">config</span> <span class="op">=</span> {</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">paths</span><span class="op">:</span> {</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">watched</span><span class="op">:</span> [<span class="st">&quot;static&quot;</span><span class="op">,</span> <span class="st">&quot;css&quot;</span><span class="op">,</span> <span class="st">&quot;js&quot;</span><span class="op">,</span> <span class="st">&quot;vendor&quot;</span><span class="op">,</span> <span class="st">&quot;../lib/web/elm&quot;</span>]<span class="op">,</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">public</span><span class="op">:</span> <span class="st">&quot;../priv/static&quot;</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  }<span class="op">,</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">plugins</span><span class="op">:</span> {</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>    <span class="dt">elmBrunch</span><span class="op">:</span> {</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>      <span class="dt">elmFolder</span><span class="op">:</span> <span class="st">&quot;../lib/web/elm&quot;</span><span class="op">,</span></span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>      <span class="dt">mainModules</span><span class="op">:</span> [<span class="st">&quot;Main.elm&quot;</span>]<span class="op">,</span></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>      <span class="dt">outputFolder</span><span class="op">:</span> <span class="st">&quot;vendor&quot;</span></span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>    }<span class="op">,</span></span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<h3 id="フロント部分">フロント部分</h3>
+<p>ほんの少しだがコードを再利用できる． API クライアントは以下のようになる．</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">TodoAPI</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data</span><span class="op">.</span><span class="dt">Todo</span> <span class="kw">exposing</span> (<span class="dt">Todo</span>)</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Http</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="fu">getTodos</span> : <span class="dt">Http</span><span class="op">.</span><span class="dt">Request</span> (<span class="dt">List</span> <span class="dt">Todo</span>)</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="fu">getTodos</span> <span class="op">=</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Http</span><span class="op">.</span><span class="fu">request</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>        { <span class="fu">method</span> <span class="op">=</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;GET&quot;</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">headers</span> <span class="op">=</span></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>            []</span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">url</span> <span class="op">=</span></span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>            <span class="dt">String</span><span class="op">.</span><span class="fu">join</span> <span class="st">&quot;/&quot;</span></span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>                [ <span class="fu">baseUrl</span></span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>                <span class="op">,</span> <span class="st">&quot;todos&quot;</span></span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>                ]</span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">body</span> <span class="op">=</span></span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a>            <span class="dt">Http</span><span class="op">.</span><span class="fu">emptyBody</span></span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">expect</span> <span class="op">=</span></span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a>            <span class="dt">Http</span><span class="op">.</span><span class="fu">expectJson</span> (<span class="fu">list</span> <span class="fu">decodeTodo</span>)</span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">timeout</span> <span class="op">=</span></span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a>            <span class="dt">Nothing</span></span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">withCredentials</span> <span class="op">=</span></span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a>            <span class="dt">False</span></span>
+<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a>        }</span></code></pre></div>
+<p>ホントはこの当たりも Elchemy を使って生成できるとよいのだが... もしかして <a href="https://github.com/saschatimme/elm-phoenix">elm-phoenix</a> なるものを使えばよかったのかな？ また，The Elm Architecture 部分は長いので割愛．</p>
+<h2 id="section-2"></h2>
+<p>ホントは assets 回りが他にもたくさんあるが,本質的な部分はこれで完成． あとはモロモロインストールして <code>mix phx.server</code> とすれば動作するはずだ．</p>
+<h3 id="感想">感想</h3>
+<ul>
+<li><strong>うれしみ</strong>
+<ul>
+<li>静的検査は神</li>
+<li>フロントとコードを共有できる</li>
+</ul></li>
+<li><strong>つらみ</strong>
+<ul>
+<li>Phoenix のいくつかは型付けできない
+<ul>
+<li>ルーティングの引数</li>
+<li>へテロリストのようなモノ</li>
+<li>結局ここで良く分からんエラーに...</li>
+</ul></li>
+<li>コンパイルが遅い</li>
+</ul></li>
+</ul>
+<h2 id="おしまい">おしまい</h2>
+<p>今度は処理系の中身でも追ってみようかな．</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

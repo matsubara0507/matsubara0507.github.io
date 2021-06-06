@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Introduction to Functional Programming in OCaml を終えて" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <meta property="og:image" content="/images//assets/introduction-to-fp-in-ocaml/e_ocaml.jpg" />
+<title>Introduction to Functional Programming in OCaml を終えて</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">Introduction to Functional Programming in OCaml を終えて</h1>
+            </header>
+            <div class="post-content">
+              <p><a href="http://www.adventar.org/calendars/1572">IGGG アドベントカレンダー 2016</a> 7日目の記事です．</p>
+<p>4日連続はきつい(笑)</p>
+<p>9月末より <a href="https://www.fun-mooc.fr/">FUN</a> というインターネット上の講義サイト(<a href="https://ja.wikipedia.org/wiki/Massive_open_online_course">MOOC</a> の事)で <a href="https://www.fun-mooc.fr/courses/parisdiderot/56002S02/session02/About_this_course/">Introduction to Functional Programming in OCaml</a> を受講してた(無料)．</p>
+<p>先週ぐらいに無事完遂したので感想をば．</p>
+<p><img src="/assets/introduction-to-fp-in-ocaml/e_ocaml.jpg" alt="クリア！" /></p>
+<h2 id="table-of-contents">Table of Contents</h2>
+<p>だいたいこんな感じ． 各週，ビデオ講義と演習問題がある． 演習問題は AtCoder みたいな判定してくれる環境が付いていて，正答数に対し点数化されている．</p>
+<p><img src="/assets/introduction-to-fp-in-ocaml/env.gif" alt="実行環境付きで最悪ローカルに開発環境要らず" /></p>
+<ul>
+<li>Week 0: Introduction
+<ul>
+<li>本コースの導入</li>
+<li>関数型プログラミングや OCaml の歴史</li>
+<li>ツールや開発環境</li>
+</ul></li>
+<li>week 1: 型と定義と関数の基本
+<ul>
+<li>数値型, 文字列型, 真偽値型</li>
+<li>変数定義と関数定義と再帰</li>
+<li>演習が選択式でだるい</li>
+</ul></li>
+<li>Week 2: 様々なデータ構造
+<ul>
+<li>ユーザー定義型</li>
+<li>タプル, レコード, 配列</li>
+</ul></li>
+<li>Week 3: より高度なデータ構造
+<ul>
+<li>パターンマッチ</li>
+<li>再帰データ型, ツリー</li>
+<li>多相的な代数的データ構造</li>
+</ul></li>
+<li>Week 4: 高階関数
+<ul>
+<li>リスト処理なども</li>
+<li>やっと関数型っぽく書けた</li>
+</ul></li>
+<li>Week 5: 非純粋な型
+<ul>
+<li>例外, IO, ミュータブルな型, 参照型</li>
+<li>この辺りは型から関数の振る舞いがわからないから演習辛い</li>
+</ul></li>
+<li>Week 6: モジュールシステム
+<ul>
+<li>一番面白かった</li>
+</ul></li>
+<li>Project (大きめの演習問題)
+<ul>
+<li>箱入り娘のソルバ</li>
+<li>コーパスの作成</li>
+</ul></li>
+</ul>
+<p>最初に Week 0 と Week 1 が公開されて，一週間ごとに一つずつ増えていき，Project は Week 6 と同時に公開された(なぜか Week 5 と Week 6 の間には2週間あった)． なので，だいたい ひと月半のコースだ(12月上旬が演習問題の期限だけど)．</p>
+<h2 id="project-箱入り娘のソルバ">Project: 箱入り娘のソルバ</h2>
+<p><a href="https://ja.wikipedia.org/wiki/%E7%AE%B1%E5%85%A5%E3%82%8A%E5%A8%98_(%E3%83%91%E3%82%BA%E3%83%AB)">箱入り娘</a>というパズルを解くソルバ(自動で解くプログラム)を作るのが最後のお題の一つ． (作るといっても，十数問ぐらいに分かれてる小問を順に解いていけば基本的には出来上がる...基本的には)</p>
+<p>解答全部のコードは<a href="https://gist.github.com/matsubara0507/5f4107f871c63cd5d3dc71db12c033b6">こんな感じ</a></p>
+<p>これが一番難しくて，二日分ぐらいかかった．</p>
+<p>原因は <strong><em>Stack Overflow</em></strong> で，一瞬諦めようかと考えたぐらいだ．</p>
+<p>Stack Overflow とは，ようするにメモリリークで，プログラム用に用意されたメモリ(スタック)を使い切ってしまったのである． 原因の一つは関数型プログラミングでよくある再帰の呼びすぎである． 関数呼び出しをすると，その前の状態(変数の割り当てや呼び出された場所など)をスタックに積む． 関数型プログラミングには <code>for</code> 文などの繰り返し構文は無く，関数が自分自身を再度呼び出すこと(これを再帰呼び出しいう)で手続きを繰り返す． 数学の漸化式みたいなものだ．</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ot">factorial ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>factorial <span class="dv">0</span> <span class="ot">=</span> <span class="dv">1</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>factorial n <span class="ot">=</span> n <span class="op">*</span> factorial (n <span class="op">-</span> <span class="dv">1</span>)</span></code></pre></div>
+<p>解決方法は，これを末尾再帰の形に変更する事である． 末尾再帰とは，再帰呼び出しする場合は必ずそれだけで返すような再帰のことである． 要するにこんな感じ．</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ot">factorial ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>factorial n <span class="ot">=</span> loop <span class="dv">1</span> n</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    loop acc <span class="dv">0</span> <span class="ot">=</span> acc</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    loop acc n <span class="ot">=</span> loop (acc <span class="op">*</span> n) (n <span class="op">-</span> <span class="dv">1</span>)</span></code></pre></div>
+<p>こうしておくと，前の状態を保持しておく必要が無いので自動で最適化されて Stack Overflow が起きなくなる．</p>
+<p>Haskell の影響で，基本的に自分は，ミュータブルな配列ではなくイミュータブルなリストを使ってしまう．</p>
+<p><a href="http://ocaml.jp/archive/ocaml-manual-3.06-ja/libref/List.html">リストの API</a> を見る <strong>この関数は末尾再帰になっていません</strong> と書かれている関数がある． これを何個か使っていた(<code>map</code> とかね...)ので，全部末尾再帰のものに置き換えた．</p>
+<p><strong>が，これでも動かない...!</strong></p>
+<p>イロイロと出力させてみたとこと，要するに原因は組み合わせ爆発だった．</p>
+<p>結局のところ，この(手順通りに作ったはずの)アルゴリズムは単純な幅優先全探索しかしていない． ただ，少しだけ工夫されていて，同じ配置にならないように，一度通った配置を記憶し，同じになった場合は残りを省略している．</p>
+<p>(課題に沿って)配置(ピース)の等価性を次のように定義していた．</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> compare_piece p1 p2 =</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">match</span> (p1,p2) <span class="kw">with</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  | ((k1,n1),(k2,n2)) <span class="kw">when</span> k1 = k2 -&gt; <span class="dt">compare</span> n1 n2</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  | ((S,_), _) -&gt; <span class="dv">1</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  | ((H,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S -&gt; <span class="dv">1</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  | ((C,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H -&gt; <span class="dv">1</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  | ((V,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H &amp;&amp; k &lt;&gt; C -&gt; <span class="dv">1</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  | _ -&gt; <span class="dv">-1</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>;;</span></code></pre></div>
+<p>ピース自体はこんな型定義．</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> piece_kind = S | H | V | C | X</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> piece = piece_kind * <span class="dt">int</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> x = (X, <span class="dv">0</span>) <span class="kw">and</span> s = (S, <span class="dv">0</span>) <span class="kw">and</span> h = (H, <span class="dv">0</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> (c0, c1, c2, c3) = ((C, <span class="dv">0</span>), (C, <span class="dv">1</span>), (C, <span class="dv">2</span>), (C, <span class="dv">3</span>))</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> (v0, v1, v2, v3) = ((V, <span class="dv">0</span>), (V, <span class="dv">1</span>), (V, <span class="dv">2</span>), (V, <span class="dv">3</span>))</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> all_pieces : piece <span class="dt">list</span> = [ s; h; c0; c1; c2; c3; v0; v1; v2; v3 ]</span></code></pre></div>
+<p>要するに，<strong>同じ形のピースも全て区別している</strong> のである． こんな必要はない...</p>
+<p>なので，区別しない形に書き換えた．</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> compare_piece p1 p2 =</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">match</span> (p1,p2) <span class="kw">with</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  | ((k1,n1),(k2,n2)) <span class="kw">when</span> k1 = k2 -&gt; <span class="dv">0</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  | ((S,_), _) -&gt; <span class="dv">1</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  | ((H,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S -&gt; <span class="dv">1</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  | ((C,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H -&gt; <span class="dv">1</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  | ((V,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H &amp;&amp; k &lt;&gt; C -&gt; <span class="dv">1</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  | _ -&gt; <span class="dv">-1</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>;;</span></code></pre></div>
+<p>区別した場合で正解の問題があるのため，素直に書き換えてしまうとダメでして... しょうがないから，ローカル関数として上書きした．</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> solve_klotski initial_board =</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> compare_piece p1 p2 =</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">match</span> (p1,p2) <span class="kw">with</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    | ((k1,n1),(k2,n2)) <span class="kw">when</span> k1 = k2 -&gt; <span class="dv">0</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    | ((S,_), _) -&gt; <span class="dv">1</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    | ((H,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S -&gt; <span class="dv">1</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    | ((C,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H -&gt; <span class="dv">1</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    | ((V,_), (k,n)) <span class="kw">when</span> k &lt;&gt; S &amp;&amp; k &lt;&gt; H &amp;&amp; k &lt;&gt; C -&gt; <span class="dv">1</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    | _ -&gt; <span class="dv">-1</span> <span class="kw">in</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> <span class="kw">module</span> BoardSet = <span class="dt">Set</span>.Make (<span class="kw">struct</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>      <span class="kw">type</span> t = board</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>      <span class="kw">let</span> <span class="dt">compare</span> b1 b2 =</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>        loop (<span class="kw">fun</span> (_,_,_,_,_,fin) -&gt; fin)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>          (<span class="kw">fun</span> (i,j,r1,r2,ans,fin) -&gt; <span class="kw">match</span> (i,j) <span class="kw">with</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>            | (x,y) <span class="kw">when</span> (x+<span class="dv">1</span>) &gt; <span class="dv">4</span> &amp;&amp; y &gt; <span class="dv">3</span> -&gt; (i,j,r1,r2,ans,<span class="kw">true</span>)</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>            | (_,y) <span class="kw">when</span> y &gt; <span class="dv">3</span>              -&gt; (i+<span class="dv">1</span>,<span class="dv">0</span>,b1.(i+<span class="dv">1</span>),b2.(i+<span class="dv">1</span>),ans,fin)</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>            | _ -&gt; <span class="kw">let</span> n = compare_piece r1.(j) r2.(j) <span class="kw">in</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>                     <span class="kw">if</span> n &lt;&gt; <span class="dv">0</span> <span class="kw">then</span> (i,j,r1,r2,n,<span class="kw">true</span>) <span class="kw">else</span> (i,j+<span class="dv">1</span>,r1,r2,ans,fin)</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>          ) (<span class="dv">0</span>,<span class="dv">0</span>,b1.(<span class="dv">0</span>),b2.(<span class="dv">0</span>),<span class="dv">0</span>,<span class="kw">false</span>) |&gt; (<span class="kw">fun</span> (_,_,_,_,ans,_) -&gt; ans)</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>      ;;</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span>) <span class="kw">in</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> p = { move = (<span class="kw">fun</span> _ (Move (_,_,b)) -&gt; b) ;</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>            possible_moves = possible_moves ;</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>            final = final } <span class="kw">in</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> opset = { empty = BoardSet.add initial_board BoardSet.empty ;</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>                mem = (<span class="kw">fun</span> al s -&gt; BoardSet.mem (<span class="dt">List</span>.hd al) s) ;</span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>                add = (<span class="kw">fun</span> al s -&gt; BoardSet.add (<span class="dt">List</span>.hd al) s) } <span class="kw">in</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>  solve_puzzle p opset initial_board</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>;;</span></code></pre></div>
+<p>で、できた...</p>
+<p><img src="/assets/introduction-to-fp-in-ocaml/solve.gif" alt="無駄にリッチ" /></p>
+<h2 id="感想">感想</h2>
+<p>全体を通してまぁまぁ演習が難しい．</p>
+<p>自分のモチベーションは <del>敵情視察</del> 純粋に OCaml の勉強としてである． 関数型プログラミングもプログラミングそれ自体もそこそこできる方だと思っているが，それでも各週の全ての演習を解くのに一日潰れるぐらい時間がかかった．</p>
+<p>あんまりかかるので，3週目くらいからは基本ビデオは飛ばして，演習を解き始めてわからなくなったら戻る形式でもだ．</p>
+<p>なので，<strong>全くプログラミングができない人にはハードルが結構高い</strong> と思う．</p>
+<p>全体を通して一番面白かったのはモジュールの話． Haskell にもこれだけ強力なモジュールシステムがあればなぁという感じだった．</p>
+<p>一番しんどかったのは Week 5 の非純粋な型の演習． そもそも全体を通してそうなのだが，演習で作るべき関数のテストケースがほとんど書いてない． 自分は(加えて英語が苦手なので)関数名と型から何とかやっていたが，IO などではそうはいかない． 全てユニット型だから． 辛かった．</p>
+<p>いろいろ学べて面白かったけど，あんまり人には勧めないかなぁ．</p>
+<h2 id="おしまい">おしまい</h2>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

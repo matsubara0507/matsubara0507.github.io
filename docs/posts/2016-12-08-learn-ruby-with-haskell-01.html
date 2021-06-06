@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Haskell で学ぶ Ruby (その１)" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <meta property="og:image" content="/images//assets/learn-ruby-with-haskell/pc-has-rb.jpg" />
+<title>Haskell で学ぶ Ruby (その１)</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">Haskell で学ぶ Ruby (その１)</h1>
+            </header>
+            <div class="post-content">
+              <p><img src="/assets/learn-ruby-with-haskell/pc-has-rb.jpg" /></p>
+<p><a href="http://www.adventar.org/calendars/1572">IGGG アドベントカレンダー</a> 8日目の記事です．</p>
+<p>今回は自分が敬愛するエンジニアの人が執筆してる「<a href="http://ascii.jp/elem/000/001/230/1230449/">Ruby で学ぶ Ruby</a>」を真似して， <strong>Haskell</strong> で実装していきたいと思う．</p>
+<h2 id="ruby-で学ぶ-ruby">Ruby で学ぶ Ruby</h2>
+<p>ascii.jp にて連載中であり，コンセプトとしては Ruby 初学者に Ruby を作りながら Ruby を学んでもらおうというモノっぽい． 本当に初学者向きで，プログラミングすらほとんど知らなくても読み進めれるようになっている．</p>
+<p>「Ruby 作る」というのは「Ruby で書かれたソースコード実行できるプログラムを作る」と言う意味で，もちろん，単純に <code>eval</code> してお終いとかではない． もちろん，そんなこと初学者にできてしまったら Matz も驚きで，イロイロと種がある．</p>
+<ul>
+<li>一つは，実際に作るのは Ruby のサブクラス(小規模版)であり，これを MinRuby と呼んでいる． 小規模と言っても，最終目標は <strong>作った MinRuby という処理系プログラムを MinRuby 自身で実行できるようにする</strong> ，という所謂 Quine みたいなもの(?)にしたいらいし． (遠藤さんらしい発想である)</li>
+<li>二つ目は，構文解析などの難しい処理は <strong>既に用意してある関数を呼び出す</strong> だけで良いような補助ライブラリを提供してくれていることだ． なので，実装するのは，所謂，意味論の解析だけである． まぁ，これでも初学者に教えるのは大変だと思うけど．</li>
+</ul>
+<p>1,2回は完全に Ruby 入門で，3回目は構文木のための「木」構造の勉強． 4回目は簡単な電卓プログラムを作成し，5,6,7...回と，変数，分岐，関数を追加していく感じである(まだ完結していない)．</p>
+<p>あ，あと絵がすごいかわいい．</p>
+<h2 id="haskell-でやるには">Haskell でやるには</h2>
+<p>ここで問題が生じる． 連載がゼロから作るのを前提にしてくれているのなら，上から追っていきば，なんとか実装できるだろうが，そうではない．</p>
+<p>二つ目の種で言ったように，構文解析(など)の部分は既に用意されているのだ．</p>
+<p>なので，ここから作る必要がある．</p>
+<h2 id="minruby-を見てみる">minruby を見てみる</h2>
+<p>その提供されている補助ライブラリの名前が <a href="https://github.com/mame/minruby">minruby</a> となっている．</p>
+<p>見てみると...</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">require</span> <span class="st">&quot;pp&quot;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">require</span> <span class="st">&quot;ripper&quot;</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="cf">class</span> <span class="dt">MinRubyParser</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">def</span> <span class="dv">self</span><span class="at">.minruby_parse</span>(program)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">MinRubyParser</span><span class="at">.new.minruby_parse</span>(program)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">end</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="cf">def</span> minruby_parse(program)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    simplify(<span class="dt">Ripper</span><span class="at">.sexp</span>(program))</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">end</span></span></code></pre></div>
+<p><code>Ripper.sexp(program)</code> だ...と....</p>
+<p>実は，Ruby には <a href="https://docs.ruby-lang.org/ja/latest/class/Ripper.html">Ripper</a> というクラスがあって，こいつは Ruby プログラムのパーサーを提供してくれる(ずるい)．</p>
+<p>(<code>sexp</code> は<a href="https://docs.ruby-lang.org/ja/latest/method/Ripper/s/sexp.html">これ</a>かな，S式にパースしてくれるみたい)</p>
+<p>こいつは困った...</p>
+<h2 id="パーサーを作る">パーサーを作る</h2>
+<p>流石に Ripper の中までは追うのは大変だし，何より，全く同じのを作るとなると，構文解析だけ完全な Ruby 用を作らなくてはいけない...</p>
+<p>ということで，諦めて MinRuby を作るには十分なパーサーを Haskell で作っていく．</p>
+<h3 id="関数型パーサー">関数型パーサー</h3>
+<p>実はパーサーは Haskell の得意分野の一つである．</p>
+<p>Haskell の構文解析の仕方は，yacc のような一般的な BNF を食ってくやつとは異なる．</p>
+<p>「スペースを認識するパーサー」や「任意の一文字を認識するパーサー」や「数字を認識するパーサー」のような <strong>小さいパーサーを作り</strong> ，それを関数合成や高階関数のようなものを使って，「Ruby プログラムを認識するパーサー」のような大きいパーサーを構築していく．</p>
+<p>これを関数型パーサーという．</p>
+<h3 id="まずは四則演算">まずは四則演算</h3>
+<p>取りあえず非負整数の二項演算だけを考える． つまり，<code>1 + 1</code> とか <code>2 * 3</code> とかだけで，<code>1 + 2 * 3</code> とかはできない．</p>
+<p>最終的な，現状のコードは<a href="https://gist.github.com/matsubara0507/63bc7c3098899034db1a42f83e2c2dbb">ココ</a>．</p>
+<p>トップダウンに考える． パーサーは <strong>文字列を受け取って構文木を返す関数</strong> と考えれるので</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.Tree</span> (<span class="dt">Tree</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ot">minrubyParse ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Tree</span> <span class="dt">String</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>minrubyParse <span class="ot">=</span> <span class="fu">undefined</span></span></code></pre></div>
+<p>こんな感じ． Ruby の minruby は木構造を配列を使って表してるが，こっちはちゃんとしたデータ構造を用いる． というか，へテロリスト(heterogeneous, 異種)という配列の要素がバラバラでも良い配列を Haskell の場合はデフォルトで扱えないので，こうするしかない(というかめんどい)．</p>
+<p>Ruby の方は，数字であれば Int型に変換していたが，こっちは全部 String (文字列)型で扱うことにする(めんどいから)．</p>
+<p>ちなみにこれは，あくまでも <strong>構文解析してくれる関数</strong> であって，パーサー(構文解析器)ではない．</p>
+<h3 id="パーサー">パーサー</h3>
+<p>次に，<a href="https://hackage.haskell.org/package/megaparsec">megaparsec</a> というライブラリを使ってちゃんとしたパーサーを書こう．</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Text.Megaparsec</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">MinRubyParser</span> a <span class="ot">=</span> <span class="dt">Parsec</span> <span class="dt">Dec</span> <span class="dt">String</span> a</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ot">minrubyParse ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Tree</span> <span class="dt">String</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>minrubyParse <span class="ot">=</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">either</span> (<span class="fu">error</span> <span class="op">.</span> parseErrorPretty) <span class="fu">id</span> <span class="op">.</span> parse minrubyParser <span class="st">&quot;&quot;</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="ot">minrubyParser ::</span> <span class="dt">MinRubyParser</span> (<span class="dt">Tree</span> <span class="dt">String</span>)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>minrubyParser <span class="ot">=</span> <span class="fu">undefined</span></span></code></pre></div>
+<p><code>MinRubyParser</code> という型こそ，パーサー(構文解析器)の型であり，<code>String</code> をパースして何らかの型 <code>a</code> の値を返す(<code>Dec</code> はエラーログ)．</p>
+<p>要するに，<code>minrubyParse</code> という関数は文字列を受け取って，<code>minrubyPaeser</code> というパーサーにその文字列を食わせて実行し，構文木を得て，返している．</p>
+<p><code>minrubyParse</code> の細かい実装の部分は，割愛(ライブラリのドキュメントを読んで)．</p>
+<h3 id="二項演算パーサー">二項演算パーサー</h3>
+<p>次に，今回は <strong>非負整数の二項演算だけ</strong> パースするので</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ot">minrubyParser ::</span> <span class="dt">MinRubyParser</span> (<span class="dt">Tree</span> <span class="dt">String</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>minrubyParser <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  space</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  tree <span class="ot">&lt;-</span> parseBinaryOp</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  space</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span> tree</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="ot">parseBinaryOp ::</span> <span class="dt">MinRubyParser</span> (<span class="dt">Tree</span> <span class="dt">String</span>)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>parseBinaryOp <span class="ot">=</span> <span class="fu">undefined</span></span></code></pre></div>
+<p><code>space</code> といパーサーはゼロ個以上の空白を食ってくれる． 要するに，<code>1 + 2</code> のような空白に挟まれた式を許容しているのである．</p>
+<p>二項演算は (1) 数字をパースして， (2) 中置演算子をパースし， (3) また数字をパースする．</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ot">parseBinaryOp ::</span> <span class="dt">MinRubyParser</span> (<span class="dt">Tree</span> <span class="dt">String</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>parseBinaryOp <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  n1 <span class="ot">&lt;-</span> leaf <span class="op">&lt;$&gt;</span> digit  <span class="co">-- (1)</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  space</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  op <span class="ot">&lt;-</span> operator        <span class="co">-- (2)</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  space</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  n2 <span class="ot">&lt;-</span> leaf <span class="op">&lt;$&gt;</span> digit  <span class="co">-- (3)</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span> (<span class="dt">Node</span> op [n1,n2])</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="ot">digit ::</span> <span class="dt">MinRubyParser</span> <span class="dt">String</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>digit <span class="ot">=</span> <span class="fu">undefined</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="ot">operator ::</span> <span class="dt">MinRubyParser</span> <span class="dt">String</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>operator <span class="ot">=</span> <span class="fu">undefined</span></span></code></pre></div>
+<p><code>space</code> が挟まってるのは <code>1+1</code> だけでなく <code>1 + 1</code> も許容するため．</p>
+<p><code>leaf &lt;$&gt;</code> は取ってきた数字を木構造の葉の部分に変換しており，<code>Node op [n1,n2]</code> は木構造の節 (<code>op</code> は節の要素) を作っている．</p>
+<h3 id="小さいパーサー">小さいパーサー</h3>
+<p>残るは <code>digit</code> と <code>operator</code> を作るだけ．</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Control.Applicative</span> (empty)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Text.Megaparsec.Char</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="ot">digit ::</span> <span class="dt">MinRubyParser</span> <span class="dt">String</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>digit <span class="ot">=</span> some digitChar</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="ot">operator ::</span> <span class="dt">MinRubyParser</span> <span class="dt">String</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>operator <span class="ot">=</span> <span class="fu">foldl</span> (<span class="op">&lt;|&gt;</span>) empty <span class="op">$</span> <span class="fu">fmap</span> string binaryOps</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="ot">binaryOps ::</span> [<span class="dt">String</span>]</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>binaryOps <span class="ot">=</span> [<span class="st">&quot;+&quot;</span>, <span class="st">&quot;-&quot;</span>, <span class="st">&quot;*&quot;</span>, <span class="st">&quot;/&quot;</span>, <span class="st">&quot;%&quot;</span>]</span></code></pre></div>
+<p><code>digitChar</code> はライブラリにあるパーサーで，<code>0..9</code> の数字一文字だけ認識する． それを，高階関数(みたいな) <code>some</code> に与えることで，「一つ以上の数字列」になる．</p>
+<p><code>string s</code> もライブラリにあるパーサーで，引数に与えた文字列 <code>s</code> のみを認識する． それを <code>foldl &lt;|&gt; empty</code> で畳み込んでおり，直感的には <code>binaryOps</code> のリストに定義された文字列を左から順に探している(無ければエラー)．</p>
+<h3 id="テスト">テスト</h3>
+<p>ghci で試してみた．</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> minrubyParse <span class="st">&quot;1 + 2&quot;</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="dt">Node</span> {rootLabel <span class="ot">=</span> <span class="st">&quot;+&quot;</span>, subForest <span class="ot">=</span> [<span class="dt">Node</span> {rootLabel <span class="ot">=</span> <span class="st">&quot;1&quot;</span>, subForest <span class="ot">=</span> []},<span class="dt">Node</span> {rootLabel <span class="ot">=</span> <span class="st">&quot;2&quot;</span>, subForest <span class="ot">=</span> []}]}</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> minrubyParse <span class="st">&quot;2 * 3&quot;</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="dt">Node</span> {rootLabel <span class="ot">=</span> <span class="st">&quot;*&quot;</span>, subForest <span class="ot">=</span> [<span class="dt">Node</span> {rootLabel <span class="ot">=</span> <span class="st">&quot;2&quot;</span>, subForest <span class="ot">=</span> []},<span class="dt">Node</span> {rootLabel <span class="ot">=</span> <span class="st">&quot;3&quot;</span>, subForest <span class="ot">=</span> []}]}</span></code></pre></div>
+<h2 id="評価器">評価器</h2>
+<p>あとは構文木を解釈してくれる評価器を作る． 詳細は割愛(というか，直感的に読んだ通り)．</p>
+<p>(<code>read</code> という関数は文字列を対応する型に変換してる)</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">Main</span> (main) <span class="kw">where</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">MinRuby</span> (minrubyParse)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.Tree</span> (<span class="dt">Tree</span>(..))</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  input <span class="ot">&lt;-</span> <span class="fu">getLine</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> tree <span class="ot">=</span> minrubyParse input</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span> <span class="op">$</span> evaluate tree</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="ot">evaluate ::</span> <span class="dt">Tree</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>evaluate (<span class="dt">Node</span> v ls) <span class="ot">=</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">if</span> <span class="fu">null</span> ls <span class="kw">then</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">read</span> v</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>  <span class="kw">else</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> [v1,v2] <span class="ot">=</span> <span class="fu">fmap</span> evaluate ls <span class="kw">in</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">case</span> v <span class="kw">of</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;+&quot;</span> <span class="ot">-&gt;</span> v1 <span class="op">+</span> v2</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;-&quot;</span> <span class="ot">-&gt;</span> v1 <span class="op">-</span> v2</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;*&quot;</span> <span class="ot">-&gt;</span> v1 <span class="op">*</span> v2</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;/&quot;</span> <span class="ot">-&gt;</span> v1 <span class="ot">`div`</span> v2</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;%&quot;</span> <span class="ot">-&gt;</span> v1 <span class="ot">`mod`</span> v2</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>      _ <span class="ot">-&gt;</span> <span class="fu">error</span> (<span class="st">&quot;undefined binaty op: &quot;</span> <span class="ot">`mappend`</span> v)</span></code></pre></div>
+<p>実行</p>
+<pre class="shell"><code>$ stack exec -- interp
+1 + 1
+2
+$ stack exec -- interp
+2 * 3
+6</code></pre>
+<h2 id="おしまい">おしまい</h2>
+<p>時間なくてここまで...</p>
+<p>少しずつ作っていきます．</p>
+<p>このままではキツそうなので，へテロリストでも作ってみようかな．</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

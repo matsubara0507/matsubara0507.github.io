@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Hakyll で作った GitHub Pages のデザインを変更してみた" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>Hakyll で作った GitHub Pages のデザインを変更してみた</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">Hakyll で作った GitHub Pages のデザインを変更してみた</h1>
+            </header>
+            <div class="post-content">
+              <p><a href="/posts/2016-07-07-started-github-pages.html">Hakyll を使って自分の GitHub Pages を作った</a>が，デフォルトのデザインがあんまりカッコよくないので変更してみた．</p>
+<p><a href="https://jaspervdj.be/hakyll/examples.html">ココ</a> とか <a href="http://katychuang.com/hakyll-cssgarden/gallery/">ココ</a> にデザインの例があるのだが，しっくりくるのが無かった．</p>
+<p>そこで，<a href="http://jekyllthemes.org/">Jekyll のテーマ</a> の中からいい感じのテーマを選んで，それを <strong>Hakyll で動くように書き換えてみた</strong> ．</p>
+<p>ただし，自動で変換をするというわけではなく，手作業で変換している． 流石に変換器を作るのはつらそう．</p>
+<h2 id="wing-theme">Wing Theme</h2>
+<p><a href="https://github.com/nikrich/jekyll-wing-template">Wing</a> というテーマがカッコよくかつシンプルで移植しやすそうだったので，今回はこのテーマを Hakyll 用に移植する．</p>
+<p>移植した Hakyll 版の Wing テンプレートは私の <a href="https://github.com/matsubara0507/hakyll-wing-template">GitHub リポジトリ</a>に公開した．</p>
+<h2 id="移植">移植</h2>
+<h3 id="jekyll-と-hakyll">Jekyll と Hakyll</h3>
+<p>Jekyll も Hakyll も HTML に HTML を挿入したり，環境変数みたいのを使えたり，<code>if</code> や <code>for</code> の制御構文が使えたり，かなり共通項が多い． 以下に対応を書いてみた．</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- 比較 : 上 Jekyll 下 Hakyll --&gt;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- HTMLの挿入 --&gt;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>{% include header.html %}</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>$partial(&quot;includes/header.html&quot;)$</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- 制御構文 if --&gt;</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>{% if page.title %}</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  {{ page.title | escape }}</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>{% else %}</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  {{ site.title | escape }}</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>{% endif %}</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>$if(title)$</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  $title$</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>$else$</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  $site_title$</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>$endif$</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- 制御構文 for --&gt;</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>{% for post in site.posts %}</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>  <span class="kw">&lt;li&gt;</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    <span class="kw">&lt;span</span> <span class="er">class</span><span class="ot">=</span><span class="st">&quot;post-meta&quot;</span><span class="kw">&gt;</span>{{ post.date | date: &quot;%b %-d, %Y&quot; }}<span class="kw">&lt;/span&gt;</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    <span class="kw">&lt;a</span> <span class="er">class</span><span class="ot">=</span><span class="st">&quot;post-link&quot;</span> <span class="er">href</span><span class="ot">=</span><span class="st">&quot;{{ post.url | prepend: site.baseurl }}&quot;</span><span class="kw">&gt;</span>{{ post.title }}<span class="kw">&lt;/a&gt;</span>            </span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>  <span class="kw">&lt;/li&gt;</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>{% endfor %}</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>$for(posts)$</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>  <span class="kw">&lt;li&gt;</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>    <span class="kw">&lt;span</span> <span class="er">class</span><span class="ot">=</span><span class="st">&quot;post-meta&quot;</span><span class="kw">&gt;</span>$date$<span class="kw">&lt;/span&gt;</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>    <span class="kw">&lt;a</span> <span class="er">class</span><span class="ot">=</span><span class="st">&quot;post-link&quot;</span> <span class="er">href</span><span class="ot">=</span><span class="st">&quot;$url$&quot;</span><span class="kw">&gt;</span>$title$<span class="kw">&lt;/a&gt;</span></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>  <span class="kw">&lt;/li&gt;</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>$endfor$</span></code></pre></div>
+<p>基本的に <code>{{ ... }}</code> や <code>{% ... %}</code> が <code>$ ... $</code> に変わっただけのように見える．</p>
+<p>実は環境変数(みたいなの)の設定に関する点で大きく異なる．</p>
+<p>Jekyll の場合，環境変数はディレクトリやファイルから自動で設定される． 対して Hakyll は Haskell プログロムを書いて，自分で設定する必要がある．</p>
+<p>例えば，for 文の <code>posts</code> という変数には，Jekyll の場合 <code>_posts</code> ディレクトリがそのまま対応している． 対して，Hakyll の場合，<code>posts</code> ディレクトリが対応することを次のように <code>site.hs</code> に[^1]書いてやる必要がある．</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>create [<span class="st">&quot;archive.html&quot;</span>] <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  route idRoute</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  compile <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>      posts <span class="ot">&lt;-</span> recentFirst <span class="op">=&lt;&lt;</span> loadAll <span class="st">&quot;posts/*&quot;</span> <span class="co">-- ココと</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>      <span class="kw">let</span> archiveCtx <span class="ot">=</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>            listField <span class="st">&quot;posts&quot;</span> postCtx (<span class="fu">return</span> posts) <span class="ot">`mappend`</span> <span class="co">-- ココ</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>            constField <span class="st">&quot;title&quot;</span> <span class="st">&quot;Archives&quot;</span> <span class="ot">`mappend`</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>            siteCtx <span class="ot">`mappend`</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>            defaultContext</span></code></pre></div>
+<p>要するに，Hakyll の方が面倒だが自由度が高いのだ．</p>
+<p>なので，この違いを手作業で食ってやる必要があった．</p>
+<h3 id="環境変数を定義">環境変数を定義</h3>
+<p>上述した通り，Hakyll の場合はどこでどんな環境変数を使えるかを自前で全部定義してあげる必要がある．</p>
+<p>Hakyll では <code>match</code> や <code>create</code> という関数を用いることで，HTML ファイルの <code>$ ... $</code> 中身を置き換えたり，ファイル自体を生成したりできる． 例えば，次のようなコードを書ける．</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>match <span class="st">&quot;about.md&quot;</span> <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  route   <span class="op">$</span> setExtension <span class="st">&quot;html&quot;</span>                       <span class="co">-- (1)</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  compile <span class="op">$</span> pandocCompiler                            <span class="co">-- (2)</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/page.html&quot;</span>     </span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>                (siteCtx <span class="ot">`mappend`</span> defaultContext)    <span class="co">-- (3)</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/default.html&quot;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>                (siteCtx <span class="ot">`mappend`</span> defaultContext)    <span class="co">-- (4)</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">&gt;&gt;=</span> relativizeUrls                                <span class="co">-- (5)</span></span></code></pre></div>
+<p>これは，<code>about.md</code> ファイルを使って <code>about.html</code> ファイルを生成している． 各手続きを説明すると</p>
+<ol>
+<li>拡張子を <code>html</code> に変更</li>
+<li>pandoc で MD から HTML にコンパイル</li>
+<li><code>page.html</code> の <code>$body$</code> に 変換した <code>about.html</code> を挿入</li>
+<li><code>default.html</code> の <code>$body$</code> に変換した <code>about.html</code> を挿入</li>
+<li>URL を相対化</li>
+</ol>
+<p>(3) の "変換した <code>about.html</code>" とは，pandoc でコンパイルまでしたものを指し，(4) のは (3) の挿入までのものを指している．</p>
+<p>ココでの，<code>siteCtx</code> や <code>defaultContext</code> が定義された環境変数のリストである． 例えば次のようなものが書ける．</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ot">siteCtx ::</span> <span class="dt">Context</span> <span class="dt">String</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>siteCtx <span class="ot">=</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  dateField <span class="st">&quot;site_title&quot;</span> <span class="st">&quot;My Haskell Blog&quot;</span> <span class="ot">`mappend`</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  dateField <span class="st">&quot;github_account&quot;</span> <span class="st">&quot;ilovehaskell&quot;</span></span></code></pre></div>
+<p>このような <code>siteCtx</code> を定義して，上記した <code>match "about.md" $ do ...</code> を実行すると，<code>page.html</code> や <code>default.html</code> 内の <code>$site_title$</code> が "My Haskell Blog" に置き換えられる．</p>
+<p>基本的にはこの点をチマチマと書き換えてた．</p>
+<h3 id="sass">sass</h3>
+<p>Jekyll の方の Wing テーマでは内部で Gem の sass コマンドを呼んでいるのだが，Hakyll では同じようにはうまくかなかった．</p>
+<p>なので，外で sass から css にコンパイルすることにした．</p>
+<p>そのうち自動化したい．</p>
+<h3 id="日付と時間">日付と時間</h3>
+<p>Jekyll の場合，与えた環境変数(みたいなの)のフォーマットを後から指定できる．</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">&lt;p</span> <span class="er">class</span><span class="ot">=</span><span class="st">&quot;post-meta&quot;</span><span class="kw">&gt;</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">&lt;time</span> <span class="er">datetime</span><span class="ot">=</span><span class="st">&quot;{{ page.date | date_to_xmlschema }}&quot;</span> <span class="er">itemprop</span><span class="ot">=</span><span class="st">&quot;datePublished&quot;</span><span class="kw">&gt;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    {{ page.date | date: &quot;%b %-d, %Y&quot; }}</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">&lt;/time&gt;</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  ...</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="kw">&lt;/p&gt;</span></span></code></pre></div>
+<p>2行目と3行目の <code>page.date</code> 形式を別々に指定している． Hakyll ではこれができない...(ちゃんと調べてないのでもしかしたらできるかも...)．</p>
+<p>フォーマットは <code>COntext String</code> を作ったときに指定する必要がある． そのため，今回は別々の変数を与えることにした．</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ot">postCtx ::</span> <span class="dt">Context</span> <span class="dt">String</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>postCtx <span class="ot">=</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  dateField <span class="st">&quot;time&quot;</span> <span class="st">&quot;%Y-%m-%dT%H:%M:%S%Z&quot;</span> <span class="ot">`mappend`</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  dateField <span class="st">&quot;date&quot;</span> <span class="st">&quot;%b %-d, %Y&quot;</span> <span class="ot">`mappend`</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  defaultContext</span></code></pre></div>
+<h3 id="シンタックスハイライト">シンタックスハイライト</h3>
+<p>Jekyll のシンタックスハイライトを Haskell では使うことができなかった． たぶん Jekyll と Haskell の MD から HTML へのトランスレータが違うせいだろう． 現に，Jekyll の場合，下記のようにコードを書く．</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>{% highlight ruby %}</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>def print_hi(name)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  puts &quot;Hi, #{name}&quot;</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>end</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>print_hi(&#39;Tom&#39;)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>#=&gt; prints &#39;Hi, Tom&#39; to STDOUT.</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>{% endhighlight %}</span></code></pre></div>
+<p>仕方がないので， パッケージを使うことにした． このやり方は <del>このページ</del> を参照した． 残念ながら参考先のリンクが切れてしまった...</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>create [<span class="st">&quot;css/highlight.css&quot;</span>] <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  route   idRoute</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  compile <span class="op">$</span> makeItem (compressCss <span class="op">$</span> styleToCss pygments)</span></code></pre></div>
+<p>こうすることで，Hakyll でも使える <code>highlight.css</code> を作れる．</p>
+<h3 id="config-ファイル">Config ファイル</h3>
+<p>Jekyll は <code>_config.yml</code> で書いた環境変数(みたいなの)を取り込むことができる．</p>
+<p>Hakyll も新しいバージョンでは <code>meta.html</code> でできんことも無いみたいだけど，良くわからないかったので，自前で組み込んだ．</p>
+<p>Haskell の Yaml パッケージは <a href="https://hackage.haskell.org/package/yaml">yaml</a> が有名だが，これは既に決まっている構造の Yaml ファイル読み込むことはできるが，構造が決まってない Yaml を文字列の連想配列みたいのに落とすことはできない． それを行うには <a href="http://hackage.haskell.org/package/HsSyck">HsSync</a> というパッケージをラップした <a href="https://hackage.haskell.org/package/yaml-light">yaml-light</a> を使う．</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  configYaml <span class="ot">&lt;-</span> parseYamlFile <span class="st">&quot;config.yaml&quot;</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> siteCtx <span class="ot">=</span> mkSiteCtx configYaml</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  hakyllWith config <span class="op">$</span> <span class="kw">do</span> <span class="op">...</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="ot">mkSiteCtx ::</span> <span class="dt">YamlLight</span> <span class="ot">-&gt;</span> <span class="dt">Context</span> <span class="dt">String</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>mkSiteCtx <span class="ot">=</span> <span class="fu">mconcat</span> <span class="op">.</span> <span class="fu">fmap</span> mkSiteCtx&#39; <span class="op">.</span> getTerminalsKeys</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    mkSiteCtx&#39; (val, [<span class="dt">YStr</span> key]) <span class="ot">=</span> constField (toString key) (toString val)</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    mkSiteCtx&#39; _ <span class="ot">=</span> <span class="fu">mempty</span></span></code></pre></div>
+<h2 id="今後の展望">今後の展望</h2>
+<p>当分はこのデザインで使っていこうと思う． しかし，このデザインではタグやカテゴリによる管理ができないので対応させるか，対応した Jekyll のテーマをまた移植したい．</p>
+<h2 id="おしまい">おしまい</h2>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

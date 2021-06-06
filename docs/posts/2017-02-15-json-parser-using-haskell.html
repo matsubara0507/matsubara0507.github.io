@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Haskell による JSON Parser" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>Haskell による JSON Parser</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">Haskell による JSON Parser</h1>
+            </header>
+            <div class="post-content">
+              <p>タイトルの通り． Haskell の Functional Parser ライブラリ，Parsec を使って，JSON Parser を作った話． ありきたりですね．</p>
+<p>作ったコードのリポジトリは<a href="https://github.com/matsubara0507/jsonparser">ココ</a>です．</p>
+<h5 id="追記20180214">追記(2018.02.14)</h5>
+<p>GitHub にあった<a href="https://github.com/nst/JSONTestSuite">テストスイート</a>を使ってテストを書いてみたらイロイロと JSON を勘違いしていたので大幅修正した．</p>
+<h2 id="いきさつ">いきさつ</h2>
+<p>名〇屋でやってる(数少ない FP な)勉強会，「<a href="https://fp-in-scala-nagoya.connpass.com/">FP in Scala 読書会</a>」に6月ぐらいから参加している． 前々回ぐらいから第8章の「関数型パーサー」に入って，猛烈な盛り上がりを見せている(？)．</p>
+<p>書籍中の例題として JSON Parser を書くのだが，目の前の人が無限に「<a href="http://json.org">json.org</a> は素晴らしい」と言っており，洗脳されたため，サクッと JSON Parser を書きたくなってしまった．</p>
+<p>まぁサクッと書くなら Haskell ですよねってことで書いてみた(Scala で書けよ)．</p>
+<h2 id="作る">作る</h2>
+<h3 id="型">型</h3>
+<p>(関数型プログラミングの常套手段として)まずは型を用意する．</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">JSON</span> <span class="ot">=</span> <span class="dt">JValue</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Pair</span> <span class="ot">=</span> (<span class="dt">String</span>, <span class="dt">JValue</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">JValue</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">JNull</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">JNumber</span> <span class="dt">Double</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">JString</span> <span class="dt">String</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">JBool</span>   <span class="dt">Bool</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">JObject</span> [<span class="dt">Pair</span>]</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">JArray</span>  [<span class="dt">JValue</span>]</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</span></code></pre></div>
+<p>数値に <code>Double</code> 型を使ってるのも気になるが，<a href="http://book.impress.co.jp/books/1114101091">FP in Scala</a>でも <code>Double</code> 使ってるからこれでいいかな．</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">trait</span> JSON</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">object</span> JSON <span class="op">{</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> <span class="kw">object</span> JNull <span class="kw">extends</span> JSON</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> <span class="kw">class</span> <span class="fu">JNumber</span><span class="op">(</span>get<span class="op">:</span> Double<span class="op">)</span> <span class="kw">extends</span> JSON</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> <span class="kw">class</span> <span class="fu">JString</span><span class="op">(</span>get<span class="op">:</span> String<span class="op">)</span> <span class="kw">extends</span> JSON</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> <span class="kw">class</span> <span class="fu">JBool</span><span class="op">(</span>get<span class="op">:</span> Boolean<span class="op">)</span> <span class="kw">extends</span> JSON</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> <span class="kw">class</span> <span class="fu">JArray</span><span class="op">(</span>get<span class="op">:</span> IndexedSeq<span class="op">[</span>JSON<span class="op">])</span> <span class="kw">extends</span> JSON</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> <span class="kw">class</span> <span class="fu">JObject</span><span class="op">(</span>get<span class="op">:</span> Map<span class="op">[</span>String<span class="op">,</span> JSON<span class="op">])</span> <span class="kw">extends</span> JSON</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Scala と比べるとすごいシンプルに書けるよね． すばらしい．</p>
+<h3 id="パーサー">パーサー</h3>
+<p>後は，JSON の BNF みて実装するだけ．</p>
+<p>ちなみに，関数型プログラミングなのでトップダウン的に考える． 細部はまだ <code>undefined</code> にして，定期的にコンパイルすべき． 例えば</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Text.Megaparsec</span> (<span class="dt">Parsec</span>, between)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Text.Megaparsec.Char</span> (string, space)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Parser</span> <span class="ot">=</span> <span class="dt">Parsec</span> <span class="dt">String</span> <span class="dt">String</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ot">jsonParser ::</span> <span class="dt">Parser</span> <span class="dt">JSON</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>jsonParser <span class="ot">=</span> token valueParser</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="ot">valueParser ::</span> <span class="dt">Parser</span> <span class="dt">JValue</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>valueParser</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> <span class="dt">JString</span> <span class="op">&lt;$&gt;</span> stringParser</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;|&gt;</span> <span class="dt">JNumber</span> <span class="op">&lt;$&gt;</span> numberParser</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;|&gt;</span> <span class="dt">JObject</span> <span class="op">&lt;$&gt;</span> objectParser</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;|&gt;</span> <span class="dt">JArray</span>  <span class="op">&lt;$&gt;</span> arrayParser</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;|&gt;</span> <span class="dt">JBool</span>   <span class="op">&lt;$&gt;</span> boolParser</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;|&gt;</span> <span class="fu">const</span> <span class="dt">JNull</span> <span class="op">&lt;$&gt;</span> string <span class="st">&quot;null&quot;</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="ot">token ::</span> <span class="dt">Parser</span> a <span class="ot">-&gt;</span> <span class="dt">Parser</span> a</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>token p <span class="ot">=</span> space <span class="op">*&gt;</span> p <span class="op">&lt;*</span> space</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="ot">stringParser ::</span> <span class="dt">Parser</span> <span class="dt">String</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>stringParser <span class="ot">=</span> <span class="fu">undefined</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="ot">numberParser ::</span> <span class="dt">Parser</span> <span class="dt">Double</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>numberParser <span class="ot">=</span> <span class="fu">undefined</span></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="ot">objectParser ::</span> <span class="dt">Parser</span> [<span class="dt">Pair</span>]</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>objectParser <span class="ot">=</span> <span class="fu">undefined</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="ot">arrayParser ::</span> <span class="dt">Parser</span> [<span class="dt">JValue</span>]</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>arrayParser <span class="ot">=</span> <span class="fu">undefined</span></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="ot">boolParser ::</span> <span class="dt">Parser</span> <span class="dt">Bool</span></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>boolParser <span class="ot">=</span> <span class="fu">undefined</span></span></code></pre></div>
+<p>と書いて，コンパイルし，問題なければ書きやすいところから少しずつ書いていく(書いてコンパイルを繰り返す)．</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ot">symbol ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Parser</span> <span class="dt">String</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>symbol <span class="ot">=</span> token <span class="op">.</span> string</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="ot">objectParser ::</span> <span class="dt">Parser</span> [<span class="dt">Pair</span>]</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>objectParser <span class="ot">=</span> between (symbol <span class="st">&quot;{&quot;</span>) (symbol <span class="st">&quot;}&quot;</span>) membersParser</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="ot">membersParser ::</span> <span class="dt">Parser</span> [<span class="dt">Pair</span>]</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>membersParser <span class="ot">=</span> <span class="fu">undefined</span></span></code></pre></div>
+<h3 id="工夫">工夫</h3>
+<p>殆んどない． 強いてあげるなら，Monad は使わずに Applicative だけで書いた． JSON は文脈自由文法なので bind (flatMap, do記法) は要らない(と FP in Scala には書いてあった)． その代わり，読みにくい関数もあるけどね．</p>
+<p>これ(<code>pairParser</code>)とか</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ot">membersParser ::</span> <span class="dt">Parser</span> [<span class="dt">Pair</span>]</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>membersParser <span class="ot">=</span> pairParser <span class="ot">`sepBy`</span> char <span class="ch">&#39;,&#39;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="ot">pairParser ::</span> <span class="dt">Parser</span> <span class="dt">Pair</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>pairParser <span class="ot">=</span> (,) <span class="op">&lt;$&gt;</span> (token stringParser <span class="op">&lt;*</span> char <span class="ch">&#39;:&#39;</span>) <span class="op">&lt;*&gt;</span> token valueParser</span></code></pre></div>
+<p>あとは，様々な記法の数値を変換するのだるくて <code>read</code> 使った(そのために文字列を返して最後に読んでる)．</p>
+<h3 id="今後">今後</h3>
+<p>GADT と存在型(?)を使って，<code>Double</code> を任意の <code>Num</code> 型クラスのインスタンス型を解釈させてもいいかも．</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">JValue</span> <span class="kw">where</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">JNull</span><span class="ot">   ::</span> <span class="dt">JValue</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">JNumber</span><span class="ot"> ::</span> <span class="dt">Num</span> a <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">JValue</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">JString</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">JValue</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">JBool</span><span class="ot">   ::</span> <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">JValue</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">JArray</span><span class="ot">  ::</span> [<span class="dt">JValue</span>] <span class="ot">-&gt;</span> <span class="dt">JValue</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">JObject</span><span class="ot"> ::</span> <span class="dt">JSON</span> <span class="ot">-&gt;</span> <span class="dt">JValue</span></span></code></pre></div>
+<p>うまくいくかはわかんない． <code>read</code> 使ってるからつらそう．</p>
+<h2 id="おしまい">おしまい</h2>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Stack の Docker Integration とイメージの自動更新" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>Stack の Docker Integration とイメージの自動更新</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title">Stack の Docker Integration とイメージの自動更新</h1>
+            </header>
+            <div class="post-content">
+              <p>本稿は <a href="https://qiita.com/advent-calendar/2018/haskell2">Haskell (その2) Advent Calendar 2018</a> 2日目の記事です．</p>
+<p>最近よく CLI ツールを作るんですが，Haskell Stack を持ってなくても CLI ツールが使えるように，ツールを Docker イメージ化するようにしています． その流れを書き留めておこうというの本稿の趣旨です．</p>
+<p>ちなみに，以下のリポジトリで実際に試しています．</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/mdium">matsubara0507/mdium - GitHub</a></li>
+<li><a href="https://github.com/matsubara0507/dhall-ex">matsubara0507/dhall-ex - GitHub</a></li>
+</ul>
+<h2 id="docker-integration">Docker Integration</h2>
+<p>Haskell のビルドツール Stack には Dcoker Integration という機能がある（現在最新の安定版である v1.9.1 を想定しています）．</p>
+<ul>
+<li><a href="https://docs.haskellstack.org/en/v1.9.1/docker_integration/">Docker integration - The Haskell Tool Stack</a></li>
+<li><a href="https://docs.haskellstack.org/en/v1.9.1/yaml_configuration/#image">Image - Yaml configuration - The Haskell Tool Stack</a></li>
+</ul>
+<p>Docker Integration として，ざっくりと次のような機能がある．</p>
+<ol>
+<li>指定したイメージのコンテナでビルド・実行をする</li>
+<li>ビルドした実行ファイルを含めた Docker イメージの作成</li>
+</ol>
+<p>(2 は正確には Docker Integration とは呼ばない)</p>
+<p>ちなみに，Stack はワークスペース内の <code>.stack-work</code> の中に中間結果などを含むビルド結果をバージョンやビルド環境ごとに保存する． そして，<code>--docker</code> オプションでビルドすることで，ローカルではなく Docker のコンテナ内でビルドをしたり，生成したプログラムを実行したりできる． しかも，コンテナ内でビルドした場合でもビルド結果をローカルの <code>.stack-work</code> に保存するのだ．</p>
+<h2 id="docker-イメージ内でビルド">Docker イメージ内でビルド</h2>
+<p>まず stack.yaml に次のような設定を追加する．</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">docker</span><span class="kw">:</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">enable</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;fpco/stack-build&quot;</span></span></code></pre></div>
+<p><code>enable: true</code> にすると，以降の <code>--docker</code> オプションを省けるが，逆に普通にローカルでビルドしたい場合は <code>--no-docker</code> オプションが必要になる． <code>repo</code> でビルドするイメージを指定する． [<code>fpco/stack-build</code> はこれだ]（<a href="https://hub.docker.com/r/fpco/stack-build/" class="uri">https://hub.docker.com/r/fpco/stack-build/</a>）． stack.yaml の <code>resolver</code> からイメージタグを自動的に選んでくれるはずだ．</p>
+<p>あとは次のコマンドでビルドできる．</p>
+<pre><code># repo で指定した docker image の pull
+$ stack docker pull
+
+# docker コンテナ内でビルド
+$ stack build --docker</code></pre>
+<p>他にも細かい設定がかけるが割愛（上述したドキュメントを参照してください）．</p>
+<h2 id="docker-イメージを作る">Docker イメージを作る</h2>
+<p>stack.yaml に次の設定を追加する．</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">image</span><span class="kw">:</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">container</span><span class="kw">:</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> hoge</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">base</span><span class="kw">:</span><span class="at"> fpco/ubuntu-with-libgmp</span></span></code></pre></div>
+<p><code>image.container.name</code> は生成する Docker イメージの名前で，<code>image.container.base</code> は生成する Docker イメージに使うベースイメージだ． ベースイメージは <code>docker.repo</code> などで指定したイメージのOSとあってさえいれば良い（ちなみに <code>fpco/stack-build</code> は <code>ubuntu:16.04</code>）． やってくれることは簡単で， <code>stack build --docker</code> で作成した実行ファイルをベースイメージの <code>local/bin</code> などにコピーするだけだ． なので，もし静的リンクしていない場合はリンクが含まれるベースイメージを指定すると良い(<a href="https://hub.docker.com/r/fpco/ubuntu-with-libgmp/"><code>fpco/ubuntu-with-libgmp</code></a> はそのために使っている)．</p>
+<p>あとは次のコマンドでイメージの作成ができる．</p>
+<pre><code># repo で指定した docker image の pull
+$ stack --docker image container</code></pre>
+<p><code>--docker</code> を指定しないとローカルでビルドした実行ファイルをコピーして，生成したイメージのコンテナで実行できなくなるので注意してください（もちろんローカルが ubuntu なら問題ないけど）． あと， stack によるイメージ作成方法では他に Dockerfile の <code>add</code> っぽいことと <code>entrypoints</code> っぽいことができるが，それ以上のことはできない． もっと複雑な設定をしたい場合は，生成したイメージをベースイメージにした Dockerfile を書いたり， Docker のマルチステージビルドを使って設定を上書きしたりするとと良いだろう．</p>
+<h2 id="travisci--docker-hub">TravisCI + Docker Hub</h2>
+<p>Docker Integration の欠点は Docker Hub の Automated build が使えない点だ． そこで，TravisCI を使って自動ビルドし，Docker Hub にプッシュするようにした． 次のような設定を travis.yml に書くと良いだろう．</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">stage</span><span class="kw">:</span><span class="at"> push docker image</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">if</span><span class="kw">:</span><span class="at"> branch = master</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">script</span><span class="kw">:</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">   </span><span class="kw">-</span><span class="at"> stack docker pull</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">   </span><span class="kw">-</span><span class="at"> stack --docker image container</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">   </span><span class="kw">-</span><span class="at"> echo &quot;$DOCKER_PASSWORD&quot; | docker login -u &quot;$DOCKER_USERNAME&quot; --password-stdin</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">   </span><span class="kw">-</span><span class="at"> docker push $TRAVIS_REPO_SLUG</span></span></code></pre></div>
+<p>実は <code>stack --docker image container</code> でビルドまでしてくれる． Docker Hub には Token のようなものはないので <code>--password-stdin</code> とパイプを使って普通のパスワードでログインする． あとは <code>image.container.name</code> で指定する名前を <code>hoge</code> ではなく <code>user_name/repo_name</code> としておけば良い． もちろんこれは GitHub と Docker Hub のユーザ名が同じ場合にしか使えない． 違う場合は直接書いてね．</p>
+<h1 id="おしまい">おしまい</h1>
+<p>この方法なら実行ファイルしか入ってないイメージが出来上がるので軽いし， stack のビルド遅すぎて利用者側は厳しい問題も緩和するので最近のマイブームです．</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  {{>site/templates/partial/head.html}}
+</head>
+
+<body>
+  <div class="outer">
+    {{>site/templates/partial/header.html}}
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="home">
+          <div class="top card">
+            {{>site/templates/partial/social.html}}
+            <p class="description">{{description}}</p>
+            <div class="tags tagcloud">
+              <i class="fa fa-tags"></i>
+              {{#tags}}
+              <a style="font-size: {{size}}%" href="/tags/{{name}}/1.html">{{name}}</a>
+              {{/tags}}
+            </div>
+            <a href="/about.html" class="btn">Read More</a>
+          </div>
+          <div class="posts card">
+            <div class="card-content white-text">
+              <span class="card-title">Posts</span>
+              {{>site/templates/partial/post-list.html}}
+            </div>
+            <a href="/archive/1.html" class="btn">More</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {{>site/templates/partial/footer.html}}
+  </div>
+</body>
