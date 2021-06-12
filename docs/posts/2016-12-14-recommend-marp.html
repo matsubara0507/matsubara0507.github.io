@@ -29,12 +29,20 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">Marp のすゝめ</h1>
+              <h1 class="post-title" itemprop="name headline">Marp のすゝめ</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Dec 14, 2016</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Marp/1">Marp</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>本記事で紹介している <strong>Marp は今後メンテナンスしないと作者が明言しており</strong>，代わりに Marp Next というツールを作成しているようなので，そちらの紹介記事を書きました:</p>
 <ul>
 <li><a href="/posts/2019-02-04-re-recommend-marp.html">Re: Marp のすゝめ - ひげメモ</a></li>
@@ -170,6 +178,12 @@ $ npm start</code></pre>
 <p>すっごいおすすめなので，是非使ってみてください． スターも忘れずに！</p>
 <p>次回はまた sakuragi ですね． いったい何を書くんでしょうか．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

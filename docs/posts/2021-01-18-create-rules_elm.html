@@ -28,12 +28,21 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">rules_elm を作る</h1>
+              <h1 class="post-title" itemprop="name headline">rules_elm を作る</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Jan 18, 2021</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Elm/1">Elm</a>
+                <a href="../tags/Bazel/1">Bazel</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>Elm 用の Bazel ルールがないので作ったという話です． 正確には <a href="https://github.com/EdSchouten/rules_elm">EdSchouten/rules_elm</a> がありますが，最新バージョンの 0.19.1 には対応してなかったので，対応したものを自作しました．</p>
 <h2 id="作ったもの">作ったもの</h2>
 <iframe width="320" height="142" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/rules_elm" >
@@ -144,6 +153,12 @@
 <p>次回，頑張る．</p>
 <h2 id="おしまい">おしまい</h2>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

@@ -29,12 +29,20 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">7つの言語の Juputer Notebook を作る (後半戦)</h1>
+              <h1 class="post-title" itemprop="name headline">7つの言語の Juputer Notebook を作る (後半戦)</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Apr 30, 2017</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/JupyterNotebook/1">JupyterNotebook</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>「<a href="https://www.ohmsha.co.jp/book/9784274068577/">7つの言語、7つの世界</a>」という書籍の演習問題をやるために，それらの言語の Jupyter Kernel の入った Jupyter Notebook を作っている．</p>
 <p>長くなりそうだったので2回に分けて，今回は後半戦．</p>
 <p>ちなみに出来上がった Docker イメージは<a href="https://hub.docker.com/r/matsubara0507/jupyter-seven-lang/">コレ</a>．</p>
@@ -102,6 +110,12 @@ $ docker build -t jupyter-seven-lang Dockerfiles/jupyter/Dockerfile</code></pre>
 <p>Erlang は悔しい.... 何とか，Erlang を読めるようになって動くように修正したい．</p>
 <p>それと，本の演習やらなきゃ(わすれてたw)</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

@@ -29,12 +29,23 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">Re: ゼロから作る ADVENTAR の Slack Bot (Haskell 編)</h1>
+              <h1 class="post-title" itemprop="name headline">Re: ゼロから作る ADVENTAR の Slack Bot (Haskell 編)</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Dec  2, 2017</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/application/1">application</a>
+                <a href="../tags/scraping/1">scraping</a>
+                <a href="../tags/bot/1">bot</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>弊サークルはここ3年ほど <a href="https://adventar.org">ADVENTAR</a> というサービスを利用してアドベントカレンダーをやっている．</p>
 <ul>
 <li><a href="https://adventar.org/calendars/1572">群馬大学電子計算機研究会 IGGG Advent Calendar 2016 - ADVENTAR</a></li>
@@ -330,6 +341,12 @@
 <h2 id="おしまい">おしまい</h2>
 <p>次回は，これを定期実行(cron)するために CircleCI で実行する！</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

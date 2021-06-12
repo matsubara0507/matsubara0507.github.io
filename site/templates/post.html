@@ -11,14 +11,30 @@
     {{>site/templates/partial/header.html}}
     <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">{{title}}</h1>
+              <h1 class="post-title" itemprop="name headline">{{title}}</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">{{date}}</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                {{#tags}}
+                <a href="../tags/{{.}}/1">{{.}}</a>
+                {{/tags}}
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               {{{content}}}
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

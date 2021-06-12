@@ -29,12 +29,21 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">GitHub に Bookmark を送る Chrome 拡張を作ってみた</h1>
+              <h1 class="post-title" itemprop="name headline">GitHub に Bookmark を送る Chrome 拡張を作ってみた</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Jun  6, 2017</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/JavaScript/1">JavaScript</a>
+                <a href="../tags/ChromeExtension/1">ChromeExtension</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>Chrome 拡張を作ってみた． どんなのを作ったかというと，ブックマークを GitHub のリポジトリのファイルに書き込んでいくやつ． ファイルを指定して，どんな時に参照してたかを分けたり，メッセージを残せたり．</p>
 <p>残りの細かい作業(消したり，修正したり，検索したり)は GitHub 側で自由にやってくれって感じの拡張です．</p>
 <p>なんか作業してるとタブがたまってしょうがない(あとで記事でも書こうかなと思うと尚更)のでずっと欲しかった． まぁ車輪の再発明の可能性あるけど，まぁいいや．</p>
@@ -226,6 +235,12 @@
 <h2 id="おしまい">おしまい</h2>
 <p>出来たのはうれしいけど，その場しのぎでサクッと作ったのでもやぁぁっとしますね． javascript の勉強もしたいなぁ． あと，再現性の低いバグがなぁ...</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

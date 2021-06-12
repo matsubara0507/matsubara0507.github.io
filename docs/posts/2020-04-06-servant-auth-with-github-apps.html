@@ -29,12 +29,23 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">Haskell Servant に GitHub Apps による認証を追加する</h1>
+              <h1 class="post-title" itemprop="name headline">Haskell Servant に GitHub Apps による認証を追加する</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Apr  6, 2020</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/Elm/1">Elm</a>
+                <a href="../tags/application/1">application</a>
+                <a href="../tags/GitHub/1">GitHub</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>時々みる「GitHubでログイン」っぽいのを Servant 製サンプルアプリケーションに実装します．</p>
 <p>サンプルアプリケーションは2年前に書いた「<a href="/posts/2017-09-17-create-haskell-and-elm.html">Haskell × Elm のサンプルアプリケーションを書いてみた</a>」という記事のものを，最近の GHC や Elm でリファクタリングして使います． これは簡単な ToDo アプリケーションです：</p>
 <p><img src="/assets/create-haskell-and-elm/sample.jpg" /></p>
@@ -203,6 +214,12 @@
 <h2 id="おしまい">おしまい</h2>
 <p>意外とこういう組み合わせに言及した記事がなくて調べるの大変だった． あと一応，実アプリケーションで使うときはちゃんと安全性について別途調べてくださいね（責任は持ちません）．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

@@ -29,12 +29,21 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">Elm でマークダウンプレゼンテーションエディタを作ってみた (その１)</h1>
+              <h1 class="post-title" itemprop="name headline">Elm でマークダウンプレゼンテーションエディタを作ってみた (その１)</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Dec 18, 2017</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Elm/1">Elm</a>
+                <a href="../tags/application/1">application</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p><a href="https://qiita.com/advent-calendar/2017/elm2">Elm Advent Calendar 2017 (その２)</a> の18日目の記事です．</p>
 <p>ぼくが18日目に登録したとき(12月6日ごろ)は半分以上が空いてたのに全部埋まってる(笑) みんなすごいなぁ．</p>
 <h2 id="section"></h2>
@@ -333,6 +342,12 @@ $$</code></pre>
 <p>長くなったのでココまで． Electron の部分も面白いんだけどなぁ．</p>
 <p>頑張って作っていくぞ．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

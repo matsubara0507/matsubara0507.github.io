@@ -29,12 +29,22 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">Elm と Haskell で作る ToDo アプリ</h1>
+              <h1 class="post-title" itemprop="name headline">Elm と Haskell で作る ToDo アプリ</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Dec 13, 2017</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/Elm/1">Elm</a>
+                <a href="../tags/application/1">application</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p><a href="https://qiita.com/advent-calendar/2017/elm">Elm Advent Calendar 2017</a> の13日目の記事です．</p>
 <p>普段はよく Haskell を使っていますが，ひょんなことから Elm を触り始め，フロントを表現する良いサブウェポンとしてかなり気に入りました．</p>
 <p>今回は Elm の相棒として大本命である(要出典) Haskell と組み合わせた場合の書き方などを ToDo アプリを例にして説明します．</p>
@@ -518,6 +528,12 @@ Successfully generated static/main.js</code></pre>
 <h2 id="おしまい">おしまい</h2>
 <p>長くなってしまった． しかもほとんど Haskell のハナシ... Elm のカレンダーなのに...すいません...</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

@@ -28,12 +28,21 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">Haskell で型安全に YAML ファイルをビルド時に埋め込む</h1>
+              <h1 class="post-title" itemprop="name headline">Haskell で型安全に YAML ファイルをビルド時に埋め込む</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">May 13, 2018</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/extensible-package/1">extensible-package</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>ザックリ言えば「<a href="https://ryota-ka.hatenablog.com/entry/2018/02/14/103000">Template Haskell でコード中に JSON を埋め込んだりコンパイル時にファイルから型安全に読み込んだりする - ryota-ka's blog</a>」という記事の YAML 版です．</p>
 <p>ただし，ryota さんの記事では Template Haskell を解説しながら JSON を読み込む関数を定義していますが， YAML 版は <a href="https://hackage.haskell.org/package/yaml">yaml</a> パッケージに同様の関数が既にあるので特に解説はしません． あくまでも Haskell の型システムとメタプログラミングを感じてもらえたらなぁと．</p>
 <h2 id="section"></h2>
@@ -196,6 +205,12 @@ columns @= 80 &lt;: language-extensions @= [] &lt;: nil</code></pre>
 <h1 id="おしまい">おしまい</h1>
 <p>ちなみに，<a href="https://matsubara0507.github.io/posts/2018-05-10-make-cli-with-haskell-in-2018.html">前回の記事</a>に書いた <a href="https://github.com/matsubara0507/taskpad"><code>taskpad</code></a> にこの機能を追加してる．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

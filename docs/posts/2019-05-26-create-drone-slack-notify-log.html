@@ -28,12 +28,21 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">Drone Plugin を作ってみた: slack-notify-log</h1>
+              <h1 class="post-title" itemprop="name headline">Drone Plugin を作ってみた: slack-notify-log</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">May 26, 2019</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Drone/1">Drone</a>
+                <a href="../tags/Go/1">Go</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>とある事情で Drone CI のビルドログを Slack にスニペットとして通知したくなった． 公式の <a href="https://github.com/drone-plugins/drone-slack"><code>plugin/slack</code></a> では出来なそうだったので，Plugin を自作した，というお話．</p>
 <h2 id="作ったもの">作ったもの</h2>
 <iframe width="320" height="163" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/drone-slack-notify-log" >
@@ -121,6 +130,12 @@
 <h2 id="おしまい">おしまい</h2>
 <p>なんか他に良い方法が絶対にある気がするんだけどな...</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

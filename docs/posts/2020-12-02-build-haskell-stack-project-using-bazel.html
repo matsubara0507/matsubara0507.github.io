@@ -28,12 +28,21 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">Haskell Stack プロジェクトを Bazel でビルドしてみる</h1>
+              <h1 class="post-title" itemprop="name headline">Haskell Stack プロジェクトを Bazel でビルドしてみる</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Dec  2, 2020</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/Bazel/1">Bazel</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>仕事では Bazel を使ってビルドすることが多くなり，自分でも Bazel ルールを自作するようになったので，実験も兼ねて趣味の Haskell Stack プロジェクトを Bazel を使ってビルドしてみることにしました． 本記事はそのメモ書きです．</p>
 <h1 id="section"></h1>
 <p>あとこれは <a href="https://qiita.com/advent-calendar/2020/haskell">Haskell Advent Calendar 2020</a> の2日目の記事です．</p>
@@ -421,6 +430,12 @@
 <p>Bazel を利用することで，Haskell コードのビルドの他に Docker イメージのビルドなどの設定も同じビルドツールで管理できるようになります． 正直，Docker だけだとあまりメリットを感じませんが，例えば Web アプリケーションを作るためにフロント用言語（例えば TypeScript や Elm など）も Bazel でビルドしたり，k8s でのデプロイも Bazel で行えるようになったりすればメリットがどんどん大きくなってきますね．</p>
 <p>しかし，Bazel の「やってみた・使ってみた」記事は少なく，Haskell 関連や日本語記事となると本当にちょっとしかありません． ので，できるだけ増やして行こうかなーっていう野心です．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

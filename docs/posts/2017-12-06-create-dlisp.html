@@ -28,12 +28,21 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">D言語で Lisp を作った話</h1>
+              <h1 class="post-title" itemprop="name headline">D言語で Lisp を作った話</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Dec  6, 2017</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Dlang/1">Dlang</a>
+                <a href="../tags/Lisp/1">Lisp</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>某社18新卒アドベントカレンダー6日目の記事も兼ねてます． いい加減ネタが切れてきたので，昔やってたすべらない話(??)を引っ張ってきました．</p>
 <p>タイトル通り，学部3年ぐらいの頃に，D言語というものを使って Lisp を書いた話です．</p>
 <h2 id="いきさつ">いきさつ</h2>
@@ -218,6 +227,12 @@ disp&gt;&gt; (stream-ref napier 5)
 <p>実は今年は就活だったんですけど，その際に，逆求人系のプロフィール欄の今まで作ったもの的なとこに「<strong>D 言語で Lisp を書いた</strong>」って書いておいたら，「どうしてそうなっちゃたの？(笑)」とまぁまぁ聞かれウケたネタでした．</p>
 <p>なのでみんなも Lisp 書いておくと就活に役立つよ．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

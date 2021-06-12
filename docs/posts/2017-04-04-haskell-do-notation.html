@@ -28,12 +28,20 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">Do 記法の意外な挙動 (Haskell)</h1>
+              <h1 class="post-title" itemprop="name headline">Do 記法の意外な挙動 (Haskell)</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Apr  4, 2017</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>ちょっとイロイロあって Do 記法についていじってたら，知らない動作をしてくれたので，メモっておく．</p>
 <h2 id="いきさつ">いきさつ</h2>
 <p><a href="/posts/2017-04-02-want-to-make-docker-merge.html">前回の記事</a> で書いたように， Haskell の <a href="https://hackage.haskell.org/package/language-dockerfile-0.3.5.0">language-dockerfile</a> というライブラリをいじってた． が，ちょっと違和感を感じる挙動の関数があったので，いじってプルリクでも送ろうかと思い，コードを読んでいたら...</p>
@@ -138,6 +146,12 @@ Hoge 1</code></pre>
 <h2 id="おしまい">おしまい</h2>
 <p>以外って程ではなかったかも...？ まぁ，型クラスのインスタンス探すのって大変ですよね... 型クラスは本当に便利だけど，その代わりの弊害って感じだ．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

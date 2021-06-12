@@ -28,12 +28,21 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">Stack の Docker Integration とイメージの自動更新</h1>
+              <h1 class="post-title" itemprop="name headline">Stack の Docker Integration とイメージの自動更新</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Dec  2, 2018</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/Docker/1">Docker</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>本稿は <a href="https://qiita.com/advent-calendar/2018/haskell2">Haskell (その2) Advent Calendar 2018</a> 2日目の記事です．</p>
 <p>最近よく CLI ツールを作るんですが，Haskell Stack を持ってなくても CLI ツールが使えるように，ツールを Docker イメージ化するようにしています． その流れを書き留めておこうというの本稿の趣旨です．</p>
 <p>ちなみに，以下のリポジトリで実際に試しています．</p>
@@ -91,6 +100,12 @@ $ stack --docker image container</code></pre>
 <h1 id="おしまい">おしまい</h1>
 <p>この方法なら実行ファイルしか入ってないイメージが出来上がるので軽いし， stack のビルド遅すぎて利用者側は厳しい問題も緩和するので最近のマイブームです．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

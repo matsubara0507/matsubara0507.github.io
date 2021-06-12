@@ -28,12 +28,22 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">hpack の設定から Bazel の設定を自動生成するツール Hazell を作った</h1>
+              <h1 class="post-title" itemprop="name headline">hpack の設定から Bazel の設定を自動生成するツール Hazell を作った</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Feb 15, 2021</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/Bazel/1">Bazel</a>
+                <a href="../tags/application/1">application</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>趣味のアプリケーションを新しく Haskell×Elm×Bazel で実装しようと考えてます． しかし，Bazel の設定は Haskell，というか <a href="https://github.com/sol/hpack">hpack</a> の設定に比べると煩雑で面倒臭いです（重複がいくつかある）． なので，hpack から Cabal ファイルを生成するように，Bazel の設定ファイルを生成できるようにすれば楽ができるなと考えて作りました．</p>
 <h2 id="完成品">完成品</h2>
 <iframe width="320" height="184" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/hazell" >
@@ -289,6 +299,12 @@
 <h2 id="おしまい">おしまい</h2>
 <p>思いの外，さくっとできた． それよりも作りたいアプリケーションの方を作らないと笑</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

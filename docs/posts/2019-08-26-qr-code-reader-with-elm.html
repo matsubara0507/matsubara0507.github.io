@@ -28,12 +28,20 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">Elm で QR コードリーダー</h1>
+              <h1 class="post-title" itemprop="name headline">Elm で QR コードリーダー</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Aug 26, 2019</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Elm/1">Elm</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>タイトル通りです． ただし，jsQR とポートを使ってるだけです． Elm 側で QR コードのデコードをするわけじゃないので，そういうのを期待した人はすいません．</p>
 <p>今回の実装は下記のリポジトリにあります:</p>
 <h4 id="section"><iframe width="320" height="215" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/anaqram-web-samples" ></iframe></h4>
@@ -244,6 +252,12 @@
 <h2 id="おしまい">おしまい</h2>
 <p>Elm 側でデコードする話は気が向いたらそのうち頑張るかもしれない(画像データをポートでやりとりするのは，あまり効率的ではないと思うけど)．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

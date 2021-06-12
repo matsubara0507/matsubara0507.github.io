@@ -28,12 +28,20 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">Dockerfile を軽量化する</h1>
+              <h1 class="post-title" itemprop="name headline">Dockerfile を軽量化する</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Mar 30, 2017</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Docker/1">Docker</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p><a href="/posts/2017-03-27-seven-lang-on-docker.html">前回</a>，7つの言語の処理系の入ったコンテナの <a href="https://github.com/matsubara0507/seven-languages-in-seven-weeks/blob/00d123ee180c6322a441180214a67574fe541eda/seven-lang-docker/Dockerfile">Dockerfile</a> を書いた．</p>
 <p>が，重い． 4GB 近くあるし，build にも1時間ぐらいかかる． これを何とか解消しようと思った．</p>
 <h2 id="各レイヤーを見る">各レイヤーを見る</h2>
@@ -212,6 +220,12 @@ dacff0ae1bd4        About an hour ago   /bin/sh -c git clone https://github.com/
 <p>なんか，各処理系コンテナを独立させて作って，マージするみたいのことできないかなぁ． 今のまんまだとバージョンが上がったときとかにめんどそう．</p>
 <p>なんかテストも書きたいし．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

@@ -28,12 +28,22 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">Haskell で書く Brainf*ck 処理系</h1>
+              <h1 class="post-title" itemprop="name headline">Haskell で書く Brainf*ck 処理系</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Aug  5, 2017</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/Brainfuck/1">Brainfuck</a>
+                <a href="../tags/application/1">application</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>何番煎じだよって感じのネタですが，久々に Brainf*ck のコードを見かけたので，久々に書いてみたくなりました．</p>
 <h2 id="いきさつ">いきさつ</h2>
 <p>先日，builderscon in tokyo 2017 というイベントに行ってきた． そこのフリードリンクコーナーにこんな紙コップが...</p>
@@ -183,6 +193,12 @@
 <h2 id="おしまい">おしまい</h2>
 <p>もっとコンパクトに書こうと思えば書けるけど，なんか綺麗なので満足． <a href="https://gist.github.com/matsubara0507/d855acd68a7fd54005b7f04b104cd8e6#file-_brainfuck-hs">2,3年前に書いたモノ</a>と比べると，成長した気がする(笑)</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

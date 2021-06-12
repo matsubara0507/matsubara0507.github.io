@@ -28,12 +28,22 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">オレ的 Haskell で CLI を作る方法 2018</h1>
+              <h1 class="post-title" itemprop="name headline">オレ的 Haskell で CLI を作る方法 2018</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">May 10, 2018</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/extensible-package/1">extensible-package</a>
+                <a href="../tags/rio/1">rio</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>現在 <a href="https://github.com/matsubara0507/taskpad">TaskPad</a> という簡易的なタスク管理(編集)ツールを Haskell で作っていて，少し CLI を作るうえでのオレ的ノウハウが溜まったのでメモっとく．</p>
 <h2 id="taskpad">TaskPad</h2>
 <p>先に，何を作ってるかを書いておく． まだ完成していないが，気持ちは次のような Yaml ファイルを編集して自身のタスク管理をしようかなと考えている．</p>
@@ -349,6 +359,12 @@ Available commands:
 <h2 id="おしまい">おしまい</h2>
 <p>早く完成させるぞ</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

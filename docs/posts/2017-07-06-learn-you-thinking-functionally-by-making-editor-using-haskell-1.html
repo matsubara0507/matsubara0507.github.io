@@ -28,12 +28,21 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">Haskellでエディターを作って学ぶ関数型プログラミングの思考法 その１</h1>
+              <h1 class="post-title" itemprop="name headline">Haskellでエディターを作って学ぶ関数型プログラミングの思考法 その１</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Jul  6, 2017</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/application/1">application</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>やることはタイトルの通りです． 今回の内容はかなり長いですが勘弁してください．</p>
 <h2 id="section"></h2>
 <p>OOP言語で手続き型っぽく書けてしまうのと同じように(それ以上に)，やろうと思えば，FP言語で手続きっぽく書くことはできる． Haskellの入門書を読んで，基本的な書き方を理解した人が，いざアプリケーションを書き始めてみると良くあることでしょう．</p>
@@ -438,6 +447,12 @@
 <p>ちょっと長すぎる気もするけど，勘弁してださい． あと，行を追加するようなコマンドも入れとけばよかったなぁ．</p>
 <p>見た目や，他のコマンド，状態モナドの適用なんかは次回以降でやります．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

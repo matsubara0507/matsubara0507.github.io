@@ -120,15 +120,16 @@ buildPost srcPath = cacheAction ("build" :: T.Text, srcPath) $ do
   postContent <- readFile' srcPath
   postData    <- markdownToHTML' @(Record FrontMatterParams) (T.pack postContent)
   let postUrl   = dropDirectory1 (takeDirectory srcPath <> "-" <> takeFileName srcPath -<.> "html")
-      postData' = happend siteMeta $ #url @= postUrl <: #date @= toPostDate srcPath <: postData
+      postData' = happend siteMeta $ #url @= postUrl <: #date @= formatToHumanDate srcPath <: postData
   template <- compileTemplate' "site/templates/post.html"
   writeFile' (outputFolder </> postUrl) $ T.unpack (substitute template postData')
   convert postData'
 
 -- expect: path/to/YYYY/MM-DD-filename.md
-toPostDate :: FilePath -> String
-toPostDate p = year <> "-" <> date
+formatToHumanDate :: FilePath -> String
+formatToHumanDate p = formatTime defaultTimeLocale "%b %e, %Y" parsedTime
   where
+    parsedTime = parseTimeOrError True defaultTimeLocale "%Y-%m-%d" (year <> "-" <> date) :: UTCTime
     date = take 5 $ takeFileName p
     year = takeFileName $ takeDirectory p
 
@@ -164,18 +165,6 @@ copyStaticFiles = do
     void $ forP filepaths $ \filepath ->
         copyFileChanged ("site" </> filepath) (outputFolder </> filepath)
 
-formatDate :: String -> String
-formatDate humanDate = toIsoDate parsedTime
-  where
-    parsedTime =
-      parseTimeOrError True defaultTimeLocale "%Y-%m-%d" humanDate :: UTCTime
-
-rfc3339 :: Maybe String
-rfc3339 = Just "%H:%M:SZ"
-
-toIsoDate :: UTCTime -> String
-toIsoDate = formatTime defaultTimeLocale (iso8601DateFormat rfc3339)
-
 buildFeed :: [Post] -> Action ()
 buildFeed posts = do
   now <- liftIO getCurrentTime
@@ -188,7 +177,18 @@ buildFeed posts = do
   writeFile' (outputFolder </> "feed.xml") . T.unpack $ substitute atomTempl atomData
     where
       mkAtomPost :: Post -> Post
-      mkAtomPost p = p & #date .~ formatDate (p ^. #date)
+      mkAtomPost p = p & #date .~ formatToIsoDate (p ^. #date)
+
+formatToIsoDate :: String -> String
+formatToIsoDate humanDate = toIsoDate parsedTime
+  where
+    parsedTime =
+      parseTimeOrError True defaultTimeLocale "%b %e, %Y" humanDate
+
+toIsoDate :: UTCTime -> String
+toIsoDate = formatTime defaultTimeLocale (iso8601DateFormat rfc3339)
+  where
+    rfc3339 = Just "%H:%M:SZ"
 
 buildSitemap :: [Post] -> Action ()
 buildSitemap posts = do

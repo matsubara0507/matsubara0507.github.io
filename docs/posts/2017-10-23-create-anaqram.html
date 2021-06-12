@@ -29,12 +29,23 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">Elm × Haskell × Kotlin で Android + Web アプリケーションを作った</h1>
+              <h1 class="post-title" itemprop="name headline">Elm × Haskell × Kotlin で Android + Web アプリケーションを作った</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Oct 23, 2017</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/Elm/1">Elm</a>
+                <a href="../tags/Kotlin/1">Kotlin</a>
+                <a href="../tags/application/1">application</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>ちょっと珍しい組み合わせでアプリを作ったので，そのメモ．</p>
 <h2 id="いきさつ">いきさつ</h2>
 <p>去年，母校の学園祭用に <a href="https://iggg.github.io/2016/10/18/create-anaqram/">AnaQRam という Android アプリ(ゲーム)を Java で作った</a>． 今年，このアプリを</p>
@@ -203,6 +214,12 @@
 <h2 id="おしまい">おしまい</h2>
 <p>実は，Kotlin の API を叩くクラスも Haskell から自動生成している． 次回はそのことについてまとめようかな．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

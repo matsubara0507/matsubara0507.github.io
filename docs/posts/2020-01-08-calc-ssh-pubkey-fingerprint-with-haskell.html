@@ -28,12 +28,20 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">Haskell で SSH Public Key の FingerPrint を計算する</h1>
+              <h1 class="post-title" itemprop="name headline">Haskell で SSH Public Key の FingerPrint を計算する</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Jan  8, 2020</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>GitHub に登録している Public Key から <code>~/.ssh/authorized_key</code> を生成する簡易的な CLI ツールを作ろうと考えた． そして，Public Key をフィルタリングするために <code>https://github.com/settings/keys</code> で参照できる FingerPrint を使おうと考えたが，その場合は GitHub API で取得した Public Key から FingerPrint をプログラム側で計算しないといけない．</p>
 <p>もちろん，<code>ssh-keygen -l -E md5 -f ssh_host_ecdsa_key.pub</code> なんかで生成できるのだが可能なら素の Haskell プログラムでやりたいなと考えた． ということで，本記事はタイトルの通り Haskell で SSH Public Key の FingerPrint を計算することになったので，そのために色々調べたメモ書き．</p>
 <h2 id="fingerprint">FingerPrint</h2>
@@ -100,6 +108,12 @@
 <h2 id="おしまい">おしまい</h2>
 <p>意外とこういう Crypto 系のテーマの Haskell コードの例って少ないよね． 全部コード読んで試したよ．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

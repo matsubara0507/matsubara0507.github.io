@@ -28,12 +28,21 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">CI で Haskell Stack の Docker Integration するために</h1>
+              <h1 class="post-title" itemprop="name headline">CI で Haskell Stack の Docker Integration するために</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Sep 21, 2019</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/Docker/1">Docker</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>Haskell のビルドツール Stack の Docker Integration を使うことで，指定したイメージ内でホストマシンと全く同じように別の OS のバイナリをビルドできます． さらに一工夫をすることで，そのバイナリを埋め込んだ Docker Image を作ることができます(一工夫については「<a href="/posts/2019-06-10-build-haskell-app-docker-image-without-stack-image-cmd.html">stack image コマンドなしに Haskell アプリの Docker イメージを作る</a>」に書いた)</p>
 <p>僕はこのプロセスを TravisCI で行い，<code>master</code> プッシュした時に <code>latest</code> イメージを更新してました． が，どうしても CI のビルド時間が長すぎた(1ステップ30分かかることもしばしば)ので改善しました． っていう話です．</p>
 <h2 id="何が遅いのか">何が遅いのか</h2>
@@ -198,6 +207,12 @@ IMAGE               CREATED             CREATED BY                              
 <h2 id="おしまい">おしまい</h2>
 <p>CI が爆速になったし，自動で Resolver の追従もしてくれるし，私は満足です． ちょこっとずつ古いプロジェクトの置き換えしている．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

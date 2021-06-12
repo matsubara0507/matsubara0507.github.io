@@ -29,12 +29,22 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">GitHub Card を生成する SPA を Elm で作った</h1>
+              <h1 class="post-title" itemprop="name headline">GitHub Card を生成する SPA を Elm で作った</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">May 12, 2019</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Elm/1">Elm</a>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/application/1">application</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>Qiita や自分のブログに GitHub のリポジトリのリンク貼ってもなんか寂しいからいい感じのカードっぽいやつ生成するやつを作ったって話です． iframe で埋め込むことができます。</p>
 <p><strong>だがしかし！Qiita などに任意の iframe が埋め込めるわけないジャーーーン！</strong></p>
 <p>ということに，だいたい完成してから気づいた orz</p>
@@ -175,6 +185,12 @@
 <h2 id="おしまい">おしまい</h2>
 <p>自分(self)の GitHub (Octocat)の情報を集めるから selfcat です(????)。</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

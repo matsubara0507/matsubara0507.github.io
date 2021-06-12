@@ -28,12 +28,20 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">git challenge に向けて - git 備忘録</h1>
+              <h1 class="post-title" itemprop="name headline">git challenge に向けて - git 備忘録</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Jan 26, 2017</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/git/1">git</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>ミクシィ主催の <a href="https://mixi-recruit.snar.jp/jobboard/detail.aspx?id=jcak-QWdFlI">git challenge というイベントの第5回</a> に参加できるようになった．</p>
 <p><a href="https://git-scm.com/">git</a> は普段から使っているが，基本的に <a href="https://ja.atlassian.com/">Atlassian</a> の <a href="https://ja.atlassian.com/software/sourcetree">SourceTree</a> を使ってポチポチしてるだけであり，知識は必要に応じてググったものしかない． ということで，とても良い機会なので本を一冊読んで，一から丁寧に学んでみることにした．</p>
 <p>今回読んだのは，「<a href="https://www.ohmsha.co.jp/book/9784274068645/">Gitによるバージョン管理</a>」という書籍． 年末に大学の理工書店に行ったときに，あったものから適当に選んで買った． なんか初級者向けでは無いらしいので，面白いかなぁと．</p>
@@ -236,6 +244,12 @@
 <p><code>HEAD^1</code> は幅を指定してる． マージとかして親が複数ある時に，どの親に戻るかを指定してる．</p>
 <h2 id="おしまい">おしまい</h2>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

@@ -29,12 +29,21 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">Haskell で学ぶ Ruby (その１)</h1>
+              <h1 class="post-title" itemprop="name headline">Haskell で学ぶ Ruby (その１)</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Dec  8, 2016</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/Ruby/1">Ruby</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p><img src="/assets/learn-ruby-with-haskell/pc-has-rb.jpg" /></p>
 <p><a href="http://www.adventar.org/calendars/1572">IGGG アドベントカレンダー</a> 8日目の記事です．</p>
 <p>今回は自分が敬愛するエンジニアの人が執筆してる「<a href="http://ascii.jp/elem/000/001/230/1230449/">Ruby で学ぶ Ruby</a>」を真似して， <strong>Haskell</strong> で実装していきたいと思う．</p>
@@ -192,6 +201,12 @@ $ stack exec -- interp
 <p>少しずつ作っていきます．</p>
 <p>このままではキツそうなので，へテロリストでも作ってみようかな．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

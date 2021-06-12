@@ -28,12 +28,21 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">拡張可能タングルでDo記法レスプログラミング♪ (Haskell)</h1>
+              <h1 class="post-title" itemprop="name headline">拡張可能タングルでDo記法レスプログラミング♪ (Haskell)</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Feb 22, 2018</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/extensible-package/1">extensible-package</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>「<a href="https://hackage.haskell.org/package/extensible"><code>extensible</code></a> パッケージの楽しみ その３」です．</p>
 <p>拡張可能レコードやら Extensible Effect やら，Haskell の Extensible なものを全て統一された仕組みで提供する化け物パッケージ <a href="https://hackage.haskell.org/package/extensible-0.4.7.1"><code>extensible</code></a> について，割とドキュメントには無い(？)ネタを書いておくシリーズ第三弾です． ぼく自身は作者ではないし，間違っているかもなのでこの記事を完全には当てにしないでください．</p>
 <p>また，現在の最新バージョンは 0.4.7.1 です(そのバージョンでハナシをしてる)．</p>
@@ -237,6 +246,12 @@
 <p>これぐらいの規模だとメリットが皆無なんですが，もっと CSV の列数が多くなったらどうでしょう？ うーーーん，あんまり変わらないかも(笑) まぁ，少なくとも面白い(不思議な)プログラミングが出来るのは確かです．</p>
 <p>僕は試しにこの方法で，<a href="https://github.com/matsubara0507/source-gh-pages/blob/tangle/app/Rules.hs">このサイトの Hakyll コード</a>を切り刻んでみました．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

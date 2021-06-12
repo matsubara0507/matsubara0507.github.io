@@ -28,12 +28,21 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">Haskell Day 2019 に参加してきた</h1>
+              <h1 class="post-title" itemprop="name headline">Haskell Day 2019 に参加してきた</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Nov 10, 2019</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/event/1">event</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>11月9日にあった「<a href="https://techplay.jp/event/727059">Haskell Day 2019</a>」に参加してきたのでメモ書きです． 裏方もほんの少しだけ手伝ったけど，裏方については公式のブログで(誰かが)書くと思うので割愛． ただ，全部オープンな場でやりとりしてるの気になる方は Haskell-jp slack を見に行くか Haskell-jp の GitHub を漁るといいと思う．</p>
 <h3 id="関数型function-typeを見つめるプログラミング">関数型(function type)を見つめるプログラミング</h3>
 <p><a href="https://github.com/nobsun">山下</a>氏の発表． <a href="https://github.com/nobsun/hday2019/blob/master/doc/ftype.pdf">発表資料はこちら</a>．</p>
@@ -97,6 +106,12 @@ g :: X -&gt; (Y -&gt; Z) -- はダメらしい(もちろん Haskell はカッコ
 <h2 id="おしまい">おしまい</h2>
 <p>さて，来年のネタ仕込みを始めるか(発表するかはさておき)．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

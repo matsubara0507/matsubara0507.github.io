@@ -28,12 +28,21 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">Haskell Backpack 覚え書き</h1>
+              <h1 class="post-title" itemprop="name headline">Haskell Backpack 覚え書き</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Dec 12, 2017</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/Backpack/1">Backpack</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p><a href="https://qiita.com/advent-calendar/2017/haskell3">Haskell アドベントカレンダー 2017 (その３)</a> の12日目の記事です．</p>
 <h2 id="section"></h2>
 <p>GHC 8.2 より新しく追加された Backpack というモジュールシステムを知ってますか？ Backpack は個人的にすごい注目してる機能なんですけど，いかんせん日本語ドキュメントが皆無なんで，イロイロ調べたことを書いておこうと思います．</p>
@@ -401,6 +410,12 @@ True</code></pre>
 <h2 id="おしまい">おしまい</h2>
 <p>なんか具体例を示したかったけど，丁度良いのを思いつかなった + 時間不足です，すいません． バイトでは丁度 Backpack が欲しいユースケースがあったんだけど，表に出してよいコードに落とせなかった． 文量も文量だし，そのうち別の記事にします．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

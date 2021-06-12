@@ -28,12 +28,22 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">extensible の拡張可能レコードを使って REST API Haskell パッケージを作る</h1>
+              <h1 class="post-title" itemprop="name headline">extensible の拡張可能レコードを使って REST API Haskell パッケージを作る</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Aug 13, 2017</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/extensible-package/1">extensible-package</a>
+                <a href="../tags/library/1">library</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p><a href="https://github.com/fumieval">fumieval</a> さんが作ってる <a href="https://hackage.haskell.org/package/extensible"><code>extensible</code></a> パッケージの拡張可能レコードを使って，<a href="https://webservice.rakuten.co.jp/document/">楽天のウェブサービスのAPI</a>のための Haskell パッケージ <a href="https://github.com/matsubara0507/rakuten"><code>rakuten</code></a> というのを作ってるので，その簡単な紹介です．</p>
 <p>まだ途中だけど，<code>extensible</code> の拡張可能レコードを使うためにの良い例になるかなと思ったので書いておく．</p>
 <h2 id="いきさつ">いきさつ</h2>
@@ -153,6 +163,12 @@
 <h2 id="おしまい">おしまい</h2>
 <p>それでも全てのエンドポイント分を作るのはだるいけどね...</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

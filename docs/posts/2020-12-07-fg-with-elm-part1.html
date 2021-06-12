@@ -29,12 +29,21 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">Elm で Featherweight Go を書いてみた（その１）</h1>
+              <h1 class="post-title" itemprop="name headline">Elm で Featherweight Go を書いてみた（その１）</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Dec  7, 2020</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Elm/1">Elm</a>
+                <a href="../tags/Go/1">Go</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>タイトルの通り，Elm で Featherweight Go を作って遊んでました． 本記事はそのメモ書きです．</p>
 <h1 id="section"></h1>
 <p>あとこれは <a href="https://qiita.com/advent-calendar/2020/elm">Elm Advent Calendar 2020</a> の7日目の記事です．</p>
@@ -338,6 +347,12 @@ package main; seq(D) func main { _ = e } ok</code></pre>
 <h2 id="おしまい">おしまい</h2>
 <p>作ってから時間が経ってしまったので，記事が結構雑だ．．． その２では Featherweight Generics Go のパーサーと型検査器です．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

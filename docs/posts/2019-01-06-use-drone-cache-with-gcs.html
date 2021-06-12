@@ -28,12 +28,21 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">GCS で Drone 1.0 をキャッシュする</h1>
+              <h1 class="post-title" itemprop="name headline">GCS で Drone 1.0 をキャッシュする</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Jan  6, 2019</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Drone/1">Drone</a>
+                <a href="../tags/Haskell/1">Haskell</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>Drone ネタ2本目． せっかく drone-haskell を作ったので TravisCI でテストを回すのではなく，Drone で回そうかなと思ったのだが，Stack でフルビルドするとめっちゃ時間かかる． なので，Drone のキャッシュをやってみましたっていう小話です．</p>
 <h2 id="cache-in-drone">Cache in Drone</h2>
 <p>Drone でキャッシュを利用するには次のような Plugin を使用する:</p>
@@ -134,6 +143,12 @@
 <h2 id="おしまい">おしまい</h2>
 <p>Drone は Crone を hourly で使えるから haskell-antenna を Drone に移行してみようかしら．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

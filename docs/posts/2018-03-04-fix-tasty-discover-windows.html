@@ -28,12 +28,20 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">tasty-discover が Windows+日本語環境で動かなかったので直す</h1>
+              <h1 class="post-title" itemprop="name headline">tasty-discover が Windows+日本語環境で動かなかったので直す</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Mar  4, 2018</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>おそらく少数派であろう Windows + 日本語環境の Haskeller のひげです．</p>
 <p>最近は知人のすゝめで，Haskell のテストフレームワークに <a href="https://hackage.haskell.org/package/tasty"><code>tasty</code></a> を使ってます． <code>tasty</code> にも例に漏れず <a href="http://hackage.haskell.org/package/tasty-discover"><code>tasty-discover</code></a> というテスト用の関数を <code>.hs</code> ファイルから集めてきてくれるツールがある． しかし，悲しいことに <code>tasty-discover</code> がマルチバイト文字(日本語とか)を Windows で読み込むと <strong>いつもの</strong> エラーで死んでしまう．</p>
 <p>なので，直して PR 出した． この記事はそのメモです．</p>
@@ -89,6 +97,12 @@ ghc.EXE: could not execute: tasty-discover</code></pre>
 <h2 id="おしまい">おしまい</h2>
 <p>なんか Push 権限を貰った． こういうこともあるんですね(OSS歴が浅いので驚いた)．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>

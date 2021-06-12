@@ -28,12 +28,20 @@
       </div>
     </header>    <div class="page-content">
       <div class="wrapper">
-        <article class="post card">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
           <div class="card-content">
             <header class="post-header">
-              <h1 class="post-title">「純粋関数型データ構造」を読み進めるための SML/NJ Tips</h1>
+              <h1 class="post-title" itemprop="name headline">「純粋関数型データ構造」を読み進めるための SML/NJ Tips</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Jun 21, 2017</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/SML/1">SML</a>
+              </div>
+              </p>
             </header>
-            <div class="post-content">
+
+            <div class="post-content" itemprop="articleBody">
               <p>「<a href="http://asciidwango.jp/post/160831986220/">純粋関数型データ構造</a>」を読んでる． 中身は SML/NJ で書かれており，演習とかやってるとイロイロ調べるんで，そのまとめを．</p>
 <p>正直，何番煎じだって感じですけど．</p>
 <p>読み進めながら，少しずつ増やしていくつもりです．</p>
@@ -241,6 +249,12 @@
 <h2 id="おしまい">おしまい</h2>
 <p>あと，証明とかで数式の性質なんかを調べるときに <a href="http://www.wolframalpha.com/">WolframAlpha</a> が便利．</p>
             </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
           </div>
         </article>
       </div>
