@@ -117,19 +117,13 @@ buildPosts = do
 
 buildPost :: FilePath -> Action Post
 buildPost srcPath = cacheAction ("build" :: T.Text, srcPath) $ do
-  liftIO . putStrLn $ "Rebuilding post: " <> srcPath
   postContent <- readFile' srcPath
-  postData <- markdownToHTML' . T.pack $ postContent :: Action (Record FrontMatterParams)
-  let srcDir   = takeDirectory srcPath
-      fileName = takeFileName srcPath
-      postUrl  = T.pack . dropDirectory1 $ srcDir <> "-" <> fileName -<.> "html"
-      fullPostData = happend siteMeta
-          $ #url  @= postUrl
-         <: #date @= toPostDate srcPath
-         <: postData
+  postData    <- markdownToHTML' @(Record FrontMatterParams) (T.pack postContent)
+  let postUrl   = dropDirectory1 (takeDirectory srcPath <> "-" <> takeFileName srcPath -<.> "html")
+      postData' = happend siteMeta $ #url @= postUrl <: #date @= toPostDate srcPath <: postData
   template <- compileTemplate' "site/templates/post.html"
-  writeFile' (outputFolder </> T.unpack postUrl) . T.unpack $ substitute template fullPostData
-  convert fullPostData
+  writeFile' (outputFolder </> postUrl) $ T.unpack (substitute template postData')
+  convert postData'
 
 -- expect: path/to/YYYY/MM-DD-filename.md
 toPostDate :: FilePath -> String
@@ -141,7 +135,8 @@ toPostDate p = year <> "-" <> date
 buildAbout :: Action ()
 buildAbout = do
   aboutT <- compileTemplate' "site/templates/about.html"
-  content <- markdownToHTML' =<< T.pack <$> readFile' "site/about.md" :: Action (Record '["content" >: String])
+  aboutContent <- readFile' "site/about.md"
+  content <- markdownToHTML' @(Record '["content" >: String]) (T.pack aboutContent)
   writeFile' (outputFolder </> "about.html") . T.unpack $ substitute aboutT (happend siteMeta content)
 
 buildArchive :: [Post] -> Action ()
@@ -185,7 +180,7 @@ buildFeed :: [Post] -> Action ()
 buildFeed posts = do
   now <- liftIO getCurrentTime
   let atomData = shrinkAssoc
-          $ #posts       @= mkAtomPost <$> (take 10 $ reverse posts)
+          $ #posts       @= mkAtomPost <$> take 10 (reverse posts)
          <: #currentTime @= toIsoDate now
          <: #atomUrl     @= "/feed.xml"
          <: siteMeta :: AtomData
@@ -208,22 +203,22 @@ buildWithPagenation
   -> [Post]
   -> FilePath
   -> Action ()
-buildWithPagenation t r posts dir =
-  mapM_ (uncurry buildWithPageNum) $ zip (zip3 prevPageNums [1..] nextPageNums) chunk
+buildWithPagenation t r posts dir = go 1 posts
   where
-    chunk = chunkOf 10 posts
-    prevPageNums = Nothing : map Just [1..]
-    nextPageNums = map Just [2..(length chunk)] ++ [Nothing]
+    pageSize = 10
 
-    buildWithPageNum :: (Maybe Int, Int, Maybe Int) -> [Post] -> Action ()
-    buildWithPageNum (prev, current, next) posts' =
-      let path = dir </> show current -<.> "html"
-          info = #posts @= posts' <: #prevPageNum @= prev <: #nextPageNum @= next <: nil
-      in writeFile' path . T.unpack $ substitute t (happend r info)
+    go :: Int -> [Post] -> Action ()
+    go _ [] = pure ()
+    go n posts' = do
+      let info = #posts @= take pageSize posts'
+              <: #prevPageNum @= guarded (> 0) (n - 1)
+              <: #nextPageNum @= guarded (const $ length posts' > pageSize) (n + 1)
+              <: nil
+      writeFile' (dir </> show n -<.> "html") $ T.unpack (substitute t $ happend r info)
+      go (n + 1) (drop pageSize posts')
 
-chunkOf :: Int -> [a] -> [[a]]
-chunkOf _ [] = []
-chunkOf n xs = let (hs, ts) = splitAt n xs in hs : chunkOf n ts
+    guarded :: (a -> Bool) -> a -> Maybe a
+    guarded p a = if p a then Just a else Nothing
 
 buildHighlightCss :: Action ()
 buildHighlightCss =
