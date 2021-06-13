@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="ここを Hakyll から Slick に移行してみた" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>ここを Hakyll から Slick に移行してみた</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title" itemprop="name headline">ここを Hakyll から Slick に移行してみた</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Jun 13, 2021</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/site/1">site</a>
+                <a href="../tags/Haskell/1">Haskell</a>
+              </div>
+              </p>
+            </header>
+
+            <div class="post-content" itemprop="articleBody">
+              <p>特に深い理由はないですが，新しいツールを触ってみようかと思い変えてみました。</p>
+<h2 id="slick">Slick</h2>
+<p><a href="https://github.com/ChrisPenner/slick">Slick</a> は Hakyll と同じような Haskell 製の静的サイトジェネレーターで，サイトの生成方法自体を自身でプログラミングする． <a href="https://github.com/ChrisPenner/slick#another-static-site-generator-what-about-hakylljekyll">GitHub の README 曰く</a>，Hakyll はモナドに隠蔽されすぎてよくわからないから，もっとわかりやすいのを作った（超意訳）だそうだ． 実際，両方同じようなコードを書いてみた感じ，確かに Slick の方がわかりやすい（シンプル）．</p>
+<p>Slick は内部的な処理の多くを外部パッケージに委ねている：</p>
+<ul>
+<li>ビルドシステムには <a href="https://shakebuild.com/">Shake</a> を利用している（提供するサブコマンドやビルド結果のキャッシュなど）</li>
+<li>Markdown から HTML への変換は <a href="https://hackage.haskell.org/package/pandoc">Pandoc</a> を利用している（Hakyll と同じ）</li>
+<li>テンプレートのレンダリングには <a href="https://hackage.haskell.org/package/mustache">Mustache</a> を利用している</li>
+</ul>
+<p>それぞれについては，あまり詳しいことを僕は知らないので，ここでは解説しません．</p>
+<h2 id="カスタマイズする">カスタマイズする</h2>
+<p>Slick の作者は <a href="https://github.com/ChrisPenner/slick-template">ChrisPenner/slick-template</a> というテンプレートリポジトリを用意しているので，これをベースにカスタマイズしていく． 正直なところ，半分は元の Hakyll でのテンプレートを再現するため．</p>
+<h3 id="extensible-レコード">extensible レコード</h3>
+<p>まずはいきなりテンプレートの再現ではないやつ．</p>
+<p>slick-template で使っていたレコード型を extensible レコードに置き換える． 例えば：</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">SiteMeta</span> <span class="ot">=</span> <span class="dt">Record</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  &#39;[ <span class="st">&quot;siteTitle&quot;</span>   <span class="op">&gt;:</span> <span class="dt">String</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;domain&quot;</span>      <span class="op">&gt;:</span> <span class="dt">String</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;author&quot;</span>      <span class="op">&gt;:</span> <span class="dt">String</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;description&quot;</span> <span class="op">&gt;:</span> <span class="dt">String</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;twitter&quot;</span>     <span class="op">&gt;:</span> <span class="dt">Maybe</span> <span class="dt">String</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;github&quot;</span>      <span class="op">&gt;:</span> <span class="dt">Maybe</span> <span class="dt">String</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>   ]</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Post</span> <span class="ot">=</span> <span class="dt">Record</span> (&#39;[ <span class="st">&quot;date&quot;</span> <span class="op">&gt;:</span> <span class="dt">String</span>, <span class="st">&quot;url&quot;</span> <span class="op">&gt;:</span> <span class="dt">String</span> ] <span class="op">++</span> <span class="dt">FrontMatterParams</span>)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">FrontMatterParams</span> <span class="ot">=</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  &#39;[ <span class="st">&quot;title&quot;</span>   <span class="op">&gt;:</span> <span class="dt">String</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;tags&quot;</span>    <span class="op">&gt;:</span> [<span class="dt">Tag</span>]</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;image&quot;</span>   <span class="op">&gt;:</span> <span class="dt">Maybe</span> <span class="dt">String</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>   , <span class="st">&quot;content&quot;</span> <span class="op">&gt;:</span> <span class="dt">String</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>   ]</span></code></pre></div>
+<p>フロントマターの部分だけ分けてるのは後述．</p>
+<p>extensible を使うのに利点はあって，slick-template では <code>substitute</code> に渡す <code>ToMustache k</code> の値を結合するときに aeson の <code>Value</code> 型に変換して無理やり足しているが，extensible レコードであれば <code>happend</code> だけですむ． 無論このためには extensible レコードを <code>ToMustache</code> 型クラスのインスタンスにする必要がある：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">deriving</span> <span class="kw">instance</span> <span class="dt">ToMustache</span> (h (<span class="dt">TargetOf</span> kv)) <span class="ot">=&gt;</span> <span class="dt">ToMustache</span> (<span class="dt">Field</span> h kv)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">deriving</span> <span class="kw">instance</span> <span class="dt">ToMustache</span> a <span class="ot">=&gt;</span> <span class="dt">ToMustache</span> (<span class="dt">Identity</span> a)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Forall</span> (<span class="dt">KeyTargetAre</span> <span class="dt">KnownSymbol</span> (<span class="dt">Instance1</span> <span class="dt">ToMustache</span> h)) xs <span class="ot">=&gt;</span> <span class="dt">ToMustache</span> (xs <span class="op">:&amp;</span> <span class="dt">Field</span> h) <span class="kw">where</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  toMustache <span class="ot">=</span> <span class="dt">Object</span> <span class="op">.</span> hfoldlWithIndexFor</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    (<span class="dt">Proxy</span> <span class="op">@</span> (<span class="dt">KeyTargetAre</span> <span class="dt">KnownSymbol</span> (<span class="dt">Instance1</span> <span class="dt">ToMustache</span> h)))</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    (\k m v <span class="ot">-&gt;</span> HM.insert (stringKeyOf k) (toMustache v) m)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    HM.empty</span></code></pre></div>
+<p>また，Shake のキャッシュ（<code>cacheAction</code>）を利用するには生成物の型（例えば <code>Post</code>）が <code>Binary</code> 型クラスのインスタンスになってないといけない：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">deriving</span> <span class="kw">instance</span> <span class="dt">Binary</span> (h (<span class="dt">TargetOf</span> kv)) <span class="ot">=&gt;</span> <span class="dt">Binary</span> (<span class="dt">Field</span> h kv)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Forall</span> (<span class="dt">KeyTargetAre</span> <span class="dt">KnownSymbol</span> (<span class="dt">Instance1</span> <span class="dt">Binary</span> h)) xs <span class="ot">=&gt;</span> <span class="dt">Binary</span> (xs <span class="op">:&amp;</span> <span class="dt">Field</span> h) <span class="kw">where</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    get <span class="ot">=</span> hgenerateFor</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>      (<span class="dt">Proxy</span> <span class="op">@</span> (<span class="dt">KeyTargetAre</span> <span class="dt">KnownSymbol</span> (<span class="dt">Instance1</span> <span class="dt">Binary</span> h)))</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>      (<span class="fu">const</span> Binary.get)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    put <span class="ot">=</span> <span class="fu">flip</span> appEndo (<span class="fu">return</span> ()) <span class="op">.</span> hfoldMap getConst <span class="op">.</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>      hzipWith</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        (\(<span class="dt">Comp</span> <span class="dt">Dict</span>) x <span class="ot">-&gt;</span> <span class="dt">Const</span> <span class="op">$</span> <span class="dt">Endo</span> <span class="op">$</span> (Binary.put x <span class="op">&gt;&gt;</span>))</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>        (<span class="ot">library ::</span> xs <span class="op">:&amp;</span> <span class="dt">Comp</span> <span class="dt">Dict</span> (<span class="dt">KeyTargetAre</span> <span class="dt">KnownSymbol</span> (<span class="dt">Instance1</span> <span class="dt">Binary</span> h)))</span></code></pre></div>
+<p>これは<a href="https://github.com/fumieval/extensible/commit/d6e067e805f92a7c336fd4cc68042985ee13e6b8">過去に extensible 本体にあったインスタンス</a>を参考にした（今は実装されてない，理由は知らない）． 一応 <a href="https://hackage.haskell.org/package/binary-0.8.8.0/docs/Data-Binary.html#t:Binary"><code>decode . encode == id</code> という性質</a>は満たしているっぽいので大丈夫だろう．</p>
+<h1 id="section"></h1>
+<p>さて，例えば以上を踏まえて <code>buildPost</code> を書き換えると次のようになった（<a href="https://github.com/ChrisPenner/slick-template/blob/129b85152a481db19efc5e65e80b55a52af4a985/app/Main.hs#L100-L112">元はこんな感じ</a>）：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ot">buildPost ::</span> <span class="dt">FilePath</span> <span class="ot">-&gt;</span> <span class="dt">Action</span> <span class="dt">Post</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>buildPost srcPath <span class="ot">=</span> cacheAction (<span class="st">&quot;build&quot;</span><span class="ot"> ::</span> <span class="dt">T.Text</span>, srcPath) <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  postContent <span class="ot">&lt;-</span> readFile&#39; srcPath</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  postData    <span class="ot">&lt;-</span> markdownToHTML&#39; <span class="op">@</span>(<span class="dt">Record</span> <span class="dt">FrontMatterParams</span>) (T.pack postContent)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> postUrl   <span class="ot">=</span> dropDirectory1 (srcPath <span class="op">-&lt;.&gt;</span> <span class="st">&quot;html&quot;</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>      postData&#39; <span class="ot">=</span> happend siteMeta <span class="op">$</span> <span class="op">#</span>url <span class="op">@=</span> postUrl <span class="op">&lt;:</span> <span class="op">#</span>date <span class="op">@=</span> <span class="st">&quot;...&quot;</span> <span class="op">&lt;:</span> postData</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  template <span class="ot">&lt;-</span> compileTemplate&#39; <span class="st">&quot;site/templates/post.html&quot;</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  writeFile&#39; (outputFolder <span class="op">&lt;/&gt;</span> postUrl) <span class="op">$</span> T.unpack (substitute template postData&#39;)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  convert postData&#39;</span></code></pre></div>
+<p>日付（<code>date</code> フィールド）については後述． <code>markdownToHTML' :: FromJSON a =&gt; Text -&gt; Action a</code> は本文を Markdown から HTML に変換して型 <code>a</code> の <code>content</code> フィールドへ格納し，残りのフィールドをフロントマターとしてパースする． <code>TypeApplication</code> 言語拡張でフロントマターの型を明記してるのは，具体的な型がはっきりしていないと <code>happend</code> できないからだ． ちなみに，今回定義した <code>FrontMatterParams</code> 型はタイトルとタグとサムネイル用画像をフロントマターとして与えている．</p>
+<h3 id="記事のパス投稿日を出す">記事のパス投稿日を出す</h3>
+<p>slick-template では投稿日をフロントマターで指定していたが，このサイトでは記事のパス（<code>YYYY/MM-DD-name.md</code>）で指定していた． なので，そのように動作するように修正する：</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ot">buildPost ::</span> <span class="dt">FilePath</span> <span class="ot">-&gt;</span> <span class="dt">Action</span> <span class="dt">Post</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>buildPost srcPath <span class="ot">=</span> cacheAction (<span class="st">&quot;build&quot;</span><span class="ot"> ::</span> <span class="dt">T.Text</span>, srcPath) <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  postContent <span class="ot">&lt;-</span> readFile&#39; srcPath</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  postData    <span class="ot">&lt;-</span> markdownToHTML&#39; <span class="op">@</span>(<span class="dt">Record</span> <span class="dt">FrontMatterParams</span>) (T.pack postContent)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>      <span class="co">-- YYYY/MM-DD-name.md から YYYY-MM-DD-name.html にしている </span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> postUrl   <span class="ot">=</span> dropDirectory1 (takeDirectory srcPath <span class="op">&lt;&gt;</span> <span class="st">&quot;-&quot;</span> <span class="op">&lt;&gt;</span> takeFileName srcPath <span class="op">-&lt;.&gt;</span> <span class="st">&quot;html&quot;</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>      postData&#39; <span class="ot">=</span> happend siteMeta <span class="op">$</span> <span class="op">#</span>url <span class="op">@=</span> postUrl <span class="op">&lt;:</span> <span class="op">#</span>date <span class="op">@=</span> formatToHumanDate srcPath <span class="op">&lt;:</span> postData</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span> <span class="co">-- 割愛</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="ot">formatToHumanDate ::</span> <span class="dt">FilePath</span> <span class="ot">-&gt;</span> <span class="dt">String</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>formatToHumanDate p <span class="ot">=</span> formatTime defaultTimeLocale <span class="st">&quot;%b %e, %Y&quot;</span> parsedTime</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    parsedTime <span class="ot">=</span> parseTimeOrError <span class="dt">True</span> defaultTimeLocale <span class="st">&quot;%Y-%m-%d&quot;</span> (year <span class="op">&lt;&gt;</span> <span class="st">&quot;-&quot;</span> <span class="op">&lt;&gt;</span> date)<span class="ot"> ::</span> <span class="dt">UTCTime</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    date <span class="ot">=</span> <span class="fu">take</span> <span class="dv">5</span> <span class="op">$</span> takeFileName p</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    year <span class="ot">=</span> takeFileName <span class="op">$</span> takeDirectory p</span></code></pre></div>
+<p>ちなみに，このパス操作系の関数は <code>Development.Shake.FilePath</code> にあるのを利用している．</p>
+<h3 id="ページネーション">ページネーション</h3>
+<p>slick-template では，記事の一覧がインデックスページにズラーっといくらでも並ぶようになっている． これを10記事ぐらいずつに分けて表示できるようにする：</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ot">buildArchive ::</span> [<span class="dt">Post</span>] <span class="ot">-&gt;</span> <span class="dt">Action</span> ()</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>buildArchive posts <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  archiveT <span class="ot">&lt;-</span> compileTemplate&#39; <span class="st">&quot;site/templates/archive.html&quot;</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- posts が古い順なので reverse している</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  buildWithPagenation archiveT siteMeta (<span class="fu">reverse</span> posts) (outputFolder <span class="op">&lt;/&gt;</span> <span class="st">&quot;archive&quot;</span>)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>buildWithPagenation</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="ot">  ::</span> <span class="dt">Forall</span> (<span class="dt">KeyTargetAre</span> <span class="dt">KnownSymbol</span> (<span class="dt">Instance1</span> <span class="dt">ToMustache</span> <span class="dt">Identity</span>)) (xs <span class="op">++</span> <span class="dt">PagenationInfoParams</span>)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=&gt;</span> <span class="dt">Template</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="ot">-&gt;</span> (xs <span class="op">:&amp;</span> <span class="dt">Field</span> <span class="dt">Identity</span>)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  <span class="ot">-&gt;</span> [<span class="dt">Post</span>]</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  <span class="ot">-&gt;</span> <span class="dt">FilePath</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  <span class="ot">-&gt;</span> <span class="dt">Action</span> ()</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>buildWithPagenation t r posts dir <span class="ot">=</span> go <span class="dv">1</span> posts</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    pageSize <span class="ot">=</span> <span class="dv">10</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="ot">    go ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> [<span class="dt">Post</span>] <span class="ot">-&gt;</span> <span class="dt">Action</span> ()</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    go _ [] <span class="ot">=</span> <span class="fu">pure</span> ()</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    go n posts&#39; <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>      <span class="kw">let</span> info <span class="ot">=</span> <span class="op">#</span>posts <span class="op">@=</span> <span class="fu">take</span> pageSize posts&#39;</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>              <span class="op">&lt;:</span> <span class="op">#</span>prevPageNum <span class="op">@=</span> guarded (<span class="op">&gt;</span> <span class="dv">0</span>) (n <span class="op">-</span> <span class="dv">1</span>)</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>              <span class="op">&lt;:</span> <span class="op">#</span>nextPageNum <span class="op">@=</span> guarded (<span class="fu">const</span> <span class="op">$</span> <span class="fu">length</span> posts&#39; <span class="op">&gt;</span> pageSize) (n <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>              <span class="op">&lt;:</span> nil</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>      writeFile&#39; (dir <span class="op">&lt;/&gt;</span> <span class="fu">show</span> n <span class="op">-&lt;.&gt;</span> <span class="st">&quot;html&quot;</span>) <span class="op">$</span> T.unpack (substitute t <span class="op">$</span> happend r info)</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>      go (n <span class="op">+</span> <span class="dv">1</span>) (<span class="fu">drop</span> pageSize posts&#39;)</span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a><span class="ot">    guarded ::</span> (a <span class="ot">-&gt;</span> <span class="dt">Bool</span>) <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>    guarded p a <span class="ot">=</span> <span class="kw">if</span> p a <span class="kw">then</span> <span class="dt">Just</span> a <span class="kw">else</span> <span class="dt">Nothing</span></span></code></pre></div>
+<p><code>buildWithPagenation</code> がページネーションしてくれる本体で，あとでタグページでも利用したいので別関数に切り出している． 単純に <code>posts</code> を分割するだけではダメで，現在と前後のページ番号をテンプレートに渡してあげる必要がある． そのために簡単な再帰処理をしている．</p>
+<p>ちなみに，<code>buildWithPagenation</code> の型が仰々しいのは <code>happend</code> するメタデータを任意の extensible レコードにしたかったからだ． 結構型パズルに悩んだ結果，型を書かないときに <a href="https://github.com/haskell/haskell-language-server">HLS</a> がサジェストしてくれた型をそのまま書いたら通った（パズルできてないじゃん）． HLS 最高．</p>
+<h3 id="タグページ">タグページ</h3>
+<p>slick-template では，タグをフロントマターに記述できるようになってはいるものの，タグページはないので自作した：</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ot">buildTagPages ::</span> [<span class="dt">Post</span>] <span class="ot">-&gt;</span> <span class="dt">Action</span> [(<span class="dt">Tag</span>, <span class="dt">Int</span>)]</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>buildTagPages posts <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  tagT <span class="ot">&lt;-</span> compileTemplate&#39; <span class="st">&quot;site/templates/tags.html&quot;</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  forM (groupByTag posts) <span class="op">$</span> \(tag, posts&#39;) <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    buildWithPagenation tagT (<span class="op">#</span>tag <span class="op">@=</span> tag <span class="op">&lt;:</span> siteMeta) posts&#39; (outputFolder <span class="op">&lt;/&gt;</span> <span class="st">&quot;tags&quot;</span> <span class="op">&lt;/&gt;</span> tag)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pure</span> (tag, <span class="fu">length</span> posts&#39;)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="ot">groupByTag ::</span> [<span class="dt">Post</span>] <span class="ot">-&gt;</span> [(<span class="dt">Tag</span>, [<span class="dt">Post</span>])]</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>groupByTag <span class="ot">=</span> HML.toList <span class="op">.</span> <span class="fu">foldl</span> go <span class="fu">mempty</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="ot">    go ::</span> <span class="dt">HML.HashMap</span> <span class="dt">Tag</span> [<span class="dt">Post</span>] <span class="ot">-&gt;</span> <span class="dt">Post</span> <span class="ot">-&gt;</span> <span class="dt">HML.HashMap</span> <span class="dt">Tag</span> [<span class="dt">Post</span>]</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    go acc post <span class="ot">=</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>      <span class="fu">foldl</span> (\acc&#39; tag <span class="ot">-&gt;</span> HML.insertWith (<span class="op">++</span>) tag [post] acc&#39;) acc (post <span class="op">^.</span> <span class="op">#</span>tags)</span></code></pre></div>
+<p>前述したとおり，こっちでも <code>buildWithPagenation</code> を使っているが，<code>siteMeta</code> の他にタグの情報もテンプレートに渡したかったので仰々しい型にしたのだ． <code>buildTagPages</code> がタグ情報を返しているのはインデックスページに <a href="https://hackage.haskell.org/package/hakyll-4.14.0.0/docs/Hakyll-Web-Tags.html#v:renderTagCloud">Hakyll のタグクラウド</a>を設定したいからだ：</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ot">buildIndex ::</span> [(<span class="dt">Tag</span>, <span class="dt">Int</span>)] <span class="ot">-&gt;</span> [<span class="dt">Post</span>] <span class="ot">-&gt;</span> <span class="dt">Action</span> ()</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>buildIndex tags posts <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  indexT <span class="ot">&lt;-</span> compileTemplate&#39; <span class="st">&quot;site/templates/index.html&quot;</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> indexHTML <span class="ot">=</span> T.unpack <span class="op">$</span> substitute indexT (happend siteMeta indexInfo)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  writeFile&#39; (outputFolder <span class="op">&lt;/&gt;</span> <span class="st">&quot;index.html&quot;</span>) indexHTML</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    indexInfo <span class="ot">=</span> <span class="op">#</span>tags <span class="op">@=</span> tagsInfo <span class="op">&lt;:</span> <span class="op">#</span>posts <span class="op">@=</span> <span class="fu">take</span> <span class="dv">4</span> (<span class="fu">reverse</span> posts) <span class="op">&lt;:</span><span class="ot"> nil ::</span> <span class="dt">IndexInfo</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    tagsInfo <span class="ot">=</span> <span class="fu">map</span> (<span class="fu">uncurry</span> toTagInfo) (L.sortOn <span class="fu">fst</span> tags)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    minCnt <span class="ot">=</span> <span class="fu">maximum</span> <span class="op">$</span> <span class="fu">map</span> <span class="fu">snd</span> tags</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    maxCnt <span class="ot">=</span> <span class="fu">minimum</span> <span class="op">$</span> <span class="fu">map</span> <span class="fu">snd</span> tags</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    toTagInfo tag n</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>       <span class="ot">=</span> <span class="op">#</span>name <span class="op">@=</span> tag</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>      <span class="op">&lt;:</span> <span class="op">#</span>size <span class="op">@=</span> calcSize <span class="fl">120.0</span> <span class="fl">80.0</span> n minCnt maxCnt</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>      <span class="op">&lt;:</span> nil</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="ot">    calcSize ::</span> <span class="dt">Double</span> <span class="ot">-&gt;</span> <span class="dt">Double</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    calcSize minSize maxSize cnt min&#39; max&#39; <span class="ot">=</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>      <span class="kw">let</span> diff <span class="ot">=</span> <span class="dv">1</span> <span class="op">+</span> <span class="fu">fromIntegral</span> max&#39; <span class="op">-</span> <span class="fu">fromIntegral</span> min&#39;</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>          relative <span class="ot">=</span> (<span class="fu">fromIntegral</span> cnt <span class="op">-</span> <span class="fu">fromIntegral</span> min&#39;) <span class="op">/</span> diff</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>      <span class="kw">in</span> <span class="fu">floor</span> <span class="op">$</span> minSize <span class="op">+</span> relative <span class="op">*</span> (maxSize <span class="op">-</span> minSize)</span></code></pre></div>
+<p><code>tagsInfo</code> 周りの処理は Hakyll のコードを参考にして書いただけ．</p>
+<h3 id="シンタックスハイライト">シンタックスハイライト</h3>
+<p>slick-template では，シンタックスハイライトを自前の CSS で定義していたが，ここでは <a href="https://hackage.haskell.org/package/skylighting">skylighting パッケージ</a>のを利用していたいたのでそうする：</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ot">buildHighlightCss ::</span> <span class="dt">Action</span> ()</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>buildHighlightCss <span class="ot">=</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  writeFile&#39; (outputFolder <span class="op">&lt;/&gt;</span> <span class="st">&quot;css&quot;</span> <span class="op">&lt;/&gt;</span> <span class="st">&quot;highlight.css&quot;</span>) <span class="op">$</span> styleToCss pygments</span></code></pre></div>
+<h2 id="おしまい">おしまい</h2>
+<p>思ったよりさくっとできた．</p>
+            </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>
