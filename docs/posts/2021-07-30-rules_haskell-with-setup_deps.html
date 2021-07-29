@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Bazel で Haskell の Custom Setup をする" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>Bazel で Haskell の Custom Setup をする</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title" itemprop="name headline">Bazel で Haskell の Custom Setup をする</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Jul 30, 2021</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Bazel/1">Bazel</a>
+                <a href="../tags/Haskell/1">Haskell</a>
+              </div>
+              </p>
+            </header>
+
+            <div class="post-content" itemprop="articleBody">
+              <p>Bazel を使って Haskell アプリケーションをビルドしてるんですけど，依存パッケージが Custom Setup を使ってるときにちょっと躓いたので，そのメモ書きです．</p>
+<h2 id="bazel-で-custom-setup">Bazel で Custom Setup</h2>
+<p><a href="https://github.com/matsubara0507/mdium">mdium</a> という CLI ツールを実験的に Bazel でビルドをしている． LTS を 18.0 にあげようと依存パッケージをアップデートしたところ，次のようなエラーが出た：</p>
+<pre><code>/private/var/tmp/.../sandbox/darwin-sandbox/10/execroot/mdium/external/stackage/xml-conduit-1.9.1.1/Setup.hs:3:1: error:
+    Could not find module ‘Distribution.Extra.Doctest’
+    Perhaps you meant Distribution.Simple.Doctest (from Cabal-3.2.1.0)
+    Use -v (or `:set -v` in ghci) to see a list of the files searched for.
+  |
+3 | import Distribution.Extra.Doctest (defaultMainWithDoctests)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</code></pre>
+<p>Stack でビルドした場合には起きないエラーだ． エラーの内容はどうやら，Cabal の Custom Setup で利用している依存パッケージが足りていないようだ（Custom Setup については「<a href="https://haskell.e-bigmoon.com/posts/2018/12-25-cabal-preprocessing.html">cabal build で package.yaml を使う - BIGMOON Haskeller's BLOG</a>」が日本語記事では分かりやすい）．</p>
+<p><a href="https://github.com/tweag/rules_haskell">tweag/rules_haskell</a> で Issue を漁ったところ，<a href="https://github.com/tweag/rules_haskell/issues/1314">まさに同じの</a>があった． どうやら <code>setup_deps</code> を使えば良いらしい：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>stack_snapshot(</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;stackage&quot;</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    packages <span class="op">=</span> [</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;aeson&quot;</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;base&quot;</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;dotenv&quot;</span>,</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;extensible&quot;</span>,</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;fallible&quot;</span>,</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;github&quot;</span>,</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;mix&quot;</span>,</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;mix-json-logger&quot;</span>,</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;mix-plugin-github&quot;</span>,</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;pandoc&quot;</span>,</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;pandoc-types&quot;</span>,</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;rio&quot;</span>,</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;wreq&quot;</span>,</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    setup_deps <span class="op">=</span> {</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;xml-conduit&quot;</span>: [<span class="st">&quot;cabal-doctest&quot;</span>], <span class="co"># 追記</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    local_snapshot <span class="op">=</span> <span class="st">&quot;//:stack-snapshot.yaml&quot;</span>,</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p>うまくビルドできました． やったね．</p>
+<h2 id="おまけhazell-で対応する">おまけ：hazell で対応する</h2>
+<p>ぶっちゃけ，表題の「Bazel で Haskell の Custom Setup をする」に関してはこれでおしまい． Issue もあるので記事にするほどのことでもない（笑）．</p>
+<p>ただ，私は <code>stack_snapshot</code> ルールを<a href="https://github.com/matsubara0507/hazell">自作ツール hazell</a> を使って hpack の package.yaml から生成している． しかし，残念ながら <code>setup_deps</code> には対応していないので対応する必要があった（ここからが本題）．</p>
+<h1 id="section"></h1>
+<p><a href="https://github.com/matsubara0507/hazell/pull/1">作業PRはコチラ</a></p>
+<h3 id="dict-型を扱えるようにする">Dict 型を扱えるようにする</h3>
+<p>実は，今までの機能であれば <a href="https://docs.bazel.build/versions/main/skylark/lib/globals.html#dict">Dict 型</a>を扱う必要がなかったので未対応だった（WORKSPACE などを読み込むとエラーになる）． まずはここから対応する．</p>
+<p>まずは Bazel ルールの引数の型 <code>RuleArg</code> を拡張する：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">RuleArg</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">RuleArgString</span> <span class="dt">String</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">RuleArgBool</span> <span class="dt">Bool</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">RuleArgArray</span> [<span class="dt">RuleArg</span>]</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">RuleArgDict</span> (<span class="dt">Map</span> <span class="dt">String</span> <span class="dt">RuleArg</span>) <span class="co">-- 追加</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">RuleArgConst</span> <span class="dt">String</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">RuleArgGlob</span> <span class="dt">String</span></span></code></pre></div>
+<p><code>Map</code> を使うと，元のキーの順番が保持されないが，まぁ本質的には困らないのでとりあえず <code>Map</code> にした． フォーマットするときにモヤモヤしだしたらキーの順番が保持される仕組みを考えることとする．</p>
+<p>次にパーサーを追加：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ot">buildRuleArgParser ::</span> <span class="dt">Parser</span> <span class="dt">RuleArg</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>buildRuleArgParser</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> buildRuleArgArrayParser</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;|&gt;</span> buildRuleArgDictParser  <span class="co">-- 追加</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;|&gt;</span> buildRuleArgBoolParser</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>   <span class="op">...</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co">-- `{ &quot;key&quot; : value, &quot;key&quot; : value }` って感じのをパースしたい</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="ot">buildRuleArgDictParser ::</span> <span class="dt">Parser</span> <span class="dt">RuleArg</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>buildRuleArgDictParser <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  char <span class="ch">&#39;{&#39;</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  space</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  dict <span class="ot">&lt;-</span> buildRuleDictMemberParser <span class="ot">`sepAndEndBy`</span> (comma, space <span class="op">&gt;&gt;</span> char <span class="ch">&#39;}&#39;</span>)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pure</span> <span class="op">$</span> <span class="dt">RuleArgDict</span> (Map.fromList dict)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="ot">    buildRuleDictMemberParser ::</span> <span class="dt">Parser</span> (<span class="dt">String</span>, <span class="dt">RuleArg</span>)</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    buildRuleDictMemberParser <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>      key <span class="ot">&lt;-</span> stringLitParser</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>      space</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>      char <span class="ch">&#39;:&#39;</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>      space</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>      val <span class="ot">&lt;-</span> buildRuleArgParser</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>      <span class="fu">pure</span> (key, val)</span></code></pre></div>
+<p><code>sepAndEndBy</code> コンビネーターは自分で定義しているやつで，名前の通りセパレーターと終端に使うパーサーをそれぞれ指定して繰り返し処理させる．</p>
+<p>最後にプリティプリンターを定義して完成：</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Pretty</span> <span class="dt">RuleArg</span> <span class="kw">where</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  pretty (<span class="dt">RuleArgString</span> str)  <span class="ot">=</span> fromString (<span class="fu">show</span> str)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  pretty (<span class="dt">RuleArgBool</span> <span class="dt">True</span>)   <span class="ot">=</span> <span class="st">&quot;True&quot;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  pretty (<span class="dt">RuleArgDict</span> dict)   <span class="ot">=</span> pretteyDict dict <span class="co">-- 追加</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co">-- 要素がある場合は次のように出力したい：</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co">--  hoge = {</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co">--    &quot;key1&quot;: value1,</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="co">--    &quot;key2&quot;: value2,</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="co">--  }</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="ot">pretteyDict ::</span> <span class="dt">Map</span> <span class="dt">String</span> <span class="dt">RuleArg</span> <span class="ot">-&gt;</span> <span class="dt">Doc</span> ann</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>pretteyDict dict <span class="ot">=</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">if</span> Map.null dict <span class="kw">then</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;{}&quot;</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  <span class="kw">else</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    vsep [nest <span class="dv">4</span> <span class="op">$</span> vsep (<span class="st">&quot;{&quot;</span> <span class="op">:</span> pretteyDict&#39; dict), <span class="st">&quot;}&quot;</span>]</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    pretteyDict&#39; <span class="ot">=</span> <span class="fu">map</span> (\(k, v) <span class="ot">-&gt;</span> fromString (<span class="fu">show</span> k) <span class="op">&lt;&gt;</span> <span class="st">&quot;: &quot;</span> <span class="op">&lt;&gt;</span> pretty v <span class="op">&lt;&gt;</span> <span class="st">&quot;,&quot;</span>) <span class="op">.</span> Map.toList</span></code></pre></div>
+<p>これで hazell に修正した WORKSPACE ファイルを食わしてもパースエラーが起きなくなった． しかし，追記した <code>setup_deps</code> が消えてしまう． 困った．</p>
+<h3 id="未定義の引数は残すようにする">未定義の引数は残すようにする</h3>
+<p>実は，元の <code>stack_snapshot</code> と新しく生成した <code>stack_snapshot</code> のマージが雑すぎて，新しく生成した <code>stack_snapshot</code> にない引数は消してしまうようになっていた． なので，元の <code>stack_snapshot</code> にある引数はちゃんと保持するようにマージ処理を書き直した：</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Map.Merge.Strict</span> <span class="kw">as</span> <span class="dt">Map</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ot">mergeRuleArgs ::</span> <span class="dt">BuildContent</span> <span class="ot">-&gt;</span> <span class="dt">Rule</span> <span class="ot">-&gt;</span> <span class="dt">BuildContent</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>mergeRuleArgs (<span class="dt">BuildRule</span> name args) rule <span class="ot">=</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">BuildRule</span> name <span class="op">.</span> Map.toList <span class="op">$</span> Map.merge</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    Map.preserveMissing</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    Map.preserveMissing</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    (Map.zipWithMatched <span class="op">$</span> \_ old new <span class="ot">-&gt;</span> new)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    (Map.fromList args)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    (Map.fromList <span class="op">$</span> ruleArgs rule)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>mergeRuleArgs content _ <span class="ot">=</span> content</span></code></pre></div>
+<p>1引数目が WORKSPACE ファイルをパースして得た元々の <code>stack_snapshot</code> ルールで，2引数目が package.yaml から生成した新しい <code>stack_snapshot</code> ルール（型が違うのはお気になさらず）． 連想配列の結合にはどうやら <a href="https://hackage.haskell.org/package/containers-0.6.5.1/docs/Data-Map-Merge-Strict.html#v:merge"><code>Data.Map.Merge</code> の <code>merge</code> 関数</a>を利用すると良いらしい（もちろん，もっとパフォーマンスの良いサードパーティパッケージはあるだろうが）． <code>merge</code> 関数は3つの関数を受け取る高階関数である． 型がぱっと見謎（<code>SimpleWhenMissing k a c</code> など）だが，要するに次の3つのケースに関する関数を要求している（<code>merge m1 m2</code>）：</p>
+<ol>
+<li><code>m1</code> だけ要素があった場合の <code>key -&gt; m1Value -&gt; Maybe newValue</code> な関数</li>
+<li><code>m2</code> だけ要素があった場合の <code>key -&gt; m2Value -&gt; Maybe newValue</code> な関数</li>
+<li>両方に要素があった場合の <code>key -&gt; m1Value -&gt; m2Value -&gt; Maybe newValue</code> な関数</li>
+</ol>
+<p>全て最後が <code>Maybe</code> なのは，<code>Nothing</code> の場合はキーそのものを消すためだ． 今回は (1)(2) はヒットした方をそのまま利用し，(3) の場合は新しい方（<code>m2</code>）優先にしたい． ヒットしたのをそのまま使う場合は <code>preserveMissing</code> 関数を使えばよい． <code>zipWithMatched</code> 関数は，前述した <code>Nothing</code> のケースを排除した <code>zip</code> 関数のようなものだ．</p>
+<h3 id="cabal-ファイルを集める">Cabal ファイルを集める</h3>
+<p>正直，機能的にはここまでで十分だったが，せっかくなので <code>setup_deps</code> も自動生成する方法を実装してみる． Custom Setup の依存パッケージは Cabal ファイルの <code>custom-setup</code> の <code>setup-depends</code> に書いてある． つまり，まずはインダイレクトも含む全ての依存パッケージの Cabal ファイルを集める必要がある（これはなかなか大変）．</p>
+<p>現在解析している package.yaml には直接の依存パッケージしか書いてないので依存パッケージの依存パッケージなども含めて列挙する方法を考える． いろいろ試行錯誤した結果，とりあえずは <code>stack ls</code> を使うことにした（Stack も Haskell 製なので，いずれ直接扱えるようにしたい）：</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">RIO.Process</span> (<span class="dt">HasProcessContext</span>, proc, readProcessStdout_, withWorkingDir)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>runStackLs</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="ot">  ::</span> (<span class="dt">HasProcessContext</span> env, <span class="dt">HasLogFunc</span> env, <span class="dt">MonadReader</span> env m, <span class="dt">MonadIO</span> m, <span class="dt">HasCallStack</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=&gt;</span> <span class="dt">FilePath</span> <span class="ot">-&gt;</span> m [<span class="dt">DotPayload</span>]</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>runStackLs path <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">&lt;-</span> proc <span class="st">&quot;stack&quot;</span> [<span class="st">&quot;ls&quot;</span>, <span class="st">&quot;dependencies&quot;</span>, <span class="st">&quot;json&quot;</span>, <span class="st">&quot;--test&quot;</span>] (withWorkingDir path <span class="op">.</span> readProcessStdout_)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">case</span> JSON.eitherDecode out <span class="kw">of</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Left</span> e  <span class="ot">-&gt;</span> logError (displayShow e) <span class="op">&gt;&gt;</span> <span class="fu">pure</span> <span class="fu">mempty</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Right</span> a <span class="ot">-&gt;</span> <span class="fu">pure</span> a</span></code></pre></div>
+<p>rio を利用して外部コマンドを安全に呼び出すには <a href="https://hackage.haskell.org/package/rio-0.1.20.0/docs/RIO-Process.html"><code>RIO.Process</code> モジュール</a>を使うのだが少しクセがある． 基本は <code>HasProcessContext m</code> 型クラス配下のモナド <code>m</code> で <a href="https://hackage.haskell.org/package/rio-0.1.20.0/docs/RIO-Process.html#v:proc"><code>proc</code> 関数</a>を呼べば良い：</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>proc</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ot">  ::</span> (<span class="dt">HasProcessContext</span> env, <span class="dt">HasLogFunc</span> env, <span class="dt">MonadReader</span> env m, <span class="dt">MonadIO</span> m, <span class="dt">HasCallStack</span>)	 </span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=&gt;</span> <span class="dt">FilePath</span>	</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="ot">-&gt;</span> [<span class="dt">String</span>]	</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="ot">-&gt;</span> (<span class="dt">ProcessConfig</span> () () () <span class="ot">-&gt;</span> m a)	 </span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="ot">-&gt;</span> m a</span></code></pre></div>
+<p>1引数目と2引数目が呼び出したいコマンドと与える引数なのだが，問題は3引数目． これは，コマンドを呼び出すプロセスの設定を関数結合な感じで定義している． 例えば今回は，返り値として標準出力が欲しいので <code>readProcessStdout_</code> を使い，加えて実行ディレクトリを変えたいので <code>withWorkingDir</code> も呼んでいる． 他にも Exit Code を返り値にしたり，標準入力を与えたりするコンビネーターが存在する．</p>
+<p>で，<code>stack ls</code> の結果は JSON 形式で出力してパースしている． <code>DotPayload</code> 型は <a href="https://github.com/commercialhaskell/stack/blob/v2.7.1/src/Stack/Dot.hs">Stack のコード</a>を呼んで必要なものだけ切り出した型だ． あとは <code>DotPayload</code> から Cabal ファイルを拾ってくる関数を定義するだけ：</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">CabalPackage</span> <span class="ot">=</span> <span class="dt">Cabal.PackageDescription</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="ot">readCabalFile ::</span> <span class="dt">MonadIO</span> m <span class="ot">=&gt;</span> <span class="dt">DotPayload</span> <span class="ot">-&gt;</span> m (<span class="dt">Maybe</span> (<span class="dt">Either</span> <span class="dt">String</span> <span class="dt">CabalPackage</span>))</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>readCabalFile payload <span class="ot">=</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- hackage 以外の場合はいったん未対応</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">case</span> payloadLocation payload <span class="kw">of</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    (<span class="dt">Just</span> (<span class="dt">PackageLocation</span> <span class="st">&quot;hackage&quot;</span> url)) <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>      <span class="dt">Just</span> <span class="op">.</span> (parsePackageDescription <span class="op">=&lt;&lt;</span>) <span class="op">&lt;$&gt;</span> get (Text.unpack url <span class="op">++</span> <span class="st">&quot;/&quot;</span> <span class="op">++</span> packageName <span class="op">++</span> <span class="st">&quot;.cabal&quot;</span>)</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    _ <span class="ot">-&gt;</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>      <span class="fu">pure</span> <span class="dt">Nothing</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    packageName <span class="ot">=</span> Text.unpack (payloadName payload)</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    parsePackageDescription b <span class="ot">=</span> <span class="kw">case</span> Cabal.parseGenericPackageDescriptionMaybe b <span class="kw">of</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>      <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="dt">Left</span> <span class="op">$</span> <span class="st">&quot;cannnot parse to cabal file &quot;</span> <span class="op">++</span> packageName</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>      <span class="dt">Just</span> p  <span class="ot">-&gt;</span> <span class="dt">Right</span> <span class="op">$</span> Cabal.packageDescription p</span></code></pre></div>
+<p>Cabal ファイルは Hackage から引くことができる（例えば <code>https://hackage.haskell.org/package/rio-0.1.20.0/rio.cabal</code> など）． <code>get</code> 関数は req パッケージを使って自分で定義した，いい感じにしただけの GET HTTP リクエストするだけの関数（割愛）で，これを使って取ってきている． <a href="https://hackage.haskell.org/package/Cabal-3.4.0.0/docs/Distribution-PackageDescription-Parsec.html#v:parseGenericPackageDescriptionMaybe">Cabal ファイルのパーサーは Cabal パッケージにある</a>のでそれを利用しているだけだ．</p>
+<h3 id="setup_deps-を生成する"><code>setup_deps</code> を生成する</h3>
+<p>あとは集めた Cabal ファイルを使って <code>setup_deps</code> を構築するだけだ． Cabal パッケージの関数をそのまま呼ぶことで Custom Setup 用の依存パッケージは集めることができる：</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Distribution.Types.Dependency</span>  <span class="kw">as</span> <span class="dt">Cabal</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Distribution.Types.PackageId</span>   <span class="kw">as</span> <span class="dt">Cabal</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Distribution.Types.PackageName</span> <span class="kw">as</span> <span class="dt">Cabal</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="ot">toSetupDeps ::</span> <span class="dt">CabalPackage</span> <span class="ot">-&gt;</span> [<span class="dt">String</span>]</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>toSetupDeps <span class="ot">=</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fmap</span> (Cabal.unPackageName <span class="op">.</span> Cabal.depPkgName) <span class="op">.</span> <span class="fu">maybe</span> [] Cabal.setupDepends <span class="op">.</span> Cabal.setupBuildInfo</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="ot">toPackageName ::</span> <span class="dt">CabalPackage</span> <span class="ot">-&gt;</span> <span class="dt">String</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>toPackageName <span class="ot">=</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  Cabal.unPackageName <span class="op">.</span> Cabal.pkgName <span class="op">.</span> Cabal.package</span></code></pre></div>
+<p>これを雑に <code>setup_deps</code> にしたところ，Cabal パッケージなど不要なのが大量に出てきてしまった． おそらく，<a href="https://downloads.haskell.org/~ghc/8.10.4/docs/html/users_guide/packages.html#using-packages">GHC にデフォルト含まれるパッケージ</a> は <code>setup_deps</code> に指定する必要がない気がするので弾くようにした：</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ot">buildSetupDeps ::</span> [<span class="dt">CabalPackage</span>] <span class="ot">-&gt;</span> [(<span class="dt">Maybe</span> [<span class="dt">Char</span>], <span class="dt">RuleArg</span>)]</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>buildSetupDeps cabals <span class="ot">=</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">case</span> [(Cabal.toPackageName c, <span class="dt">RuleArgArray</span> ds) <span class="op">|</span> c <span class="ot">&lt;-</span> cabals, <span class="kw">let</span> ds <span class="ot">=</span> toSetupDepsArg c, <span class="fu">not</span> (<span class="fu">null</span> ds)] <span class="kw">of</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    [] <span class="ot">-&gt;</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>      []</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    deps <span class="ot">-&gt;</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>      [(<span class="dt">Just</span> <span class="st">&quot;setup_deps&quot;</span>, <span class="dt">RuleArgDict</span> <span class="op">$</span> Map.fromList deps)]</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    toSetupDepsArg <span class="ot">=</span> <span class="fu">fmap</span> <span class="dt">RuleArgString</span> <span class="op">.</span> <span class="fu">filter</span> (<span class="fu">not</span> <span class="op">.</span> (<span class="ot">`elem`</span> ghcPkgs)) <span class="op">.</span> Cabal.toSetupDeps</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="ot">ghcPkgs ::</span> [<span class="dt">String</span>]</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>ghcPkgs <span class="ot">=</span> [<span class="st">&quot;Cabal&quot;</span>, <span class="op">...</span> ]</span></code></pre></div>
+<p>これで無事完成．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>ちなみに，全ての Cabal ファイルを集めて <code>setup_deps</code> を構築するのはそこそこ時間がかかるため，するかしないかをフラグで制御できるようにしてる． Hackage にある Cabal ファイルはパッケージのバージョン毎に（たぶん）不変なのでローカルにキャッシュする方法を用意したいね．</p>
+            </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>
