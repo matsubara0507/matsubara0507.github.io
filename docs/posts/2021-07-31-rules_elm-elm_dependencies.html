@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="rules_elm で依存パッケージのインストールをキャッシュする" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>rules_elm で依存パッケージのインストールをキャッシュする</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title" itemprop="name headline">rules_elm で依存パッケージのインストールをキャッシュする</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Jul 31, 2021</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Elm/1">Elm</a>
+                <a href="../tags/Bazel/1">Bazel</a>
+              </div>
+              </p>
+            </header>
+
+            <div class="post-content" itemprop="articleBody">
+              <p>前に，Elm 用の Bazel ルールがないので作りました：</p>
+<ul>
+<li><a href="https://matsubara0507.github.io/posts/2021-01-18-create-rules_elm.html">rules_elm を作る - ひげメモ</a></li>
+</ul>
+<p>しかしこれは依存パッケージのDLなどをうまくキャッシュしたりしないので毎回フルビルドが走ってしまいます． 今回は，この問題をなんとか解決したという話です．</p>
+<h2 id="elm-の依存パッケージのキャッシュ">Elm の依存パッケージのキャッシュ</h2>
+<p>まずはそもそも，Elm は依存パッケージをどうやってローカルにキャッシュしているかについて紹介する． <code>elm make</code> などをすると Elm プロジェクトの配下に <code>elm-stuff</code> という（基本的には git 管理しない）ディレクトリができるが，中身を見てみるとここには無い． Elm コンパイラ（バージョンは 0.19.1）のソースコードを直接呼んだ結果，<code>ELM_HOME</code> 環境変数に設定したパスのディレクトリに保存されているようだ． <code>ELM_HOME</code> 環境変数が設定されてない場合は <code>$HOME/.elm</code> が使われている．</p>
+<pre><code>$ ls ~/.elm/0.19.1/packages/
+bartavelle		elm			elm-community		elm-explorations	justinmimbs		lock			registry.dat		rtfeldman</code></pre>
+<p><code>registry.dat</code> ファイルには，このディレクトリ配下で既に管理しているパッケージ群が書かれてある． <code>lock</code> ファイルは，このディレクトリへの書き込みを排他制御するためのもので，<a href="https://hackage.haskell.org/package/filelock">filelock パッケージ</a>を利用して行っている． <code>elm install</code> や <code>elm make</code> を実行すると <code>lock</code> ファイルによってロックをとり，<code>registry.dat</code> ファイルを見て対象のパッケージがダウンロード済みかを確認し，なければダウンロードしてくるといった感じだ．</p>
+<h3 id="bazel-でどうするか">Bazel でどうするか</h3>
+<p><code>registry.dat</code> ファイルがあるため，依存パッケージ別に保存し再利用することは難しい． なので，Bazel のサンドボックス内に保存した <code>ELM_HOME</code> の中身をまるまるドカッと Bazel の生成物として再利用することにした． この生成物は elm.json に依存することにすれば，elm.json が変更されない限りは再ダウンロードされないはず． もちろん，elm.json が少しでも変更されると全て再ダウンロードされるが，そこまで時間かからないので取り敢えず目を瞑ることにする．</p>
+<h2 id="elm_dependencies-ルール">elm_dependencies ルール</h2>
+<p>それらを行う <code>elm_dependencies</code> ルールを作った． 次のように利用する：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>elm_dependencies(</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;deps&quot;</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    elm_json <span class="op">=</span> <span class="st">&quot;elm.json&quot;</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>elm_make(</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;index&quot;</span>,</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    srcs <span class="op">=</span> glob([<span class="st">&quot;**&quot;</span>]),</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    elm_json <span class="op">=</span> <span class="st">&quot;elm.json&quot;</span>,</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    main <span class="op">=</span> <span class="st">&quot;src/Main.elm&quot;</span>,</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    output <span class="op">=</span> <span class="st">&quot;index.html&quot;</span>,</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    elm_home <span class="op">=</span> <span class="st">&quot;:deps&quot;</span>, <span class="co"># elm_dependencies の生成物をココで指定する</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p><a href="https://github.com/matsubara0507/rules_elm/pull/1">作業 PR はこちら</a>．</p>
+<h3 id="elm_home-の中身を保存する">ELM_HOME の中身を保存する</h3>
+<p>まずは <code>elm_dependencies</code> の振る舞いについて． 試行錯誤した結果：</p>
+<ol>
+<li>Bazel のサンドボックス配下に <code>ELM_HOME</code> を指定</li>
+<li>いったん無理やり <code>elm make Main.elm</code> を実行</li>
+<li><code>ELM_HOME</code> 配下を ZIP で固めてルールの生成物とする</li>
+</ol>
+<p>方法をとることにした． Bazel の生成物にはディレクトリも指定可能だが，生成物をあとで利用する際に ZIP ファイルにしておいた方が都合が良いのでそうしている（詳しくは後述）．</p>
+<p>Bazel 内で実行される Elm コマンドは Windows でも動作するように Python を使ってラップされている（rules_haskell を参考にした）． なので，今回も同様に専用の Python スクリプトを記述することにした：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os.path</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> shutil</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> subprocess</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run(cmd, <span class="op">*</span>args, <span class="op">**</span>kwargs):</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        subprocess.run(cmd, check<span class="op">=</span><span class="va">True</span>, stdout<span class="op">=</span>subprocess.PIPE, stderr<span class="op">=</span>subprocess.PIPE, <span class="op">*</span>args, <span class="op">**</span>kwargs)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">except</span> subprocess.CalledProcessError <span class="im">as</span> err:</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>        sys.stdout.<span class="bu">buffer</span>.write(err.stdout)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>        sys.stderr.<span class="bu">buffer</span>.write(err.stderr)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>elm_runtime_path <span class="op">=</span> os.path.abspath(<span class="st">&quot;@@ELM_RUNTIME@@&quot;</span>) <span class="co"># Bazelのテンプレート機能で後から指定</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>elm_project_root <span class="op">=</span> sys.argv.pop(<span class="dv">1</span>) <span class="co"># トップレベル以外で Elm プロジェクトを指定した場合を考慮</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>os.environ[<span class="st">&quot;ELM_HOME&quot;</span>] <span class="op">=</span> os.path.abspath(os.getenv(<span class="st">&quot;ELM_HOME&quot;</span>)) <span class="co"># 念のため絶対パスにする</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>os.chdir(elm_project_root)</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="co"># elm.json しか無い前提なので `source-directories` で指定してあるパスを生成しておく</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>elm_json <span class="op">=</span> json.load(<span class="bu">open</span>(<span class="st">&quot;elm.json&quot;</span>))</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> elm_json[<span class="st">&quot;type&quot;</span>] <span class="op">==</span> <span class="st">&quot;application&quot;</span>:</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> srcdir <span class="kw">in</span> elm_json[<span class="st">&quot;source-directories&quot;</span>]:</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>        os.makedirs(srcdir, exist_ok <span class="op">=</span> <span class="va">True</span>)</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Main.elm はなんでも良いのでコンパクトなのを生成</span></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">&quot;Main.elm&quot;</span>, mode <span class="op">=</span> <span class="st">&quot;w&quot;</span>) <span class="im">as</span> f:</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>    f.write(<span class="st">&quot;import Browser</span><span class="ch">\n</span><span class="st">import Debug</span><span class="ch">\n</span><span class="st">main = Browser.sandbox (Debug.todo </span><span class="ch">\&quot;</span><span class="st">temp</span><span class="ch">\&quot;</span><span class="st">)&quot;</span>)</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>run([elm_runtime_path, <span class="st">&quot;make&quot;</span>, <span class="st">&quot;Main.elm&quot;</span>])</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="co"># ZIP で固める</span></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>elm_home <span class="op">=</span> os.getenv(<span class="st">&quot;ELM_HOME&quot;</span>)</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>shutil.make_archive(elm_home, <span class="st">&quot;zip&quot;</span>, root_dir <span class="op">=</span> elm_home) </span></code></pre></div>
+<p><code>elm_dependencies</code> ルールでは elm.json しか Bazel サンドボックスに渡していないので，<code>elm make Main.elm</code> するために必要なファイルやディレクトリを生成する必要がある． アプリケーションタイプの elm.json の場合，<code>source-directories</code> で指定したパスが存在しないとエラーになるので mkdir しておく（パッケージタイプについては，今回はまだ未対応）． また，<code>elm make</code> するには <code>Main</code> ファイルを指定しないといけないので適当なのを生成している． で，最後に <a href="https://docs.python.org/3/library/shutil.html#shutil.make_archive"><code>shutil.make_archive</code></a> 関数を利用して ZIP に固めている．</p>
+<h1 id="section"></h1>
+<p>あとはこの Python スクリプトを呼び出すルールを作成し，その生成物をZIPファイルとする：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _elm_dependencies_impl(ctx):</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    elm_compiler <span class="op">=</span> ctx.toolchains[<span class="st">&quot;@rules_elm//elm:toolchain&quot;</span>].elm</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    elm_home <span class="op">=</span> ctx.actions.declare_directory(<span class="st">&quot;.elm&quot;</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    output <span class="op">=</span> ctx.actions.declare_file(<span class="st">&quot;.elm.zip&quot;</span>) <span class="co"># ZIPファイルを生成物にする</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    ctx.actions.run(</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>        executable <span class="op">=</span> ctx.executable._elm_wrapper,</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>        arguments <span class="op">=</span> [ctx.<span class="bu">file</span>.elm_json.dirname],</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>        inputs <span class="op">=</span> [elm_compiler, ctx.<span class="bu">file</span>.elm_json],</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>        outputs <span class="op">=</span> [output, elm_home],</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>        env <span class="op">=</span> {<span class="st">&quot;ELM_HOME&quot;</span>: elm_home.path},</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> [DefaultInfo(files <span class="op">=</span> depset([output]))]</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>elm_dependencies <span class="op">=</span> rule(</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    _elm_dependencies_impl,</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    attrs <span class="op">=</span> {</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;elm_json&quot;</span>: attr.label(allow_single_file <span class="op">=</span> <span class="va">True</span>),</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;_elm_wrapper&quot;</span>: attr.label(</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>            executable <span class="op">=</span> <span class="va">True</span>,</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>            cfg <span class="op">=</span> <span class="st">&quot;host&quot;</span>,</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>            default <span class="op">=</span> Label(<span class="st">&quot;@rules_elm//elm:elm_dependencies&quot;</span>),</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>    toolchains <span class="op">=</span> [</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@rules_elm//elm:toolchain&quot;</span>,</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<h3 id="elm_home-の中身を展開する">ELM_HOME の中身を展開する</h3>
+<p>あとは <code>elm_dependencies</code> ルールの生成物を <code>elm_make</code> ルールで利用できるようにするだけだ． まずは <code>elm_make</code> に引数を追加して生成物を渡せるようにする：</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _elm_make_impl(ctx):</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    ...</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    env <span class="op">=</span> {}</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    inputs <span class="op">=</span> [elm_compiler, ctx.<span class="bu">file</span>.elm_json] <span class="op">+</span> ctx.files.srcs</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># elm_home が指定している場合は ZIP ファイルとそのパスをラッパースクリプトに渡す</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> ctx.<span class="bu">file</span>.elm_home <span class="op">!=</span> <span class="va">None</span>:</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        env[<span class="st">&quot;ELM_HOME_ZIP&quot;</span>] <span class="op">=</span> ctx.<span class="bu">file</span>.elm_home.path</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        inputs.append(ctx.<span class="bu">file</span>.elm_home)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    ctx.actions.run(</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>        executable <span class="op">=</span> ctx.executable._elm_wrapper,</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        arguments <span class="op">=</span> [</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>            ctx.<span class="bu">file</span>.elm_json.dirname,</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;make&quot;</span>, ctx.attr.main, <span class="st">&quot;--output&quot;</span>, output_file.path,</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>        ],</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>        inputs <span class="op">=</span> [elm_compiler, ctx.<span class="bu">file</span>.elm_json] <span class="op">+</span> ctx.files.srcs,</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>        inputs <span class="op">=</span> inputs,</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>        outputs <span class="op">=</span> [output_file],</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>        env <span class="op">=</span> env,</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    ...</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>elm_make <span class="op">=</span> rule(</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    ...</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>    attrs <span class="op">=</span> {</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    ...</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>        <span class="co"># 追加（この引数はなくても良い）</span></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;elm_home&quot;</span>: attr.label(</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>            allow_single_file <span class="op">=</span> <span class="va">True</span>,</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>    ...</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p>あとは <code>elm_make</code> で利用している Elm コマンドのラッパースクリプトを編集する：</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> zipfile</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>...</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ここを追記</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> os.getenv(<span class="st">&quot;ELM_HOME_ZIP&quot;</span>) <span class="op">==</span> <span class="va">None</span>:</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    os.putenv(<span class="st">&quot;HOME&quot;</span>, os.getcwd())</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    elm_home <span class="op">=</span> os.getcwd() <span class="op">+</span> <span class="st">&quot;/.elm&quot;</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    elm_home_zip <span class="op">=</span> os.getenv(<span class="st">&quot;ELM_HOME_ZIP&quot;</span>)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> zipfile.ZipFile(elm_home_zip) <span class="im">as</span> elm_zip:</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>        elm_zip.extractall(elm_home)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    os.environ[<span class="st">&quot;ELM_HOME&quot;</span>] <span class="op">=</span> elm_home</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>os.chdir(elm_project_root)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>...</span></code></pre></div>
+<p>で，なぜ ZIP ファイルを介しているのかというと，Bazel ルールの生成物を別のルールで利用する場合は read only じゃないといけないからだ． 前述したとおり，<code>elm make</code> では <code>lock</code> ファイルを利用して排他制御をする． その時，書き込み可能でファイルを open しようとする． そのため，<code>ELM_HOME</code> のディレクトリ自体を直接の生成物にして次のルールに渡すとエラーになってしまう：</p>
+<pre><code>elm-mac: /private/var/tmp/.../execroot/rules_elm/bazel-out/darwin-fastbuild/bin/examples/build-project/.elm/0.19.1/packages/lock: openFd: permission denied (Permission denied)
+
+-- ERROR -----------------------------------------------------------------------
+
+I ran into something that bypassed the normal error reporting process! I
+extracted whatever information I could from the internal error:
+
+&gt;   thread blocked indefinitely in an MVar operation
+
+These errors are usually pretty confusing, so start by asking around on one of
+forums listed at https://elm-lang.org/community to see if anyone can get you
+unstuck quickly.
+...</code></pre>
+<p>なので，一度 ZIP で固めてサンドボックスに展開するようにすれば乱暴だがうまくいく（他に良い方法があれば教えて欲しい...）．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>Haskell 読めるおかげで Elm の振る舞いをささっと調べられるのは便利． それと，記事を書きながら思いついたが，<code>ELM_HOME</code> をプロジェクト直下にして vendoring みたいにするのもありっちゃありですね（Go みたいに）．</p>
+            </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

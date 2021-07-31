@@ -7,8 +7,187 @@
     <author>
         <name>MATSUBARA Nobutada</name>
     </author>
-    <updated>2021-07-29T11:18:SZ</updated>
+    <updated>2021-07-31T07:13:SZ</updated>
 
+    <entry>
+        <title>rules_elm で依存パッケージのインストールをキャッシュする</title>
+        <link href="https://matsubara0507.github.ioposts/2021-07-31-rules_elm-elm_dependencies.html"/>
+        <id>https://matsubara0507.github.ioposts/2021-07-31-rules_elm-elm_dependencies.html</id>
+        <updated>2021-07-31T00:00:SZ</updated>
+        <category term="Elm"/>
+        <category term="Bazel"/>
+        <summary></summary>
+        <content type="html"><![CDATA[<p>前に，Elm 用の Bazel ルールがないので作りました：</p>
+<ul>
+<li><a href="https://matsubara0507.github.io/posts/2021-01-18-create-rules_elm.html">rules_elm を作る - ひげメモ</a></li>
+</ul>
+<p>しかしこれは依存パッケージのDLなどをうまくキャッシュしたりしないので毎回フルビルドが走ってしまいます． 今回は，この問題をなんとか解決したという話です．</p>
+<h2 id="elm-の依存パッケージのキャッシュ">Elm の依存パッケージのキャッシュ</h2>
+<p>まずはそもそも，Elm は依存パッケージをどうやってローカルにキャッシュしているかについて紹介する． <code>elm make</code> などをすると Elm プロジェクトの配下に <code>elm-stuff</code> という（基本的には git 管理しない）ディレクトリができるが，中身を見てみるとここには無い． Elm コンパイラ（バージョンは 0.19.1）のソースコードを直接呼んだ結果，<code>ELM_HOME</code> 環境変数に設定したパスのディレクトリに保存されているようだ． <code>ELM_HOME</code> 環境変数が設定されてない場合は <code>$HOME/.elm</code> が使われている．</p>
+<pre><code>$ ls ~/.elm/0.19.1/packages/
+bartavelle		elm			elm-community		elm-explorations	justinmimbs		lock			registry.dat		rtfeldman</code></pre>
+<p><code>registry.dat</code> ファイルには，このディレクトリ配下で既に管理しているパッケージ群が書かれてある． <code>lock</code> ファイルは，このディレクトリへの書き込みを排他制御するためのもので，<a href="https://hackage.haskell.org/package/filelock">filelock パッケージ</a>を利用して行っている． <code>elm install</code> や <code>elm make</code> を実行すると <code>lock</code> ファイルによってロックをとり，<code>registry.dat</code> ファイルを見て対象のパッケージがダウンロード済みかを確認し，なければダウンロードしてくるといった感じだ．</p>
+<h3 id="bazel-でどうするか">Bazel でどうするか</h3>
+<p><code>registry.dat</code> ファイルがあるため，依存パッケージ別に保存し再利用することは難しい． なので，Bazel のサンドボックス内に保存した <code>ELM_HOME</code> の中身をまるまるドカッと Bazel の生成物として再利用することにした． この生成物は elm.json に依存することにすれば，elm.json が変更されない限りは再ダウンロードされないはず． もちろん，elm.json が少しでも変更されると全て再ダウンロードされるが，そこまで時間かからないので取り敢えず目を瞑ることにする．</p>
+<h2 id="elm_dependencies-ルール">elm_dependencies ルール</h2>
+<p>それらを行う <code>elm_dependencies</code> ルールを作った． 次のように利用する：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>elm_dependencies(</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;deps&quot;</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    elm_json <span class="op">=</span> <span class="st">&quot;elm.json&quot;</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>elm_make(</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;index&quot;</span>,</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    srcs <span class="op">=</span> glob([<span class="st">&quot;**&quot;</span>]),</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    elm_json <span class="op">=</span> <span class="st">&quot;elm.json&quot;</span>,</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    main <span class="op">=</span> <span class="st">&quot;src/Main.elm&quot;</span>,</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    output <span class="op">=</span> <span class="st">&quot;index.html&quot;</span>,</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    elm_home <span class="op">=</span> <span class="st">&quot;:deps&quot;</span>, <span class="co"># elm_dependencies の生成物をココで指定する</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p><a href="https://github.com/matsubara0507/rules_elm/pull/1">作業 PR はこちら</a>．</p>
+<h3 id="elm_home-の中身を保存する">ELM_HOME の中身を保存する</h3>
+<p>まずは <code>elm_dependencies</code> の振る舞いについて． 試行錯誤した結果：</p>
+<ol>
+<li>Bazel のサンドボックス配下に <code>ELM_HOME</code> を指定</li>
+<li>いったん無理やり <code>elm make Main.elm</code> を実行</li>
+<li><code>ELM_HOME</code> 配下を ZIP で固めてルールの生成物とする</li>
+</ol>
+<p>方法をとることにした． Bazel の生成物にはディレクトリも指定可能だが，生成物をあとで利用する際に ZIP ファイルにしておいた方が都合が良いのでそうしている（詳しくは後述）．</p>
+<p>Bazel 内で実行される Elm コマンドは Windows でも動作するように Python を使ってラップされている（rules_haskell を参考にした）． なので，今回も同様に専用の Python スクリプトを記述することにした：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os.path</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> shutil</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> subprocess</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run(cmd, <span class="op">*</span>args, <span class="op">**</span>kwargs):</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        subprocess.run(cmd, check<span class="op">=</span><span class="va">True</span>, stdout<span class="op">=</span>subprocess.PIPE, stderr<span class="op">=</span>subprocess.PIPE, <span class="op">*</span>args, <span class="op">**</span>kwargs)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">except</span> subprocess.CalledProcessError <span class="im">as</span> err:</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>        sys.stdout.<span class="bu">buffer</span>.write(err.stdout)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>        sys.stderr.<span class="bu">buffer</span>.write(err.stderr)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>elm_runtime_path <span class="op">=</span> os.path.abspath(<span class="st">&quot;@@ELM_RUNTIME@@&quot;</span>) <span class="co"># Bazelのテンプレート機能で後から指定</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>elm_project_root <span class="op">=</span> sys.argv.pop(<span class="dv">1</span>) <span class="co"># トップレベル以外で Elm プロジェクトを指定した場合を考慮</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>os.environ[<span class="st">&quot;ELM_HOME&quot;</span>] <span class="op">=</span> os.path.abspath(os.getenv(<span class="st">&quot;ELM_HOME&quot;</span>)) <span class="co"># 念のため絶対パスにする</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>os.chdir(elm_project_root)</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="co"># elm.json しか無い前提なので `source-directories` で指定してあるパスを生成しておく</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>elm_json <span class="op">=</span> json.load(<span class="bu">open</span>(<span class="st">&quot;elm.json&quot;</span>))</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> elm_json[<span class="st">&quot;type&quot;</span>] <span class="op">==</span> <span class="st">&quot;application&quot;</span>:</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> srcdir <span class="kw">in</span> elm_json[<span class="st">&quot;source-directories&quot;</span>]:</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>        os.makedirs(srcdir, exist_ok <span class="op">=</span> <span class="va">True</span>)</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Main.elm はなんでも良いのでコンパクトなのを生成</span></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">&quot;Main.elm&quot;</span>, mode <span class="op">=</span> <span class="st">&quot;w&quot;</span>) <span class="im">as</span> f:</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>    f.write(<span class="st">&quot;import Browser</span><span class="ch">\n</span><span class="st">import Debug</span><span class="ch">\n</span><span class="st">main = Browser.sandbox (Debug.todo </span><span class="ch">\&quot;</span><span class="st">temp</span><span class="ch">\&quot;</span><span class="st">)&quot;</span>)</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>run([elm_runtime_path, <span class="st">&quot;make&quot;</span>, <span class="st">&quot;Main.elm&quot;</span>])</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="co"># ZIP で固める</span></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>elm_home <span class="op">=</span> os.getenv(<span class="st">&quot;ELM_HOME&quot;</span>)</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>shutil.make_archive(elm_home, <span class="st">&quot;zip&quot;</span>, root_dir <span class="op">=</span> elm_home) </span></code></pre></div>
+<p><code>elm_dependencies</code> ルールでは elm.json しか Bazel サンドボックスに渡していないので，<code>elm make Main.elm</code> するために必要なファイルやディレクトリを生成する必要がある． アプリケーションタイプの elm.json の場合，<code>source-directories</code> で指定したパスが存在しないとエラーになるので mkdir しておく（パッケージタイプについては，今回はまだ未対応）． また，<code>elm make</code> するには <code>Main</code> ファイルを指定しないといけないので適当なのを生成している． で，最後に <a href="https://docs.python.org/3/library/shutil.html#shutil.make_archive"><code>shutil.make_archive</code></a> 関数を利用して ZIP に固めている．</p>
+<h1 id="section"></h1>
+<p>あとはこの Python スクリプトを呼び出すルールを作成し，その生成物をZIPファイルとする：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _elm_dependencies_impl(ctx):</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    elm_compiler <span class="op">=</span> ctx.toolchains[<span class="st">&quot;@rules_elm//elm:toolchain&quot;</span>].elm</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    elm_home <span class="op">=</span> ctx.actions.declare_directory(<span class="st">&quot;.elm&quot;</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    output <span class="op">=</span> ctx.actions.declare_file(<span class="st">&quot;.elm.zip&quot;</span>) <span class="co"># ZIPファイルを生成物にする</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    ctx.actions.run(</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>        executable <span class="op">=</span> ctx.executable._elm_wrapper,</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>        arguments <span class="op">=</span> [ctx.<span class="bu">file</span>.elm_json.dirname],</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>        inputs <span class="op">=</span> [elm_compiler, ctx.<span class="bu">file</span>.elm_json],</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>        outputs <span class="op">=</span> [output, elm_home],</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>        env <span class="op">=</span> {<span class="st">&quot;ELM_HOME&quot;</span>: elm_home.path},</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> [DefaultInfo(files <span class="op">=</span> depset([output]))]</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>elm_dependencies <span class="op">=</span> rule(</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    _elm_dependencies_impl,</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    attrs <span class="op">=</span> {</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;elm_json&quot;</span>: attr.label(allow_single_file <span class="op">=</span> <span class="va">True</span>),</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;_elm_wrapper&quot;</span>: attr.label(</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>            executable <span class="op">=</span> <span class="va">True</span>,</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>            cfg <span class="op">=</span> <span class="st">&quot;host&quot;</span>,</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>            default <span class="op">=</span> Label(<span class="st">&quot;@rules_elm//elm:elm_dependencies&quot;</span>),</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>    toolchains <span class="op">=</span> [</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@rules_elm//elm:toolchain&quot;</span>,</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<h3 id="elm_home-の中身を展開する">ELM_HOME の中身を展開する</h3>
+<p>あとは <code>elm_dependencies</code> ルールの生成物を <code>elm_make</code> ルールで利用できるようにするだけだ． まずは <code>elm_make</code> に引数を追加して生成物を渡せるようにする：</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _elm_make_impl(ctx):</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    ...</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    env <span class="op">=</span> {}</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    inputs <span class="op">=</span> [elm_compiler, ctx.<span class="bu">file</span>.elm_json] <span class="op">+</span> ctx.files.srcs</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># elm_home が指定している場合は ZIP ファイルとそのパスをラッパースクリプトに渡す</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> ctx.<span class="bu">file</span>.elm_home <span class="op">!=</span> <span class="va">None</span>:</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        env[<span class="st">&quot;ELM_HOME_ZIP&quot;</span>] <span class="op">=</span> ctx.<span class="bu">file</span>.elm_home.path</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        inputs.append(ctx.<span class="bu">file</span>.elm_home)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    ctx.actions.run(</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>        executable <span class="op">=</span> ctx.executable._elm_wrapper,</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        arguments <span class="op">=</span> [</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>            ctx.<span class="bu">file</span>.elm_json.dirname,</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;make&quot;</span>, ctx.attr.main, <span class="st">&quot;--output&quot;</span>, output_file.path,</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>        ],</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>        inputs <span class="op">=</span> [elm_compiler, ctx.<span class="bu">file</span>.elm_json] <span class="op">+</span> ctx.files.srcs,</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>        inputs <span class="op">=</span> inputs,</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>        outputs <span class="op">=</span> [output_file],</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>        env <span class="op">=</span> env,</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    ...</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>elm_make <span class="op">=</span> rule(</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    ...</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>    attrs <span class="op">=</span> {</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    ...</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>        <span class="co"># 追加（この引数はなくても良い）</span></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;elm_home&quot;</span>: attr.label(</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>            allow_single_file <span class="op">=</span> <span class="va">True</span>,</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>    ...</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p>あとは <code>elm_make</code> で利用している Elm コマンドのラッパースクリプトを編集する：</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> zipfile</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>...</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ここを追記</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> os.getenv(<span class="st">&quot;ELM_HOME_ZIP&quot;</span>) <span class="op">==</span> <span class="va">None</span>:</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    os.putenv(<span class="st">&quot;HOME&quot;</span>, os.getcwd())</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    elm_home <span class="op">=</span> os.getcwd() <span class="op">+</span> <span class="st">&quot;/.elm&quot;</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    elm_home_zip <span class="op">=</span> os.getenv(<span class="st">&quot;ELM_HOME_ZIP&quot;</span>)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> zipfile.ZipFile(elm_home_zip) <span class="im">as</span> elm_zip:</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>        elm_zip.extractall(elm_home)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    os.environ[<span class="st">&quot;ELM_HOME&quot;</span>] <span class="op">=</span> elm_home</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>os.chdir(elm_project_root)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>...</span></code></pre></div>
+<p>で，なぜ ZIP ファイルを介しているのかというと，Bazel ルールの生成物を別のルールで利用する場合は read only じゃないといけないからだ． 前述したとおり，<code>elm make</code> では <code>lock</code> ファイルを利用して排他制御をする． その時，書き込み可能でファイルを open しようとする． そのため，<code>ELM_HOME</code> のディレクトリ自体を直接の生成物にして次のルールに渡すとエラーになってしまう：</p>
+<pre><code>elm-mac: /private/var/tmp/.../execroot/rules_elm/bazel-out/darwin-fastbuild/bin/examples/build-project/.elm/0.19.1/packages/lock: openFd: permission denied (Permission denied)
+
+-- ERROR -----------------------------------------------------------------------
+
+I ran into something that bypassed the normal error reporting process! I
+extracted whatever information I could from the internal error:
+
+&gt;   thread blocked indefinitely in an MVar operation
+
+These errors are usually pretty confusing, so start by asking around on one of
+forums listed at https://elm-lang.org/community to see if anyone can get you
+unstuck quickly.
+...</code></pre>
+<p>なので，一度 ZIP で固めてサンドボックスに展開するようにすれば乱暴だがうまくいく（他に良い方法があれば教えて欲しい...）．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>Haskell 読めるおかげで Elm の振る舞いをささっと調べられるのは便利． それと，記事を書きながら思いついたが，<code>ELM_HOME</code> をプロジェクト直下にして vendoring みたいにするのもありっちゃありですね（Go みたいに）．</p>]]></content>
+    </entry>
     <entry>
         <title>Bazel で Haskell の Custom Setup をする</title>
         <link href="https://matsubara0507.github.ioposts/2021-07-30-rules_haskell-with-setup_deps.html"/>
@@ -1429,316 +1608,5 @@ base-compat &gt;=0.10
 <p>ちなみに，すでにブランチがある場合は PR が作成されない． また，PR を放置しているうちに新しいバージョンがリリースされた場合は，新しい PR がもう一個でき上がる．</p>
 <h2 id="おしまい">おしまい</h2>
 <p>結構便利です．</p>]]></content>
-    </entry>
-    <entry>
-        <title>Elm で Featherweight Go を書いてみた（その１）</title>
-        <link href="https://matsubara0507.github.ioposts/2020-12-07-fg-with-elm-part1.html"/>
-        <id>https://matsubara0507.github.ioposts/2020-12-07-fg-with-elm-part1.html</id>
-        <updated>2020-12-07T00:00:SZ</updated>
-        <category term="Elm"/>
-        <category term="Go"/>
-        <summary></summary>
-        <content type="html"><![CDATA[<p>タイトルの通り，Elm で Featherweight Go を作って遊んでました． 本記事はそのメモ書きです．</p>
-<h1 id="section"></h1>
-<p>あとこれは <a href="https://qiita.com/advent-calendar/2020/elm">Elm Advent Calendar 2020</a> の7日目の記事です．</p>
-<h2 id="featherweight-go">Featherweight Go</h2>
-<p>Go にジェネリクスを導入するために考案された，極めてミニマムな Go 処理系（の形式的な定義）． そのまんま「<a href="https://arxiv.org/abs/2005.11710">Featherweight Go</a>」という論文が出てる． 前に，ざっくり日本語でまとめました：</p>
-<ul>
-<li><a href="https://matsubara0507.github.io/posts/2020-07-02-read-featherweight-go.html">Featherweight Go を読んでみた - ひげメモ</a></li>
-</ul>
-<p>論文では Featherweight Go（以下 FG）と，それにジェネリクスを追加した Featherweight Generics Go の構文規則・評価規則・型付け規則などが定義されており，型安全性が証明されている． 今回は，Featherweight Go のパーサーと型検査器を論文の定義に則って Elm で実装した話．</p>
-<p>ちなみに評価の方は実装しないです．</p>
-<h2 id="elm">Elm</h2>
-<p>Elm は JavaScript へとトランスパイルされる Web フロントエンドに特化した純粋関数型プログラミング言語． 構文は Haskell に似ているが，言語機能自体は Haskell のように多彩ではなく，極めてコンパクトである．</p>
-<p>今回 Elm を使う理由は2つあって：</p>
-<ol>
-<li>Elm でプログラミング言語作る人がほとんど居ないから</li>
-<li>簡単に Web ビュー側を作れるから</li>
-</ol>
-<p>です．</p>
-<h3 id="elm-でパーサーを作るには">Elm でパーサーを作るには</h3>
-<p>Elm でパーサーを記述するには <a href="https://package.elm-lang.org/packages/elm/parser">elm/parser</a> という公式が提供しているパーサーコンビネーターライブラリを使う．</p>
-<h2 id="fgのパーサーを作る">FGのパーサーを作る</h2>
-<p>構文規則は次の通り：</p>
-<p><img src="/assets/read-featherweight-go/fg.jpg" /></p>
-<p>これを Elm でひたすら実装していく．</p>
-<h3 id="構文の型を定義">構文の型を定義</h3>
-<p>まずは，構文を表現する型を定義しよう． ひたすら予約語にあたる部分を排除するだけだ：</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">Go</span><span class="op">.</span><span class="dt">Featherweight</span><span class="op">.</span><span class="dt">Syntax</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Program</span> <span class="op">=</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    { <span class="fu">decls</span> : <span class="dt">List</span> <span class="dt">Declaration</span><span class="op">,</span> <span class="fu">exp</span> : <span class="dt">Expression</span> }</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Declaration</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">=</span> <span class="dt">TDecl</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>        { <span class="fu">name</span> : <span class="dt">TypeName</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">literal</span> : <span class="dt">TypeLiteral</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">MDecl</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>        { <span class="fu">recv</span> : ( <span class="dt">VarName</span><span class="op">,</span> <span class="dt">TypeName</span> )</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">name</span> : <span class="dt">MethodName</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">sign</span> : <span class="dt">MethodSignature</span></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">retv</span> : <span class="dt">Expression</span></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">TypeName</span> <span class="op">=</span> <span class="dt">String</span></span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">VarName</span> <span class="op">=</span> <span class="dt">String</span></span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">MethodName</span> <span class="op">=</span> <span class="dt">String</span></span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">FieldName</span> <span class="op">=</span> <span class="dt">String</span></span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">TypeLiteral</span></span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    <span class="op">=</span> <span class="dt">Structure</span> (<span class="dt">List</span> ( <span class="dt">FieldName</span><span class="op">,</span> <span class="dt">TypeName</span> ))</span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">Interface</span> (<span class="dt">List</span> <span class="dt">MethodSpecific</span>)</span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">MethodSpecific</span> <span class="op">=</span></span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    { <span class="fu">name</span> : <span class="dt">MethodName</span><span class="op">,</span> <span class="fu">sign</span> : <span class="dt">MethodSignature</span> }</span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">MethodSignature</span> <span class="op">=</span></span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>    { <span class="fu">args</span> : <span class="dt">List</span> ( <span class="dt">VarName</span><span class="op">,</span> <span class="dt">TypeName</span> )<span class="op">,</span> <span class="fu">rett</span> : <span class="dt">TypeName</span> }</span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Expression</span></span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>    <span class="op">=</span> <span class="dt">Var</span> <span class="dt">VarName</span></span>
-<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">MethodCall</span></span>
-<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>        { <span class="fu">exp</span> : <span class="dt">Expression</span></span>
-<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">method</span> : <span class="dt">MethodName</span></span>
-<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">args</span> : <span class="dt">List</span> <span class="dt">Expression</span></span>
-<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">StructLiteral</span></span>
-<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>        { <span class="fu">struct</span> : <span class="dt">TypeName</span></span>
-<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">args</span> : <span class="dt">List</span> <span class="dt">Expression</span></span>
-<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">SelectField</span></span>
-<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>        { <span class="fu">exp</span> : <span class="dt">Expression</span></span>
-<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">field</span> : <span class="dt">FieldName</span></span>
-<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="dt">TypeAssertion</span></span>
-<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>        { <span class="fu">exp</span> : <span class="dt">Expression</span></span>
-<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">ty</span> : <span class="dt">TypeName</span></span>
-<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>        }</span></code></pre></div>
-<h3 id="パーサーを書く">パーサーを書く</h3>
-<p>先に，FG のパーサーを記述する上で便利なヘルパー関数をいくつか定義しておく：</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">Go</span><span class="op">.</span><span class="dt">Parser</span><span class="op">.</span><span class="dt">Helper</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">newlineSequence</span> : <span class="dt">Parser</span> () <span class="op">-&gt;</span> <span class="dt">Parser</span> <span class="fu">a</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> (<span class="dt">List</span> <span class="fu">a</span>)</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">newlineSequence</span> <span class="fu">end</span> <span class="fu">p</span> <span class="op">=</span> <span class="op">...</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">blockWith</span> : ( <span class="dt">String</span><span class="op">,</span> <span class="dt">String</span> ) <span class="op">-&gt;</span> <span class="dt">Parser</span> <span class="fu">a</span> <span class="op">-&gt;</span> <span class="dt">Parser</span> (<span class="dt">List</span> <span class="fu">a</span>)</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="fu">blockWith</span> ( <span class="fu">start</span><span class="op">,</span> <span class="fu">end</span> ) <span class="fu">p</span> <span class="op">=</span> <span class="op">...</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="fu">whitespaces</span> : <span class="dt">Parser</span> ()</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="fu">whitespaces</span> <span class="op">=</span> <span class="op">...</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="fu">newlines</span> : <span class="dt">Parser</span> ()</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="fu">newlines</span> <span class="op">=</span> <span class="op">...</span></span></code></pre></div>
-<p><a href="https://github.com/matsubara0507/featherweight-go/blob/4ce84918c80b0852b4c32989bdbfe29331ab1fe9/src/Go/Parser/Helper.elm">実装はこの辺りを見てください</a>． <code>newlineSequence</code> は改行区切りで引数のパーサーを実行してくれる． 例えば，構造体のフィールドを改行区切りで列挙するのをパースするのに役立つ． <code>blockWith</code> は，1引数目で与えた開始文字列と終端文字列で囲まれてかつ，2引数目のパーサーをカンマ区切りで実行してくれる． 関数定義の引数のパースなどに役立つ． <code>whitespaces</code> は1つ以上の空白を，<code>newlines</code> は1つ以上の改行をパースする．</p>
-<p>で，まずは「プログラム」の部分のパーサーだ． プログラムは次のようなのをパースしたい：</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">package</span> main</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">// 構造体や関数の定義</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> main<span class="op">()</span> <span class="op">{</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    _ <span class="op">=</span> <span class="op">..</span> <span class="co">// なんらかの式</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>とりあえず，式や構造体の定義のパーサーはあるものと仮定して実装する：</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Parser</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Go</span><span class="op">.</span><span class="dt">Parser</span><span class="op">.</span><span class="dt">Helper</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">parser</span> : <span class="dt">Parser</span> <span class="dt">Program</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">parser</span> <span class="op">=</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>        <span class="fu">parseMainPackage</span> <span class="op">=</span> <span class="co">-- package main の部分</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>            <span class="fu">succeed</span> ()</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>                <span class="op">|.</span> <span class="fu">keyword</span> <span class="st">&quot;package&quot;</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>                <span class="op">|.</span> <span class="fu">whitespaces</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>                <span class="op">|.</span> <span class="fu">keyword</span> <span class="st">&quot;main&quot;</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>        <span class="fu">parseMainFunc</span> <span class="op">=</span> <span class="co">-- func main() の部分</span></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>            <span class="fu">succeed</span> ()</span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>                <span class="op">|.</span> <span class="fu">backtrackable</span> (<span class="fu">keyword</span> <span class="st">&quot;func&quot;</span>)</span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>                <span class="op">|.</span> <span class="fu">backtrackable</span> <span class="fu">whitespaces</span></span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>                <span class="op">|.</span> <span class="fu">keyword</span> <span class="st">&quot;main()&quot;</span></span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>        <span class="fu">parseMainExp</span> <span class="op">=</span> <span class="co">-- _ = e の部分</span></span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>            <span class="fu">succeed</span> <span class="fu">identity</span></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>                <span class="op">|.</span> <span class="fu">symbol</span> <span class="st">&quot;_&quot;</span></span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>                <span class="op">|.</span> <span class="fu">whitespaces</span></span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>                <span class="op">|.</span> <span class="fu">symbol</span> <span class="st">&quot;=&quot;</span></span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>                <span class="op">|.</span> <span class="fu">whitespaces</span></span>
-<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>                <span class="op">|=</span> <span class="fu">expParser</span></span>
-<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>    <span class="kw">in</span></span>
-<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">succeed</span> <span class="dt">Program</span></span>
-<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>        <span class="op">|.</span> <span class="fu">parseMainPackage</span></span>
-<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>        <span class="op">|.</span> <span class="fu">newlines</span></span>
-<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>        <span class="op">|=</span> <span class="fu">newlineSequence</span> <span class="fu">parseMainFunc</span> <span class="fu">declParser</span></span>
-<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>        <span class="op">|.</span> <span class="fu">spaces</span></span>
-<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>        <span class="op">|.</span> <span class="fu">symbol</span> <span class="st">&quot;{&quot;</span></span>
-<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>        <span class="op">|.</span> <span class="fu">spaces</span></span>
-<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>        <span class="op">|=</span> <span class="fu">parseMainExp</span></span>
-<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>        <span class="op">|.</span> <span class="fu">spaces</span></span>
-<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>        <span class="op">|.</span> <span class="fu">symbol</span> <span class="st">&quot;}&quot;</span></span>
-<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>        <span class="op">|.</span> <span class="fu">spaces</span></span>
-<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>        <span class="op">|.</span> <span class="dt">Parser</span><span class="op">.</span><span class="fu">end</span></span>
-<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a><span class="fu">declParser</span> : <span class="dt">Parser</span> <span class="dt">Declaration</span></span>
-<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a><span class="fu">declParser</span> <span class="op">=</span> <span class="dt">Debug</span><span class="op">.</span><span class="fu">todo</span> <span class="st">&quot;Decl Parser&quot;</span></span>
-<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a><span class="fu">expParser</span> : <span class="dt">Parser</span> <span class="dt">Expression</span></span>
-<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a><span class="fu">expParser</span> <span class="op">=</span> <span class="dt">Debug</span><span class="op">.</span><span class="fu">todo</span> <span class="st">&quot;Exp Parser&quot;</span></span></code></pre></div>
-<p>基本的に <code>declParser</code> や <code>expParser</code> も同じように構文定義を見ながら実装していくだけなので割愛する（<a href="https://github.com/matsubara0507/featherweight-go/blob/4ce84918c80b0852b4c32989bdbfe29331ab1fe9/tests/Test/Go/Featherweight/Syntax.elm">コード</a>）． 1つだけ，なんらかの変数をパースするパーサーだけは書いておく． elm/parser には <code>variable</code> というまさにこれをやるパーサーコンビネーターがあるのでこれを利用する：</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">nameParser</span> : <span class="dt">Parser</span> <span class="dt">String</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">nameParser</span> <span class="op">=</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">variable</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        { <span class="fu">start</span> <span class="op">=</span> <span class="dt">Char</span><span class="op">.</span><span class="fu">isAlphaNum</span> <span class="co">-- 先頭文字，小文字や数字を含まないとかできる</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">inner</span> <span class="op">=</span> \<span class="fu">c</span> <span class="op">-&gt;</span> <span class="dt">Char</span><span class="op">.</span><span class="fu">isAlphaNum</span> <span class="fu">c</span> <span class="op">||</span> <span class="fu">c</span> <span class="op">==</span> <span class="ch">&#39;_&#39;</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">reserved</span> <span class="op">=</span> <span class="fu">keywords</span>     <span class="co">-- 変数にはならない予約を列挙する</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="fu">keywords</span> : <span class="dt">Set</span> <span class="dt">String</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="fu">keywords</span> <span class="op">=</span></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Set</span><span class="op">.</span><span class="fu">fromList</span></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        [ <span class="st">&quot;package&quot;</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="st">&quot;main&quot;</span></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="st">&quot;func&quot;</span></span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="st">&quot;struct&quot;</span></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="st">&quot;interface&quot;</span></span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="st">&quot;type&quot;</span></span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="st">&quot;return&quot;</span></span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>        ]</span></code></pre></div>
-<h3 id="テスト">テスト</h3>
-<p>とりあえず簡単に，FGの論文にあるサンプルコードが動作するかのテストだけを書いた：</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">Test</span><span class="op">.</span><span class="dt">Go</span><span class="op">.</span><span class="dt">Featherweight</span><span class="op">.</span><span class="dt">Syntax</span> <span class="kw">exposing</span> (<span class="fu">suite</span>)</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Go</span><span class="op">.</span><span class="dt">Featherweight</span><span class="op">.</span><span class="dt">Syntax</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Parser</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Test</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="fu">suite</span> : <span class="dt">Test</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="fu">suite</span> <span class="op">=</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">describe</span> <span class="st">&quot;module Go.Featherweight.Syntax&quot;</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>        [ <span class="fu">describe</span> <span class="st">&quot;parser&quot;</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>            [ <span class="fu">test</span> <span class="st">&quot;parse sample FG code&quot;</span> <span class="op">&lt;|</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>                \<span class="fu">_</span> <span class="op">-&gt;</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>                    <span class="dt">Parser</span><span class="op">.</span><span class="fu">run</span> <span class="fu">parser</span> <span class="fu">sample</span></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>                        <span class="op">|&gt;</span> <span class="dt">Expect</span><span class="op">.</span><span class="fu">equal</span> (<span class="dt">Ok</span> <span class="op">&lt;|</span> { <span class="fu">decls</span> <span class="op">=</span> <span class="op">...,</span> <span class="fu">exp</span> <span class="op">=</span> <span class="op">...</span> }</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="fu">sample</span> : <span class="dt">String</span></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="fu">sample</span> <span class="op">=</span></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    <span class="dt">String</span><span class="op">.</span><span class="fu">dropLeft</span> <span class="dv">1</span></span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;&quot;&quot;</span></span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="st">package main</span></span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="st">type Any interface {}</span></span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="st">type Function interface {</span></span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="st">    Apply(x Any) Any</span></span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="st">type incr struct { n int }</span></span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a><span class="st">func (this incr) Apply(x Any) Any {</span></span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="st">    return this.n.add(x.(int))</span></span>
-<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
-<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a><span class="st">type pos struct {}</span></span>
-<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a><span class="st">func (this pos) Apply(x Any) Any {</span></span>
-<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a><span class="st">    return x.(int).lt(zero)</span></span>
-<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
-<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a><span class="st">type compose struct {</span></span>
-<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a><span class="st">    f Function</span></span>
-<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a><span class="st">    g Function</span></span>
-<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
-<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a><span class="st">func (this compose) Apply(x Any) Any {</span></span>
-<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a><span class="st">    return this.g.Apply(this.f.Apply(x))</span></span>
-<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
-<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a><span class="st">func main(){</span></span>
-<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a><span class="st">    _ = compose{incr{x}, pos{}}.Apply(y).(bool)</span></span>
-<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
-<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;&quot;&quot;</span></span></code></pre></div>
-<h2 id="fgの型検査器を作る">FGの型検査器を作る</h2>
-<p>型検査器を作るにはとりあえず，論文の型付け規則（3.3節の図11）をそのまんま実装していけばいい． まぁまぁ量があるので型付け規則自体は載せません（論文を見て）．</p>
-<h3 id="例プログラムの型付け規則">例：プログラムの型付け規則</h3>
-<p>全部載せると膨大なので，「プログラム」の型付け規則とその実装だけ． 型付け規則は次のようになっている：</p>
-<pre><code>distinct(tdecls(seq(D)))
-distinct(mdecls(seq(D)))
-seq(D ok)
-[] |- e : t
----------------------------------------------
-package main; seq(D) func main { _ = e } ok</code></pre>
-<p>数式で書くの大変なので，だいぶ本来の記法と離れちゃってますが雰囲気として，<code>---</code> より上が全て成り立てば下が成り立つという感じ． 下の <code>... ok</code> というのは「プログラム」が正しく型付けされていることを意味しており，上のそれぞれは：</p>
-<ul>
-<li><code>D</code> というのは型（構造体・インターフェース）の宣言かメソッドの宣言</li>
-<li><code>seq(D)</code> は <code>D</code> のリスト（シーケンス）</li>
-<li><code>tdecls(seq(D))</code> は <code>seq(D)</code> のうち型の宣言だけを集めたもの</li>
-<li><code>mdecls(seq(D))</code> は <code>seq(D)</code> のうちメソッドの宣言だけを集めたもの</li>
-<li><code>distinct(xs)</code> は <code>xs</code> 内に重複がないことを意味する（つまり，型やメソッドが重複してたらダメ）</li>
-<li><code>D ok</code> は宣言 <code>D</code> が正しく型付けされていることを意味する</li>
-<li><code>seq(D ok)</code> は <code>seq(D)</code> の全ての宣言が正しく型付けされていることを意味する</li>
-<li><code>[] |- e : t</code> は式 <code>e</code> がなんらかの型 <code>t</code> で型付けされていることを意味する</li>
-</ul>
-<p>最後ので <code>[]</code> は空の型環境を意味している． 型環境はある式がどの型になるかの辞書だ． つまり，Elm で実装するとこんな感じ：</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">Go</span><span class="op">.</span><span class="dt">Featherweight</span><span class="op">.</span><span class="dt">Type</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Dict</span> <span class="kw">exposing</span> (<span class="dt">Dict</span>)</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Go</span><span class="op">.</span><span class="dt">Featherweight</span><span class="op">.</span><span class="dt">Syntax</span> <span class="kw">as</span> <span class="dt">FG</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Gamma</span> <span class="op">=</span></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Dict</span> <span class="dt">VarName</span> <span class="dt">TypeName</span></span></code></pre></div>
-<p>また，型検査をするには <code>seq(D)</code> で宣言されている型やメソッドの情報が必要だ． 論文の数理論理学的な定義では，情報が必要になるたびに <code>seq(D)</code> から引っ張ってきている． しかし，実際のプログラムでそれをやると効率が悪いので，事前にそのような辞書を環境（<code>Env</code>）として定義しておく：</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">Env</span> <span class="op">=</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    ( <span class="dt">Gamma</span><span class="op">,</span> <span class="dt">DeclMap</span> )</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- 型名をキー</span></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- 型の情報（`TypeLiteral`）とメソッドの情報（`MethodSpecific`）が値</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="kw">alias</span> <span class="dt">DeclMap</span> <span class="op">=</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Dict</span> <span class="dt">TypeName</span> ( <span class="dt">TypeLiteral</span><span class="op">,</span> <span class="dt">List</span> <span class="dt">MethodSpecific</span> )</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="fu">newEnv</span> : <span class="dt">List</span> <span class="dt">Declaration</span> <span class="op">-&gt;</span> <span class="dt">Env</span></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="fu">newEnv</span> <span class="fu">decls</span> <span class="op">=</span></span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    ( <span class="dt">Dict</span><span class="op">.</span><span class="fu">empty</span><span class="op">,</span> <span class="fu">mkDeclMap</span> <span class="fu">decls</span> )</span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="fu">mkDeclMap</span> : <span class="dt">List</span> <span class="dt">Declaration</span> <span class="op">-&gt;</span> <span class="dt">DeclMap</span></span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="fu">mkDeclMap</span> <span class="fu">decls</span> <span class="op">=</span> <span class="op">...</span> <span class="co">-- ちょっと複雑なので割愛</span></span></code></pre></div>
-<p>で，「プログラム」の型付け規則をそのまんま実装すると次のようになる：</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode elm"><code class="sourceCode elm"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">Go</span><span class="op">.</span><span class="dt">Featherweight</span><span class="op">.</span><span class="dt">Type</span> <span class="kw">exposing</span> (<span class="op">..</span>)</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">check</span> : <span class="dt">FG</span><span class="op">.</span><span class="dt">Program</span> <span class="op">-&gt;</span> <span class="dt">Result</span> <span class="dt">TypeError</span> ()</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="fu">check</span> <span class="fu">p</span> <span class="op">=</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>        <span class="fu">env</span> <span class="op">=</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>            <span class="fu">newEnv</span> <span class="fu">p</span><span class="op">.</span><span class="fu">decls</span></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>        <span class="fu">dmap</span> <span class="op">=</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>            <span class="dt">Tuple</span><span class="op">.</span><span class="fu">second</span> <span class="fu">env</span></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">in</span></span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">combine_</span></span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>        [ <span class="fu">distinct</span> (<span class="fu">tdecls</span> <span class="fu">p</span><span class="op">.</span><span class="fu">decls</span>)</span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>            <span class="op">|&gt;</span> <span class="dt">Result</span><span class="op">.</span><span class="fu">mapError</span> (<span class="dt">DuplicatedDefinition</span> <span class="st">&quot;type&quot;</span>)</span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">distinct</span> (<span class="fu">mdecls</span> <span class="fu">p</span><span class="op">.</span><span class="fu">decls</span>)</span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>            <span class="op">|&gt;</span> <span class="dt">Result</span><span class="op">.</span><span class="fu">mapError</span> (\( <span class="fu">x</span><span class="op">,</span> <span class="fu">y</span> ) <span class="op">-&gt;</span> <span class="dt">DuplicatedDefinition</span> <span class="st">&quot;method&quot;</span> (<span class="fu">x</span> <span class="op">++</span> <span class="st">&quot;.&quot;</span> <span class="op">++</span> <span class="fu">y</span>))</span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">combine_</span> (<span class="dt">List</span><span class="op">.</span><span class="fu">map</span> (<span class="fu">checkDeclWith</span> <span class="fu">dmap</span>) <span class="fu">p</span><span class="op">.</span><span class="fu">decls</span>)</span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>        <span class="op">,</span> <span class="fu">typeInferWith</span> <span class="fu">env</span> <span class="fu">p</span><span class="op">.</span><span class="fu">exp</span></span>
-<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>            <span class="op">|&gt;</span> <span class="dt">Result</span><span class="op">.</span><span class="fu">map</span> (<span class="fu">always</span> ())</span>
-<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>        ]</span>
-<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="co">-- `Result.combine` は `Result e a` を返すが</span></span>
-<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a><span class="co">-- `Result e ()` を返す関数が欲しかった</span></span>
-<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a><span class="fu">combine_</span> : <span class="dt">List</span> (<span class="dt">Result</span> <span class="fu">e</span> <span class="fu">a</span>) <span class="op">-&gt;</span> <span class="dt">Result</span> <span class="fu">e</span> ()</span>
-<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a><span class="fu">combine_</span> <span class="op">=</span></span>
-<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Result</span><span class="op">.</span><span class="fu">map</span> (<span class="fu">always</span> ()) <span class="op">&lt;&lt;</span> <span class="dt">Result</span><span class="op">.</span><span class="fu">combine</span></span>
-<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a><span class="co">-- 重複のチェックは</span></span>
-<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a><span class="co">-- 型の場合は型名が重複してないかどうか</span></span>
-<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a><span class="co">-- メソッドの場合は型名+メソッド名が重複してないかどうか</span></span>
-<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a><span class="fu">distinct</span> : <span class="dt">List</span> <span class="fu">comparable</span> <span class="op">-&gt;</span> <span class="dt">Result</span> <span class="fu">comparable</span> ()</span>
-<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a><span class="fu">tdecls</span> : <span class="dt">List</span> <span class="dt">Declaration</span> <span class="op">-&gt;</span> <span class="dt">List</span> <span class="dt">TypeName</span></span>
-<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a><span class="fu">mdecls</span> : <span class="dt">List</span> <span class="dt">Declaration</span> <span class="op">-&gt;</span> <span class="dt">List</span> ( <span class="dt">TypeName</span><span class="op">,</span> <span class="dt">MethodName</span> )</span>
-<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a><span class="fu">checkDeclWith</span> : <span class="dt">DeclMap</span> <span class="op">-&gt;</span> <span class="dt">Declaration</span> <span class="op">-&gt;</span> <span class="dt">Result</span> <span class="dt">TypeError</span> ()</span>
-<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a><span class="fu">checkDeclWith</span> <span class="fu">dmap</span> <span class="fu">d</span> <span class="op">=</span> <span class="op">...</span></span>
-<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a><span class="fu">typeInferWith</span> : <span class="dt">Env</span> <span class="op">-&gt;</span> <span class="dt">Expression</span> <span class="op">-&gt;</span> <span class="dt">Result</span> <span class="dt">TypeError</span> <span class="dt">TypeName</span></span>
-<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a><span class="fu">typeInferWith</span> <span class="fu">env</span> <span class="fu">exp</span> <span class="op">=</span> <span class="op">...</span></span></code></pre></div>
-<p><code>checkDeclWith</code> は与えた宣言（<code>Declaration</code>）が正しく型付けされているかどうかをチェックする． つまり <code>D ok</code> にあたる． <code>typeInferWith</code> は2引数目の式（<code>Expression</code>）の型を推論して返す関数だ． 推論できない場合は <code>TypeError</code> を返し，推論できた場合はその型名を返す． 「プログラム」の <code>e</code> の場合，どんな型に推論されても問題ないので <code>Result.map (always ())</code> で結果を破棄している．</p>
-<p>これを型付け規則分作らないといけない． まぁまぁしんどかった．</p>
-<h2 id="webページを作る">Webページを作る</h2>
-<p>Elm なので，FGのコードを書くと型検査してくれるページを作った：</p>
-<p><img src="/assets/fg-with-elm/fg-parser-page.jpg" /></p>
-<p>やっていることは簡単で，テキストエリアの文字列を <code>Go.Featherweight.Syntax.parser</code> でパースして <code>Program</code> 型の値を作り，それをそのまま <code>Go.Featherweight.Type.check</code> しているだけ． そして，結果がエラーだったらそのエラーメッセージを出力して，エラーでなければ「OK」って出しているだけ．</p>
-<h2 id="おしまい">おしまい</h2>
-<p>作ってから時間が経ってしまったので，記事が結構雑だ．．． その２では Featherweight Generics Go のパーサーと型検査器です．</p>]]></content>
     </entry>
 </feed>
