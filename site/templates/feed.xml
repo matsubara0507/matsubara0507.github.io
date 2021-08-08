@@ -14,11 +14,11 @@
         <title>{{title}}</title>
         <link href="{{domain}}{{url}}"/>
         <id>{{domain}}{{url}}</id>
+        <published>{{date}}</published>
         <updated>{{date}}</updated>
         {{#tags}}
         <category term="{{.}}"/>
         {{/tags}}
-        <summary>{{description}}</summary>
         <content type="html"><![CDATA[{{{content}}}]]></content>
     </entry>
     {{/posts}}
