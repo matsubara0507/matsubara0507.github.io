@@ -111,8 +111,8 @@
 <span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  writeFile&#39; (outputFolder <span class="op">&lt;/&gt;</span> postUrl) <span class="op">$</span> T.unpack (substitute template postData&#39;)</span>
 <span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  convert postData&#39;</span></code></pre></div>
 <p>日付（<code>date</code> フィールド）については後述． <code>markdownToHTML' :: FromJSON a =&gt; Text -&gt; Action a</code> は本文を Markdown から HTML に変換して型 <code>a</code> の <code>content</code> フィールドへ格納し，残りのフィールドをフロントマターとしてパースする． <code>TypeApplication</code> 言語拡張でフロントマターの型を明記してるのは，具体的な型がはっきりしていないと <code>happend</code> できないからだ． ちなみに，今回定義した <code>FrontMatterParams</code> 型はタイトルとタグとサムネイル用画像をフロントマターとして与えている．</p>
-<h3 id="記事のパス投稿日を出す">記事のパス投稿日を出す</h3>
-<p>slick-template では投稿日をフロントマターで指定していたが，このサイトでは記事のパス（<code>YYYY/MM-DD-name.md</code>）で指定していた． なので，そのように動作するように修正する：</p>
+<h3 id="記事のパスから投稿日を出す">記事のパスから投稿日を出す</h3>
+<p>slick-template では投稿日をフロントマターで指定していたが，このサイトでは記事のパス（<code>YYYY/MM-DD-name.md</code>）で指定していた． なので，そのような動作をするように修正する：</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ot">buildPost ::</span> <span class="dt">FilePath</span> <span class="ot">-&gt;</span> <span class="dt">Action</span> <span class="dt">Post</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>buildPost srcPath <span class="ot">=</span> cacheAction (<span class="st">&quot;build&quot;</span><span class="ot"> ::</span> <span class="dt">T.Text</span>, srcPath) <span class="op">$</span> <span class="kw">do</span></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  postContent <span class="ot">&lt;-</span> readFile&#39; srcPath</span>
@@ -161,7 +161,7 @@
 <span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a><span class="ot">    guarded ::</span> (a <span class="ot">-&gt;</span> <span class="dt">Bool</span>) <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</span>
 <span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>    guarded p a <span class="ot">=</span> <span class="kw">if</span> p a <span class="kw">then</span> <span class="dt">Just</span> a <span class="kw">else</span> <span class="dt">Nothing</span></span></code></pre></div>
 <p><code>buildWithPagenation</code> がページネーションしてくれる本体で，あとでタグページでも利用したいので別関数に切り出している． 単純に <code>posts</code> を分割するだけではダメで，現在と前後のページ番号をテンプレートに渡してあげる必要がある． そのために簡単な再帰処理をしている．</p>
-<p>ちなみに，<code>buildWithPagenation</code> の型が仰々しいのは <code>happend</code> するメタデータを任意の extensible レコードにしたかったからだ． 結構型パズルに悩んだ結果，型を書かないときに <a href="https://github.com/haskell/haskell-language-server">HLS</a> がサジェストしてくれた型をそのまま書いたら通った（パズルできてないじゃん）． HLS 最高．</p>
+<p>ちなみに，<code>buildWithPagenation</code> の型が仰々しいのは <code>happend</code> するメタデータを任意の extensible レコードにしたかったからだ． 型パズルに悩んだ結果，型を書かないときに <a href="https://github.com/haskell/haskell-language-server">HLS</a> がサジェストしてくれた型をそのまま書いたら通った（パズルできてないじゃん）． HLS 最高．</p>
 <h3 id="タグページ">タグページ</h3>
 <p>slick-template では，タグをフロントマターに記述できるようになってはいるものの，タグページはないので自作した：</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ot">buildTagPages ::</span> [<span class="dt">Post</span>] <span class="ot">-&gt;</span> <span class="dt">Action</span> [(<span class="dt">Tag</span>, <span class="dt">Int</span>)]</span>

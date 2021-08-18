@@ -2,6 +2,6 @@
 
 ```
 stack build
-stack exec -- site-build
+stack exec -- build-site
 serve docs
 ```

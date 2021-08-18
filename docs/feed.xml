@@ -7,12 +7,12 @@
     <author>
         <name>MATSUBARA Nobutada</name>
     </author>
-    <updated>2021-08-08T15:12:SZ</updated>
+    <updated>2021-08-18T01:46:SZ</updated>
 
     <entry>
         <title>rules_elm で依存パッケージのインストールをキャッシュする</title>
-        <link href="https://matsubara0507.github.ioposts/2021-07-31-rules_elm-elm_dependencies.html"/>
-        <id>https://matsubara0507.github.ioposts/2021-07-31-rules_elm-elm_dependencies.html</id>
+        <link href="https://matsubara0507.github.io/posts/2021-07-31-rules_elm-elm_dependencies.html"/>
+        <id>https://matsubara0507.github.io/posts/2021-07-31-rules_elm-elm_dependencies.html</id>
         <published>2021-07-31T00:00:SZ</published>
         <updated>2021-07-31T00:00:SZ</updated>
         <category term="Elm"/>
@@ -190,8 +190,8 @@ unstuck quickly.
     </entry>
     <entry>
         <title>Bazel で Haskell の Custom Setup をする</title>
-        <link href="https://matsubara0507.github.ioposts/2021-07-30-rules_haskell-with-setup_deps.html"/>
-        <id>https://matsubara0507.github.ioposts/2021-07-30-rules_haskell-with-setup_deps.html</id>
+        <link href="https://matsubara0507.github.io/posts/2021-07-30-rules_haskell-with-setup_deps.html"/>
+        <id>https://matsubara0507.github.io/posts/2021-07-30-rules_haskell-with-setup_deps.html</id>
         <published>2021-07-30T00:00:SZ</published>
         <updated>2021-07-30T00:00:SZ</updated>
         <category term="Bazel"/>
@@ -384,8 +384,8 @@ unstuck quickly.
     </entry>
     <entry>
         <title>ここを Hakyll から Slick に移行してみた</title>
-        <link href="https://matsubara0507.github.ioposts/2021-06-13-my-site-use-slick.html"/>
-        <id>https://matsubara0507.github.ioposts/2021-06-13-my-site-use-slick.html</id>
+        <link href="https://matsubara0507.github.io/posts/2021-06-13-my-site-use-slick.html"/>
+        <id>https://matsubara0507.github.io/posts/2021-06-13-my-site-use-slick.html</id>
         <published>2021-06-13T00:00:SZ</published>
         <updated>2021-06-13T00:00:SZ</updated>
         <category term="site"/>
@@ -557,8 +557,8 @@ unstuck quickly.
     </entry>
     <entry>
         <title>家計簿アプリを作る：HaskellでSQL編</title>
-        <link href="https://matsubara0507.github.ioposts/2021-04-01-create-homelyapp-part1.html"/>
-        <id>https://matsubara0507.github.ioposts/2021-04-01-create-homelyapp-part1.html</id>
+        <link href="https://matsubara0507.github.io/posts/2021-04-01-create-homelyapp-part1.html"/>
+        <id>https://matsubara0507.github.io/posts/2021-04-01-create-homelyapp-part1.html</id>
         <published>2021-04-01T00:00:SZ</published>
         <updated>2021-04-01T00:00:SZ</updated>
         <category term="Haskell"/>
@@ -795,8 +795,8 @@ unstuck quickly.
     </entry>
     <entry>
         <title>Haskell のための自作 Docker イメージを GitHub Container Registry に移行する</title>
-        <link href="https://matsubara0507.github.ioposts/2021-02-21-replace-haskell-docker-images-to-ghcr.html"/>
-        <id>https://matsubara0507.github.ioposts/2021-02-21-replace-haskell-docker-images-to-ghcr.html</id>
+        <link href="https://matsubara0507.github.io/posts/2021-02-21-replace-haskell-docker-images-to-ghcr.html"/>
+        <id>https://matsubara0507.github.io/posts/2021-02-21-replace-haskell-docker-images-to-ghcr.html</id>
         <published>2021-02-21T00:00:SZ</published>
         <updated>2021-02-21T00:00:SZ</updated>
         <category term="Docker"/>
@@ -982,8 +982,8 @@ unstuck quickly.
     </entry>
     <entry>
         <title>hpack の設定から Bazel の設定を自動生成するツール Hazell を作った</title>
-        <link href="https://matsubara0507.github.ioposts/2021-02-15-create-hazell.html"/>
-        <id>https://matsubara0507.github.ioposts/2021-02-15-create-hazell.html</id>
+        <link href="https://matsubara0507.github.io/posts/2021-02-15-create-hazell.html"/>
+        <id>https://matsubara0507.github.io/posts/2021-02-15-create-hazell.html</id>
         <published>2021-02-15T00:00:SZ</published>
         <updated>2021-02-15T00:00:SZ</updated>
         <category term="Haskell"/>
@@ -1246,8 +1246,8 @@ unstuck quickly.
     </entry>
     <entry>
         <title>rules_elm を作る</title>
-        <link href="https://matsubara0507.github.ioposts/2021-01-18-create-rules_elm.html"/>
-        <id>https://matsubara0507.github.ioposts/2021-01-18-create-rules_elm.html</id>
+        <link href="https://matsubara0507.github.io/posts/2021-01-18-create-rules_elm.html"/>
+        <id>https://matsubara0507.github.io/posts/2021-01-18-create-rules_elm.html</id>
         <published>2021-01-18T00:00:SZ</published>
         <updated>2021-01-18T00:00:SZ</updated>
         <category term="Elm"/>
@@ -1364,8 +1364,8 @@ unstuck quickly.
     </entry>
     <entry>
         <title>rules_haskell でパッケージの依存関係がうまく解決できない時</title>
-        <link href="https://matsubara0507.github.ioposts/2021-01-01-missing-dependencies-with-rules_haskell.html"/>
-        <id>https://matsubara0507.github.ioposts/2021-01-01-missing-dependencies-with-rules_haskell.html</id>
+        <link href="https://matsubara0507.github.io/posts/2021-01-01-missing-dependencies-with-rules_haskell.html"/>
+        <id>https://matsubara0507.github.io/posts/2021-01-01-missing-dependencies-with-rules_haskell.html</id>
         <published>2021-01-01T00:00:SZ</published>
         <updated>2021-01-01T00:00:SZ</updated>
         <category term="Haskell"/>
@@ -1412,8 +1412,8 @@ base-compat &gt;=0.10
     </entry>
     <entry>
         <title>MarkdownをMediumへポストするときにコードブロックをGistのリンクにする</title>
-        <link href="https://matsubara0507.github.ioposts/2021-01-01-mdium-with-gist.html"/>
-        <id>https://matsubara0507.github.ioposts/2021-01-01-mdium-with-gist.html</id>
+        <link href="https://matsubara0507.github.io/posts/2021-01-01-mdium-with-gist.html"/>
+        <id>https://matsubara0507.github.io/posts/2021-01-01-mdium-with-gist.html</id>
         <published>2021-01-01T00:00:SZ</published>
         <updated>2021-01-01T00:00:SZ</updated>
         <category term="Haskell"/>
@@ -1513,8 +1513,8 @@ base-compat &gt;=0.10
     </entry>
     <entry>
         <title>外部ツールのバージョンアップを GitHub Actions で検知する</title>
-        <link href="https://matsubara0507.github.ioposts/2020-12-14-check-release-using-github-actions.html"/>
-        <id>https://matsubara0507.github.ioposts/2020-12-14-check-release-using-github-actions.html</id>
+        <link href="https://matsubara0507.github.io/posts/2020-12-14-check-release-using-github-actions.html"/>
+        <id>https://matsubara0507.github.io/posts/2020-12-14-check-release-using-github-actions.html</id>
         <published>2020-12-14T00:00:SZ</published>
         <updated>2020-12-14T00:00:SZ</updated>
         <category term="GitHub-Actions"/>

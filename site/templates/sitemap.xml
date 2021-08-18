@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 {{#posts}}
   <url>
-    <loc>{{domain}}{{url}}</loc>
+    <loc>{{domain}}/{{url}}</loc>
     <changefreq>never</changefreq>
     {{#date}}
     <lastmod>{{date}}</lastmod>
