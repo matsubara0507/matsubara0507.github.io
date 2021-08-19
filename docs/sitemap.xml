@@ -762,4 +762,10 @@
     <lastmod>Jul 31, 2021</lastmod>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://matsubara0507.github.io/posts/2021-08-19-haskell-use-generated-file-by-bazel.html</loc>
+    <changefreq>never</changefreq>
+    <lastmod>Aug 19, 2021</lastmod>
+    <priority>0.8</priority>
+  </url>
 </urlset>

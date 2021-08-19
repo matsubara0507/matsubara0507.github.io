@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Bazel で生成したファイルを Haskell から参照する" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>Bazel で生成したファイルを Haskell から参照する</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title" itemprop="name headline">Bazel で生成したファイルを Haskell から参照する</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Aug 19, 2021</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/Bazel/1">Bazel</a>
+                <a href="../tags/Docker/1">Docker</a>
+              </div>
+              </p>
+            </header>
+
+            <div class="post-content" itemprop="articleBody">
+              <p><a href="https://matsubara0507.github.io/posts/2021-01-18-create-rules_elm.html">前に Elm のコードを Bazel でビルドするためのルールを作りました</a>． この生成物を Bazel でビルドしてる Haskell アプリケーションから参照する方法のメモ書きです．</p>
+<h2 id="bazel生成物を参照する方法">Bazel生成物を参照する方法</h2>
+<p>思い付いた方法は2つ：</p>
+<ol>
+<li>Bazel で Docker イメージを作るときに含めて動的に参照する</li>
+<li>Bazel で Haskell をビルドするときに埋め込む（Template Haskell）</li>
+</ol>
+<p>前者は Docker で固めるだけなので，Haskell 側で特別なことをする必要がなく簡単． 後者は rules_haskell と Haskell 側で試行錯誤する必要があるが，Haskell アプリケーション単体で完結するので便利だ．</p>
+<h3 id="docker-イメージに含める">Docker イメージに含める</h3>
+<p>Bazel を利用して Docker イメージを作る場合は次のように書く：</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pkg_tar(</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;bin&quot;</span>,</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    srcs <span class="op">=</span> [<span class="st">&quot;:app&quot;</span>],</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    mode <span class="op">=</span> <span class="st">&quot;0755&quot;</span>,</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    package_dir <span class="op">=</span> <span class="st">&quot;/usr/local/bin&quot;</span>,</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>container_image(</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;image&quot;</span>,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    base <span class="op">=</span> <span class="st">&quot;@haskell_base//image&quot;</span>,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    tars <span class="op">=</span> [<span class="st">&quot;:bin&quot;</span>],</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    entrypoint <span class="op">=</span> [<span class="st">&quot;/usr/local/bin/app&quot;</span>],</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p><code>:app</code> は，例えば rules_haskell の <code>haskell_binary</code> などで生成した実行ファイル（の Bazel 生成物）だ． <code>container_image</code> にファイルを直接渡す場合は <code>files</code> 属性を利用する：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>container_image(</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;image&quot;</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    base <span class="op">=</span> <span class="st">&quot;@haskell_base//image&quot;</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    tars <span class="op">=</span> [<span class="st">&quot;:bin&quot;</span>],</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    files <span class="op">=</span> [<span class="st">&quot;:mainjs&quot;</span>], <span class="co"># ココ</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    entrypoint <span class="op">=</span> [<span class="st">&quot;/usr/local/bin/app&quot;</span>],</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p><code>:mainjs</code> は，例えば rules_elm の <code>elm_make</code> などで生成したファイルだ． この場合，ルートディレクトリ直下に生成物が置かれる． 任意のパスにしたい場合は <code>directory</code> 属性を使えば良い：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>container_image(</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;image&quot;</span>,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    base <span class="op">=</span> <span class="st">&quot;@haskell_base//image&quot;</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    tars <span class="op">=</span> [<span class="st">&quot;:bin&quot;</span>],</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    files <span class="op">=</span> [<span class="st">&quot;:mainjs&quot;</span>],</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    directory <span class="op">=</span> <span class="st">&quot;/work/static&quot;</span>, <span class="co"># ココ</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    workdir <span class="op">=</span> <span class="st">&quot;/work&quot;</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    entrypoint <span class="op">=</span> [<span class="st">&quot;/usr/local/bin/app&quot;</span>],</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p>しかし，この場合 <code>:bin</code> のパスも変わってしまう（今回の場合は <code>/work/static/usr/local/bin/app</code> になってしまう）． そこで，<code>:mainjs</code> も <code>:bin</code> のように <code>pkg_tar</code> を介すようにすれば良い：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>pkg_tar(</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;static&quot;</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    srcs <span class="op">=</span> [<span class="st">&quot;:mainjs&quot;</span>],</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    mode <span class="op">=</span> <span class="st">&quot;0444&quot;</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    package_dir <span class="op">=</span> <span class="st">&quot;/work/static&quot;</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>container_image(</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;image&quot;</span>,</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    base <span class="op">=</span> <span class="st">&quot;@haskell_base//image&quot;</span>,</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    tars <span class="op">=</span> [<span class="st">&quot;:bin&quot;</span>, <span class="st">&quot;:static&quot;</span>],</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    workdir <span class="op">=</span> <span class="st">&quot;/work&quot;</span>,</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    entrypoint <span class="op">=</span> [<span class="st">&quot;/usr/local/bin/app&quot;</span>],</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p>これで実行ファイルは <code>/usr/local/bin</code> にあって，Haskell アプリケーション側で読み込む静的ファイルは <code>/work/static</code> にあるようにできた． ただし，こっちの方法の問題として Docker イメージまで作らないと手元で動作確認ができない点がある． それでは不便な場合は，次の実行ファイル自体に静的ファイルを埋め込んでしまう方法をとると良い．</p>
+<h3 id="haskell-に埋め込む">Haskell に埋め込む</h3>
+<p>Haskell でコードを埋め込むには Template Haskell を利用する． ちなみに，<a href="https://github.com/matsubara0507/homelyapp/pull/4">実際の作業PRはこちら</a>．</p>
+<p>今回は <a href="https://hackage.haskell.org/package/file-embed-0.0.14.0">file-embed パッケージ</a>を利用する：</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.FileEmbed</span> (embedDir)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Servant</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">API</span> <span class="ot">=</span> <span class="st">&quot;static&quot;</span> <span class="op">:&gt;</span> <span class="dt">Raw</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="ot">server ::</span> <span class="dt">ServerT</span> <span class="dt">API</span> (<span class="dt">RIO</span> <span class="dt">Env</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>server <span class="ot">=</span> serveDirectoryEmbedded <span class="op">$</span>(embedDir <span class="st">&quot;./static&quot;</span>)</span></code></pre></div>
+<p>rules_haskell で Template Haskell などのために Haskell のソースコード以外を渡す場合には <code>extra_srcs</code> 属性を利用する（<a href="https://github.com/tweag/rules_haskell/tree/b6242a0938323ee741e1dfa1a954d3f4360f1731/tests/extra-source-files">参照</a>）：</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>haskell_library(</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;homelyapp-library&quot;</span>,</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    src_strip_prefix <span class="op">=</span> <span class="st">&quot;src&quot;</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    srcs <span class="op">=</span> glob([<span class="st">&quot;src/**/*.hs&quot;</span>]),</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    deps <span class="op">=</span> [</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:base&quot;</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>        ... </span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    extra_srcs <span class="op">=</span> [<span class="st">&quot;:mainjs&quot;</span>], <span class="co"># ココ</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    compiler_flags <span class="op">=</span> GHC_FLAGS,</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p><code>extra_srcs</code> に渡しているのが Bazel の生成物でない場合はこれでうまくいくが，Bazel の生成物を渡した場合はこれだけではうまくいかない． というのも，Bazel の生成物のパスが <code>"./static"</code> ではないからだ． <code>:mainjs</code> 自体は <code>./static/main.js</code> という設定で生成したが，Bazel サンドボックスにおいてはカレントパスが変わってしまう（<a href="https://docs.bazel.build/versions/main/output_directories.html">Bazelサンドボックスと各種ディレクトリ構造について</a>）．</p>
+<p>ではどうすれば良いか． 一応，パスの類推は可能だが，Haskellコード側に Bazel 専用のパスをハードコードするのはいやだ． で，<a href="https://github.com/tweag/rules_haskell/issues/1337#issuecomment-632588864">いろいろと Issue を漁っていたらドンピシャなものを見つけた</a>． Issue のコメント曰く，次のようにしてあげれば良い：</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>haskell_library(</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;homelyapp-library&quot;</span>,</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    src_strip_prefix <span class="op">=</span> <span class="st">&quot;src&quot;</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    srcs <span class="op">=</span> glob([<span class="st">&quot;src/**/*.hs&quot;</span>]),</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    deps <span class="op">=</span> [</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:base&quot;</span>,</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>        ... </span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    extra_srcs <span class="op">=</span> [<span class="st">&quot;:mainjs&quot;</span>], </span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    compiler_flags <span class="op">=</span> [</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;-DMAINJS_FILE=</span><span class="ch">\&quot;</span><span class="st">$(execpath :mainjs)</span><span class="ch">\&quot;</span><span class="st">&quot;</span>,  <span class="co"># ココ</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    ] <span class="op">+</span> GHC_FLAGS,</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p><a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/flags.html#c-pre-processor-options"><code>-D</code> オプションはCプリプロセッサによる変数を外部から与えるやつ</a>で，<code>MAINJS_FILE</code> 変数に <code>execpath :mainjs</code> の結果を与えている． <a href="https://docs.bazel.build/versions/4.1.0/be/make-variables.html#predefined_label_variables"><code>execpath</code> は Bazel 専用の特殊な変数展開らしく</a>，サンドボックスのルートから与えた Bazel 生成物への相対パスを返す． つまり，これを <code>embedDir</code> に渡してやれば良い：</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE CPP #-}</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="ot">server ::</span> <span class="dt">ServerT</span> <span class="dt">API</span> (<span class="dt">RIO</span> <span class="dt">Env</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>server <span class="ot">=</span> serveDirectoryEmbedded <span class="op">$</span>(embedDir (takeDirectory <span class="dt">MAINJS_FILE</span>))</span></code></pre></div>
+<h2 id="おまけhazell-の修正">おまけ：Hazell の修正</h2>
+<p><code>compiler_flags</code> をいじった結果，Hazell が動作しなくなったので直した． 問題箇所は2つ：</p>
+<ol>
+<li>リストの結合（<code>+</code>）は未対応</li>
+<li>文字列の <code>"</code> のエスケープが未対応</li>
+</ol>
+<p>両方対応した：</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/hazell/pull/2">Support append list operator and escaped double quote in string literal by matsubara0507 · Pull Request #2 · matsubara0507/hazell</a></li>
+</ul>
+<p>リスト結合はだいぶ雑に実装しており，もし別の式をパースしたくなった場合はまるっと書き直す必要がある（演算子の優先順位などを考慮していないため）．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>ちなみに，僕は後者の埋め込みを利用することにしました． こっちだと，<code>bazel run</code> のワンコマンドでアプリケーションをローカルで起動できるからです．</p>
+            </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

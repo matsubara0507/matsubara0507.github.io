@@ -7,8 +7,130 @@
     <author>
         <name>MATSUBARA Nobutada</name>
     </author>
-    <updated>2021-08-18T01:46:SZ</updated>
+    <updated>2021-08-19T07:07:SZ</updated>
 
+    <entry>
+        <title>Bazel で生成したファイルを Haskell から参照する</title>
+        <link href="https://matsubara0507.github.io/posts/2021-08-19-haskell-use-generated-file-by-bazel.html"/>
+        <id>https://matsubara0507.github.io/posts/2021-08-19-haskell-use-generated-file-by-bazel.html</id>
+        <published>2021-08-19T00:00:SZ</published>
+        <updated>2021-08-19T00:00:SZ</updated>
+        <category term="Haskell"/>
+        <category term="Bazel"/>
+        <category term="Docker"/>
+        <content type="html"><![CDATA[<p><a href="https://matsubara0507.github.io/posts/2021-01-18-create-rules_elm.html">前に Elm のコードを Bazel でビルドするためのルールを作りました</a>． この生成物を Bazel でビルドしてる Haskell アプリケーションから参照する方法のメモ書きです．</p>
+<h2 id="bazel生成物を参照する方法">Bazel生成物を参照する方法</h2>
+<p>思い付いた方法は2つ：</p>
+<ol>
+<li>Bazel で Docker イメージを作るときに含めて動的に参照する</li>
+<li>Bazel で Haskell をビルドするときに埋め込む（Template Haskell）</li>
+</ol>
+<p>前者は Docker で固めるだけなので，Haskell 側で特別なことをする必要がなく簡単． 後者は rules_haskell と Haskell 側で試行錯誤する必要があるが，Haskell アプリケーション単体で完結するので便利だ．</p>
+<h3 id="docker-イメージに含める">Docker イメージに含める</h3>
+<p>Bazel を利用して Docker イメージを作る場合は次のように書く：</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pkg_tar(</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;bin&quot;</span>,</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    srcs <span class="op">=</span> [<span class="st">&quot;:app&quot;</span>],</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    mode <span class="op">=</span> <span class="st">&quot;0755&quot;</span>,</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    package_dir <span class="op">=</span> <span class="st">&quot;/usr/local/bin&quot;</span>,</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>container_image(</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;image&quot;</span>,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    base <span class="op">=</span> <span class="st">&quot;@haskell_base//image&quot;</span>,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    tars <span class="op">=</span> [<span class="st">&quot;:bin&quot;</span>],</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    entrypoint <span class="op">=</span> [<span class="st">&quot;/usr/local/bin/app&quot;</span>],</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p><code>:app</code> は，例えば rules_haskell の <code>haskell_binary</code> などで生成した実行ファイル（の Bazel 生成物）だ． <code>container_image</code> にファイルを直接渡す場合は <code>files</code> 属性を利用する：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>container_image(</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;image&quot;</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    base <span class="op">=</span> <span class="st">&quot;@haskell_base//image&quot;</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    tars <span class="op">=</span> [<span class="st">&quot;:bin&quot;</span>],</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    files <span class="op">=</span> [<span class="st">&quot;:mainjs&quot;</span>], <span class="co"># ココ</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    entrypoint <span class="op">=</span> [<span class="st">&quot;/usr/local/bin/app&quot;</span>],</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p><code>:mainjs</code> は，例えば rules_elm の <code>elm_make</code> などで生成したファイルだ． この場合，ルートディレクトリ直下に生成物が置かれる． 任意のパスにしたい場合は <code>directory</code> 属性を使えば良い：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>container_image(</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;image&quot;</span>,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    base <span class="op">=</span> <span class="st">&quot;@haskell_base//image&quot;</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    tars <span class="op">=</span> [<span class="st">&quot;:bin&quot;</span>],</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    files <span class="op">=</span> [<span class="st">&quot;:mainjs&quot;</span>],</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    directory <span class="op">=</span> <span class="st">&quot;/work/static&quot;</span>, <span class="co"># ココ</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    workdir <span class="op">=</span> <span class="st">&quot;/work&quot;</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    entrypoint <span class="op">=</span> [<span class="st">&quot;/usr/local/bin/app&quot;</span>],</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p>しかし，この場合 <code>:bin</code> のパスも変わってしまう（今回の場合は <code>/work/static/usr/local/bin/app</code> になってしまう）． そこで，<code>:mainjs</code> も <code>:bin</code> のように <code>pkg_tar</code> を介すようにすれば良い：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>pkg_tar(</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;static&quot;</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    srcs <span class="op">=</span> [<span class="st">&quot;:mainjs&quot;</span>],</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    mode <span class="op">=</span> <span class="st">&quot;0444&quot;</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    package_dir <span class="op">=</span> <span class="st">&quot;/work/static&quot;</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>container_image(</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;image&quot;</span>,</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    base <span class="op">=</span> <span class="st">&quot;@haskell_base//image&quot;</span>,</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    tars <span class="op">=</span> [<span class="st">&quot;:bin&quot;</span>, <span class="st">&quot;:static&quot;</span>],</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    workdir <span class="op">=</span> <span class="st">&quot;/work&quot;</span>,</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    entrypoint <span class="op">=</span> [<span class="st">&quot;/usr/local/bin/app&quot;</span>],</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p>これで実行ファイルは <code>/usr/local/bin</code> にあって，Haskell アプリケーション側で読み込む静的ファイルは <code>/work/static</code> にあるようにできた． ただし，こっちの方法の問題として Docker イメージまで作らないと手元で動作確認ができない点がある． それでは不便な場合は，次の実行ファイル自体に静的ファイルを埋め込んでしまう方法をとると良い．</p>
+<h3 id="haskell-に埋め込む">Haskell に埋め込む</h3>
+<p>Haskell でコードを埋め込むには Template Haskell を利用する． ちなみに，<a href="https://github.com/matsubara0507/homelyapp/pull/4">実際の作業PRはこちら</a>．</p>
+<p>今回は <a href="https://hackage.haskell.org/package/file-embed-0.0.14.0">file-embed パッケージ</a>を利用する：</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.FileEmbed</span> (embedDir)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Servant</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">API</span> <span class="ot">=</span> <span class="st">&quot;static&quot;</span> <span class="op">:&gt;</span> <span class="dt">Raw</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="ot">server ::</span> <span class="dt">ServerT</span> <span class="dt">API</span> (<span class="dt">RIO</span> <span class="dt">Env</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>server <span class="ot">=</span> serveDirectoryEmbedded <span class="op">$</span>(embedDir <span class="st">&quot;./static&quot;</span>)</span></code></pre></div>
+<p>rules_haskell で Template Haskell などのために Haskell のソースコード以外を渡す場合には <code>extra_srcs</code> 属性を利用する（<a href="https://github.com/tweag/rules_haskell/tree/b6242a0938323ee741e1dfa1a954d3f4360f1731/tests/extra-source-files">参照</a>）：</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>haskell_library(</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;homelyapp-library&quot;</span>,</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    src_strip_prefix <span class="op">=</span> <span class="st">&quot;src&quot;</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    srcs <span class="op">=</span> glob([<span class="st">&quot;src/**/*.hs&quot;</span>]),</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    deps <span class="op">=</span> [</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:base&quot;</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>        ... </span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    extra_srcs <span class="op">=</span> [<span class="st">&quot;:mainjs&quot;</span>], <span class="co"># ココ</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    compiler_flags <span class="op">=</span> GHC_FLAGS,</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p><code>extra_srcs</code> に渡しているのが Bazel の生成物でない場合はこれでうまくいくが，Bazel の生成物を渡した場合はこれだけではうまくいかない． というのも，Bazel の生成物のパスが <code>"./static"</code> ではないからだ． <code>:mainjs</code> 自体は <code>./static/main.js</code> という設定で生成したが，Bazel サンドボックスにおいてはカレントパスが変わってしまう（<a href="https://docs.bazel.build/versions/main/output_directories.html">Bazelサンドボックスと各種ディレクトリ構造について</a>）．</p>
+<p>ではどうすれば良いか． 一応，パスの類推は可能だが，Haskellコード側に Bazel 専用のパスをハードコードするのはいやだ． で，<a href="https://github.com/tweag/rules_haskell/issues/1337#issuecomment-632588864">いろいろと Issue を漁っていたらドンピシャなものを見つけた</a>． Issue のコメント曰く，次のようにしてあげれば良い：</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>haskell_library(</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;homelyapp-library&quot;</span>,</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    src_strip_prefix <span class="op">=</span> <span class="st">&quot;src&quot;</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    srcs <span class="op">=</span> glob([<span class="st">&quot;src/**/*.hs&quot;</span>]),</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    deps <span class="op">=</span> [</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:base&quot;</span>,</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>        ... </span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    extra_srcs <span class="op">=</span> [<span class="st">&quot;:mainjs&quot;</span>], </span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    compiler_flags <span class="op">=</span> [</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;-DMAINJS_FILE=</span><span class="ch">\&quot;</span><span class="st">$(execpath :mainjs)</span><span class="ch">\&quot;</span><span class="st">&quot;</span>,  <span class="co"># ココ</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    ] <span class="op">+</span> GHC_FLAGS,</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p><a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/flags.html#c-pre-processor-options"><code>-D</code> オプションはCプリプロセッサによる変数を外部から与えるやつ</a>で，<code>MAINJS_FILE</code> 変数に <code>execpath :mainjs</code> の結果を与えている． <a href="https://docs.bazel.build/versions/4.1.0/be/make-variables.html#predefined_label_variables"><code>execpath</code> は Bazel 専用の特殊な変数展開らしく</a>，サンドボックスのルートから与えた Bazel 生成物への相対パスを返す． つまり，これを <code>embedDir</code> に渡してやれば良い：</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE CPP #-}</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="ot">server ::</span> <span class="dt">ServerT</span> <span class="dt">API</span> (<span class="dt">RIO</span> <span class="dt">Env</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>server <span class="ot">=</span> serveDirectoryEmbedded <span class="op">$</span>(embedDir (takeDirectory <span class="dt">MAINJS_FILE</span>))</span></code></pre></div>
+<h2 id="おまけhazell-の修正">おまけ：Hazell の修正</h2>
+<p><code>compiler_flags</code> をいじった結果，Hazell が動作しなくなったので直した． 問題箇所は2つ：</p>
+<ol>
+<li>リストの結合（<code>+</code>）は未対応</li>
+<li>文字列の <code>"</code> のエスケープが未対応</li>
+</ol>
+<p>両方対応した：</p>
+<ul>
+<li><a href="https://github.com/matsubara0507/hazell/pull/2">Support append list operator and escaped double quote in string literal by matsubara0507 · Pull Request #2 · matsubara0507/hazell</a></li>
+</ul>
+<p>リスト結合はだいぶ雑に実装しており，もし別の式をパースしたくなった場合はまるっと書き直す必要がある（演算子の優先順位などを考慮していないため）．</p>
+<h2 id="おしまい">おしまい</h2>
+<p>ちなみに，僕は後者の埋め込みを利用することにしました． こっちだと，<code>bazel run</code> のワンコマンドでアプリケーションをローカルで起動できるからです．</p>]]></content>
+    </entry>
     <entry>
         <title>rules_elm で依存パッケージのインストールをキャッシュする</title>
         <link href="https://matsubara0507.github.io/posts/2021-07-31-rules_elm-elm_dependencies.html"/>
@@ -1510,103 +1632,5 @@ base-compat &gt;=0.10
 <p>プレフィックスはコマンドのオプションから指定して，適当に <code>createGist</code> まで持ってくるだけなので割愛． これで完全に手作業してたのが自動化された．</p>
 <h2 id="おしまい">おしまい</h2>
 <p>Pandoc パッケージのビルドがゲキオモなのがネックだけどね．</p>]]></content>
-    </entry>
-    <entry>
-        <title>外部ツールのバージョンアップを GitHub Actions で検知する</title>
-        <link href="https://matsubara0507.github.io/posts/2020-12-14-check-release-using-github-actions.html"/>
-        <id>https://matsubara0507.github.io/posts/2020-12-14-check-release-using-github-actions.html</id>
-        <published>2020-12-14T00:00:SZ</published>
-        <updated>2020-12-14T00:00:SZ</updated>
-        <category term="GitHub-Actions"/>
-        <content type="html"><![CDATA[<p>GitHub Actions のアクションや Bazel ルールを書いたりすると，外部のアプリケーションのアップデートを検知したいときがしばしばあります． いろいろ試行錯誤した結果，GitHub Actions を使って実現することにしたので，本記事はそのメモ書きです．</p>
-<h1 id="section"></h1>
-<p>ちなみに，本記事は「<a href="https://qiita.com/advent-calendar/2020/github-actions">GitHub Actions Advent Calendar 2020</a>」の14日目の記事です．</p>
-<h2 id="github-actions-を設定する">GitHub Actions を設定する</h2>
-<p>実際に導入した PR がこちら：</p>
-<ul>
-<li><a href="https://github.com/matsubara0507/rules_yq/pull/1">Add GitHub Action to check new yq version by matsubara0507 · Pull Request #1 · matsubara0507/rules_yq</a></li>
-</ul>
-<p><a href="https://github.com/mikefarah/yq">yq</a> と言うツールのリリースを検知しようとしている． ちなみに，最新のバージョンは中の処理のデフォルト値として利用している．</p>
-<h3 id="デフォルト値を取り出す">デフォルト値を取り出す</h3>
-<p>まずは，現在のデフォルトのバージョンを参照しやすいように別ファイル（yq/default.bzl）にしておく：</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>YQ_DEFAULT_VERSION <span class="op">=</span> <span class="st">&quot;3.4.1&quot;</span></span></code></pre></div>
-<p>これを sed でいい感じに取り出して GitHub Actions の output に入れていく：</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">build</span><span class="kw">:</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Build new version commit</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">env</span><span class="kw">:</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">DEFAULT_FILE_PATH</span><span class="kw">:</span><span class="at"> yq/default.bzl</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">    ...</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Set default version</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">id</span><span class="kw">:</span><span class="at"> default</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> echo &quot;::set-output name=version::$(sed -e s/YQ_DEFAULT_VERSION\ =\ //g $DEFAULT_FILE_PATH | sed -e s/\&quot;//g)&quot;</span></span></code></pre></div>
-<p><code>::set-output</code> というのは GitHub Actions の記法で， step 毎の結果を同じ job 間で共有するために使う．以降の step で <code>steps.default.outputs.version</code> という形で <code>sed</code> の結果を参照できるようになる．</p>
-<h3 id="最新のリリースバージョンを取り出す">最新のリリースバージョンを取り出す</h3>
-<p>最新のリリースは <a href="https://docs.github.com/en/free-pro-team@latest/rest/reference/repos#get-the-latest-release">GitHub のリリースから API</a> を使って取得する． API のレスポンスからバージョンの情報を <code>jq</code> でいい感じに取り出して，また output に入れておく：</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">build</span><span class="kw">:</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Build new version commit</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">env</span><span class="kw">:</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">DEFAULT_FILE_PATH</span><span class="kw">:</span><span class="at"> yq/default.bzl</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">LATEST_LINK</span><span class="kw">:</span><span class="at"> https://api.github.com/repos/mikefarah/yq/releases/latest</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">    ...</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Set latest version</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">id</span><span class="kw">:</span><span class="at"> latest</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> echo &quot;::set-output name=version::$(curl -s $LATEST_LINK | jq .tag_name | sed -e s/\&quot;//g)&quot;</span></span></code></pre></div>
-<p>以降の step で <code>steps.latest.outputs.version</code> という形で <code>jq</code> の結果を参照できるようになる．</p>
-<h3 id="デフォルト値を更新する">デフォルト値を更新する</h3>
-<p>これら2つのバージョンが異なるときにだけデフォルト値を更新するようにする：</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">build</span><span class="kw">:</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Build new version commit</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">env</span><span class="kw">:</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">DEFAULT_FILE_PATH</span><span class="kw">:</span><span class="at"> yq/default.bzl</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">LATEST_LINK</span><span class="kw">:</span><span class="at"> https://api.github.com/repos/mikefarah/yq/releases/latest</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">    ...</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Update new version default.bzl</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">if</span><span class="kw">:</span><span class="at"> ${{ steps.latest.outputs.version != steps.default.outputs.version }}</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">env</span><span class="kw">:</span></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">NEW_VERSION</span><span class="kw">:</span><span class="at"> ${{ steps.latest.outputs.version }}</span></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> echo &quot;YQ_DEFAULT_VERSION = \&quot;$NEW_VERSION\&quot;&quot; &gt; $DEFAULT_FILE_PATH    </span></span></code></pre></div>
-<p>ただ切り出しておいたファイルを上書きしているだけ．</p>
-<h3 id="prを作成する">PRを作成する</h3>
-<p><a href="https://github.com/peter-evans/create-pull-request">peter-evans/create-pull-request</a> という GitHub Actions を利用する：</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">build</span><span class="kw">:</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Build new version commit</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">env</span><span class="kw">:</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">DEFAULT_FILE_PATH</span><span class="kw">:</span><span class="at"> yq/default.bzl</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">LATEST_LINK</span><span class="kw">:</span><span class="at"> https://api.github.com/repos/mikefarah/yq/releases/latest</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="at">    ...</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Create Pull Request</span></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">if</span><span class="kw">:</span><span class="at"> ${{ steps.latest.outputs.version != steps.default.outputs.version }}</span></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> peter-evans/create-pull-request@v3.5.1</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">token</span><span class="kw">:</span><span class="at"> ${{ secrets.GITHUB_TOKEN }}</span></span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">commit-message</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;Feat: update default yq version&#39;</span></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">title</span><span class="kw">:</span><span class="at"> Release new yq version ${{ steps.latest.outputs.version }}</span></span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="fu">        body</span><span class="kw">: </span><span class="ch">|</span></span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>         @matsubara0507</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>         - [x] update default version in yq</span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>         - [ ] add new checksums to yq/toolchain.bzl</span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>         - [ ] update documents (README, actions.yml)</span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>         - [ ] update sample workflow</span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">labels</span><span class="kw">:</span><span class="at"> New yq Version</span></span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">branch</span><span class="kw">:</span><span class="at"> yq-version-${{ steps.latest.outputs.version }}</span></span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">base</span><span class="kw">:</span><span class="at"> main</span><span class="co">  # 最近作ったリポジトリなので main がデフォルトブランチ</span></span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">draft</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co"> # ドラフトPRにしてくれる</span></span></code></pre></div>
-<p><code>body</code> のところに自分の GitHub アカウントをメンションしておくと，GitHub のスマホアプリとかで通知されて気付きやすい． こんな感じの PR が出来上がる：</p>
-<p><img src="/assets/check-release-using-github-actions/pr.jpg" /></p>
-<p>ちなみに，すでにブランチがある場合は PR が作成されない． また，PR を放置しているうちに新しいバージョンがリリースされた場合は，新しい PR がもう一個でき上がる．</p>
-<h2 id="おしまい">おしまい</h2>
-<p>結構便利です．</p>]]></content>
     </entry>
 </feed>
