@@ -39,5 +39,5 @@ instance Forall (KeyTargetAre KnownSymbol (Instance1 Binary h)) xs => Binary (xs
 
     put = flip appEndo (return ()) . hfoldMap getConst .
       hzipWith
-        (\(Comp Dict) x -> Const $ Endo $ (Binary.put x >>))
+        (\(Comp Dict) x -> Const $ Endo (Binary.put x >>))
         (library :: xs :& Comp Dict (KeyTargetAre KnownSymbol (Instance1 Binary h)))
