@@ -7,7 +7,7 @@
     <author>
         <name>MATSUBARA Nobutada</name>
     </author>
-    <updated>2021-08-19T08:55:05Z</updated>
+    <updated>2021-08-19T09:02:16Z</updated>
 
     <entry>
         <title>Bazel で生成したファイルを Haskell から参照する</title>

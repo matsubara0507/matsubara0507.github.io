@@ -194,7 +194,18 @@ buildSitemap :: [Post] -> Action ()
 buildSitemap posts = do
   sitemapTempl <- compileTemplate' "site/templates/sitemap.xml"
   writeFile' (outputFolder </> "sitemap.xml") . T.unpack $
-    substitute sitemapTempl (happend siteMeta $ #posts @= posts <: nil)
+    substitute sitemapTempl (happend siteMeta $ #posts @= fmap mkSitemapPost posts <: nil)
+  where
+    mkSitemapPost :: Post -> Post
+    mkSitemapPost p = p & #date .~ formatToIsoDateOnly (p ^. #date)
+
+formatToIsoDateOnly :: String -> String
+formatToIsoDateOnly humanDate = toIsoDateOnly parsedTime
+  where
+    parsedTime =
+      parseTimeOrError True defaultTimeLocale "%b %e, %Y" humanDate
+    toIsoDateOnly :: UTCTime -> String
+    toIsoDateOnly = formatTime defaultTimeLocale (iso8601DateFormat Nothing)
 
 buildWithPagenation
   :: Forall (KeyTargetAre KnownSymbol (Instance1 ToMustache Identity)) (xs ++ PagenationInfoParams)
