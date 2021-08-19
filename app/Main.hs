@@ -188,7 +188,7 @@ formatToIsoDate humanDate = toIsoDate parsedTime
 toIsoDate :: UTCTime -> String
 toIsoDate = formatTime defaultTimeLocale (iso8601DateFormat rfc3339)
   where
-    rfc3339 = Just "%H:%M:SZ"
+    rfc3339 = Just "%H:%M:%SZ"
 
 buildSitemap :: [Post] -> Action ()
 buildSitemap posts = do

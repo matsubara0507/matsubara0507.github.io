@@ -7,14 +7,14 @@
     <author>
         <name>MATSUBARA Nobutada</name>
     </author>
-    <updated>2021-08-19T07:07:SZ</updated>
+    <updated>2021-08-19T08:55:05Z</updated>
 
     <entry>
         <title>Bazel で生成したファイルを Haskell から参照する</title>
         <link href="https://matsubara0507.github.io/posts/2021-08-19-haskell-use-generated-file-by-bazel.html"/>
         <id>https://matsubara0507.github.io/posts/2021-08-19-haskell-use-generated-file-by-bazel.html</id>
-        <published>2021-08-19T00:00:SZ</published>
-        <updated>2021-08-19T00:00:SZ</updated>
+        <published>2021-08-19T00:00:00Z</published>
+        <updated>2021-08-19T00:00:00Z</updated>
         <category term="Haskell"/>
         <category term="Bazel"/>
         <category term="Docker"/>
@@ -135,8 +135,8 @@
         <title>rules_elm で依存パッケージのインストールをキャッシュする</title>
         <link href="https://matsubara0507.github.io/posts/2021-07-31-rules_elm-elm_dependencies.html"/>
         <id>https://matsubara0507.github.io/posts/2021-07-31-rules_elm-elm_dependencies.html</id>
-        <published>2021-07-31T00:00:SZ</published>
-        <updated>2021-07-31T00:00:SZ</updated>
+        <published>2021-07-31T00:00:00Z</published>
+        <updated>2021-07-31T00:00:00Z</updated>
         <category term="Elm"/>
         <category term="Bazel"/>
         <content type="html"><![CDATA[<p>前に，Elm 用の Bazel ルールがないので作りました：</p>
@@ -314,8 +314,8 @@ unstuck quickly.
         <title>Bazel で Haskell の Custom Setup をする</title>
         <link href="https://matsubara0507.github.io/posts/2021-07-30-rules_haskell-with-setup_deps.html"/>
         <id>https://matsubara0507.github.io/posts/2021-07-30-rules_haskell-with-setup_deps.html</id>
-        <published>2021-07-30T00:00:SZ</published>
-        <updated>2021-07-30T00:00:SZ</updated>
+        <published>2021-07-30T00:00:00Z</published>
+        <updated>2021-07-30T00:00:00Z</updated>
         <category term="Bazel"/>
         <category term="Haskell"/>
         <content type="html"><![CDATA[<p>Bazel を使って Haskell アプリケーションをビルドしてるんですけど，依存パッケージが Custom Setup を使ってるときにちょっと躓いたので，そのメモ書きです．</p>
@@ -508,8 +508,8 @@ unstuck quickly.
         <title>ここを Hakyll から Slick に移行してみた</title>
         <link href="https://matsubara0507.github.io/posts/2021-06-13-my-site-use-slick.html"/>
         <id>https://matsubara0507.github.io/posts/2021-06-13-my-site-use-slick.html</id>
-        <published>2021-06-13T00:00:SZ</published>
-        <updated>2021-06-13T00:00:SZ</updated>
+        <published>2021-06-13T00:00:00Z</published>
+        <updated>2021-06-13T00:00:00Z</updated>
         <category term="site"/>
         <category term="Haskell"/>
         <content type="html"><![CDATA[<p>特に深い理由はないですが，新しいツールを触ってみようかと思い変えてみました。</p>
@@ -681,8 +681,8 @@ unstuck quickly.
         <title>家計簿アプリを作る：HaskellでSQL編</title>
         <link href="https://matsubara0507.github.io/posts/2021-04-01-create-homelyapp-part1.html"/>
         <id>https://matsubara0507.github.io/posts/2021-04-01-create-homelyapp-part1.html</id>
-        <published>2021-04-01T00:00:SZ</published>
-        <updated>2021-04-01T00:00:SZ</updated>
+        <published>2021-04-01T00:00:00Z</published>
+        <updated>2021-04-01T00:00:00Z</updated>
         <category term="Haskell"/>
         <content type="html"><![CDATA[<p>自分用に Haskell で<a href="https://github.com/matsubara0507/homelyapp">家計簿アプリ的なの</a>を作り始めました． 今回はまずバックエンドでのDBとの繋ぎの部分のメモ書きです．</p>
 <h2 id="バックエンドの構成">バックエンドの構成</h2>
@@ -919,8 +919,8 @@ unstuck quickly.
         <title>Haskell のための自作 Docker イメージを GitHub Container Registry に移行する</title>
         <link href="https://matsubara0507.github.io/posts/2021-02-21-replace-haskell-docker-images-to-ghcr.html"/>
         <id>https://matsubara0507.github.io/posts/2021-02-21-replace-haskell-docker-images-to-ghcr.html</id>
-        <published>2021-02-21T00:00:SZ</published>
-        <updated>2021-02-21T00:00:SZ</updated>
+        <published>2021-02-21T00:00:00Z</published>
+        <updated>2021-02-21T00:00:00Z</updated>
         <category term="Docker"/>
         <category term="GitHub-Actions"/>
         <content type="html"><![CDATA[<p>Haskell Stack の Docker Integration などで個人的に使う Docker イメージを自作しています． その雛形を下記のリポジトリで管理していました：</p>
@@ -1106,8 +1106,8 @@ unstuck quickly.
         <title>hpack の設定から Bazel の設定を自動生成するツール Hazell を作った</title>
         <link href="https://matsubara0507.github.io/posts/2021-02-15-create-hazell.html"/>
         <id>https://matsubara0507.github.io/posts/2021-02-15-create-hazell.html</id>
-        <published>2021-02-15T00:00:SZ</published>
-        <updated>2021-02-15T00:00:SZ</updated>
+        <published>2021-02-15T00:00:00Z</published>
+        <updated>2021-02-15T00:00:00Z</updated>
         <category term="Haskell"/>
         <category term="Bazel"/>
         <category term="application"/>
@@ -1370,8 +1370,8 @@ unstuck quickly.
         <title>rules_elm を作る</title>
         <link href="https://matsubara0507.github.io/posts/2021-01-18-create-rules_elm.html"/>
         <id>https://matsubara0507.github.io/posts/2021-01-18-create-rules_elm.html</id>
-        <published>2021-01-18T00:00:SZ</published>
-        <updated>2021-01-18T00:00:SZ</updated>
+        <published>2021-01-18T00:00:00Z</published>
+        <updated>2021-01-18T00:00:00Z</updated>
         <category term="Elm"/>
         <category term="Bazel"/>
         <content type="html"><![CDATA[<p>Elm 用の Bazel ルールがないので作ったという話です． 正確には <a href="https://github.com/EdSchouten/rules_elm">EdSchouten/rules_elm</a> がありますが，最新バージョンの 0.19.1 には対応してなかったので，対応したものを自作しました．</p>
@@ -1488,8 +1488,8 @@ unstuck quickly.
         <title>rules_haskell でパッケージの依存関係がうまく解決できない時</title>
         <link href="https://matsubara0507.github.io/posts/2021-01-01-missing-dependencies-with-rules_haskell.html"/>
         <id>https://matsubara0507.github.io/posts/2021-01-01-missing-dependencies-with-rules_haskell.html</id>
-        <published>2021-01-01T00:00:SZ</published>
-        <updated>2021-01-01T00:00:SZ</updated>
+        <published>2021-01-01T00:00:00Z</published>
+        <updated>2021-01-01T00:00:00Z</updated>
         <category term="Haskell"/>
         <category term="Bazel"/>
         <content type="html"><![CDATA[<p>ちょっとした rules_haskell で起きたエラーに関するメモ書きです（Bazel の話）．</p>
@@ -1536,8 +1536,8 @@ base-compat &gt;=0.10
         <title>MarkdownをMediumへポストするときにコードブロックをGistのリンクにする</title>
         <link href="https://matsubara0507.github.io/posts/2021-01-01-mdium-with-gist.html"/>
         <id>https://matsubara0507.github.io/posts/2021-01-01-mdium-with-gist.html</id>
-        <published>2021-01-01T00:00:SZ</published>
-        <updated>2021-01-01T00:00:SZ</updated>
+        <published>2021-01-01T00:00:00Z</published>
+        <updated>2021-01-01T00:00:00Z</updated>
         <category term="Haskell"/>
         <category term="application"/>
         <content type="html"><![CDATA[<p>「<a href="/posts/2018-11-04-create-mdium.html">Markdownで書いたテキストをMediumへポストする(mdium)</a>」で作った Markdown で書いたテキストを Medium へポストするツールですが，ちょくちょく改良を続けてます． 今回は Pandoc を利用して、コードブロックを Gist のリンクに置き換える機能を追加したので，そのことについてのメモ書きです．</p>
