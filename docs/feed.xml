@@ -7,8 +7,133 @@
     <author>
         <name>MATSUBARA Nobutada</name>
     </author>
-    <updated>2021-08-19T09:02:16Z</updated>
+    <updated>2021-09-30T13:43:11Z</updated>
 
+    <entry>
+        <title>rules_elm に elm-test するルールを追加する</title>
+        <link href="https://matsubara0507.github.io/posts/2021-09-30-rules_elm-elm_test.html"/>
+        <id>https://matsubara0507.github.io/posts/2021-09-30-rules_elm-elm_test.html</id>
+        <published>2021-09-30T00:00:00Z</published>
+        <updated>2021-09-30T00:00:00Z</updated>
+        <category term="Elm"/>
+        <category term="Bazel"/>
+        <category term="Rust"/>
+        <content type="html"><![CDATA[<p>前に、Bazel で Elm をビルドしたりするためのルール群である <a href="https://github.com/matsubara0507/rules_elm">matsubara0507/rules_elm</a> を作りました。 これには、<code>elm make</code> 相当のことをしてくれるルールと、依存パッケージをキャッシュするためのルールしかありませんでした。</p>
+<p>今回は、それに Elm のテストを実行するためのルールを追加するためのメモ書きです。 <a href="https://github.com/matsubara0507/rules_elm/pull/4">作業 PR はこちら</a>。</p>
+<h2 id="elm-test-rs">elm-test-rs</h2>
+<p>Elm 本体はテストするためのナニガシを提供していない。 テスト用のパッケージは提供しているが、今のところ実行方法はサードパーティに委ねている。 現状、デファクトスタンダードなのは <a href="https://github.com/rtfeldman/node-test-runner">rtfeldman/node-test-runner</a> を利用して実行する方法だ。</p>
+<p>しかし、こいつは Node 環境で動作する。 不可能ではないが、このためだけに rules_node を利用して Bazel で Node を利用するのは面倒だ。 できればシングルバイナリで提供されてるものを利用したい。</p>
+<h1 id="section"></h1>
+<p>一瞬自作するか？と迷ったが、もしかしたらあるかもしれないとググってみたところ、なんとあった：</p>
+<ul>
+<li><a href="https://github.com/mpizenberg/elm-test-rs">mpizenberg/elm-test-rs - GitHub</a></li>
+</ul>
+<p>まさかの Rust 製。</p>
+<h3 id="vs-symlink">vs. symlink</h3>
+<p>いつものように toolchains 化し、いざ実行してみたところ次のようなエラーが出た：</p>
+<pre><code>elm-test-rs 1.1.0 for elm 0.19.1
+--------------------------------
+
+Generating the elm.json for the Runner.elm
+The dependencies picked to run the tests are:
+{
+  &quot;direct&quot;: {
+    &quot;elm/browser&quot;: &quot;1.0.2&quot;,
+    &quot;elm/core&quot;: &quot;1.0.5&quot;,
+    &quot;elm/html&quot;: &quot;1.0.0&quot;,
+    &quot;elm/json&quot;: &quot;1.1.3&quot;,
+    &quot;elm-explorations/test&quot;: &quot;1.2.2&quot;,
+    &quot;mpizenberg/elm-test-runner&quot;: &quot;4.0.5&quot;
+  },
+  &quot;indirect&quot;: {
+    &quot;elm/random&quot;: &quot;1.0.0&quot;,
+    &quot;elm/time&quot;: &quot;1.0.0&quot;,
+    &quot;elm/url&quot;: &quot;1.0.0&quot;,
+    &quot;elm/virtual-dom&quot;: &quot;1.0.2&quot;
+  }
+}
+get_module_name of: /path/to/elm-test-rs/tests/example-projects/passing/app/tests/Tests.elm
+Error: This file &quot;/path/to/elm-test-rs/tests/example-projects/passing/app/tests/Tests.elm&quot; matches no source directory! Imports wont work then.</code></pre>
+<p>elm-test-rs 内で、テスト用の Elm ファイルが設定されてるディレクトリ内に存在するかどうかをチェックするところで落ちている。 もちろん、ファイルは Bazel サンドボックスに渡している。 色々調査した結果、どうやらファイルが symlink されたものの場合、このようにエラーとなってしまうらしい。 ファイルが symlink になってしまうのは Bazel の性質上仕方ないことでどうしようもない。 なので、elm-test-rs 側に修正 PR を投げて対応してもらった：</p>
+<ul>
+<li><a href="https://github.com/mpizenberg/elm-test-rs/pull/93">Support Elm project have symlink file by matsubara0507 · Pull Request #93 · mpizenberg/elm-test-rs</a></li>
+</ul>
+<p>無事マージされて新しいバージョン v1.2 がリリースされた。</p>
+<h2 id="vs-windows">vs. Windows</h2>
+<p>あとは適当にルールを書いて無事動作した。 と思いきや、GitHub Actions で回しているテストで Windows だけが落ちるようになってしまった。</p>
+<p>元々 Windows 対策として Shell Script の代わりに Python スクリプトを噛ませていたのにこっちでは少しサボってしまった。 なので、同様に Python を利用してテストをテスト用ルールを作る。 <code>bazel build</code> 時に Python スクリプトを実行したいだけだったときは <code>py_binary</code> を利用したが、今回はテストをしたいので <code>py_test</code> を使う：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> elm_test(name, <span class="op">**</span>kwargs):</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    _elm_test_wrapper(</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>        name <span class="op">=</span> name <span class="op">+</span> <span class="st">&quot;.py&quot;</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>        src_name <span class="op">=</span> name,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>        elm_wrapper_tpl <span class="op">=</span> Label(<span class="st">&quot;@rules_elm//elm/private:elm_test_wrapper.py.tpl&quot;</span>),</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>        <span class="op">**</span>kwargs,</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    py_test(</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        name <span class="op">=</span> name,</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        srcs <span class="op">=</span> [name <span class="op">+</span> <span class="st">&quot;.py&quot;</span>],</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        srcs_version <span class="op">=</span> <span class="st">&quot;PY3&quot;</span>,</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>        python_version <span class="op">=</span> <span class="st">&quot;PY3&quot;</span>,</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    )</span></code></pre></div>
+<p><code>_elm_test_wrapper</code> というのが、テンプレートを元に <code>bazel test</code> で実行する Python スクリプトを生成するルールで、<code>py_test</code> がそのテスト用のスクリプトを <code>bazel test</code> で実行してくれる。 <code>bazel build</code> で使っていたスクリプトと異なり、<code>bazel test</code> で実行したいナニガシ（正確には <code>bazel run</code>）は runfiles と呼ばれる実行時に参照できるファイル群を用意しておく必要がある：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _elm_test_wrapper_impl(ctx):</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    elm_compiler <span class="op">=</span> ctx.toolchains[<span class="st">&quot;@rules_elm//elm:toolchain&quot;</span>].elm</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    elm_test_bin <span class="op">=</span> ctx.toolchains[<span class="st">&quot;@rules_elm//elm:toolchain&quot;</span>].elm_test</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    inputs <span class="op">=</span> [</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>        ctx.toolchains[<span class="st">&quot;@rules_elm//elm:toolchain&quot;</span>].elm,</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>        ctx.toolchains[<span class="st">&quot;@rules_elm//elm:toolchain&quot;</span>].elm_test,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>        ctx.<span class="bu">file</span>.elm_json,</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    ] <span class="op">+</span> ctx.files.srcs <span class="op">+</span> ctx.files.tests</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    substitutions <span class="op">=</span> {</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@@ELM_RUNTIME@@&quot;</span>: elm_compiler.short_path,</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@@ELM_TEST@@&quot;</span>: elm_test_bin.short_path,</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@@PROJECT_ROOT@@&quot;</span>: ctx.<span class="bu">file</span>.elm_json.short_path.rsplit(<span class="st">&quot;/&quot;</span>, <span class="dv">1</span>)[<span class="dv">0</span>],</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@@ELM_HOME_ZIP@@&quot;</span>: <span class="st">&quot;&quot;</span>,</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> ctx.<span class="bu">file</span>.elm_home <span class="op">!=</span> <span class="va">None</span>:</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>        substitutions[<span class="st">&quot;@@ELM_HOME_ZIP@@&quot;</span>] <span class="op">=</span> ctx.<span class="bu">file</span>.elm_home.short_path</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>        inputs.append(ctx.<span class="bu">file</span>.elm_home)</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    elm_wrapper <span class="op">=</span> ctx.actions.declare_file(ctx.attr.src_name <span class="op">+</span> <span class="st">&quot;.py&quot;</span>)</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    ctx.actions.expand_template(</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>        template <span class="op">=</span> ctx.<span class="bu">file</span>.elm_wrapper_tpl,</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>        output <span class="op">=</span> elm_wrapper,</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>        is_executable <span class="op">=</span> <span class="va">True</span>,</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>        substitutions <span class="op">=</span> substitutions,</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> [DefaultInfo(</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>        files <span class="op">=</span> depset([elm_wrapper]), </span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>        runfiles <span class="op">=</span> ctx.runfiles(files <span class="op">=</span> inputs), <span class="co"># この部分</span></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>    )]</span></code></pre></div>
+<p><code>bazel build</code> 用のルールのときは、<code>py_binary</code> には Python スクリプトしか含まれておらず、Python スクリプトを別のルールで実行するときに上記のようなファイル群を構築していた。 しかし、<code>bazel test</code> は <code>bazel run</code> と同じで <code>bazel build</code> とは実行環境が少し異なるのだ（実行環境を <code>bazel build</code> しているイメージ）。</p>
+<h3 id="elm-test-rs-から-elm-バイナリが見えない">elm-test-rs から elm バイナリが見えない</h3>
+<p>試行錯誤して、やっとこさ Bazel + Windows での問題は突破できたところで elm-test-rs 由来でのエラーが生じた。 Windows だけなぜか、elm-test-rs から elm バイナリが見当たらないというエラーが出たのだ：</p>
+<pre><code>==================== Test output for //examples/build-project:sample-test:
+Error: 
+Failed to run C:\path\to\elm. Are you sure it&#39;s in your PATH?
+If you installed elm locally with npm, maybe try running with npx such as:
+
+    npx --no-install elm-test-rs
+
+Caused by:
+    cannot find binary path
+...</code></pre>
+<p>確かに、Bazel サンドボックスで参照できる位置に elm バイナリはある。 仕方ないので elm-test-rs コードを読んで、手元の Windows に Rust 環境を用意して色々動作を追ってみた。 で、結果としては Bazel ツールチェインでインストールした elm バイナリに拡張子が無いのが問題だった。 elm-test-rs は、バイナリの存在確認に <a href="https://github.com/harryfei/which-rs/tree/4.0.2">which</a> ライブラリを使っているのだが、<a href="https://github.com/harryfei/which-rs/blob/4.0.2/src/finder.rs#L134-L151">これが Windows の場合は特定の拡張子が無いとバイナリとして識別してくれない</a>。 なので、Windows の場合は <code>.exe</code> を付けるように改修した。</p>
+<h2 id="使う">使う</h2>
+<p>趣味の Haskell + Elm + Bazel プロジェクトで使ってみた。<a href="https://github.com/matsubara0507/homelyapp/pull/5">作業 PR はこちら</a>。利用は簡単で、BUILD ファイルに以下のようなのを追記するだけ：</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>elm_test(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;test-elm&quot;</span>,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    tests <span class="op">=</span> glob([<span class="st">&quot;elm-test/**&quot;</span>]),</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    srcs <span class="op">=</span> glob([<span class="st">&quot;elm-src/**&quot;</span>]),</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    elm_json <span class="op">=</span> <span class="st">&quot;elm.json&quot;</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    elm_home <span class="op">=</span> <span class="st">&quot;:deps&quot;</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p>ここで <code>:deps</code> というのは依存パッケージを固めた Bazel 生成物で、毎回依存パッケージのインストールをしないようにするための工夫だ。 これで、<code>bazel test //...</code> と実行するだけで Haskell と Elm のテストが同時に実行されるようになった。</p>
+<h2 id="おしまい">おしまい</h2>]]></content>
+    </entry>
     <entry>
         <title>Bazel で生成したファイルを Haskell から参照する</title>
         <link href="https://matsubara0507.github.io/posts/2021-08-19-haskell-use-generated-file-by-bazel.html"/>
@@ -1531,106 +1656,5 @@ base-compat &gt;=0.10
 <p>ちなみに，rules_haskell の現在の最新のバージョンタグである v0.13 を使わずに，直接最新のコミットハッシュを指定しているのは，v0.13 では LTS で利用している 8.8.4 が無いからだ．</p>
 <h2 id="おしまい">おしまい</h2>
 <p>本当にちょっとしたことだけど念のため記事にしておいた． rules_haskell が流行ったあかつきにはきっと助かる人が出るはず笑</p>]]></content>
-    </entry>
-    <entry>
-        <title>MarkdownをMediumへポストするときにコードブロックをGistのリンクにする</title>
-        <link href="https://matsubara0507.github.io/posts/2021-01-01-mdium-with-gist.html"/>
-        <id>https://matsubara0507.github.io/posts/2021-01-01-mdium-with-gist.html</id>
-        <published>2021-01-01T00:00:00Z</published>
-        <updated>2021-01-01T00:00:00Z</updated>
-        <category term="Haskell"/>
-        <category term="application"/>
-        <content type="html"><![CDATA[<p>「<a href="/posts/2018-11-04-create-mdium.html">Markdownで書いたテキストをMediumへポストする(mdium)</a>」で作った Markdown で書いたテキストを Medium へポストするツールですが，ちょくちょく改良を続けてます． 今回は Pandoc を利用して、コードブロックを Gist のリンクに置き換える機能を追加したので，そのことについてのメモ書きです．</p>
-<h2 id="medium-のシンタックスハイライト">Medium のシンタックスハイライト</h2>
-<p>Medium は普通にコードブロックを記述するとシンタックハイライトされずダサい：</p>
-<p><img src="/assets/mdium-with-gist/medium-code-block.jpg" /></p>
-<p>これをなんとかする方法の一つに Gist のリンクを貼って埋め込みにするというのがある：</p>
-<p><img src="/assets/mdium-with-gist/medium-code-block-using-gist.jpg" /></p>
-<p>ただし，一つの Gist に一つのファイルを設定しないといけないのでコスパが最悪で，1つの記事に対してこんな感じに大量の Gist を作る必要がある：</p>
-<p><img src="/assets/mdium-with-gist/many-gists-for-medium.jpg" /></p>
-<p>最近はその Gist を使った方法をとっているが，いちいち Gist に手で置き換えるのはめんどいよね． ってことで，自作ツールの mdium が自動でやってくれるようにした．</p>
-<h2 id="作る">作る</h2>
-<p>作業 PR はこれです：</p>
-<ul>
-<li><a href="https://github.com/matsubara0507/mdium/pull/9">Add gist option · #9 · matsubara0507/mdium</a></li>
-</ul>
-<h3 id="gist-を作成する-api">Gist を作成する API</h3>
-<p><a href="https://docs.github.com/rest/reference/gists#create-a-gist">GitHub API には Gist を作成するものがある</a>． しかし，私がよく使う <a href="https://hackage.haskell.org/package/github">Haskell の GitHub クライアント</a>には Gist を作成する関数が作られてなかった． ので，作成してとりあえず PR を出した：</p>
-<ul>
-<li><a href="https://github.com/phadej/github/pull/455">Add endpoint to create gist · #455 · phadej/github</a></li>
-</ul>
-<p>実は（リファレンスからは分かりにくい？）注意点があって：</p>
-<ol>
-<li><code>files</code> は <code>{"hoge.txt": {"content": "abc"}}</code> って感じのJSONオブジェクト</li>
-<li><code>description</code> パラメーターや <code>files</code> の <code>content</code> は <code>null</code> を渡せない</li>
-<li><code>public</code> を <code>null</code> にした場合レスポンスの <code>public</code> も <code>null</code> になる</li>
-</ol>
-<p>aeson で <code>Maybe</code> を使ってオプショナルなパラメーターを表現した場合は強制的に <code>null</code> が渡される． <del>そのため，<code>description</code> はオプショナルなパラメーターだが型を <code>Text</code> にした</del> が，レビューで次のようにやればいいよって返ってきた：</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">ToJSON</span> <span class="dt">NewGist</span> <span class="kw">where</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    toJSON <span class="dt">NewGist</span> { <span class="op">...</span> } <span class="ot">=</span> object <span class="op">$</span> <span class="fu">filter</span> notNull</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>                   [ <span class="st">&quot;description&quot;</span> <span class="op">.=</span> newGistDescription</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>                   , <span class="st">&quot;files&quot;</span>       <span class="op">.=</span> newGistFiles</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>                   , <span class="st">&quot;public&quot;</span>      <span class="op">.=</span> newGistPublic</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>                   ]</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>      <span class="kw">where</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>        notNull (_, <span class="dt">Null</span>) <span class="ot">=</span> <span class="dt">False</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>        notNull (_, _)    <span class="ot">=</span> <span class="dt">True</span></span></code></pre></div>
-<p>なるほど，レビュー感謝． で，<code>public</code> は，すでにある <code>Gist</code> 型（レスポンスに使いたい）の <code>public</code> が <code>Maybe Bool</code> ではなく <code>Bool</code> なので (3) の挙動が困る． そのため，<code>public</code> パラメーターの型も <code>Bool</code> にしたが，<code>description</code> 同様に <code>filter notNull</code> 効かせたので普通に <code>Maybe Bool</code> で良くなった． ちなみに，デフォルトは <code>false</code>．</p>
-<h3 id="pandoc-で書き換える">Pandoc で書き換える</h3>
-<p>少しオーバースペックのような気がするが，Pandoc を利用して Markdown をパースする：</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ot">customizeContent ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">RIO</span> <span class="dt">Env</span> <span class="dt">Text</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>customizeContent content <span class="ot">=</span> liftIO <span class="op">.</span> Pandoc.runIOorExplode <span class="op">$</span> <span class="kw">do</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  p0 <span class="ot">&lt;-</span> Pandoc.readCommonMark Pandoc.def content</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  Pandoc.writeCommonMark Pandoc.def p0</span></code></pre></div>
-<p><code>readMarkdown</code> というのもあるが，GFM などを使う場合は <code>readCommonMark</code> の方を使う． <code>p0</code> というのが <code>Pandoc</code> 型の値で，<code>Walkable</code> を利用することで任意のブロックに対してのみ変換を適用したりできる：</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ot">customizeContent ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">RIO</span> <span class="dt">Env</span> <span class="dt">Text</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>customizeContent content <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  p0 <span class="ot">&lt;-</span> liftIO <span class="op">$</span> Pandoc.runIOorExplode (Pandoc.readCommonMark Pandoc.def content)</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  p1 <span class="ot">&lt;-</span> Pandoc.walkPandocM replaceCodeBlockToGistLink p0</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  liftIO <span class="op">$</span> Pandoc.runIOorExplode (Pandoc.writeCommonMark Pandoc.def p1)</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="ot">replaceCodeBlockToGistLink ::</span> <span class="dt">Pandoc.Block</span> <span class="ot">-&gt;</span> <span class="dt">RIO</span> <span class="dt">Env</span> <span class="dt">Pandoc.Block</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>replaceCodeBlockToGistLink <span class="ot">=</span> \<span class="kw">case</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Pandoc.CodeBlock</span> attr txt <span class="ot">-&gt;</span> <span class="fu">undefined</span> <span class="co">-- 書き換える</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  block <span class="ot">-&gt;</span> <span class="fu">pure</span> block</span></code></pre></div>
-<p>Gist がよしなにプログラミング言語を特定してシンタックスハイライトするにはファイルの拡張子が必要だ． コードブロックのバッククオートの後ろに指定している拡張子を取得するために <code>attr</code> を見てみると <code>("", ["hs"], [])</code> となっていた（プログラミング言語名も指定できるけど，拡張子だけを指定してるとする）． なので，これを利用する：</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ot">replaceCodeBlockToGistLink ::</span> <span class="dt">Pandoc.Block</span> <span class="ot">-&gt;</span> <span class="dt">RIO</span> <span class="dt">Env</span> <span class="dt">Pandoc.Block</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>replaceCodeBlockToGistLink <span class="ot">=</span> \<span class="kw">case</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Pandoc.CodeBlock</span> (_, [ext], _) txt <span class="ot">-&gt;</span> <span class="kw">do</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    gist <span class="ot">&lt;-</span> lift <span class="op">$</span> createGist ext txt</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pure</span> <span class="op">$</span> <span class="dt">Pandoc.Plain</span> [<span class="dt">Pandoc.Str</span> (GitHub.getUrl <span class="op">$</span> GitHub.gistHtmlUrl gist)]</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  block <span class="ot">-&gt;</span> <span class="fu">pure</span> block</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="ot">createGist ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">RIO</span> <span class="dt">Env</span> <span class="dt">GitHub.Gist</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>createGist ext txt <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> files <span class="ot">=</span> HM.fromList [(<span class="st">&quot;sample.&quot;</span> <span class="op">&lt;&gt;</span> ext, <span class="dt">GitHub.NewGistFile</span> txt)]</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- とりあえずエラーハンドリングは適当に throwM する</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">either</span> throwM <span class="fu">pure</span> <span class="op">=&lt;&lt;</span> MixGitHub.fetch (GitHub.createGistR <span class="op">$</span> <span class="dt">GitHub.NewGist</span> <span class="st">&quot;&quot;</span> files <span class="dt">True</span>)</span></code></pre></div>
-<p><code>MixGitHub.fetch</code> というのは<a href="https://github.com/matsubara0507/mix.hs/tree/master/mix-plugin-github">これ</a>です． 便利です．</p>
-<p>これでとりあえず，コードブロックから Gist を作ってリンクに置き換えることができるようになった．</p>
-<h3 id="gist-のファイル名を工夫する">Gist のファイル名を工夫する</h3>
-<p>現状だと全ての Gist ファイルが <code>sample.hs</code> みたいに拡張子以外は一緒になってしまう． なのでプレフィックスを指定できるようにするのと，何個目のコードブロックかで <code>sample1.hs</code> や <code>sample2.hs</code> みたいにできるようにしたい． そのために <code>State</code> モナドを利用する：</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ot">customizeContent ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">RIO</span> <span class="dt">Env</span> <span class="dt">Text</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>customizeContent content <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  p0 <span class="ot">&lt;-</span> liftIO <span class="op">$</span> Pandoc.runIOorExplode (Pandoc.readCommonMark Pandoc.def content)</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  p1 <span class="ot">&lt;-</span> <span class="fu">fst</span> <span class="op">&lt;$&gt;</span> runStateT (Pandoc.walkPandocM replaceCodeBlockToGistLink p0) <span class="dv">1</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  liftIO <span class="op">$</span> Pandoc.runIOorExplode (Pandoc.writeCommonMark Pandoc.def p1)</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="ot">replaceCodeBlockToGistLink ::</span>  <span class="dt">Pandoc.Block</span> <span class="ot">-&gt;</span> <span class="dt">StateT</span> <span class="dt">Int</span> (<span class="dt">RIO</span> <span class="dt">Env</span>) <span class="dt">Pandoc.Block</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>replaceCodeBlockToGistLink <span class="ot">=</span> \<span class="kw">case</span></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Pandoc.CodeBlock</span> (_, [ext], _) txt <span class="ot">-&gt;</span> <span class="kw">do</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    cnt  <span class="ot">&lt;-</span> State.get</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    gist <span class="ot">&lt;-</span> lift <span class="op">$</span> createGist (tshow cnt) ext txt</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    State.modify (<span class="op">+</span> <span class="dv">1</span>)</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pure</span> <span class="op">$</span> <span class="dt">Pandoc.Plain</span> [<span class="dt">Pandoc.Str</span> (GitHub.getUrl <span class="op">$</span> GitHub.gistHtmlUrl gist)]</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  block <span class="ot">-&gt;</span> <span class="fu">pure</span> block</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="ot">createGist ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">RIO</span> <span class="dt">Env</span> <span class="dt">GitHub.Gist</span></span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>createGist suffix ext txt <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> files <span class="ot">=</span> HM.fromList [(<span class="st">&quot;sample&quot;</span> <span class="op">&lt;&gt;</span> suffix <span class="op">&lt;&gt;</span> <span class="st">&quot;.&quot;</span> <span class="op">&lt;&gt;</span> ext, <span class="dt">GitHub.NewGistFile</span> txt)]</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">either</span> throwM <span class="fu">pure</span> <span class="op">=&lt;&lt;</span> MixGitHub.fetch (GitHub.createGistR <span class="op">$</span> <span class="dt">GitHub.NewGist</span> <span class="st">&quot;&quot;</span> files <span class="dt">True</span>)</span></code></pre></div>
-<p>プレフィックスはコマンドのオプションから指定して，適当に <code>createGist</code> まで持ってくるだけなので割愛． これで完全に手作業してたのが自動化された．</p>
-<h2 id="おしまい">おしまい</h2>
-<p>Pandoc パッケージのビルドがゲキオモなのがネックだけどね．</p>]]></content>
     </entry>
 </feed>

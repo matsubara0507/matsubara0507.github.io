@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="rules_elm に elm-test するルールを追加する" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>rules_elm に elm-test するルールを追加する</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title" itemprop="name headline">rules_elm に elm-test するルールを追加する</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Sep 30, 2021</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Elm/1">Elm</a>
+                <a href="../tags/Bazel/1">Bazel</a>
+                <a href="../tags/Rust/1">Rust</a>
+              </div>
+              </p>
+            </header>
+
+            <div class="post-content" itemprop="articleBody">
+              <p>前に、Bazel で Elm をビルドしたりするためのルール群である <a href="https://github.com/matsubara0507/rules_elm">matsubara0507/rules_elm</a> を作りました。 これには、<code>elm make</code> 相当のことをしてくれるルールと、依存パッケージをキャッシュするためのルールしかありませんでした。</p>
+<p>今回は、それに Elm のテストを実行するためのルールを追加するためのメモ書きです。 <a href="https://github.com/matsubara0507/rules_elm/pull/4">作業 PR はこちら</a>。</p>
+<h2 id="elm-test-rs">elm-test-rs</h2>
+<p>Elm 本体はテストするためのナニガシを提供していない。 テスト用のパッケージは提供しているが、今のところ実行方法はサードパーティに委ねている。 現状、デファクトスタンダードなのは <a href="https://github.com/rtfeldman/node-test-runner">rtfeldman/node-test-runner</a> を利用して実行する方法だ。</p>
+<p>しかし、こいつは Node 環境で動作する。 不可能ではないが、このためだけに rules_node を利用して Bazel で Node を利用するのは面倒だ。 できればシングルバイナリで提供されてるものを利用したい。</p>
+<h1 id="section"></h1>
+<p>一瞬自作するか？と迷ったが、もしかしたらあるかもしれないとググってみたところ、なんとあった：</p>
+<ul>
+<li><a href="https://github.com/mpizenberg/elm-test-rs">mpizenberg/elm-test-rs - GitHub</a></li>
+</ul>
+<p>まさかの Rust 製。</p>
+<h3 id="vs-symlink">vs. symlink</h3>
+<p>いつものように toolchains 化し、いざ実行してみたところ次のようなエラーが出た：</p>
+<pre><code>elm-test-rs 1.1.0 for elm 0.19.1
+--------------------------------
+
+Generating the elm.json for the Runner.elm
+The dependencies picked to run the tests are:
+{
+  &quot;direct&quot;: {
+    &quot;elm/browser&quot;: &quot;1.0.2&quot;,
+    &quot;elm/core&quot;: &quot;1.0.5&quot;,
+    &quot;elm/html&quot;: &quot;1.0.0&quot;,
+    &quot;elm/json&quot;: &quot;1.1.3&quot;,
+    &quot;elm-explorations/test&quot;: &quot;1.2.2&quot;,
+    &quot;mpizenberg/elm-test-runner&quot;: &quot;4.0.5&quot;
+  },
+  &quot;indirect&quot;: {
+    &quot;elm/random&quot;: &quot;1.0.0&quot;,
+    &quot;elm/time&quot;: &quot;1.0.0&quot;,
+    &quot;elm/url&quot;: &quot;1.0.0&quot;,
+    &quot;elm/virtual-dom&quot;: &quot;1.0.2&quot;
+  }
+}
+get_module_name of: /path/to/elm-test-rs/tests/example-projects/passing/app/tests/Tests.elm
+Error: This file &quot;/path/to/elm-test-rs/tests/example-projects/passing/app/tests/Tests.elm&quot; matches no source directory! Imports wont work then.</code></pre>
+<p>elm-test-rs 内で、テスト用の Elm ファイルが設定されてるディレクトリ内に存在するかどうかをチェックするところで落ちている。 もちろん、ファイルは Bazel サンドボックスに渡している。 色々調査した結果、どうやらファイルが symlink されたものの場合、このようにエラーとなってしまうらしい。 ファイルが symlink になってしまうのは Bazel の性質上仕方ないことでどうしようもない。 なので、elm-test-rs 側に修正 PR を投げて対応してもらった：</p>
+<ul>
+<li><a href="https://github.com/mpizenberg/elm-test-rs/pull/93">Support Elm project have symlink file by matsubara0507 · Pull Request #93 · mpizenberg/elm-test-rs</a></li>
+</ul>
+<p>無事マージされて新しいバージョン v1.2 がリリースされた。</p>
+<h2 id="vs-windows">vs. Windows</h2>
+<p>あとは適当にルールを書いて無事動作した。 と思いきや、GitHub Actions で回しているテストで Windows だけが落ちるようになってしまった。</p>
+<p>元々 Windows 対策として Shell Script の代わりに Python スクリプトを噛ませていたのにこっちでは少しサボってしまった。 なので、同様に Python を利用してテストをテスト用ルールを作る。 <code>bazel build</code> 時に Python スクリプトを実行したいだけだったときは <code>py_binary</code> を利用したが、今回はテストをしたいので <code>py_test</code> を使う：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> elm_test(name, <span class="op">**</span>kwargs):</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    _elm_test_wrapper(</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>        name <span class="op">=</span> name <span class="op">+</span> <span class="st">&quot;.py&quot;</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>        src_name <span class="op">=</span> name,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>        elm_wrapper_tpl <span class="op">=</span> Label(<span class="st">&quot;@rules_elm//elm/private:elm_test_wrapper.py.tpl&quot;</span>),</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>        <span class="op">**</span>kwargs,</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    py_test(</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        name <span class="op">=</span> name,</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        srcs <span class="op">=</span> [name <span class="op">+</span> <span class="st">&quot;.py&quot;</span>],</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        srcs_version <span class="op">=</span> <span class="st">&quot;PY3&quot;</span>,</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>        python_version <span class="op">=</span> <span class="st">&quot;PY3&quot;</span>,</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    )</span></code></pre></div>
+<p><code>_elm_test_wrapper</code> というのが、テンプレートを元に <code>bazel test</code> で実行する Python スクリプトを生成するルールで、<code>py_test</code> がそのテスト用のスクリプトを <code>bazel test</code> で実行してくれる。 <code>bazel build</code> で使っていたスクリプトと異なり、<code>bazel test</code> で実行したいナニガシ（正確には <code>bazel run</code>）は runfiles と呼ばれる実行時に参照できるファイル群を用意しておく必要がある：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _elm_test_wrapper_impl(ctx):</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    elm_compiler <span class="op">=</span> ctx.toolchains[<span class="st">&quot;@rules_elm//elm:toolchain&quot;</span>].elm</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    elm_test_bin <span class="op">=</span> ctx.toolchains[<span class="st">&quot;@rules_elm//elm:toolchain&quot;</span>].elm_test</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    inputs <span class="op">=</span> [</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>        ctx.toolchains[<span class="st">&quot;@rules_elm//elm:toolchain&quot;</span>].elm,</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>        ctx.toolchains[<span class="st">&quot;@rules_elm//elm:toolchain&quot;</span>].elm_test,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>        ctx.<span class="bu">file</span>.elm_json,</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    ] <span class="op">+</span> ctx.files.srcs <span class="op">+</span> ctx.files.tests</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    substitutions <span class="op">=</span> {</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@@ELM_RUNTIME@@&quot;</span>: elm_compiler.short_path,</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@@ELM_TEST@@&quot;</span>: elm_test_bin.short_path,</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@@PROJECT_ROOT@@&quot;</span>: ctx.<span class="bu">file</span>.elm_json.short_path.rsplit(<span class="st">&quot;/&quot;</span>, <span class="dv">1</span>)[<span class="dv">0</span>],</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@@ELM_HOME_ZIP@@&quot;</span>: <span class="st">&quot;&quot;</span>,</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> ctx.<span class="bu">file</span>.elm_home <span class="op">!=</span> <span class="va">None</span>:</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>        substitutions[<span class="st">&quot;@@ELM_HOME_ZIP@@&quot;</span>] <span class="op">=</span> ctx.<span class="bu">file</span>.elm_home.short_path</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>        inputs.append(ctx.<span class="bu">file</span>.elm_home)</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    elm_wrapper <span class="op">=</span> ctx.actions.declare_file(ctx.attr.src_name <span class="op">+</span> <span class="st">&quot;.py&quot;</span>)</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    ctx.actions.expand_template(</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>        template <span class="op">=</span> ctx.<span class="bu">file</span>.elm_wrapper_tpl,</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>        output <span class="op">=</span> elm_wrapper,</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>        is_executable <span class="op">=</span> <span class="va">True</span>,</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>        substitutions <span class="op">=</span> substitutions,</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> [DefaultInfo(</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>        files <span class="op">=</span> depset([elm_wrapper]), </span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>        runfiles <span class="op">=</span> ctx.runfiles(files <span class="op">=</span> inputs), <span class="co"># この部分</span></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>    )]</span></code></pre></div>
+<p><code>bazel build</code> 用のルールのときは、<code>py_binary</code> には Python スクリプトしか含まれておらず、Python スクリプトを別のルールで実行するときに上記のようなファイル群を構築していた。 しかし、<code>bazel test</code> は <code>bazel run</code> と同じで <code>bazel build</code> とは実行環境が少し異なるのだ（実行環境を <code>bazel build</code> しているイメージ）。</p>
+<h3 id="elm-test-rs-から-elm-バイナリが見えない">elm-test-rs から elm バイナリが見えない</h3>
+<p>試行錯誤して、やっとこさ Bazel + Windows での問題は突破できたところで elm-test-rs 由来でのエラーが生じた。 Windows だけなぜか、elm-test-rs から elm バイナリが見当たらないというエラーが出たのだ：</p>
+<pre><code>==================== Test output for //examples/build-project:sample-test:
+Error: 
+Failed to run C:\path\to\elm. Are you sure it&#39;s in your PATH?
+If you installed elm locally with npm, maybe try running with npx such as:
+
+    npx --no-install elm-test-rs
+
+Caused by:
+    cannot find binary path
+...</code></pre>
+<p>確かに、Bazel サンドボックスで参照できる位置に elm バイナリはある。 仕方ないので elm-test-rs コードを読んで、手元の Windows に Rust 環境を用意して色々動作を追ってみた。 で、結果としては Bazel ツールチェインでインストールした elm バイナリに拡張子が無いのが問題だった。 elm-test-rs は、バイナリの存在確認に <a href="https://github.com/harryfei/which-rs/tree/4.0.2">which</a> ライブラリを使っているのだが、<a href="https://github.com/harryfei/which-rs/blob/4.0.2/src/finder.rs#L134-L151">これが Windows の場合は特定の拡張子が無いとバイナリとして識別してくれない</a>。 なので、Windows の場合は <code>.exe</code> を付けるように改修した。</p>
+<h2 id="使う">使う</h2>
+<p>趣味の Haskell + Elm + Bazel プロジェクトで使ってみた。<a href="https://github.com/matsubara0507/homelyapp/pull/5">作業 PR はこちら</a>。利用は簡単で、BUILD ファイルに以下のようなのを追記するだけ：</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>elm_test(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;test-elm&quot;</span>,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    tests <span class="op">=</span> glob([<span class="st">&quot;elm-test/**&quot;</span>]),</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    srcs <span class="op">=</span> glob([<span class="st">&quot;elm-src/**&quot;</span>]),</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    elm_json <span class="op">=</span> <span class="st">&quot;elm.json&quot;</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    elm_home <span class="op">=</span> <span class="st">&quot;:deps&quot;</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p>ここで <code>:deps</code> というのは依存パッケージを固めた Bazel 生成物で、毎回依存パッケージのインストールをしないようにするための工夫だ。 これで、<code>bazel test //...</code> と実行するだけで Haskell と Elm のテストが同時に実行されるようになった。</p>
+<h2 id="おしまい">おしまい</h2>
+            </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>
