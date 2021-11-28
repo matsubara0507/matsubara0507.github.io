@@ -7,8 +7,47 @@
     <author>
         <name>MATSUBARA Nobutada</name>
     </author>
-    <updated>2021-09-30T13:43:11Z</updated>
+    <updated>2021-11-28T02:09:05Z</updated>
 
+    <entry>
+        <title>Haskell Stack で Stackage に無い GHC を使う</title>
+        <link href="https://matsubara0507.github.io/posts/2021-11-28-use-latest-ghc-with-slack.html"/>
+        <id>https://matsubara0507.github.io/posts/2021-11-28-use-latest-ghc-with-slack.html</id>
+        <published>2021-11-28T00:00:00Z</published>
+        <updated>2021-11-28T00:00:00Z</updated>
+        <category term="Haskell"/>
+        <content type="html"><![CDATA[<p>ちょっと前に GHC 9.2.1 がリリースされましたね。 GHC 9.2.1 には、ライト層のユーザーでも使いやすい機能（例えば、<code>GHC2021</code> とか <code>OverloadedRecordDot</code> とか）がいくつかあり、それを早く試したい！って人が少なくないと思います。 僕もです。</p>
+<p>Haskell Stack を利用していると、Stackage に新しいバージョン用のスナップショット（<code>lts-x.y</code> とか）が来るまで待つ人が多いと思いますが、実は自分で依存ライブラリの列挙をすれば、好きな GHC を使うことができます！ 今回はそのメモ書きです。</p>
+<h2 id="任意の-ghc-を利用する">任意の GHC を利用する</h2>
+<p>これは簡単。<code>stack.yaml</code> の <code>resolver</code> に GHC を直接指定するとできる：</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resolver</span><span class="kw">:</span><span class="at"> ghc-9.2.1</span></span></code></pre></div>
+<p>この場合、依存パッケージは何一つ登録されていないため、<code>extra-deps</code> に全て列挙する必要がある。 <code>nightly</code> や <code>lts</code> を使いつつ GHC だけ上書きする場合は <code>compiler</code> を使う：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resolver</span><span class="kw">:</span><span class="at"> nightly-2021-11-19</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">compiler</span><span class="kw">:</span><span class="at"> ghc-9.2.1</span></span></code></pre></div>
+<p>また、正式リリース済みの GHC ではなく、ソースコードからコンパイルして使いたい場合は <code>ghc-git</code> を使う：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resolver</span><span class="kw">:</span><span class="at"> nightly-2021-11-19</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">compiler</span><span class="kw">:</span><span class="at"> ghc-git-COMMIT-FLAVOUR</span></span></code></pre></div>
+<p>（<a href="https://docs.haskellstack.org/en/stable/yaml_configuration/#compiler">公式サイトにまとまっている</a>）</p>
+<h2 id="カスタムスナップショットを作る">カスタムスナップショットを作る</h2>
+<p>さらに、<a href="https://docs.haskellstack.org/en/stable/pantry/#snapshots">自由に個人のカスタムスナップショットを公開し再利用することができる</a>。 LTS の場合、数多くのパッケージが同時にビルド可能になる必要があるため、なかなか新しい GHC のものがリリースされない。 しかし、自分がよく使うパッケージだけなら可能かもしれない。 <a href="https://github.com/matsubara0507/stack-snapshots">ということで、試しに作ってみた</a>：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resolver</span><span class="kw">:</span><span class="at"> ghc-9.2.1</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">packages</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> OneTuple-0.3.1</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> Only-0.1</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co">...</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co">flags:</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co">  cassava:</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co">    bytestring--lt-0_10_4: false</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="co">  transformers-compat:</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co">    five-three: true</span></span></code></pre></div>
+<p>パッケージのいくつかには GHC のコンパイルフラグを利用して、そのパッケージの依存パッケージのバージョンを分岐しているものがある。 そういうのは <code>flags</code> で指定する。 Stackage の場合、<a href="https://github.com/commercialhaskell/stackage/blob/3c8220a4306f697333df6454dcb29e7e66385fff/build-constraints.yaml#L6837">この辺りを見ると参考になる</a>（ただし、Stackage はスナップショットを直接記述せず、設定ファイルから <a href="https://github.com/commercialhaskell/curator">curator</a> で自動生成しているが）。</p>
+<p>そして、<code>resolver</code> で GitHub の RAW リンクを resolver で指定すれば使える：</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resolver</span><span class="kw">:</span><span class="at"> https://raw.githubusercontent.com/matsubara0507/stack-snapshots/main/snapshot.yaml</span></span></code></pre></div>
+<h2 id="おしまい">おしまい</h2>
+<p>結構多くのパッケージが既に GHC9.2 対応されてて、割とすんなり遊べる。 ありがたい。</p>]]></content>
+    </entry>
     <entry>
         <title>rules_elm に elm-test するルールを追加する</title>
         <link href="https://matsubara0507.github.io/posts/2021-09-30-rules_elm-elm_test.html"/>
@@ -1608,53 +1647,5 @@ unstuck quickly.
 <p>(2)は，Toolchain の <code>action</code> なんかに <code>elm</code> コマンドの振る舞いを突っ込んだ方がかっこいいかなーっていうだけ．</p>
 <p>次回，頑張る．</p>
 <h2 id="おしまい">おしまい</h2>]]></content>
-    </entry>
-    <entry>
-        <title>rules_haskell でパッケージの依存関係がうまく解決できない時</title>
-        <link href="https://matsubara0507.github.io/posts/2021-01-01-missing-dependencies-with-rules_haskell.html"/>
-        <id>https://matsubara0507.github.io/posts/2021-01-01-missing-dependencies-with-rules_haskell.html</id>
-        <published>2021-01-01T00:00:00Z</published>
-        <updated>2021-01-01T00:00:00Z</updated>
-        <category term="Haskell"/>
-        <category term="Bazel"/>
-        <content type="html"><![CDATA[<p>ちょっとした rules_haskell で起きたエラーに関するメモ書きです（Bazel の話）．</p>
-<h2 id="起きたエラー">起きたエラー</h2>
-<p>具体的には「<a href="/posts/2021-01-01-mdium-with-gist.html">MarkdownをMediumへポストするときにコードブロックをGistのリンクにする</a>」をやっていたときに起きたエラー：</p>
-<pre><code>$ bazel build //:mdium
-...
-ERROR: /.../external/stackage/BUILD.bazel:1277:22: HaskellCabalLibrary @stackage//:hslua failed (Exit 1) cabal_wrapper failed: error executing command bazel-out/host/bin/external/rules_haskell/haskell/cabal_wrapper lib:hslua hslua-1.3.0 true external/stackage/hslua-1.3.0/Setup.hs external/stackage/hslua-1.3.0 ... (remaining 9 argument(s) skipped)
-
-Use --sandbox_debug to see verbose messages from the sandbox
-Setup.hs: Encountered missing dependencies:
-base-compat &gt;=0.10
-...</code></pre>
-<p>base-compat はバージョン 0.11.2 が入ってるはずなので，この依存関係は満たしているはずなのに...？？？</p>
-<h2 id="原因">原因</h2>
-<p>hslua-1.3.0 の Cabal ファイルを読んでたら気づいた：</p>
-<pre class="cabal"><code>  if impl(ghc &lt; 8.8)
-    build-depends:       base-compat          &gt;= 0.10
-    hs-source-dirs:      prelude
-    other-modules:       Prelude</code></pre>
-<p><code>if impl(ghc &lt; 8.8)</code> の部分． もしかして，Bazel の依存パッケージを解決してるときにこの分岐がうまくいってない？つまり GHC のバージョンが間違ってる？</p>
-<p>正解でした．</p>
-<h2 id="対処">対処</h2>
-<p>GHC のバージョンは rules_haskell の <code>rules_haskell_toolchains</code> の <code>version</code> 引数で指定できる． 指定しない場合は デフォルトで 8.6.5 が利用される． 決して，<code>stack_snapshot</code> で指定した LTS から自動で解決されない（はず）． 僕はこの仕様をすっかり忘れており，LTS では GHC 8.8 系を利用しているのに GHC 8.6 でビルドをしていた． 結果として，依存パッケージの解決がめちゃくちゃになっていたのだ．</p>
-<p>対処法は簡単で，<code>rules_haskell_toolchains</code> で <code>version</code> を指定すれば良い：</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>http_archive(</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;rules_haskell&quot;</span>,</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    strip_prefix <span class="op">=</span> <span class="st">&quot;rules_haskell-3b8182ca5287cf93687fff1cefd98910f683b679&quot;</span>,</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    urls <span class="op">=</span> [<span class="st">&quot;https://github.com/tweag/rules_haskell/archive/3b8182ca5287cf93687fff1cefd98910f683b679.tar.gz&quot;</span>],</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    sha256 <span class="op">=</span> <span class="st">&quot;85f269adfecfc5760fae6017608f7efebfccb719c22c7e71af03c4887f54b08e&quot;</span>,</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>load(</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;@rules_haskell//haskell:toolchain.bzl&quot;</span>,</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;rules_haskell_toolchains&quot;</span>,</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>rules_haskell_toolchains(version <span class="op">=</span> <span class="st">&quot;8.8.4&quot;</span>)</span></code></pre></div>
-<p>ちなみに，rules_haskell の現在の最新のバージョンタグである v0.13 を使わずに，直接最新のコミットハッシュを指定しているのは，v0.13 では LTS で利用している 8.8.4 が無いからだ．</p>
-<h2 id="おしまい">おしまい</h2>
-<p>本当にちょっとしたことだけど念のため記事にしておいた． rules_haskell が流行ったあかつきにはきっと助かる人が出るはず笑</p>]]></content>
     </entry>
 </feed>
