@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Haskell Morpheus GraphQL で GitHub API を試す" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>Haskell Morpheus GraphQL で GitHub API を試す</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title" itemprop="name headline">Haskell Morpheus GraphQL で GitHub API を試す</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Dec  9, 2021</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/GraphQL/1">GraphQL</a>
+                <a href="../tags/GitHub/1">GitHub</a>
+              </div>
+              </p>
+            </header>
+
+            <div class="post-content" itemprop="articleBody">
+              <p>本記事は 「<a href="https://qiita.com/advent-calendar/2021/haskell">Haskell Advent Calendar 2021</a>」の9日目の記事です。</p>
+<p>2021年11月に開催された「<a href="https://haskell.jp/haskell-day-2021/">Haskell Day 2021</a>」の発表で <a href="https://morpheusgraphql.com/">Morpheus GraphQL</a> の紹介がありました。 それに触発されて Morpheus GraphQL を触ってみます。 Haskell Day での発表では、GraphQL サーバーの構築について焦点が当てられてましたが、私はクライアント側を試してみます。</p>
+<h2 id="題材-stack-tpls">題材: stack-tpls</h2>
+<p>題材として私が自作している <a href="https://github.com/matsubara0507/stack-tpls">stack-tpls</a> というツールを使います。 これは、Haskell Stack の公開されているテンプレートの一覧表示などをしてくれる CLI ツールです：</p>
+<pre><code>$ stack-tpls --list | grep matsubara0507
+github:matsubara0507/get-opt-cli.hsfiles
+github:matsubara0507/lib-extensible.hsfiles
+github:matsubara0507/mix-cli-with-bazel.hsfiles
+github:matsubara0507/mix-cli.hsfiles
+github:matsubara0507/optparse-applicative-cli.hsfiles</code></pre>
+<p>GitHub や GitLab などの stack-templates というリポジトリのトップレベルにある <code>.hsfiles</code> ファイルがテンプレートになります。 GitHub から Stack のテンプレートを取得するのに <a href="https://docs.github.com/graphql">GitHub GraphQL API</a> を使っています。 <code>stack-templates</code> が名前に含まれるリポジトリを検索し、クエリの結果にはトップレベルの Git オブジェクトを含ませて取得します。 あとは、クエリの結果のうち条件に当てはまるものをフィルタリングしています。 で、元々は手書きでクエリを組み立てたのですが：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode hs"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ot">searchQuery ::</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">Text</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>searchQuery query after <span class="ot">=</span> <span class="fu">mconcat</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  [ <span class="st">&quot;query{search(&quot;</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  , <span class="st">&quot;query:&quot;</span>, tshow query, <span class="st">&quot;, &quot;</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  , <span class="st">&quot;type: REPOSITORY, &quot;</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  , <span class="st">&quot;first: 100&quot;</span>,</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  , <span class="fu">maybe</span> <span class="st">&quot;&quot;</span> (\txt <span class="ot">-&gt;</span> <span class="st">&quot;, after: &quot;</span> <span class="op">&lt;&gt;</span> tshow txt) after</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  , <span class="st">&quot;){&quot;</span>, Text.intercalate <span class="st">&quot;,&quot;</span> fields, <span class="st">&quot;}}&quot;</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  ]</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    fields <span class="ot">=</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>      [ <span class="st">&quot;repositoryCount&quot;</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>      , <span class="st">&quot;pageInfo{ endCursor, hasNextPage }&quot;</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>      , <span class="st">&quot;edges{ node{ ... on Repository{ nameWithOwner, name, &quot;</span> <span class="op">&lt;&gt;</span> obj <span class="op">&lt;&gt;</span> <span class="st">&quot; }}}&quot;</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>      ]</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    obj <span class="ot">=</span> <span class="st">&quot;object(expression:\&quot;HEAD\&quot;){ ... on Commit{ tree{ entries{ name, type }}}}&quot;</span></span></code></pre></div>
+<p>そこを Morpheus GraphQL に置き換えます。</p>
+<h2 id="morpheus-graphql-でクライアント作成">Morpheus GraphQL でクライアント作成</h2>
+<p>Morpheus GraphQL でクライアントだけを作る場合は <a href="https://hackage.haskell.org/package/morpheus-graphql-client-0.18.0">morpheus-graphql-client パッケージ</a>を使います。 GraphQL のスキーマファイルを用意し、<code>defineByDocumentFile</code> を使って Template Haskell で GraphQL クエリに対応する Haskell の関数を生成します。 例えば、前述した stack-tpls のクエリを記述すると次のようになります：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode hs"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE DeriveGeneric         #-}</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE DerivingStrategies    #-}</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE DuplicateRecordFields #-}</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE OverloadedStrings     #-}</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE QuasiQuotes           #-}</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE TemplateHaskell       #-}</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE TypeFamilies          #-}</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span>           <span class="dt">Data.Morpheus.Client</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>defineByDocumentFile <span class="st">&quot;./assets/schema.docs.graphql&quot;</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  [gql|</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    query SearchRepository($query: String!, $cursor: String) {</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>      search(query: $query, type: REPOSITORY, first: 100, after: $cursor) {</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>        repositoryCount,</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>        pageInfo { endCursor, hasNextPage }</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>        edges {</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>          node {</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>            ... on Repository {</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>              __typename</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>              nameWithOwner,</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>              name,</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>              object(expression: &quot;HEAD&quot;) {</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>                ... on Commit { __typename, tree { entries { name, type } } }</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>              }</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>            }</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>          }</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>  |]</span></code></pre></div>
+<p>スキーマは、<a href="https://docs.github.com/graphql/overview/public-schema">GitHub の場合はココに公開されています</a>。 公開されていなくても、API から生成する方法があるらしいです（詳しくは知らない）。</p>
+<p>で、この Template Haskell は例えば次のようなクエリの結果を表現した型を生成します：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode hs"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">SearchRepository</span> <span class="ot">=</span> <span class="dt">SearchRepository</span> {<span class="ot"> search ::</span> <span class="dt">SearchSearchResultItemConnection</span>	}</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">SearchSearchResultItemConnection</span> <span class="ot">=</span> <span class="dt">SearchSearchResultItemConnection</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  {<span class="ot"> repositoryCount ::</span> <span class="dt">Int</span>	 </span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> pageInfo ::</span> <span class="dt">SearchPageInfoPageInfo</span>	 </span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> edges ::</span> <span class="dt">Maybe</span> [<span class="dt">Maybe</span> <span class="dt">SearchEdgesSearchResultItemEdge</span>]</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">SearchPageInfoPageInfo</span> <span class="ot">=</span> <span class="dt">SearchPageInfoPageInfo</span>	 </span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  {<span class="ot"> endCursor ::</span> <span class="dt">Maybe</span> <span class="dt">Text</span>	 </span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> hasNextPage ::</span> <span class="dt">Bool</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">SearchEdgesSearchResultItemEdge</span> <span class="ot">=</span> <span class="dt">SearchEdgesSearchResultItemEdge</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  {<span class="ot"> node ::</span> <span class="dt">Maybe</span> <span class="dt">SearchEdgesNodeSearchResultItem</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">SearchEdgesNodeSearchResultItem</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">SearchEdgesNodeSearchResultItem</span> {<span class="ot"> __typename ::</span> <span class="dt">Text</span> }</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">SearchEdgesNodeRepository</span> <span class="co">-- こっちしか来ないけど</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>      {<span class="ot"> __typename ::</span> <span class="dt">Text</span>	 </span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>      ,<span class="ot"> nameWithOwner ::</span> <span class="dt">Text</span>	 </span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>      ,<span class="ot"> name ::</span> <span class="dt">Text</span>	 </span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>      ,<span class="ot"> object ::</span> <span class="dt">Maybe</span> <span class="dt">SearchEdgesNodeObjectGitObject</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">SearchEdgesNodeObjectGitObject</span></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">SearchEdgesNodeObjectGitObject</span> {<span class="ot"> __typename ::</span> <span class="dt">Text</span> }</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">SearchEdgesNodeObjectCommit</span> <span class="co">-- こっちしか来ないけど</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>      {<span class="ot"> __typename ::</span> <span class="dt">Text</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>      ,<span class="ot"> tree ::</span> <span class="dt">SearchEdgesNodeObjectTreeTree</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">SearchEdgesNodeObjectTreeTree</span> <span class="ot">=</span> <span class="dt">SearchEdgesNodeObjectTreeTree</span></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>  {<span class="ot"> entries ::</span> <span class="dt">Maybe</span> [<span class="dt">SearchEdgesNodeObjectTreeEntriesTreeEntry</span>]</span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">SearchEdgesNodeObjectTreeEntriesTreeEntry</span> <span class="ot">=</span> <span class="dt">SearchEdgesNodeObjectTreeEntriesTreeEntry</span>	 </span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>  {<span class="ot"> name ::</span> <span class="dt">Text</span>	 </span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> type&#39; ::</span> <span class="dt">Text</span> <span class="co">-- type は type&#39; になる</span></span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div>
+<p>GraphQL はクエリで返して欲しいデータ構造（型構造）自体を構築するため、このようなデータ型をクエリ毎に Template Haskell で生成するわけですね。 クエリ結果の型には morpheus-graphql-client パッケージの <code>Fetch</code> 型クラスのインスタンスが定義されています。 この型クラスを利用してクエリを実行するのです：</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode hs"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">Fetch</span> a <span class="kw">where</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">type</span> <span class="dt">Args</span><span class="ot"> a ::</span> <span class="op">*</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  fetch </span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="ot">    ::</span> (<span class="dt">Monad</span> m, <span class="dt">FromJSON</span> a) </span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=&gt;</span> (<span class="dt">ByteString</span> <span class="ot">-&gt;</span> m <span class="dt">ByteString</span>)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="ot">-&gt;</span> <span class="dt">Args</span> a </span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="ot">-&gt;</span> m (<span class="dt">Either</span> (<span class="dt">FetchError</span> a) a)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Fetch</span> <span class="dt">SearchRepository</span> <span class="kw">where</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">type</span> <span class="dt">Args</span> <span class="dt">SearchRepository</span> <span class="ot">=</span> <span class="dt">SearchRepositoryArgs</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  fetch <span class="ot">=</span> <span class="op">...</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">SearchRepositoryArgs</span> <span class="ot">=</span> <span class="dt">SearchRepositoryArgs</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  {<span class="ot"> query ::</span> <span class="dt">Text</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> cursor ::</span> <span class="dt">Maybe</span> <span class="dt">Text</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div>
+<p><code>SearchRepositoryArgs</code> 型も Template Haskell で生成されます。 <code>fetch</code> 関数の一引数目には、実際に <code>ByteString</code> のクエリ文字列を受け取り HTTP リクエストをして <code>ByteString</code> の結果を返す関数を渡します。 <a href="https://github.com/morpheusgraphql/morpheus-graphql/blob/1ad3b8d59a1e4f62628dfdcae204c768d2b5b0f7/morpheus-graphql-client/README.md">morpheus-graphql-client パッケージの README</a>には <a href="https://hackage.haskell.org/package/req-3.9.2">req パッケージ</a>を使った例があるので、参考にして次のように書きました：</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode hs"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span>           <span class="dt">Data.ByteString</span>      (<span class="dt">ByteString</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.ByteString.Lazy</span> <span class="kw">as</span> <span class="dt">Lazy</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span>           <span class="dt">Network.HTTP.Req</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="ot">resolver ::</span> <span class="dt">ByteString</span> <span class="ot">-&gt;</span> <span class="dt">Lazy.ByteString</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Lazy.ByteString</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>resolver token b <span class="ot">=</span> runReq defaultHttpConfig <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> headers <span class="ot">=</span> header <span class="st">&quot;Content-Type&quot;</span> <span class="st">&quot;application/json&quot;</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>               <span class="op">&lt;&gt;</span> header <span class="st">&quot;User-Agent&quot;</span> <span class="st">&quot;matsubara0507/stack-tpls&quot;</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>               <span class="op">&lt;&gt;</span> oAuth2Bearer token</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    responseBody <span class="op">&lt;$&gt;</span> req <span class="dt">POST</span> (https <span class="st">&quot;api.github.com&quot;</span> <span class="op">/:</span> <span class="st">&quot;graphql&quot;</span>) (<span class="dt">ReqBodyLbs</span> b) lbsResponse headers</span></code></pre></div>
+<p>余談ですが、Template Haskell の生成結果は <code>stack haddock</code> などを利用して Haddock を生成して利用すると確認しやすいです（そのときに <code>--no-haddock-deps</code> をすれば、依存パッケージの Haddock 生成をスキップできるので早いです）。</p>
+<h3 id="注意点">注意点</h3>
+<p>いくつか注意点があります。</p>
+<p>まず、GitHub GraphQL API で morpheus-graphql-client パッケージを使うには v0.18.0 以上を使う必要があります。 もし古いのを使うと、次のようなエラーメッセージが出ます：</p>
+<pre><code>stack-tpls/src/StackTemplates/GitHub/GraphQL/Query.hs:14:1: error:
+    [{&quot;message&quot;:&quot;offset=672270:\nunexpected &#39;Â&#39;\nexpecting \&quot;\&quot;\&quot;\&quot;\&quot;, newline, or printable character\n&quot;,&quot;locations&quot;:[{&quot;line&quot;:36050,&quot;column&quot;:60}]}]
+   |
+14 | defineByDocumentFile &quot;./assets/schema.docs.graphql&quot;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...</code></pre>
+<p>これは、<a href="https://github.com/morpheusgraphql/morpheus-graphql/issues/581">この Issue のやつ</a>でスキーマのパーサーが全ての Unicode な文字を扱えてなかったのが原因です。 GitHub GraphQL API のスキーマの36050行目のコメントに、そういう文字が含まれていたというわけです。 幸いにも、すでに修正されているので、バージョンを上げておきましょう。</p>
+<h1 id="section"></h1>
+<p>もう一つは <code>__typename</code> の部分です。 これをなくすとコンパイルはできますが、実行時に次のようなエラーメッセージが出てしまいます：</p>
+<pre><code>$ stack-tpls --list --update
+FetchErrorParseFailure &quot;Error in $.data.search.edges[0].node: key \&quot;__typename\&quot; not found on object&quot;</code></pre>
+<p>GraphQL には <a href="https://graphql.org/learn/schema/#interfaces">Interface Type</a> というのがあります。 特定のフィールドを持っている型を多相的に扱えるというものです。 クエリでは、この Interface Type に対して「具体的なこの型が欲しい」と指定できます。 <code>... on Repository</code> や <code>... on Commit</code> の部分です。</p>
+<p>で、クエリ結果の JSON には <a href="https://graphql.org/learn/queries/#meta-fields"><code>__typename</code> というフィールド</a>を使うことで、どの具体型なのかの情報を載せることができます。 おそらく、Morpheus GraphQL のパーサーは <code>__typename</code> を使って変換先の型を選んでるんだと思います。 そのため、勝手に生成する型構造には <code>__typename</code> フィールドを付与されるのですが、リクエストしてるクエリには <code>__typename</code> が含まれないため、実際の結果の JSON には含まれてなくて落ちてるわけですね。 なので、<code>... on</code> する場合はとりあえず <code>__typename</code> 付けることで回避できます。</p>
+<h2 id="おまけ別々のクエリ結果を多相的に扱う">おまけ：別々のクエリ結果を多相的に扱う</h2>
+<p>Morpheus GraphQL のクライアントでは、クエリに対して別々の型を生成します。 例えば、<code>SearchRepository</code> クエリの他に、次のようなクエリを生成してみます：</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode hs"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>defineByDocumentFile <span class="st">&quot;./assets/schema.docs.graphql&quot;</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  [gql|</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    query GetReository($owner: String!, $name: String!) {</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>      repository(owner: $owner, name: $name) {</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>        object(expression: &quot;HEAD&quot;) {</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>          ... on Commit { __typename, tree { entries { name, type } } }</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  |]</span></code></pre></div>
+<p>指定したリポジトリのトップレベルの Git オブジェクトをとってきているだけですね。 これは次のような型を生成します：</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode hs"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">GetReository</span> <span class="ot">=</span> <span class="dt">GetReository</span> {<span class="ot"> repository ::</span> <span class="dt">Maybe</span> <span class="dt">RepositoryRepository</span> } </span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">RepositoryRepository</span> <span class="ot">=</span> <span class="dt">RepositoryRepository</span> {<span class="ot"> object ::</span> <span class="dt">Maybe</span> <span class="dt">RepositoryObjectGitObject</span> }</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">RepositoryObjectGitObject</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">RepositoryObjectGitObject</span> {<span class="ot"> __typename ::</span> <span class="dt">Text</span> }</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">RepositoryObjectCommit</span> </span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>      {<span class="ot"> __typename ::</span> <span class="dt">Text</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>      ,<span class="ot"> tree ::</span> <span class="dt">RepositoryObjectTreeTree</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">RepositoryObjectTreeTree</span> <span class="ot">=</span> <span class="dt">RepositoryObjectTreeTree</span> </span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  {<span class="ot"> entries ::</span> <span class="dt">Maybe</span> [<span class="dt">RepositoryObjectTreeEntriesTreeEntry</span>]</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">RepositoryObjectTreeEntriesTreeEntry</span> <span class="ot">=</span> <span class="dt">RepositoryObjectTreeEntriesTreeEntry</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>  {<span class="ot"> name ::</span> <span class="dt">Text</span>	 </span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> type&#39; ::</span> <span class="dt">Text</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div>
+<p>生成した型のうち、<code>SearchRepository</code> クエリから生成したものとフィールドもとい本質的に同じだけど型名が違うものがいくつかありますね。 例えば、<code>SearchEdgesNodeObjectTreeEntriesTreeEntry</code> と <code>RepositoryObjectTreeEntriesTreeEntry</code> です。 できれば、この両方に対して同じ関数を定義したいなと思いませんか？</p>
+<p>いくつかやり方はあると思いますが、今回は GHC 9.2.1 で導入された <code>OverloadedRecordDot</code> 言語拡張を利用します。</p>
+<h3 id="overloadedrecorddot-言語拡張"><code>OverloadedRecordDot</code> 言語拡張</h3>
+<p>この言語拡張自身については、だめぽ氏の「<a href="https://zenn.dev/mod_poppo/articles/ghc-9-2-and-future#record-dot-syntax">GHC 9.2の新機能と、GHCの動向2021</a>」を参考にしてください（ないしは適当に調べてください）。 で、<code>OverloadedRecordDot</code> を実現するために <a href="https://hackage.haskell.org/package/base-4.16.0.0/docs/GHC-Records.html#t:HasField"><code>GHC.Records</code> モジュールと <code>HasField</code> 型クラス</a>が追加されましたね？</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode hs"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">HasField</span> x r a <span class="op">|</span> x r <span class="ot">-&gt;</span> a <span class="kw">where</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ot">  getField ::</span> r <span class="ot">-&gt;</span> a</span></code></pre></div>
+<p>この型クラスは「型 <code>r</code> のレコードが <code>a</code> 型を返すフィールド <code>x</code> を持つ」というのを表しています。 つまり、これを使えば「同一のフィールドを持つレコード型」に対して共通の関数を定義できるわけです：</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode hs"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- name の方は厳密にはいらないが</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="ot">isBlob ::</span> (<span class="dt">HasField</span> <span class="st">&quot;name&quot;</span> r <span class="dt">Text</span>, <span class="dt">HasField</span> <span class="st">&quot;type&#39;&quot;</span> r <span class="dt">Text</span>) <span class="ot">=&gt;</span> r <span class="ot">-&gt;</span> <span class="dt">Bool</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>isBlob entry <span class="ot">=</span> entry<span class="op">.</span>type&#39; <span class="op">==</span> <span class="st">&quot;blob&quot;</span></span></code></pre></div>
+<p><code>isBlob</code> 関数は <code>SearchEdgesNodeObjectTreeEntriesTreeEntry</code> 型と <code>RepositoryObjectTreeEntriesTreeEntry</code> 型の両方に適用できる関数です。 これを駆使すれば、別々のクエリ結果に対する関数をいい感じに共通化できそうですね。 ただし、GraphQL の Interface Type を挟むと直和型を含むのでうまく表現できなくなります。</p>
+<h2 id="おしまい">おしまい</h2>
+<p>ちなみに、おまけ部分のコードは <a href="https://github.com/matsubara0507/github-graphql-example.hs/tree/ghc9.2">matsubara0507/github-graphql-example.hs の ghc9.2 ブランチ</a>に置いてあります。 Morpheus GraphQL のパッケージを GHC 9.2.1 で使うために、いろいろフォークして修正しています（現在は、ですが）。</p>
+            </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>
