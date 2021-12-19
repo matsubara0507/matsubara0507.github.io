@@ -7,8 +7,203 @@
     <author>
         <name>MATSUBARA Nobutada</name>
     </author>
-    <updated>2021-12-08T15:01:50Z</updated>
+    <updated>2021-12-19T15:07:17Z</updated>
 
+    <entry>
+        <title>Bazel でも GHC 9.2.1 でビルドがしたい</title>
+        <link href="https://matsubara0507.github.io/posts/2021-12-20-fix-rules_haskell-for-ghc_9_2_1.html"/>
+        <id>https://matsubara0507.github.io/posts/2021-12-20-fix-rules_haskell-for-ghc_9_2_1.html</id>
+        <published>2021-12-20T00:00:00Z</published>
+        <updated>2021-12-20T00:00:00Z</updated>
+        <category term="Haskell"/>
+        <category term="Bazel"/>
+        <content type="html"><![CDATA[<p>本記事は 「<a href="https://qiita.com/advent-calendar/2021/haskell">Haskell Advent Calendar 2021</a>」の4日目の記事です。 空いてたので埋めました。</p>
+<h1 id="section"></h1>
+<p><a href="https://bazel.build/">Bazel</a>というビルドツールがあります。Bazelでは、いわゆるライブラリのようなものを使うことで、簡単にさまざまなプログラムのビルドやテストの実行を同じインターフェースで行うことができます。例えば：</p>
+<ul>
+<li><a href="https://github.com/bazelbuild/rules_go">bazelbuild/rules_go</a> : Goプログラムのビルドやテストなど</li>
+<li><a href="https://github.com/bazelbuild/rules_docker">bazelbuild/rules_docker</a> : Dockerイメージのビルドやプッシュなど</li>
+<li><a href="https://github.com/bazelbuild/rules_nodejs">bazelbuild/rules_nodejs</a> : Nodeプログラムのビルドやテストなど</li>
+</ul>
+<p>そして、<a href="https://github.com/tweag/rules_haskell">tweag/rules_haskell</a> を使うことで、Bazel を利用して Haskell プログラムのビルドが行えます。今回は今年でた新しいバージョンの Haskell 処理系、GHC 9.2.1 を Bazel を利用してビルドする、までに頑張ったことのメモ書きです。</p>
+<p>ちなみに、頑張って修正したので、私のフォークを利用すればとりあえずビルドすることができます。</p>
+<h1 id="section-1"></h1>
+<p>例として <a href="https://github.com/matsubara0507/example-haskell-with-bazel">matsubara0507/example-haskell-with-bazel</a> というリポジトリも用意しました。CI/CD をいい感じにして、無事、直近3バージョンと各OSのビルドが通るのを確認できました：</p>
+<p><img src="/assets/fix-rules_haskell-for-ghc_9_2_1/all-green.png" /></p>
+<h2 id="rules_haskell-の振る舞い">rules_haskell の振る舞い</h2>
+<p>rules_haskell で、どの GHC に対応している（ビルドできるとは言ってない）かは <code>haskell/gen_bindist.bzl</code> の <code>GHC_BINDIST</code> 変数を見ればわかります：</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>GHC_BINDIST <span class="op">=</span> <span class="op">\</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>        ...</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;9.2.1&quot;</span>: {</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;darwin_amd64&quot;</span>: (</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;https://downloads.haskell.org/~ghc/9.2.1/ghc-9.2.1-x86_64-apple-darwin.tar.xz&quot;</span>,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;c527700a210306098ce85d2c956089deea539aefe1d1816701d5c14cf9c113b7&quot;</span>,</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>            ),</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;linux_amd64&quot;</span>: (</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;https://downloads.haskell.org/~ghc/9.2.1/ghc-9.2.1-x86_64-deb9-linux.tar.xz&quot;</span>,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;f09133ed735e9f3b221b5ed54787e5651f039ed0f7dab0ab834a27c8ca68fc9b&quot;</span>,</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>            ),</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;windows_amd64&quot;</span>: (</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;https://downloads.haskell.org/~ghc/9.2.1/ghc-9.2.1-x86_64-unknown-mingw32.tar.xz&quot;</span>,</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;649e04abd4fa35796070b35de1c353721507a49842b18663aa1c7adc6b4115d8&quot;</span>,</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>            ),</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    }</span></code></pre></div>
+<p><code>GHC_BINDIST</code> の URL から <code>ghc</code> や <code>ghc-pkg</code> などのビルド済みバイナリと標準パッケージなどが固まった <code>tar.xz</code> ファイルが手に入ります。<code>rules_haskell</code> は、これを Bazel サンドボックス用に展開して利用します。</p>
+<p>Linux と macOS の場合は <code>configure</code> と <code>make</code> を使ってバイナリファイルや haddock ファイルなど様々なファイルを、特定のディレクトリ構成で配置し直したりしているようです。Windows の場合は、<code>make</code> が動作しないためか、そのまま使っています。</p>
+<p>この <code>make</code> 時の振る舞いが 8.10・9.0・9.1 で微妙に異なるため苦労しました。</p>
+<h2 id="バージョン間の違い">バージョン間の違い</h2>
+<p>以下のような違いがあり、そのまんまビルドすることができませんでした：</p>
+<ol>
+<li>展開後のディレクトリ名が違う</li>
+<li><code>html/libraries</code> 配下のディレクトリの命名規則が違う</li>
+<li><code>package.conf.d</code> ディレクトリのパスが違う</li>
+<li>Cabal ファイルの変数が <code>$topdir</code> から <code>${pkgroot}</code> に変わった</li>
+<li><code>realpath</code> コマンドに依存している問題（Mac）</li>
+<li>Cabal 3.6 から <code>relocatable</code> フラグが機能しなくなった</li>
+<li><code>html/libraries</code> へのパスが間違っている（Windows）</li>
+</ol>
+<p>流石に GHC 側の経緯までは完璧に追えてませんが、ひたすらトライアンドエラーして直しました。 一応、<a href="https://github.com/tweag/rules_haskell/pull/1666">雑な英語で本家に PR を投げました</a>が、マージされるかはわかりません。</p>
+<h3 id="1-展開後のディレクトリ名が違う">1. 展開後のディレクトリ名が違う</h3>
+<p>今までは、どの OS であれ <code>ghc-X.Y.Z</code> のようなディレクトリ名でした。しかし、9.2.1 の Windows と Mac、9.0.1 の Windows は（なぜか）<code>ghc-9.2.1-x86_64-apple-darwin</code> のような <code>tar.xz</code> ファイル名になっていました。仕方がないので、GHC のバージョンと OS によってディレクトリ名が変わるように修正しました：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>GHC_BINDIST_STRIP_PREFIX <span class="op">=</span> <span class="op">\</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;9.2.1&quot;</span>: {</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;darwin_amd64&quot;</span>: <span class="st">&quot;ghc-9.2.1-x86_64-apple-darwin&quot;</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;windows_amd64&quot;</span>: <span class="st">&quot;ghc-9.2.1-x86_64-unknown-mingw32&quot;</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;9.0.1&quot;</span>: {</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;windows_amd64&quot;</span>: <span class="st">&quot;ghc-9.0.1-x86_64-unknown-mingw32&quot;</span>,</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>...</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    stripPrefix <span class="op">=</span> <span class="st">&quot;ghc-&quot;</span> <span class="op">+</span> version</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> GHC_BINDIST_STRIP_PREFIX.get(version) <span class="op">!=</span> <span class="va">None</span> <span class="kw">and</span> GHC_BINDIST_STRIP_PREFIX[version].get(target) <span class="op">!=</span> <span class="va">None</span>:</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>        stripPrefix <span class="op">=</span> GHC_BINDIST_STRIP_PREFIX[version][target]</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    ctx.download_and_extract(</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>        url <span class="op">=</span> url,</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>        output <span class="op">=</span> unpack_dir,</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>        sha256 <span class="op">=</span> sha256,</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>        <span class="bu">type</span> <span class="op">=</span> <span class="st">&quot;tar.xz&quot;</span>,</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>        stripPrefix <span class="op">=</span> stripPrefix,</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    )</span></code></pre></div>
+<h3 id="2-htmllibraries-配下のディレクトリの命名規則が違う">2. <code>html/libraries</code> 配下のディレクトリの命名規則が違う</h3>
+<p><code>haddock</code> を生成するためか、展開したファイル群の中から標準パッケージの生成済み haddock ファイル置き場を特定する必要があります。8.10 系までは <code>base-4.14.3.0</code> のようにバージョンがディレクトリ名に含まれていたため、次のように特定していました：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Find a file matching `html/libraries/base-*.*.*.*/*` and infer `docdir` from its path.</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>        <span class="co"># `GHC.Paths.docdir` reports paths such as `.../doc/html/libraries/base-4.13.0.0`.</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> f <span class="kw">in</span> docdir:</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>            html_start <span class="op">=</span> f.path.find(<span class="st">&quot;html/libraries/base-&quot;</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> html_start <span class="op">!=</span> <span class="op">-</span><span class="dv">1</span>:</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>                base_end <span class="op">=</span> f.path.find(<span class="st">&quot;/&quot;</span>, html_start <span class="op">+</span> <span class="bu">len</span>(<span class="st">&quot;html/libraries/base-&quot;</span>))</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> base_end <span class="op">!=</span> <span class="op">-</span><span class="dv">1</span>:</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>                    docdir_path <span class="op">=</span> f.path[:base_end]</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">break</span></span></code></pre></div>
+<p>しかし、9.0 系以降は（なぜか）<code>base</code> のようにバージョンを含まなくなりました。なので、<code>-</code> の部分を消して対応しました。</p>
+<h3 id="3-packageconfd-ディレクトリのパスが違う">3. <code>package.conf.d</code> ディレクトリのパスが違う</h3>
+<p><code>make</code> 後に <code>package.conf.d</code> までのパスを特定する必要があります（これを <code>pkgdb</code> と呼んでるっぽいです）。<code>package.conf.d</code> 配下には Cabal ファイルのようなものが置いてあります、rules_haskell では、このファイルを元に haddock ファイルなど各種組み込みパッケージの構成を解決します。macOS のこのパスが、9.0 まで <code>lib</code> だったのに対し、9.2 からは <code>lib/lib</code> に（なぜか）なっていました。なので、これまた OS とバージョンで切り替えれるように書き換えました：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>GHC_BINDIST_LIBDIR <span class="op">=</span> <span class="op">\</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;9.2.1&quot;</span>: {</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;darwin_amd64&quot;</span>: <span class="st">&quot;lib/lib&quot;</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>...</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    libdir <span class="op">=</span> <span class="st">&quot;lib&quot;</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> GHC_BINDIST_LIBDIR.get(version) <span class="op">!=</span> <span class="va">None</span> <span class="kw">and</span> GHC_BINDIST_LIBDIR[version].get(target) <span class="op">!=</span> <span class="va">None</span>:</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>        libdir <span class="op">=</span> GHC_BINDIST_LIBDIR[version][target]</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    toolchain_libraries <span class="op">=</span> pkgdb_to_bzl(ctx, filepaths, libdir)</span></code></pre></div>
+<h3 id="4-cabal-ファイルの変数が-topdir-から-pkgroot-に変わった">4. Cabal ファイルの変数が <code>$topdir</code> から <code>${pkgroot}</code> に変わった</h3>
+<p>前述した <code>package.conf.d</code> 配下の Cabal ファイルっぽいのには <code>$topdir</code> という変数が含まれていました。rules_haskell では、この変数をいい感じに置換して利用していましたが、9.0 からは <code>${pkgroot}</code> に（なぜか）変わっていました。仕方がないので、どっちでもいい感じに置換するように書き換えました：</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> path_to_label(path, pkgroot):</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Substitute one pkgroot for another relative one to obtain a label.&quot;&quot;&quot;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> path.find(<span class="st">&quot;$</span><span class="sc">{pkgroot}</span><span class="st">&quot;</span>) <span class="op">!=</span> <span class="op">-</span><span class="dv">1</span>:</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> os.path.normpath(path.strip(<span class="st">&quot;</span><span class="ch">\&quot;</span><span class="st">&quot;</span>).replace(<span class="st">&quot;$</span><span class="sc">{pkgroot}</span><span class="st">&quot;</span>, topdir)).replace(<span class="st">&#39;</span><span class="ch">\\</span><span class="st">&#39;</span>, <span class="st">&#39;/&#39;</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    topdir_relative_path <span class="op">=</span> path.replace(pkgroot, <span class="st">&quot;$topdir&quot;</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> topdir_relative_path.find(<span class="st">&quot;$topdir&quot;</span>) <span class="op">!=</span> <span class="op">-</span><span class="dv">1</span>:</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> os.path.normpath(topdir_relative_path.replace(<span class="st">&quot;$topdir&quot;</span>, topdir)).replace(<span class="st">&#39;</span><span class="ch">\\</span><span class="st">&#39;</span>, <span class="st">&#39;/&#39;</span>)</span></code></pre></div>
+<p>また、macOS の 9.2.1 では <code>make</code> を利用して内部でも置換をしている場所があります：</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode mk"><code class="sourceCode makefile"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">define</span> patchpackageconf</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>	cat <span class="st">&#39;</span><span class="ch">$2</span><span class="st">&#39;</span> | sed <span class="st">&#39;s|haddock-interfaces.*|haddock-interfaces: &quot;</span><span class="ch">$$</span><span class="st">{pkgroot}/</span><span class="ch">$4</span><span class="st">/html/libraries/</span><span class="ch">$1</span><span class="st">/</span><span class="ch">$1</span><span class="st">.haddock&quot;|&#39;</span> \</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>	         | sed <span class="st">&#39;s|haddock-html.*|haddock-html: &quot;</span><span class="ch">$$</span><span class="st">{pkgroot}/</span><span class="ch">$4</span><span class="st">/html/libraries/</span><span class="ch">$1</span><span class="st">&quot;|&#39;</span> \</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>		 | sed <span class="st">&#39;s|    </span><span class="ch">$$</span><span class="st">{pkgroot}/../../docs/html/.*||&#39;</span> \</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>	       &gt; <span class="st">&#39;</span><span class="ch">$2</span><span class="st">.copy&#39;</span></span></code></pre></div>
+<p>ここ、何故か <code>"</code> を前後に追加しているんですよね。Bazel で利用するパスにする場合、邪魔になるので <code>path.strip("\"")</code> で除去しています。</p>
+<h3 id="5-realpath-コマンドに依存している問題mac">5. <code>realpath</code> コマンドに依存している問題（Mac）</h3>
+<p>ちょうど前述した <code>patchpackageconf</code> の引数に <code>pkgroot</code> から <code>doc</code> への相対パスを <code>$4</code> として渡しています。この相対パスの解決に <code>realpath</code> コマンドを利用していたのですが、これは macOS に標準で入っていません。そのため、<code>make</code> を実行すると落ちます。</p>
+<p><a href="https://gitlab.haskell.org/ghc/ghc/-/commit/fab2579e63bb317d4c266d7b949cf96ad6e5d17b">これはすでに GHC 側で Issue があり、対応の差分が master へ取り込まれています</a>。9.2.2 でもリリースされていれば、それで解決ですが、まだ無いのでパッチを手動で当てることにしました：</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> target <span class="op">==</span> <span class="st">&quot;darwin_amd64&quot;</span>:</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>        patches <span class="op">=</span> {</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Patch for https://gitlab.haskell.org/ghc/ghc/-/issues/19963</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;9.2.1&quot;</span>: [<span class="st">&quot;@rules_haskell//haskell:assets/ghc_9_2_1_mac.patch&quot;</span>],</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>        }.get(version)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    ...</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># We apply some patches, if needed.</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    patch_args <span class="op">=</span> <span class="bu">list</span>(ctx.attr.patch_args)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> unpack_dir:</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>        patch_args.extend([<span class="st">&quot;-d&quot;</span>, unpack_dir])</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    patch(ctx, patch_args <span class="op">=</span> patch_args)</span></code></pre></div>
+<p><code>unpack_dir</code> というのが <code>GHC_BINDIST</code> の URL から落としてきたのを展開したディレクトリへのパスです。</p>
+<p><code>relpath.sh</code> はパッチだけでは実行できないので、事前に用意しておいて呼び出せるようにしておきます：</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> version <span class="op">==</span> <span class="st">&quot;9.2.1&quot;</span>:</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>            ctx.<span class="bu">file</span>(<span class="st">&quot;</span><span class="sc">{}</span><span class="st">/mk/relpath.sh&quot;</span>.<span class="bu">format</span>(unpack_dir), ctx.read(ctx.path(ctx.attr._relpath_script)), executable <span class="op">=</span> <span class="va">False</span>, legacy_utf8 <span class="op">=</span> <span class="va">False</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>            execute_or_fail_loudly(ctx, [<span class="st">&quot;chmod&quot;</span>, <span class="st">&quot;+x&quot;</span>, <span class="st">&quot;mk/relpath.sh&quot;</span>], working_directory <span class="op">=</span> unpack_dir)</span></code></pre></div>
+<h3 id="6-cabal-36-から-relocatable-フラグが機能しなくなった">6. Cabal 3.6 から <code>relocatable</code> フラグが機能しなくなった</h3>
+<p>ここはあまりよくわかってないのですが、依存パッケージ（組み込みに限らず）の <code>Path_xxx</code> モジュールをビルドしようとすると次のようなエラーで落ちます：</p>
+<pre><code>ERROR: /path/to/external/stackage/BUILD.bazel:821:22: HaskellCabalLibrary @stackage//:unliftio-core failed: (Exit 1): cabal_wrapper failed: error executing command bazel-out/host/bin/external/rules_haskell/haskell/cabal_wrapper bazel-out/darwin-fastbuild/bin/external/stackage/unliftio-core_cabal_wrapper_args.json
+
+Use --sandbox_debug to see verbose messages from the sandbox
+
+../../../bazel-out/darwin-fastbuild/bin/external/stackage/unliftio-core-0.2.0.1/unliftio-core-0.2.0.1/build/autogen/Paths_unliftio_core.hs:47:17: error:
+    Variable not in scope: splitFileName :: FilePath -&gt; (a, b0)
+   |
+47 |   let (dir,_) = splitFileName exePath
+   |                 ^^^^^^^^^^^^^
+
+../../../bazel-out/darwin-fastbuild/bin/external/stackage/unliftio-core-0.2.0.1/unliftio-core-0.2.0.1/build/autogen/Paths_unliftio_core.hs:48:16: error:
+    Variable not in scope: minusFileName :: t0 -&gt; String -&gt; String
+   |
+48 |   return ((dir `minusFileName` &quot;bin&quot;) `joinFileName` dirRel)
+   |                ^^^^^^^^^^^^^^^</code></pre>
+<p><code>Path_xxx</code> モジュールは Cabal からビルドしています。<a href="https://github.com/haskell/cabal/pull/6984">この挙動が Cabal 3.6 から変わっているっぽく</a>、以前は <code>--enable-relocatable</code> オプションを指定することで <code>splitFileName</code> 関数などを利用して relocate (?) をやっていたようです。しかし、Cabal 3.6 からは依存パッケージに対して relocate ができなくなったぽく、依存パッケージなのに <code>--enable-relocatable</code> オプションを指定すると上記のようなエラーが出るようです（わかりにくい）。</p>
+<p>仕方がないので、GHC 9.2.1 以降の場合は <code>--enable-relocatable</code> オプションを指定しないようにしました：</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>    enable_relocatable_flags <span class="op">=</span> []</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> is_windows <span class="kw">and</span> json_args[<span class="st">&quot;ghc_version&quot;</span>] <span class="op">!=</span> <span class="va">None</span> <span class="kw">and</span> json_args[<span class="st">&quot;ghc_version&quot;</span>] <span class="op">&lt;</span> [<span class="dv">9</span>,<span class="dv">2</span>,<span class="dv">1</span>]:</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>        <span class="co"># ToDo: not work relocatable from Cabal-3.6.0.0 buildin GHC 9.2.1</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>        enable_relocatable_flags <span class="op">=</span> [<span class="st">&quot;--enable-relocatable&quot;</span>]</span></code></pre></div>
+<p>理想的には Cabal のバージョンで分岐したいのですが、Cabal のバージョンを簡単に手に入れる方法が思いつかなったので GHC のバージョンでとりあえず分岐しています。</p>
+<h3 id="7-htmllibraries-へのパスが間違っているwindows">7. <code>html/libraries</code> へのパスが間違っている（Windows）</h3>
+<p>Windows は、<code>make</code> などをせず、割とそのまま展開したファイルを利用します。<code>package.conf.d</code> ディレクトリ配下の Cabal ファイル的なのに <code>${pkgroot}/../../docs</code> とあるのですが、他の OS の動作と合わせると <code>${pkgroot}/../docs</code> が正しいはずです。仕方がないので、(5) のときと同じようにパッチを当てて解決しました。</p>
+<p>また、GHC 8.10 以前は <code>html/libraries</code> へのパスが <code>doc</code> だったのに対して、Windows だけは <code>docs</code> になっています。 rules_haskell は <code>doc</code> 前提になっていたので、よしなに分岐できるようにしました：</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>GHC_BINDIST_DOCDIR <span class="op">=</span> <span class="op">\</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;9.2.1&quot;</span>: {</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;windows_amd64&quot;</span>: <span class="st">&quot;docs&quot;</span>,</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;9.0.1&quot;</span>: {</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;windows_amd64&quot;</span>: <span class="st">&quot;docs&quot;</span>,</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>  ...</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    docdir <span class="op">=</span> <span class="st">&quot;doc&quot;</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> GHC_BINDIST_DOCDIR.get(version) <span class="op">!=</span> <span class="va">None</span> <span class="kw">and</span> GHC_BINDIST_DOCDIR[version].get(target) <span class="op">!=</span> <span class="va">None</span>:</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>        docdir <span class="op">=</span> GHC_BINDIST_DOCDIR[version][target]</span></code></pre></div>
+<h2 id="おまけallow-newer-オプション">おまけ：<code>allow-newer</code> オプション</h2>
+<p>Stack には <code>allow-newer</code> オプションというめちゃくちゃ便利な機能があります。これをオンにすると、依存パッケージ間のバージョンの上限を全部無視してくれるのです（ビルドできるかは別として）。</p>
+<p>このオプションはてっきり Cabal 側にそう言うのがあり、Stack 側はそれへ橋渡しするだけなのかと思ったのですが、実は違いました。Cabal は <code>--dependency</code> オプションに全ての依存パッケージを明示することで、バージョンの上限下限のチェックをしないようです。Stack 側は、常にそれを利用し、バージョンの上限下限のチェックは自前で用意していました（<code>allow-newer</code> オプションは Stack 独自のチェックを無視するだけ）。</p>
+<p>昔は Cabal にも <code>allow-newer</code> オプションがあったっぽいですが、上記のように代替可能（無視したければ指定しろ）なので消されたようです：</p>
+<ul>
+<li><a href="https://github.com/haskell/cabal/issues/3581">RFC remove allow-older and allow-newer support from Setup.hs · Issue #3581 · haskell/cabal</a></li>
+</ul>
+<p>そのため、Bazel 側で簡単にチェックを外すのは厳しい（Stack と同じチェックの仕組みを再実装する必要がある）のでした。</p>
+<h2 id="おしまい">おしまい</h2>
+<p>1週間もかかった笑</p>]]></content>
+    </entry>
     <entry>
         <title>Haskell Morpheus GraphQL で GitHub API を試す</title>
         <link href="https://matsubara0507.github.io/posts/2021-12-09-use-morpheus-graphql-for-github.html"/>
@@ -1468,269 +1663,5 @@ unstuck quickly.
 <span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="va">+ import qualified Language.Docker.EDSL   as Docker</span></span></code></pre></div>
 <h2 id="おしまい">おしまい</h2>
 <p>早く GitHub Actions のトークンで GitHub Container Registry にプッシュできるようになって欲しい．</p>]]></content>
-    </entry>
-    <entry>
-        <title>hpack の設定から Bazel の設定を自動生成するツール Hazell を作った</title>
-        <link href="https://matsubara0507.github.io/posts/2021-02-15-create-hazell.html"/>
-        <id>https://matsubara0507.github.io/posts/2021-02-15-create-hazell.html</id>
-        <published>2021-02-15T00:00:00Z</published>
-        <updated>2021-02-15T00:00:00Z</updated>
-        <category term="Haskell"/>
-        <category term="Bazel"/>
-        <category term="application"/>
-        <content type="html"><![CDATA[<p>趣味のアプリケーションを新しく Haskell×Elm×Bazel で実装しようと考えてます． しかし，Bazel の設定は Haskell，というか <a href="https://github.com/sol/hpack">hpack</a> の設定に比べると煩雑で面倒臭いです（重複がいくつかある）． なので，hpack から Cabal ファイルを生成するように，Bazel の設定ファイルを生成できるようにすれば楽ができるなと考えて作りました．</p>
-<h2 id="完成品">完成品</h2>
-<iframe width="320" height="184" scrolling="no" frameborder="0" src="https://matsubara0507.github.io/my-github-cards/?target=matsubara0507/hazell" >
-</iframe>
-<p>まだ途中で，現状できるのは：</p>
-<ul>
-<li>hpack の設定から WORKSPACE の <code>stack_snapshot</code> ルールを置き換える</li>
-<li>hpack の設定から BUILD.bazel の <code>haskell_library</code> ルールを置き換える</li>
-</ul>
-<p>置き換えるとあるが，そもそもなければ追加する． また，すでにある WORKSPACE ファイルや BUILD.bazel に書き込むために Bazel の設定ファイルのパーサーを自作した． しかし，構文定義を読んで真面目に実装しておらず，あくまで自分のユースケースで動く程度な雑実装だ．</p>
-<h2 id="作る">作る</h2>
-<p>おおきく4ステップ</p>
-<ol>
-<li>hpack の設定から Bazel の設定を構築（Haskell のデータ型として）</li>
-<li>Bazel の設定をパースして読み込む</li>
-<li>Haskell関連のところだけ置き換える</li>
-<li>Bazel の設定を PrettyPrint する</li>
-</ol>
-<h3 id="1-hpack-の設定から-bazel-の設定を構築">1. hpack の設定から Bazel の設定を構築</h3>
-<p>まずは hpack の設定を読み込む． これは簡単で，hpack が hpack を利用したツールを作る用に，そういうパッケージを公開してくれている．</p>
-<ul>
-<li><a href="https://hackage.haskell.org/package/hpack">hpack: A modern format for Haskell packages - Hackage</a></li>
-</ul>
-<p>このパッケージの <code>readPackageConfig</code> を利用することで読み込める：</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> opts <span class="ot">=</span> Hpack.defaultDecodeOptions </span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  result <span class="ot">&lt;-</span> Hpack.readPackageConfig opts</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">case</span> result <span class="kw">of</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Left</span> e <span class="ot">-&gt;</span> </span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>      <span class="fu">fail</span> e</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Right</span> r <span class="ot">-&gt;</span> <span class="kw">do</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>      <span class="kw">let</span> package <span class="ot">=</span> Hpack.decodeResultPackage r</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>      <span class="co">-- package が Hpack.Package 型の値</span></span></code></pre></div>
-<p>例えば，<code>Hpack.packageDependencies package</code> で全ての依存パッケージのリストを参照したり，<code>Hpack.packageLibrary package</code> でライブラリの設定を参照したりできる．</p>
-<p>次に，Bazel の設定を表現する型を定義した：</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Rule</span> <span class="ot">=</span> <span class="dt">Rule</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  {<span class="ot"> ruleName ::</span> <span class="dt">String</span> <span class="co">-- http_archive とか stack_snapshot などの Bazel ルール名</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> ruleDef  ::</span> <span class="dt">String</span> <span class="co">-- load で利用する Bazel ルールの定義先</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> ruleArgs ::</span> [(<span class="dt">Maybe</span> <span class="dt">String</span>, <span class="dt">RuleArg</span>)] <span class="co">-- 1つ目の要素は `name = &quot;abc&quot;` の name</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  } <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">RuleArg</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">RuleArgString</span> <span class="dt">String</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">RuleArgBool</span> <span class="dt">Bool</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">RuleArgArray</span> [<span class="dt">RuleArg</span>]</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">RuleArgConst</span> <span class="dt">String</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">RuleArgGlob</span> <span class="dt">String</span></span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</span></code></pre></div>
-<p><code>RuleArg</code> はとりあえず今回必要になった分だけ定義した． 本当は辞書型やリストの結合式が書けたりするが，ちょっとパーサーがめんどくさいのでサボった．</p>
-<p>最後に，<code>Rule</code> 型で <code>stack_snapshot</code> ルールと <code>haskell_libarary</code> ルールを <code>Hpack.Package</code> から生成する関数を定義する：</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ot">buildStackSnapshotRule ::</span> <span class="dt">Hpack.Package</span> <span class="ot">-&gt;</span> <span class="dt">Rule</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>buildStackSnapshotRule package localSnapshot <span class="ot">=</span> <span class="dt">Rule</span> { <span class="op">..</span> }</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    ruleName <span class="ot">=</span> <span class="st">&quot;stack_snapshot&quot;</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    ruleDef <span class="ot">=</span> <span class="st">&quot;@rules_haskell//haskell:cabal.bzl&quot;</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    ruleArgs <span class="ot">=</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>      [ (<span class="dt">Just</span> <span class="st">&quot;name&quot;</span>, <span class="dt">RuleArgString</span> <span class="st">&quot;stackage&quot;</span>)</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>      , (<span class="dt">Just</span> <span class="st">&quot;packages&quot;</span>, <span class="dt">RuleArgArray</span> <span class="op">$</span> <span class="fu">map</span> <span class="dt">RuleArgString</span> dependencies)</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>      , (<span class="dt">Just</span> <span class="st">&quot;local_snapshot&quot;</span>, <span class="dt">RuleArgString</span> <span class="st">&quot;//:stack-snapshot.yaml&quot;</span>) <span class="co">-- ここの拡張性はとりあえずサボる</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>      ]</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    dependencies <span class="ot">=</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>      <span class="co">-- 自分自身はあとで生成するので省く</span></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>      <span class="fu">filter</span> (<span class="op">/=</span> Hpack.packageName package) <span class="op">$</span> <span class="fu">map</span> <span class="fu">fst</span> (Hpack.packageDependencies package)</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="ot">buildHaskellLibraryRule ::</span> <span class="dt">Hpack.Package</span> <span class="ot">-&gt;</span> <span class="dt">Rule</span></span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>buildHaskellLibraryRule package <span class="ot">=</span> <span class="dt">Rule</span> { <span class="op">..</span> }</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    ruleName <span class="ot">=</span> <span class="st">&quot;haskell_library&quot;</span></span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    ruleDef <span class="ot">=</span> <span class="st">&quot;@rules_haskell//haskell:defs.bzl&quot;</span></span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    ruleArgs <span class="ot">=</span> buildRuleArgs (Hpack.packageLibrary package)</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>    buildRuleArgs <span class="dt">Nothing</span> <span class="ot">=</span> []</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    buildRuleArgs (<span class="dt">Just</span> lib) <span class="ot">=</span></span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>      [ (<span class="dt">Just</span> <span class="st">&quot;name&quot;</span>, <span class="dt">RuleArgString</span> <span class="op">$</span> Hpack.packageName package <span class="op">&lt;&gt;</span> <span class="st">&quot;-library&quot;</span>)</span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>        <span class="co">-- `source-dirs` が複数あった場合はとりあえず無視</span></span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>      , (<span class="dt">Just</span> <span class="st">&quot;src_strip_prefix&quot;</span>, <span class="dt">RuleArgString</span> <span class="op">$</span> <span class="fu">head</span> (Hpack.sectionSourceDirs lib))</span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>      , (<span class="dt">Just</span> <span class="st">&quot;srcs&quot;</span>, <span class="dt">RuleArgGlob</span> <span class="op">$</span> <span class="fu">head</span> (Hpack.sectionSourceDirs lib) <span class="op">&lt;&gt;</span> <span class="st">&quot;/**/*.hs&quot;</span>)</span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>      , (<span class="dt">Just</span> <span class="st">&quot;deps&quot;</span>, <span class="dt">RuleArgArray</span> <span class="op">$</span> <span class="fu">map</span> <span class="dt">RuleArgString</span> (dependencies lib))</span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>      , (<span class="dt">Just</span> <span class="st">&quot;compiler_flags&quot;</span>, <span class="dt">RuleArgConst</span> <span class="st">&quot;GHC_FLAGS&quot;</span>) <span class="co">-- いったん定数でお茶を濁す</span></span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>      ]</span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>    dependencies lib <span class="ot">=</span> </span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>      <span class="fu">map</span> (<span class="st">&quot;@stackage//:&quot;</span> <span class="op">&lt;&gt;</span>) <span class="op">$</span> Map.keys (Hpack.unDependencies <span class="op">$</span> Hpack.sectionDependencies lib)</span></code></pre></div>
-<h3 id="2-bazel-の設定をパースして読み込む">2. Bazel の設定をパースして読み込む</h3>
-<p>ここが大変． ざっと探した感じ，BUILD ファイルの構文定義が見つからなかったので雰囲気でパーサーを自作する． 例えば，次のようなファイルを眺めてみると：</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Set all target’s visibility in this package to &quot;public&quot;.</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>package(default_visibility <span class="op">=</span> [<span class="st">&quot;//visibility:public&quot;</span>])</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>load(</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;//:build/common.bzl&quot;</span>,</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;GHC_FLAGS&quot;</span>,</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>load(</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;@rules_haskell//haskell:defs.bzl&quot;</span>,</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;haskell_library&quot;</span>,</span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>haskell_library(</span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> <span class="st">&quot;hazell-library&quot;</span>,</span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    src_strip_prefix <span class="op">=</span> <span class="st">&quot;src&quot;</span>,</span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    srcs <span class="op">=</span> glob([<span class="st">&quot;src/**/*.hs&quot;</span>]),</span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    deps <span class="op">=</span> [</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:base&quot;</span>,</span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:containers&quot;</span>,</span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:filepath&quot;</span>,</span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:hpack&quot;</span>,</span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:megaparsec&quot;</span>,</span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:prettyprinter&quot;</span>,</span>
-<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;@stackage//:text&quot;</span>,</span>
-<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>    ],</span>
-<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>    compiler_flags <span class="op">=</span> GHC_FLAGS,</span>
-<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
-<p>構成要素は：</p>
-<ul>
-<li>コメント</li>
-<li><code>hoge(name = "fuga")</code> という関数呼び出し（省略可能な名前付き引数）</li>
-</ul>
-<p>ぐらいだ． なので，他にも細かい記法はあるかもしれないが，いったんこれのリストとしてパースする：</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">BuildFile</span> <span class="ot">=</span> [<span class="dt">BuildContent</span>]</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">BuildContent</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">BuildRule</span> <span class="dt">Text</span> [(<span class="dt">Maybe</span> <span class="dt">String</span>, <span class="dt">RuleArg</span>)]</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">BuildComment</span> <span class="dt">Text</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">BuildNewline</span> <span class="co">-- 改行も保存したいので</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</span></code></pre></div>
-<p>パーサーを作るには megaparsec パッケージを利用する：</p>
-<ul>
-<li><a href="https://hackage.haskell.org/package/megaparsec">megaparsec: Monadic parser combinators - Hackage</a></li>
-</ul>
-<p>一つ一つ説明すると長くなるので細かくは割愛． 工夫した点として，BUILD ファイルでの関数呼び出しや配列はいわゆるケツカンマを許容している：</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># どちらもOK</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>[</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="va">True</span>,</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="va">True</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>]</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>[</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="va">True</span>,</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="va">True</span>,</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>]</span></code></pre></div>
-<p>これを <code>sepBy</code> で実現するのは難しいので専用のコンビネーターを自作した：</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ot">sepAndEndBy ::</span> <span class="dt">MonadPlus</span> m <span class="ot">=&gt;</span> m a <span class="ot">-&gt;</span> (m sep, m end) <span class="ot">-&gt;</span> m [a]</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>sepAndEndBy p (sep, end) <span class="ot">=</span> go</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    go <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>      r <span class="ot">&lt;-</span> optional p</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>      <span class="kw">case</span> r <span class="kw">of</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> end <span class="op">$&gt;</span> []</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Just</span> x <span class="ot">-&gt;</span> <span class="kw">do</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>          s <span class="ot">&lt;-</span> optional sep</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>          <span class="kw">case</span> s <span class="kw">of</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>            <span class="dt">Nothing</span> <span class="ot">-&gt;</span> end <span class="op">$&gt;</span> [x]</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>            <span class="dt">Just</span> _  <span class="ot">-&gt;</span> (x<span class="op">:</span>) <span class="op">&lt;$&gt;</span> go</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co">-- 例えば配列</span></span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="ot">buildRuleArgArrayParser ::</span> <span class="dt">Parser</span> <span class="dt">RuleArg</span></span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>buildRuleArgArrayParser <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>  char <span class="ch">&#39;[&#39;</span></span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>  space</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>  arr <span class="ot">&lt;-</span> buildRuleArgParser <span class="ot">`sepAndEndBy`</span> (comma, space <span class="op">&gt;&gt;</span> char <span class="ch">&#39;]&#39;</span>)</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pure</span> <span class="op">$</span> <span class="dt">RuleArgArray</span> arr</span></code></pre></div>
-<p>あと，工夫というか困ったところで名前付き引数があった． いろいろ考えた結果，とりあえず泥臭い方法をとった：</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ot">buildRuleParser ::</span> <span class="dt">Parser</span> <span class="dt">BuildContent</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>buildRuleParser <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  name <span class="ot">&lt;-</span> nameParser <span class="co">-- `A-Z0-9a-z_` からなる文字列</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  char <span class="ch">&#39;(&#39;</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  space</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  args <span class="ot">&lt;-</span> argParser <span class="ot">`sepAndEndBy`</span> (comma, space <span class="op">&gt;&gt;</span> char <span class="ch">&#39;)&#39;</span>)</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  optional newline</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pure</span> <span class="op">$</span> <span class="dt">BuildRule</span> (Text.pack name) args</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    argParser <span class="ot">=</span> buildRuleArgWithNameParser <span class="op">&lt;|&gt;</span> buildRuleArgWithoutNameParser</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="ot">buildRuleArgWithNameParser ::</span> <span class="dt">Parser</span> (<span class="dt">Maybe</span> <span class="dt">String</span>, <span class="dt">RuleArg</span>)</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>buildRuleArgWithNameParser <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- try を付けると失敗しても入力文字を消費しない（その代わり効率が悪くなる）</span></span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>  name <span class="ot">&lt;-</span> try <span class="op">$</span> nameParser <span class="op">&lt;*</span> space <span class="op">&lt;*</span> char <span class="ch">&#39;=&#39;</span></span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>  space</span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>  (<span class="dt">Just</span> name,) <span class="op">&lt;$&gt;</span> buildRuleArgParser</span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="ot">buildRuleArgWithoutNameParser ::</span> <span class="dt">Parser</span> (<span class="dt">Maybe</span> <span class="dt">String</span>, <span class="dt">RuleArg</span>)</span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>buildRuleArgWithoutNameParser <span class="ot">=</span> (<span class="dt">Nothing</span>,) <span class="op">&lt;$&gt;</span> buildRuleArgParser</span></code></pre></div>
-<p>ちゃんと実装するなら，いったん <code>nameParser</code> して，後ろに <code>=</code> があれば名前付き引数で無ければ変数かなんかとするみたいにすれば良いかしら．</p>
-<h3 id="3-haskell関連のところだけ置き換える">3. Haskell関連のところだけ置き換える</h3>
-<p>WORKSPACE ファイルや BUILD.bazel ファイルを読み込んで， (2) のパーサーで <code>BuildFile</code> 型の値に変換する． そのうち，<code>stack_snapshot</code> ルールや <code>haskell_libarary</code> ルールのものを検知して，(1) で生成したものに置き換える． ことを実装したのが次の関数だ：</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ot">replaceStackSnapshotRule ::</span> <span class="dt">Hpack.Package</span> <span class="ot">-&gt;</span> <span class="dt">FilePath</span> <span class="ot">-&gt;</span> <span class="dt">BuildFile</span> <span class="ot">-&gt;</span> <span class="dt">BuildFile</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>replaceStackSnapshotRule package stackSnapshotPath ws <span class="ot">=</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">if</span> <span class="fu">any</span> (<span class="ot">`isRule`</span> stackSnapshotRule) ws <span class="kw">then</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    ws <span class="op">&lt;&amp;&gt;</span> \content <span class="ot">-&gt;</span></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>      <span class="kw">if</span> content <span class="ot">`isRule`</span> stackSnapshotRule <span class="kw">then</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>        stackSnapshotContent</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>      <span class="kw">else</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>        content</span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">else</span></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    ws <span class="op">++</span> [<span class="dt">BuildNewline</span>, loadContent, <span class="dt">BuildNewline</span>, stackSnapshotContent]</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    stackSnapshotRule <span class="ot">=</span> buildStackSnapshotRule package stackSnapshotPath</span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    (loadContent, stackSnapshotContent) <span class="ot">=</span> fromRule stackSnapshotRule</span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="ot">isRule ::</span> <span class="dt">BuildContent</span> <span class="ot">-&gt;</span> <span class="dt">Rule</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span></span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>isRule (<span class="dt">BuildRule</span> name _) rule <span class="ot">=</span> name <span class="op">==</span> <span class="fu">pack</span> (ruleName rule)</span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>isRule _ _                     <span class="ot">=</span> <span class="dt">False</span></span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="ot">isStringArg ::</span> <span class="dt">RuleArg</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span></span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>isStringArg (<span class="dt">RuleArgString</span> str) str&#39; <span class="ot">=</span> str <span class="op">==</span> str&#39;</span>
-<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>isStringArg _ _                      <span class="ot">=</span> <span class="dt">False</span></span>
-<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a><span class="ot">fromRule ::</span> <span class="dt">Rule</span> <span class="ot">-&gt;</span> (<span class="dt">BuildContent</span>, <span class="dt">BuildContent</span>)</span>
-<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>fromRule rule <span class="ot">=</span></span>
-<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>  ( <span class="dt">BuildRule</span> <span class="st">&quot;load&quot;</span></span>
-<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>      [ (<span class="dt">Nothing</span>, <span class="dt">RuleArgString</span> <span class="op">$</span> ruleDef rule)</span>
-<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>      , (<span class="dt">Nothing</span>, <span class="dt">RuleArgString</span> <span class="op">$</span> ruleName rule)</span>
-<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>      ]</span>
-<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>  , <span class="dt">BuildRule</span> (<span class="fu">pack</span> <span class="op">$</span> ruleName rule) <span class="op">$</span> ruleArgs rule</span>
-<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div>
-<p>これは <code>stack_snapshot</code> ルール版． <code>haskell_library</code> ルールの場合もほとんど同じなので割愛する．</p>
-<h3 id="4-bazel-の設定を-prettyprint-する">4. Bazel の設定を PrettyPrint する</h3>
-<p>最後に，(3) の結果をいい感じに出力するために PrettyPrint する． 今回はそのために prettyprinter パッケージを利用する．</p>
-<ul>
-<li><a href="https://hackage.haskell.org/package/prettyprinter">prettyprinter: A modern, easy to use, well-documented, extensible pretty-printer - Hackage</a></li>
-</ul>
-<p>任意の型の PrettyPrint の仕方を定義するには，その型の <code>Pretty</code> 型クラスインスタンスを定義すれば良い． 今回出力したいのは <code>BuildFile</code> 型もとい <code>BuildContent</code> 型の値なので，その型の <code>Pretty</code> 型クラスインスタンスを定義する：</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Pretty</span> <span class="dt">BuildContent</span> <span class="kw">where</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  pretty (<span class="dt">BuildRule</span> name args)  <span class="ot">=</span> prettyMethodCall (Text.unpack name) (<span class="fu">map</span> prettyMethodArg args)</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  pretty (<span class="dt">BuildComment</span> comment) <span class="ot">=</span> <span class="st">&quot;#&quot;</span> <span class="op">&lt;&gt;</span> fromString (Text.unpack comment)</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  pretty <span class="dt">BuildNewline</span>           <span class="ot">=</span> <span class="st">&quot;&quot;</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Pretty</span> <span class="dt">RuleArg</span> <span class="kw">where</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  pretty (<span class="dt">RuleArgString</span> str)  <span class="ot">=</span> fromString (<span class="fu">show</span> str) <span class="co">-- show すると文字列の前後に `&quot;` が付く</span></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  pretty (<span class="dt">RuleArgBool</span> <span class="dt">True</span>)   <span class="ot">=</span> <span class="st">&quot;True&quot;</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  pretty (<span class="dt">RuleArgBool</span> <span class="dt">False</span>)  <span class="ot">=</span> <span class="st">&quot;False&quot;</span></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  pretty (<span class="dt">RuleArgConst</span> name)  <span class="ot">=</span> fromString name</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  pretty (<span class="dt">RuleArgGlob</span> path)   <span class="ot">=</span> <span class="st">&quot;glob([&quot;</span> <span class="op">&lt;&gt;</span> fromString (<span class="fu">show</span> path) <span class="op">&lt;&gt;</span> <span class="st">&quot;])&quot;</span></span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- 配列の要素数によって場合分け</span></span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  pretty (<span class="dt">RuleArgArray</span> [])    <span class="ot">=</span> <span class="st">&quot;[]&quot;</span></span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>  pretty (<span class="dt">RuleArgArray</span> [arg]) <span class="ot">=</span> <span class="st">&quot;[&quot;</span> <span class="op">&lt;&gt;</span> pretty arg <span class="op">&lt;&gt;</span> <span class="st">&quot;]&quot;</span></span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>  pretty (<span class="dt">RuleArgArray</span> args)  <span class="ot">=</span> vsep [nest <span class="dv">4</span> <span class="op">$</span> vsep (<span class="st">&quot;[&quot;</span> <span class="op">:</span> <span class="fu">map</span> ((<span class="op">&lt;&gt;</span> <span class="st">&quot;,&quot;</span>) <span class="op">.</span> pretty) args), <span class="st">&quot;]&quot;</span>]</span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="co">-- 関数呼び出しの引数の個数によって場合分け</span></span>
-<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="ot">prettyMethodCall ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> [<span class="dt">Doc</span> ann] <span class="ot">-&gt;</span> <span class="dt">Doc</span> ann</span>
-<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>prettyMethodCall name []    <span class="ot">=</span> fromString name <span class="op">&lt;&gt;</span> <span class="st">&quot;()&quot;</span></span>
-<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>prettyMethodCall name [arg] <span class="ot">=</span> fromString name <span class="op">&lt;&gt;</span> <span class="st">&quot;(&quot;</span> <span class="op">&lt;&gt;</span> arg <span class="op">&lt;&gt;</span> <span class="st">&quot;)&quot;</span></span>
-<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>prettyMethodCall name args  <span class="ot">=</span> vsep [nest <span class="dv">4</span> <span class="op">$</span> vsep (fromString name <span class="op">&lt;&gt;</span> <span class="st">&quot;(&quot;</span> <span class="op">:</span> <span class="fu">map</span> (<span class="op">&lt;&gt;</span> <span class="st">&quot;,&quot;</span>) args), <span class="st">&quot;)&quot;</span>]</span>
-<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a><span class="ot">prettyMethodArg ::</span> (<span class="dt">Maybe</span> <span class="dt">String</span>, <span class="dt">RuleArg</span>) <span class="ot">-&gt;</span> <span class="dt">Doc</span> ann</span>
-<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>prettyMethodArg (<span class="dt">Nothing</span>, val)  <span class="ot">=</span> pretty val</span>
-<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>prettyMethodArg (<span class="dt">Just</span> key, val) <span class="ot">=</span> fromString key <span class="op">&lt;+&gt;</span> <span class="st">&quot;=&quot;</span> <span class="op">&lt;+&gt;</span> pretty val</span></code></pre></div>
-<p><code>pretty</code> の構成要素は <code>Doc a</code> 型である． <code>&lt;&gt;</code> は空白無しで結合，<code>&lt;+&gt;</code> は空白有りで結合になる． <code>vsep</code> で与えた <code>Doc a</code> 型のリストを改行で結合してくれる． <code>nest 4 (vsep [...])</code> とすることで <code>vsep</code> の2要素目から4スペースでインデントしてくれる． つまり，<code>vsep [nest 4 $ vsep ["[", "True,", "True,"], "]"]</code> は次のようになる：</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>[</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="va">True</span>,</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="va">True</span>,</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>]</span></code></pre></div>
-<p>便利ですね．</p>
-<h2 id="おしまい">おしまい</h2>
-<p>思いの外，さくっとできた． それよりも作りたいアプリケーションの方を作らないと笑</p>]]></content>
     </entry>
 </feed>

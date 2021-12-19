@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Bazel でも GHC 9.2.1 でビルドがしたい" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>Bazel でも GHC 9.2.1 でビルドがしたい</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title" itemprop="name headline">Bazel でも GHC 9.2.1 でビルドがしたい</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Dec 20, 2021</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/Bazel/1">Bazel</a>
+              </div>
+              </p>
+            </header>
+
+            <div class="post-content" itemprop="articleBody">
+              <p>本記事は 「<a href="https://qiita.com/advent-calendar/2021/haskell">Haskell Advent Calendar 2021</a>」の4日目の記事です。 空いてたので埋めました。</p>
+<h1 id="section"></h1>
+<p><a href="https://bazel.build/">Bazel</a>というビルドツールがあります。Bazelでは、いわゆるライブラリのようなものを使うことで、簡単にさまざまなプログラムのビルドやテストの実行を同じインターフェースで行うことができます。例えば：</p>
+<ul>
+<li><a href="https://github.com/bazelbuild/rules_go">bazelbuild/rules_go</a> : Goプログラムのビルドやテストなど</li>
+<li><a href="https://github.com/bazelbuild/rules_docker">bazelbuild/rules_docker</a> : Dockerイメージのビルドやプッシュなど</li>
+<li><a href="https://github.com/bazelbuild/rules_nodejs">bazelbuild/rules_nodejs</a> : Nodeプログラムのビルドやテストなど</li>
+</ul>
+<p>そして、<a href="https://github.com/tweag/rules_haskell">tweag/rules_haskell</a> を使うことで、Bazel を利用して Haskell プログラムのビルドが行えます。今回は今年でた新しいバージョンの Haskell 処理系、GHC 9.2.1 を Bazel を利用してビルドする、までに頑張ったことのメモ書きです。</p>
+<p>ちなみに、頑張って修正したので、私のフォークを利用すればとりあえずビルドすることができます。</p>
+<h1 id="section-1"></h1>
+<p>例として <a href="https://github.com/matsubara0507/example-haskell-with-bazel">matsubara0507/example-haskell-with-bazel</a> というリポジトリも用意しました。CI/CD をいい感じにして、無事、直近3バージョンと各OSのビルドが通るのを確認できました：</p>
+<p><img src="/assets/fix-rules_haskell-for-ghc_9_2_1/all-green.png" /></p>
+<h2 id="rules_haskell-の振る舞い">rules_haskell の振る舞い</h2>
+<p>rules_haskell で、どの GHC に対応している（ビルドできるとは言ってない）かは <code>haskell/gen_bindist.bzl</code> の <code>GHC_BINDIST</code> 変数を見ればわかります：</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>GHC_BINDIST <span class="op">=</span> <span class="op">\</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>        ...</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;9.2.1&quot;</span>: {</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;darwin_amd64&quot;</span>: (</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;https://downloads.haskell.org/~ghc/9.2.1/ghc-9.2.1-x86_64-apple-darwin.tar.xz&quot;</span>,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;c527700a210306098ce85d2c956089deea539aefe1d1816701d5c14cf9c113b7&quot;</span>,</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>            ),</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;linux_amd64&quot;</span>: (</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;https://downloads.haskell.org/~ghc/9.2.1/ghc-9.2.1-x86_64-deb9-linux.tar.xz&quot;</span>,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;f09133ed735e9f3b221b5ed54787e5651f039ed0f7dab0ab834a27c8ca68fc9b&quot;</span>,</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>            ),</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;windows_amd64&quot;</span>: (</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;https://downloads.haskell.org/~ghc/9.2.1/ghc-9.2.1-x86_64-unknown-mingw32.tar.xz&quot;</span>,</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;649e04abd4fa35796070b35de1c353721507a49842b18663aa1c7adc6b4115d8&quot;</span>,</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>            ),</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    }</span></code></pre></div>
+<p><code>GHC_BINDIST</code> の URL から <code>ghc</code> や <code>ghc-pkg</code> などのビルド済みバイナリと標準パッケージなどが固まった <code>tar.xz</code> ファイルが手に入ります。<code>rules_haskell</code> は、これを Bazel サンドボックス用に展開して利用します。</p>
+<p>Linux と macOS の場合は <code>configure</code> と <code>make</code> を使ってバイナリファイルや haddock ファイルなど様々なファイルを、特定のディレクトリ構成で配置し直したりしているようです。Windows の場合は、<code>make</code> が動作しないためか、そのまま使っています。</p>
+<p>この <code>make</code> 時の振る舞いが 8.10・9.0・9.1 で微妙に異なるため苦労しました。</p>
+<h2 id="バージョン間の違い">バージョン間の違い</h2>
+<p>以下のような違いがあり、そのまんまビルドすることができませんでした：</p>
+<ol>
+<li>展開後のディレクトリ名が違う</li>
+<li><code>html/libraries</code> 配下のディレクトリの命名規則が違う</li>
+<li><code>package.conf.d</code> ディレクトリのパスが違う</li>
+<li>Cabal ファイルの変数が <code>$topdir</code> から <code>${pkgroot}</code> に変わった</li>
+<li><code>realpath</code> コマンドに依存している問題（Mac）</li>
+<li>Cabal 3.6 から <code>relocatable</code> フラグが機能しなくなった</li>
+<li><code>html/libraries</code> へのパスが間違っている（Windows）</li>
+</ol>
+<p>流石に GHC 側の経緯までは完璧に追えてませんが、ひたすらトライアンドエラーして直しました。 一応、<a href="https://github.com/tweag/rules_haskell/pull/1666">雑な英語で本家に PR を投げました</a>が、マージされるかはわかりません。</p>
+<h3 id="1-展開後のディレクトリ名が違う">1. 展開後のディレクトリ名が違う</h3>
+<p>今までは、どの OS であれ <code>ghc-X.Y.Z</code> のようなディレクトリ名でした。しかし、9.2.1 の Windows と Mac、9.0.1 の Windows は（なぜか）<code>ghc-9.2.1-x86_64-apple-darwin</code> のような <code>tar.xz</code> ファイル名になっていました。仕方がないので、GHC のバージョンと OS によってディレクトリ名が変わるように修正しました：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>GHC_BINDIST_STRIP_PREFIX <span class="op">=</span> <span class="op">\</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;9.2.1&quot;</span>: {</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;darwin_amd64&quot;</span>: <span class="st">&quot;ghc-9.2.1-x86_64-apple-darwin&quot;</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;windows_amd64&quot;</span>: <span class="st">&quot;ghc-9.2.1-x86_64-unknown-mingw32&quot;</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;9.0.1&quot;</span>: {</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;windows_amd64&quot;</span>: <span class="st">&quot;ghc-9.0.1-x86_64-unknown-mingw32&quot;</span>,</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>...</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    stripPrefix <span class="op">=</span> <span class="st">&quot;ghc-&quot;</span> <span class="op">+</span> version</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> GHC_BINDIST_STRIP_PREFIX.get(version) <span class="op">!=</span> <span class="va">None</span> <span class="kw">and</span> GHC_BINDIST_STRIP_PREFIX[version].get(target) <span class="op">!=</span> <span class="va">None</span>:</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>        stripPrefix <span class="op">=</span> GHC_BINDIST_STRIP_PREFIX[version][target]</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    ctx.download_and_extract(</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>        url <span class="op">=</span> url,</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>        output <span class="op">=</span> unpack_dir,</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>        sha256 <span class="op">=</span> sha256,</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>        <span class="bu">type</span> <span class="op">=</span> <span class="st">&quot;tar.xz&quot;</span>,</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>        stripPrefix <span class="op">=</span> stripPrefix,</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    )</span></code></pre></div>
+<h3 id="2-htmllibraries-配下のディレクトリの命名規則が違う">2. <code>html/libraries</code> 配下のディレクトリの命名規則が違う</h3>
+<p><code>haddock</code> を生成するためか、展開したファイル群の中から標準パッケージの生成済み haddock ファイル置き場を特定する必要があります。8.10 系までは <code>base-4.14.3.0</code> のようにバージョンがディレクトリ名に含まれていたため、次のように特定していました：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Find a file matching `html/libraries/base-*.*.*.*/*` and infer `docdir` from its path.</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>        <span class="co"># `GHC.Paths.docdir` reports paths such as `.../doc/html/libraries/base-4.13.0.0`.</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> f <span class="kw">in</span> docdir:</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>            html_start <span class="op">=</span> f.path.find(<span class="st">&quot;html/libraries/base-&quot;</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> html_start <span class="op">!=</span> <span class="op">-</span><span class="dv">1</span>:</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>                base_end <span class="op">=</span> f.path.find(<span class="st">&quot;/&quot;</span>, html_start <span class="op">+</span> <span class="bu">len</span>(<span class="st">&quot;html/libraries/base-&quot;</span>))</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> base_end <span class="op">!=</span> <span class="op">-</span><span class="dv">1</span>:</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>                    docdir_path <span class="op">=</span> f.path[:base_end]</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">break</span></span></code></pre></div>
+<p>しかし、9.0 系以降は（なぜか）<code>base</code> のようにバージョンを含まなくなりました。なので、<code>-</code> の部分を消して対応しました。</p>
+<h3 id="3-packageconfd-ディレクトリのパスが違う">3. <code>package.conf.d</code> ディレクトリのパスが違う</h3>
+<p><code>make</code> 後に <code>package.conf.d</code> までのパスを特定する必要があります（これを <code>pkgdb</code> と呼んでるっぽいです）。<code>package.conf.d</code> 配下には Cabal ファイルのようなものが置いてあります、rules_haskell では、このファイルを元に haddock ファイルなど各種組み込みパッケージの構成を解決します。macOS のこのパスが、9.0 まで <code>lib</code> だったのに対し、9.2 からは <code>lib/lib</code> に（なぜか）なっていました。なので、これまた OS とバージョンで切り替えれるように書き換えました：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>GHC_BINDIST_LIBDIR <span class="op">=</span> <span class="op">\</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;9.2.1&quot;</span>: {</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;darwin_amd64&quot;</span>: <span class="st">&quot;lib/lib&quot;</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>...</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    libdir <span class="op">=</span> <span class="st">&quot;lib&quot;</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> GHC_BINDIST_LIBDIR.get(version) <span class="op">!=</span> <span class="va">None</span> <span class="kw">and</span> GHC_BINDIST_LIBDIR[version].get(target) <span class="op">!=</span> <span class="va">None</span>:</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>        libdir <span class="op">=</span> GHC_BINDIST_LIBDIR[version][target]</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    toolchain_libraries <span class="op">=</span> pkgdb_to_bzl(ctx, filepaths, libdir)</span></code></pre></div>
+<h3 id="4-cabal-ファイルの変数が-topdir-から-pkgroot-に変わった">4. Cabal ファイルの変数が <code>$topdir</code> から <code>${pkgroot}</code> に変わった</h3>
+<p>前述した <code>package.conf.d</code> 配下の Cabal ファイルっぽいのには <code>$topdir</code> という変数が含まれていました。rules_haskell では、この変数をいい感じに置換して利用していましたが、9.0 からは <code>${pkgroot}</code> に（なぜか）変わっていました。仕方がないので、どっちでもいい感じに置換するように書き換えました：</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> path_to_label(path, pkgroot):</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Substitute one pkgroot for another relative one to obtain a label.&quot;&quot;&quot;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> path.find(<span class="st">&quot;$</span><span class="sc">{pkgroot}</span><span class="st">&quot;</span>) <span class="op">!=</span> <span class="op">-</span><span class="dv">1</span>:</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> os.path.normpath(path.strip(<span class="st">&quot;</span><span class="ch">\&quot;</span><span class="st">&quot;</span>).replace(<span class="st">&quot;$</span><span class="sc">{pkgroot}</span><span class="st">&quot;</span>, topdir)).replace(<span class="st">&#39;</span><span class="ch">\\</span><span class="st">&#39;</span>, <span class="st">&#39;/&#39;</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    topdir_relative_path <span class="op">=</span> path.replace(pkgroot, <span class="st">&quot;$topdir&quot;</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> topdir_relative_path.find(<span class="st">&quot;$topdir&quot;</span>) <span class="op">!=</span> <span class="op">-</span><span class="dv">1</span>:</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> os.path.normpath(topdir_relative_path.replace(<span class="st">&quot;$topdir&quot;</span>, topdir)).replace(<span class="st">&#39;</span><span class="ch">\\</span><span class="st">&#39;</span>, <span class="st">&#39;/&#39;</span>)</span></code></pre></div>
+<p>また、macOS の 9.2.1 では <code>make</code> を利用して内部でも置換をしている場所があります：</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode mk"><code class="sourceCode makefile"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">define</span> patchpackageconf</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>	cat <span class="st">&#39;</span><span class="ch">$2</span><span class="st">&#39;</span> | sed <span class="st">&#39;s|haddock-interfaces.*|haddock-interfaces: &quot;</span><span class="ch">$$</span><span class="st">{pkgroot}/</span><span class="ch">$4</span><span class="st">/html/libraries/</span><span class="ch">$1</span><span class="st">/</span><span class="ch">$1</span><span class="st">.haddock&quot;|&#39;</span> \</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>	         | sed <span class="st">&#39;s|haddock-html.*|haddock-html: &quot;</span><span class="ch">$$</span><span class="st">{pkgroot}/</span><span class="ch">$4</span><span class="st">/html/libraries/</span><span class="ch">$1</span><span class="st">&quot;|&#39;</span> \</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>		 | sed <span class="st">&#39;s|    </span><span class="ch">$$</span><span class="st">{pkgroot}/../../docs/html/.*||&#39;</span> \</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>	       &gt; <span class="st">&#39;</span><span class="ch">$2</span><span class="st">.copy&#39;</span></span></code></pre></div>
+<p>ここ、何故か <code>"</code> を前後に追加しているんですよね。Bazel で利用するパスにする場合、邪魔になるので <code>path.strip("\"")</code> で除去しています。</p>
+<h3 id="5-realpath-コマンドに依存している問題mac">5. <code>realpath</code> コマンドに依存している問題（Mac）</h3>
+<p>ちょうど前述した <code>patchpackageconf</code> の引数に <code>pkgroot</code> から <code>doc</code> への相対パスを <code>$4</code> として渡しています。この相対パスの解決に <code>realpath</code> コマンドを利用していたのですが、これは macOS に標準で入っていません。そのため、<code>make</code> を実行すると落ちます。</p>
+<p><a href="https://gitlab.haskell.org/ghc/ghc/-/commit/fab2579e63bb317d4c266d7b949cf96ad6e5d17b">これはすでに GHC 側で Issue があり、対応の差分が master へ取り込まれています</a>。9.2.2 でもリリースされていれば、それで解決ですが、まだ無いのでパッチを手動で当てることにしました：</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> target <span class="op">==</span> <span class="st">&quot;darwin_amd64&quot;</span>:</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>        patches <span class="op">=</span> {</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Patch for https://gitlab.haskell.org/ghc/ghc/-/issues/19963</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;9.2.1&quot;</span>: [<span class="st">&quot;@rules_haskell//haskell:assets/ghc_9_2_1_mac.patch&quot;</span>],</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>        }.get(version)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    ...</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># We apply some patches, if needed.</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    patch_args <span class="op">=</span> <span class="bu">list</span>(ctx.attr.patch_args)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> unpack_dir:</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>        patch_args.extend([<span class="st">&quot;-d&quot;</span>, unpack_dir])</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    patch(ctx, patch_args <span class="op">=</span> patch_args)</span></code></pre></div>
+<p><code>unpack_dir</code> というのが <code>GHC_BINDIST</code> の URL から落としてきたのを展開したディレクトリへのパスです。</p>
+<p><code>relpath.sh</code> はパッチだけでは実行できないので、事前に用意しておいて呼び出せるようにしておきます：</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> version <span class="op">==</span> <span class="st">&quot;9.2.1&quot;</span>:</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>            ctx.<span class="bu">file</span>(<span class="st">&quot;</span><span class="sc">{}</span><span class="st">/mk/relpath.sh&quot;</span>.<span class="bu">format</span>(unpack_dir), ctx.read(ctx.path(ctx.attr._relpath_script)), executable <span class="op">=</span> <span class="va">False</span>, legacy_utf8 <span class="op">=</span> <span class="va">False</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>            execute_or_fail_loudly(ctx, [<span class="st">&quot;chmod&quot;</span>, <span class="st">&quot;+x&quot;</span>, <span class="st">&quot;mk/relpath.sh&quot;</span>], working_directory <span class="op">=</span> unpack_dir)</span></code></pre></div>
+<h3 id="6-cabal-36-から-relocatable-フラグが機能しなくなった">6. Cabal 3.6 から <code>relocatable</code> フラグが機能しなくなった</h3>
+<p>ここはあまりよくわかってないのですが、依存パッケージ（組み込みに限らず）の <code>Path_xxx</code> モジュールをビルドしようとすると次のようなエラーで落ちます：</p>
+<pre><code>ERROR: /path/to/external/stackage/BUILD.bazel:821:22: HaskellCabalLibrary @stackage//:unliftio-core failed: (Exit 1): cabal_wrapper failed: error executing command bazel-out/host/bin/external/rules_haskell/haskell/cabal_wrapper bazel-out/darwin-fastbuild/bin/external/stackage/unliftio-core_cabal_wrapper_args.json
+
+Use --sandbox_debug to see verbose messages from the sandbox
+
+../../../bazel-out/darwin-fastbuild/bin/external/stackage/unliftio-core-0.2.0.1/unliftio-core-0.2.0.1/build/autogen/Paths_unliftio_core.hs:47:17: error:
+    Variable not in scope: splitFileName :: FilePath -&gt; (a, b0)
+   |
+47 |   let (dir,_) = splitFileName exePath
+   |                 ^^^^^^^^^^^^^
+
+../../../bazel-out/darwin-fastbuild/bin/external/stackage/unliftio-core-0.2.0.1/unliftio-core-0.2.0.1/build/autogen/Paths_unliftio_core.hs:48:16: error:
+    Variable not in scope: minusFileName :: t0 -&gt; String -&gt; String
+   |
+48 |   return ((dir `minusFileName` &quot;bin&quot;) `joinFileName` dirRel)
+   |                ^^^^^^^^^^^^^^^</code></pre>
+<p><code>Path_xxx</code> モジュールは Cabal からビルドしています。<a href="https://github.com/haskell/cabal/pull/6984">この挙動が Cabal 3.6 から変わっているっぽく</a>、以前は <code>--enable-relocatable</code> オプションを指定することで <code>splitFileName</code> 関数などを利用して relocate (?) をやっていたようです。しかし、Cabal 3.6 からは依存パッケージに対して relocate ができなくなったぽく、依存パッケージなのに <code>--enable-relocatable</code> オプションを指定すると上記のようなエラーが出るようです（わかりにくい）。</p>
+<p>仕方がないので、GHC 9.2.1 以降の場合は <code>--enable-relocatable</code> オプションを指定しないようにしました：</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>    enable_relocatable_flags <span class="op">=</span> []</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> is_windows <span class="kw">and</span> json_args[<span class="st">&quot;ghc_version&quot;</span>] <span class="op">!=</span> <span class="va">None</span> <span class="kw">and</span> json_args[<span class="st">&quot;ghc_version&quot;</span>] <span class="op">&lt;</span> [<span class="dv">9</span>,<span class="dv">2</span>,<span class="dv">1</span>]:</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>        <span class="co"># ToDo: not work relocatable from Cabal-3.6.0.0 buildin GHC 9.2.1</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>        enable_relocatable_flags <span class="op">=</span> [<span class="st">&quot;--enable-relocatable&quot;</span>]</span></code></pre></div>
+<p>理想的には Cabal のバージョンで分岐したいのですが、Cabal のバージョンを簡単に手に入れる方法が思いつかなったので GHC のバージョンでとりあえず分岐しています。</p>
+<h3 id="7-htmllibraries-へのパスが間違っているwindows">7. <code>html/libraries</code> へのパスが間違っている（Windows）</h3>
+<p>Windows は、<code>make</code> などをせず、割とそのまま展開したファイルを利用します。<code>package.conf.d</code> ディレクトリ配下の Cabal ファイル的なのに <code>${pkgroot}/../../docs</code> とあるのですが、他の OS の動作と合わせると <code>${pkgroot}/../docs</code> が正しいはずです。仕方がないので、(5) のときと同じようにパッチを当てて解決しました。</p>
+<p>また、GHC 8.10 以前は <code>html/libraries</code> へのパスが <code>doc</code> だったのに対して、Windows だけは <code>docs</code> になっています。 rules_haskell は <code>doc</code> 前提になっていたので、よしなに分岐できるようにしました：</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>GHC_BINDIST_DOCDIR <span class="op">=</span> <span class="op">\</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;9.2.1&quot;</span>: {</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;windows_amd64&quot;</span>: <span class="st">&quot;docs&quot;</span>,</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;9.0.1&quot;</span>: {</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;windows_amd64&quot;</span>: <span class="st">&quot;docs&quot;</span>,</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>  ...</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    docdir <span class="op">=</span> <span class="st">&quot;doc&quot;</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> GHC_BINDIST_DOCDIR.get(version) <span class="op">!=</span> <span class="va">None</span> <span class="kw">and</span> GHC_BINDIST_DOCDIR[version].get(target) <span class="op">!=</span> <span class="va">None</span>:</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>        docdir <span class="op">=</span> GHC_BINDIST_DOCDIR[version][target]</span></code></pre></div>
+<h2 id="おまけallow-newer-オプション">おまけ：<code>allow-newer</code> オプション</h2>
+<p>Stack には <code>allow-newer</code> オプションというめちゃくちゃ便利な機能があります。これをオンにすると、依存パッケージ間のバージョンの上限を全部無視してくれるのです（ビルドできるかは別として）。</p>
+<p>このオプションはてっきり Cabal 側にそう言うのがあり、Stack 側はそれへ橋渡しするだけなのかと思ったのですが、実は違いました。Cabal は <code>--dependency</code> オプションに全ての依存パッケージを明示することで、バージョンの上限下限のチェックをしないようです。Stack 側は、常にそれを利用し、バージョンの上限下限のチェックは自前で用意していました（<code>allow-newer</code> オプションは Stack 独自のチェックを無視するだけ）。</p>
+<p>昔は Cabal にも <code>allow-newer</code> オプションがあったっぽいですが、上記のように代替可能（無視したければ指定しろ）なので消されたようです：</p>
+<ul>
+<li><a href="https://github.com/haskell/cabal/issues/3581">RFC remove allow-older and allow-newer support from Setup.hs · Issue #3581 · haskell/cabal</a></li>
+</ul>
+<p>そのため、Bazel 側で簡単にチェックを外すのは厳しい（Stack と同じチェックの仕組みを再実装する必要がある）のでした。</p>
+<h2 id="おしまい">おしまい</h2>
+<p>1週間もかかった笑</p>
+            </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>

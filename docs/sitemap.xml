@@ -786,4 +786,10 @@
     <lastmod>2021-12-09</lastmod>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://matsubara0507.github.io/posts/2021-12-20-fix-rules_haskell-for-ghc_9_2_1.html</loc>
+    <changefreq>never</changefreq>
+    <lastmod>2021-12-20</lastmod>
+    <priority>0.8</priority>
+  </url>
 </urlset>
