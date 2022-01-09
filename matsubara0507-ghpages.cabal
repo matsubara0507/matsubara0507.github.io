@@ -23,14 +23,46 @@ source-repository head
   type: git
   location: https://github.com/matsubara0507/matsubara0507.github.io
 
-executable build-site
+executable serve
+  main-is: Main.hs
+  other-modules:
+      Paths_matsubara0507_ghpages
+  hs-source-dirs:
+      app/serve
+  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , binary
+    , bytestring
+    , constraints
+    , containers
+    , extensible
+    , megaparsec
+    , microlens
+    , modern-uri
+    , mustache
+    , req
+    , scalpel-core
+    , scotty
+    , shake
+    , skylighting
+    , slick
+    , tagsoup
+    , text
+    , time
+    , unordered-containers
+    , wai-middleware-static
+  default-language: Haskell2010
+
+executable site
   main-is: Main.hs
   other-modules:
       Orphan
       Utils
       Paths_matsubara0507_ghpages
   hs-source-dirs:
-      app
+      app/site
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints
   build-depends:
       aeson
@@ -65,7 +97,7 @@ test-suite spec
       Spec.Utils
       Paths_matsubara0507_ghpages
   hs-source-dirs:
-      app
+      app/site
       test/spec
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints
   build-depends:
