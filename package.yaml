@@ -43,3 +43,13 @@ executables:
   build-site:
     main: Main.hs
     source-dirs: app
+
+tests:
+  spec:
+    main: Spec.hs
+    source-dirs: 
+    - app
+    - test/spec
+    dependencies:
+    - tasty
+    - tasty-hspec
