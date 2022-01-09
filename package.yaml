@@ -21,14 +21,20 @@ dependencies:
 - aeson
 - base >= 4.7 && < 5
 - binary
+- bytestring
 - constraints
 - containers
 - extensible
+- megaparsec
 - microlens
+- modern-uri
 - mustache
+- req
+- scalpel-core
 - shake
 - skylighting
 - slick
+- tagsoup
 - text
 - time
 - unordered-containers
