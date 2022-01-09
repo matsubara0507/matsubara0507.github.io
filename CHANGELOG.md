@@ -1,5 +1,8 @@
 # Change Log for My Site
 
+- Feat: replace `og:image` tag
+- Feat: `serve` command by scotty
+
 # 1.0.0
 
 - Slick に移行
