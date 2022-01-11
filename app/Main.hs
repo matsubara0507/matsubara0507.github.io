@@ -24,6 +24,7 @@ import           Lens.Micro
 import           Skylighting                (pygments, styleToCss)
 import           Slick
 import           Text.Mustache              (Template, ToMustache)
+import           Utils
 
 import qualified Data.HashMap.Lazy          as HML
 import qualified Data.List                  as L
@@ -113,13 +114,16 @@ buildPosts = do
 
 buildPost :: FilePath -> Action Post
 buildPost srcPath = cacheAction ("build" :: T.Text, srcPath) $ do
-  postContent <- readFile' srcPath
+  postContent <- replaceLinkToOGImage =<< readFile' srcPath
   postData    <- markdownToHTML' @(Record FrontMatterParams) (T.pack postContent)
   let postUrl   = dropDirectory1 (takeDirectory srcPath <> "-" <> takeFileName srcPath -<.> "html")
       postData' = happend siteMeta $ #url @= postUrl <: #date @= formatToHumanDate srcPath <: postData
   template <- compileTemplate' "site/templates/post.html"
   writeFile' (outputFolder </> postUrl) $ T.unpack (substitute template postData')
   convert postData'
+
+-- readFile'' :: Partial => FilePath -> Action String
+-- readFile'' x = need [x] >> liftIO (replaceLinkToOGImage =<< readFile x)
 
 -- expect: path/to/YYYY/MM-DD-filename.md
 formatToHumanDate :: FilePath -> String

@@ -21,14 +21,20 @@ dependencies:
 - aeson
 - base >= 4.7 && < 5
 - binary
+- bytestring
 - constraints
 - containers
 - extensible
+- megaparsec
 - microlens
+- modern-uri
 - mustache
+- req
+- scalpel-core
 - shake
 - skylighting
 - slick
+- tagsoup
 - text
 - time
 - unordered-containers
@@ -37,3 +43,13 @@ executables:
   build-site:
     main: Main.hs
     source-dirs: app
+
+tests:
+  spec:
+    main: Spec.hs
+    source-dirs: 
+    - app
+    - test/spec
+    dependencies:
+    - tasty
+    - tasty-hspec

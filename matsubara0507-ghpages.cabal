@@ -27,6 +27,7 @@ executable build-site
   main-is: Main.hs
   other-modules:
       Orphan
+      Utils
       Paths_matsubara0507_ghpages
   hs-source-dirs:
       app
@@ -35,14 +36,58 @@ executable build-site
       aeson
     , base >=4.7 && <5
     , binary
+    , bytestring
     , constraints
     , containers
     , extensible
+    , megaparsec
     , microlens
+    , modern-uri
     , mustache
+    , req
+    , scalpel-core
     , shake
     , skylighting
     , slick
+    , tagsoup
+    , text
+    , time
+    , unordered-containers
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Main
+      Orphan
+      Utils
+      Spec.Utils
+      Paths_matsubara0507_ghpages
+  hs-source-dirs:
+      app
+      test/spec
+  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , binary
+    , bytestring
+    , constraints
+    , containers
+    , extensible
+    , megaparsec
+    , microlens
+    , modern-uri
+    , mustache
+    , req
+    , scalpel-core
+    , shake
+    , skylighting
+    , slick
+    , tagsoup
+    , tasty
+    , tasty-hspec
     , text
     , time
     , unordered-containers
