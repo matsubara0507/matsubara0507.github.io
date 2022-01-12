@@ -40,15 +40,22 @@ dependencies:
 - unordered-containers
 
 executables:
-  build-site:
+  site:
     main: Main.hs
-    source-dirs: app
+    source-dirs: app/site
+
+  serve:
+    main: Main.hs
+    source-dirs: app/serve
+    dependencies:
+    - scotty
+    - wai-middleware-static
 
 tests:
   spec:
     main: Spec.hs
     source-dirs: 
-    - app
+    - app/site
     - test/spec
     dependencies:
     - tasty
