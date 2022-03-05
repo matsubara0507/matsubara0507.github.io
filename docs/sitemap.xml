@@ -798,4 +798,10 @@
     <lastmod>2022-01-12</lastmod>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://matsubara0507.github.io/posts/2022-03-05-haskell-servant-and-websocket.html</loc>
+    <changefreq>never</changefreq>
+    <lastmod>2022-03-05</lastmod>
+    <priority>0.8</priority>
+  </url>
 </urlset>

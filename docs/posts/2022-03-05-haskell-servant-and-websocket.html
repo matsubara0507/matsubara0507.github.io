@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Haskell Servant + WebSocket で非同期ジョブを作る" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>Haskell Servant + WebSocket で非同期ジョブを作る</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title" itemprop="name headline">Haskell Servant + WebSocket で非同期ジョブを作る</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Mar  5, 2022</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Haskell/1">Haskell</a>
+              </div>
+              </p>
+            </header>
+
+            <div class="post-content" itemprop="articleBody">
+              <p>とある理由で、Ruby の Resque や Sidekiq のような非同期ジョブを行うホビープログラムを Haskell で自作したくなったので、そのメモ書きです。 リポジトリはこちら：</p>
+<p><a href="https://github.com/matsubara0507/jobworker.hs"><img src="https://opengraph.githubassets.com/584d409570373d2ec32d867717940ee899f8cf2a62fd67759ea9ed14d377d276/matsubara0507/jobworker.hs" style="max-width: 500px;" /></a></p>
+<h2 id="非同期ジョブプログラム">非同期ジョブプログラム</h2>
+<p>雰囲気として、非同期ジョブの状態確認や実行を HTTP リクエストで受け取るサーバーを一つと、実際にジョブを処理するクライアントを複数用意します。 そして、サーバーとクライアントは WebSocket で繋がるイメージです。 ジョブの設定はサーバーが適当に YAML で読み込んで、クライアントへ渡します。 とりあえず、ジョブはただ単に <code>docker run</code> だけすることをゴールにします。</p>
+<h3 id="servant-による-web-api">Servant による Web API</h3>
+<p>まずは、簡単な Web API をサーバー側に定義しておきます。 サーバーと接続したクライアントを返すだけです。 そのためにサーバーと接続したクライアントを表す型を定義しておきます。</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">JobWorker.Worker</span> <span class="kw">where</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.Aeson</span> (<span class="dt">FromJSON</span>, <span class="dt">ToJSON</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">GHC.Generics</span> (<span class="dt">Generic</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">Id</span> <span class="ot">=</span> <span class="dt">Id</span> <span class="dt">Int32</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>　  <span class="kw">deriving</span> <span class="kw">newtype</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>, <span class="dt">Ord</span>, <span class="dt">Num</span>, <span class="dt">FromJSON</span>, <span class="dt">ToJSON</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Worker</span> <span class="ot">=</span> <span class="dt">Worker</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    {<span class="ot"> id ::</span> <span class="dt">Id</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    ,<span class="ot"> working ::</span> <span class="dt">Bool</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    } <span class="kw">deriving</span> (<span class="dt">Generic</span>, <span class="dt">Show</span>, <span class="dt">Eq</span>)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">ToJSON</span> <span class="dt">Worker</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">FromJSON</span> <span class="dt">Worker</span></span></code></pre></div>
+<p>GHC 9.2 のレコードドット記法を利用するので <code>id</code> というフィールド名をつけちゃいます（GHC 9.2 最高）。 <code>Worker</code> 型の値は雑に <a href="https://hackage.haskell.org/package/stm">STM</a> を利用して状態管理することにします。</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">JobWorker.DB</span> <span class="kw">where</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Control.Concurrent.STM</span> <span class="kw">qualified</span> <span class="kw">as</span> <span class="dt">STM</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">DB</span> <span class="ot">=</span> <span class="dt">DB</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    {<span class="ot"> workers ::</span> <span class="dt">STM.TVar</span> (<span class="dt">Map</span> <span class="dt">Worker.Id</span> (<span class="dt">Maybe</span> <span class="dt">Worker</span>))</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="ot">new ::</span> <span class="dt">IO</span> <span class="dt">DB</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>new <span class="ot">=</span> <span class="dt">DB</span> <span class="op">&lt;$&gt;</span> STM.newTVarIO <span class="fu">mempty</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="ot">getAllWorker ::</span> <span class="dt">DB</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> [<span class="dt">Worker</span>]</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>getAllWorker db <span class="ot">=</span> </span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    catMaybes <span class="op">.</span> Map.elems <span class="op">&lt;$&gt;</span> STM.readTVarIO db<span class="op">.</span>workers</span></code></pre></div>
+<p><code>Maybe Worker</code> 型を利用しているのは、確保した ID が被らないようにクライアントのコネクションが切れたら <code>Nothing</code> で置き換えるためです。 WebSocket のコネクションを取得して、<code>DB</code> 型に <code>Worker</code> 型の値を保存する部分は後述します。</p>
+<p>そして、Web API の定義には <a href="https://docs.servant.dev/">Servant</a> を使います。</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">JobWorker.Server</span> <span class="kw">where</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">JobWorker.DB</span> <span class="kw">qualified</span> <span class="kw">as</span> <span class="dt">DB</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Servant</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">API</span> <span class="ot">=</span> <span class="st">&quot;api&quot;</span> <span class="op">:&gt;</span> <span class="dt">WebAPI</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="ot">api ::</span> <span class="dt">Proxy</span> <span class="dt">API</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>api <span class="ot">=</span> <span class="dt">Proxy</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">WebAPI</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> <span class="st">&quot;workers&quot;</span> <span class="op">:&gt;</span> <span class="dt">Get</span> &#39;[<span class="dt">JSON</span>] [<span class="dt">Worker</span>]</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="ot">server ::</span> <span class="dt">DB</span> <span class="ot">-&gt;</span> <span class="dt">Server</span> <span class="dt">API</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>server db </span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> liftIO (DB.getAllWorker db)</span></code></pre></div>
+<p>あとは適当に <code>main</code> を書いて起動し、<code>curl</code> を使ってリクエストを投げてみます。</p>
+<pre><code>$ curl -s localhost:8080/api/workers | jq
+[]</code></pre>
+<h3 id="server-client-を-websocket-で繋ぐ">Server-Client を WebSocket で繋ぐ</h3>
+<p>Haskell で WebSocket を利用する簡単な方法は <a href="https://hackage.haskell.org/package/websockets-0.12.7.3">websockets パッケージ</a>を使うことです。 まずは <code>Worker</code> 型を拡張してコネクションを持たせます。</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">JobWorker.Worker</span> <span class="kw">where</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Network.WebSockets</span> <span class="kw">qualified</span> <span class="kw">as</span> <span class="dt">WS</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Worker</span> <span class="ot">=</span> <span class="dt">Worker</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    {<span class="ot"> id ::</span> <span class="dt">Id</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    ,<span class="ot"> conn ::</span> <span class="dt">WS.Connection</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    ,<span class="ot"> working ::</span> <span class="dt">Bool</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="ot">new ::</span> <span class="dt">Id</span> <span class="ot">-&gt;</span> <span class="dt">WS.Connection</span> <span class="ot">-&gt;</span> <span class="dt">Worker</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>new wid conn <span class="ot">=</span> <span class="dt">Worker</span> wid conn <span class="dt">False</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Info</span> <span class="ot">=</span> <span class="dt">Info</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    {<span class="ot"> id ::</span> <span class="dt">Id</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    ,<span class="ot"> working ::</span> <span class="dt">Bool</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    } <span class="kw">deriving</span> (<span class="dt">Generic</span>, <span class="dt">Show</span>, <span class="dt">Eq</span>)</span></code></pre></div>
+<p><code>WS.Connection</code> 型は、さすがに JSON へエンコードできないので、Web API で返す用の型として <code>Worker.Info</code> 型を用意しました。 次に WebSocket サーバー側を定義します。 WebSocket のルーティングを Servant に乗せる簡単な方法は <a href="https://hackage.haskell.org/package/servant-websockets">servant-websockets パッケージ</a>を使うことです：</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">JobWorker.Server</span> <span class="kw">where</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Control.Concurrent</span> (threadDelay)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Control.Exception</span> (finally)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Control.Monad</span> (forever)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Network.WebSockets</span> <span class="kw">qualified</span> <span class="kw">as</span> <span class="dt">WS</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">API</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> <span class="st">&quot;api&quot;</span> <span class="op">:&gt;</span> <span class="dt">JobAPI</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a> <span class="op">:&lt;|&gt;</span> <span class="st">&quot;runner&quot;</span> <span class="op">:&gt;</span> <span class="dt">WS.WebSocket</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="ot">server ::</span> <span class="dt">DB</span> <span class="ot">-&gt;</span> <span class="dt">Server</span> <span class="dt">API</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>server db</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> liftIO (DB.getAllWorker db)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a> <span class="op">:&lt;|&gt;</span> (liftIO <span class="op">.</span> serveRunner config db)</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="ot">serveWorker ::</span> <span class="dt">DB</span> <span class="ot">-&gt;</span> <span class="dt">WS.Connection</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>serveWorker db conn <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    worker <span class="ot">&lt;-</span> DB.connectedWorker db conn</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    forever (threadDelay 1_000_000) <span class="ot">`finally`</span> DB.disconnectedWorker db worker<span class="op">.</span><span class="fu">id</span></span></code></pre></div>
+<p>まだメッセージのやりとりはせず、ただ <code>db</code> にコネクションを保存して、<code>threadDelay</code> でひたすら待ってるだけです。 <code>connectedWorker</code> が STM に <code>Worker</code> 型の値を保存する関数で、<code>disconnectedWorker</code> が接続が切れたとして <code>Nothing</code> を保存する関数です：</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">JobWorker.DB</span> <span class="kw">where</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="ot">connectedWorker ::</span> <span class="dt">DB</span> <span class="ot">-&gt;</span> <span class="dt">WS.Connection</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Worker</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>connectedWorker db conn <span class="ot">=</span> STM.atomically <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    maxId <span class="ot">&lt;-</span> Map.size <span class="op">&lt;$&gt;</span> STM.readTVar db<span class="op">.</span>workers</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> worker <span class="ot">=</span> Worker.new (<span class="fu">fromIntegral</span> <span class="op">$</span> maxId <span class="op">+</span> <span class="dv">1</span>) conn</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    STM.modifyTVar db<span class="op">.</span>workers (Map.insert worker<span class="op">.</span><span class="fu">id</span> <span class="op">$</span> <span class="dt">Just</span> worker)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pure</span> worker</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="ot">disconnectedWorker ::</span> <span class="dt">DB</span> <span class="ot">-&gt;</span> <span class="dt">Worker.Id</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>disconnectedWorker db wid <span class="ot">=</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    STM.atomically <span class="op">$</span> STM.modifyTVar db<span class="op">.</span>workers (Map.update (\_ <span class="ot">-&gt;</span> <span class="dt">Just</span> <span class="dt">Nothing</span>) wid)</span></code></pre></div>
+<p>あとはクライアント側を定義します。 websockets パッケージにはクライアント側の関数や型もあります：</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">JobWorker.Client</span> <span class="kw">where</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Network.WebSockets</span> <span class="kw">qualified</span> <span class="kw">as</span> <span class="dt">WS</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Client</span> <span class="ot">=</span> <span class="dt">Client</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  {<span class="ot"> host ::</span> <span class="dt">String</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> port ::</span> <span class="dt">Int</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> path ::</span> <span class="dt">String</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="co">-- &#39;localhost:8080/hoge/fuga&#39; を適当にパースする</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="ot">new ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Client</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>new dest <span class="ot">=</span> <span class="op">...</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="ot">run ::</span> <span class="dt">Client</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>run client <span class="ot">=</span> WS.runClient client<span class="op">.</span>host client<span class="op">.</span>port client<span class="op">.</span>path <span class="op">$</span> \conn <span class="ot">-&gt;</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    WS.withPingThread conn <span class="dv">15</span> (<span class="fu">pure</span> ()) <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>        forever (threadDelay 1_000_000)</span></code></pre></div>
+<p><code>withPingThread</code> によって第一引数で与えたコネクションに対し、第二引数で与えた秒毎で Ping を別スレッドで送り続けます。 WebSocket サーバーは一定時間やり取りがない場合にタイムアウトする可能性があり、多くの場合はタイムアウトが60秒なので半分の30秒にして動作させておくと良いと Hackage には書いてあります。 Haskell の Warp の場合（<code>Warp.run</code>）は<a href="https://hackage.haskell.org/package/warp-3.3.19/docs/src/Network.Wai.Handler.Warp.Settings.html#defaultSettings">デフォルトだと30秒でタイムアウトするようになっている</a>ので、半分の15秒にしてみました（サーバー側をいじっても良い）。</p>
+<p>これらを適当に Docker イメージ化して、docker-compose で起動した後に curl すると無事クライアントが接続されました：</p>
+<pre><code>$ curl -s localhost:8080/api/workers | jq
+[
+  {
+    &quot;id&quot;: 1,
+    &quot;working&quot;: false
+  },
+  {
+    &quot;id&quot;: 2,
+    &quot;working&quot;: false
+  },
+  {
+    &quot;id&quot;: 3,
+    &quot;working&quot;: false
+  }
+]</code></pre>
+<h3 id="websocket上のプロトコルを定義">WebSocket上のプロトコルを定義</h3>
+<p>サーバー・クライアント間でやり取りするためのプロトコルっぽいものを定義します。 websockets パッケージの場合は <code>WebSocketsData</code> 型クラスというのがあります。 これを使うことで WebSockets 上でやりとりする <code>ByteString</code> 型と任意の型への相互変換を定義できます。 例えば、サーバーからクライアントへ送るデータ型を次のように定義しました：</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">JobWorker.Protocol</span> <span class="kw">where</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.Aeson</span> <span class="kw">qualified</span> <span class="kw">as</span> <span class="dt">JSON</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.Binary</span> <span class="kw">qualified</span> <span class="kw">as</span> <span class="dt">Binary</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.ByteString.Lazy</span> <span class="kw">qualified</span> <span class="kw">as</span> <span class="dt">LBS</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">JobWorker.Job</span> <span class="kw">qualified</span> <span class="kw">as</span> <span class="dt">Job</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Network.WebSockets</span> <span class="kw">qualified</span> <span class="kw">as</span> <span class="dt">WS</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Server</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">JobConfigs</span> [<span class="dt">Job.Config</span>]</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">Enqueue</span> <span class="dt">Job.Id</span> <span class="dt">Job.Name</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">SUndefined</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">WS.WebSocketsData</span> <span class="dt">Server</span> <span class="kw">where</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>  fromDataMessage (<span class="dt">WS.Text</span>   bl _) <span class="ot">=</span> WS.fromLazyByteString bl</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>  fromDataMessage (<span class="dt">WS.Binary</span> bl)   <span class="ot">=</span> WS.fromLazyByteString bl</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>  fromLazyByteString lbs <span class="ot">=</span> <span class="kw">case</span> LBS.uncons lbs <span class="kw">of</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Just</span> (<span class="dv">1</span>, rest) <span class="ot">-&gt;</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>      <span class="kw">case</span> JSON.decode rest <span class="kw">of</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Just</span> configs <span class="ot">-&gt;</span></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>          <span class="dt">JobConfigs</span> configs</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Nothing</span> <span class="ot">-&gt;</span></span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>          <span class="dt">SUndefined</span> lbs</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Just</span> (<span class="dv">2</span>, rest) <span class="ot">-&gt;</span></span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>      <span class="fu">uncurry</span> <span class="dt">Enqueue</span> (Binary.decode rest)</span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>    _ <span class="ot">-&gt;</span></span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>      <span class="dt">SUndefined</span></span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>  toLazyByteString p <span class="ot">=</span> <span class="kw">case</span> p <span class="kw">of</span></span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>    <span class="dt">JobConfigs</span> configs <span class="ot">-&gt;</span></span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a>      LBS.cons <span class="dv">1</span> (JSON.encode configs)</span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Enqueue</span> wid name <span class="ot">-&gt;</span></span>
+<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a>      LBS.cons <span class="dv">2</span> (Binary.encode (wid, name))</span>
+<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-39"><a href="#cb10-39" aria-hidden="true" tabindex="-1"></a>    <span class="dt">SUndefined</span> <span class="ot">-&gt;</span></span>
+<span id="cb10-40"><a href="#cb10-40" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;&quot;</span></span></code></pre></div>
+<p>クライアントへ送るメッセージの種類は、<code>ByteString</code> の先頭で判定することにしました。 <code>Job.Config</code> 型は YAML で定義したジョブの設定を読み込んだ型です。 <a href="https://hackage.haskell.org/package/aeson">aeson パッケージ</a>で JSON にして送ります。 ジョブ（<code>Job</code> 型）はサーバー側で生成して、クライアントへ処理を任せます。 <code>Job.Id</code> 型は、その生成したジョブのユニークIDで、<code>Job.Name</code> 型は <code>Job.Config</code> にあるジョブの種類を指すユニークIDです。 <a href="https://hackage.haskell.org/package/binary-0.10.0.0/docs/Data-Binary.html#t:Binary"><code>Binary</code> 型クラス</a>を利用してエンコード・デコードをすることにしました。</p>
+<p>クライアントからサーバーへはジョブの状態を返すようなプロトコルを定義しました：</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Client</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">JobRunning</span> <span class="dt">Job.Id</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">JobSuccess</span> <span class="dt">Job.Id</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">JobFailure</span> <span class="dt">Job.Id</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">CUndefined</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">WS.WebSocketsData</span> <span class="dt">Client</span> <span class="kw">where</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  fromDataMessage (<span class="dt">WS.Text</span>   bl _) <span class="ot">=</span> WS.fromLazyByteString bl</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  fromDataMessage (<span class="dt">WS.Binary</span> bl)   <span class="ot">=</span> WS.fromLazyByteString bl</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>  fromLazyByteString lbs <span class="ot">=</span> <span class="kw">case</span> LBS.uncons lbs <span class="kw">of</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Just</span> (<span class="dv">1</span>, rest) <span class="ot">-&gt;</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>      <span class="dt">JobRunning</span> (Binary.decode rest)</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Just</span> (<span class="dv">2</span>, rest) <span class="ot">-&gt;</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>      <span class="dt">JobSuccess</span> (Binary.decode rest)</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Just</span> (<span class="dv">3</span>, rest) <span class="ot">-&gt;</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>      <span class="dt">JobFailure</span> (Binary.decode rest)</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>    _ <span class="ot">-&gt;</span></span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>      <span class="dt">CUndefined</span></span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>  toLazyByteString p <span class="ot">=</span> <span class="kw">case</span> p <span class="kw">of</span></span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>    <span class="dt">JobRunning</span> wid <span class="ot">-&gt;</span></span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>      LBS.cons <span class="dv">1</span> (Binary.encode wid)</span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>    <span class="dt">JobSuccess</span> wid <span class="ot">-&gt;</span></span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>      LBS.cons <span class="dv">2</span> (Binary.encode wid)</span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a>    <span class="dt">JobFailure</span> wid <span class="ot">-&gt;</span></span>
+<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a>      LBS.cons <span class="dv">3</span> (Binary.encode wid)</span>
+<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a>    <span class="dt">CUndefined</span> <span class="ot">-&gt;</span></span>
+<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;&quot;</span></span></code></pre></div>
+<p>websockets パッケージでメッセージを送受信するには <code>sendBinaryData</code> 関数と <code>receiveData</code> 関数を使います：</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Server 側</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="ot">serveWorker ::</span> [<span class="dt">Job.Config</span>] <span class="ot">-&gt;</span> <span class="dt">DB</span> <span class="ot">-&gt;</span> <span class="dt">WS.Connection</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>serveWorker configs db conn <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  worker <span class="ot">&lt;-</span> DB.connectedWorker db conn</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  WS.sendBinaryData worker<span class="op">.</span>conn (<span class="dt">Protocol.JobConfigs</span> configs)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  forever (receive worker) <span class="ot">`finally`</span> DB.disconnectedWorker db worker<span class="op">.</span><span class="fu">id</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    receive worker <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>      p <span class="ot">&lt;-</span> WS.receiveData worker<span class="op">.</span>conn</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>      <span class="kw">case</span> p <span class="kw">of</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Protocol.JobRunning</span> jid <span class="ot">-&gt;</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>          DB.runningJob db worker<span class="op">.</span><span class="fu">id</span> jid</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Protocol.JobSuccess</span> jid <span class="ot">-&gt;</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>          DB.successJob db worker<span class="op">.</span><span class="fu">id</span> jid</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Protocol.JobFailure</span> jid <span class="ot">-&gt;</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>          DB.failureJob db worker<span class="op">.</span><span class="fu">id</span> jid</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>        _ <span class="ot">-&gt;</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>          <span class="fu">pure</span> ()</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a><span class="co">-- Client 側</span></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a><span class="ot">run ::</span> <span class="dt">Client</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>run client <span class="ot">=</span> WS.runClient client<span class="op">.</span>host client<span class="op">.</span>port client<span class="op">.</span>path <span class="op">$</span> \conn <span class="ot">-&gt;</span></span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>  WS.withPingThread conn <span class="dv">15</span> (<span class="fu">pure</span> ()) <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>    forever (receive conn)</span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>    receive conn <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>      p <span class="ot">&lt;-</span> WS.receiveData conn</span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>      <span class="kw">case</span> p <span class="kw">of</span></span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Protocol.JobConfigs</span> configs <span class="ot">-&gt;</span></span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a>          STM.atomically <span class="op">$</span> STM.writeTVar client<span class="op">.</span>configs configs</span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Protocol.Enqueue</span> jid jname <span class="ot">-&gt;</span> </span>
+<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a>          runJob conn client jid jname</span>
+<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a>        _ <span class="ot">-&gt;</span></span>
+<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a>          <span class="fu">pure</span> ()</span>
+<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a><span class="ot">runJob ::</span> <span class="dt">WS.Connection</span> <span class="ot">-&gt;</span> <span class="dt">Client</span> <span class="ot">-&gt;</span> <span class="dt">Job.Id</span> <span class="ot">-&gt;</span> <span class="dt">Job.Name</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</span>
+<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a>runJob conn client jid jname <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a>  configs <span class="ot">&lt;-</span> STM.atomically <span class="op">$</span> STM.readTVar client<span class="op">.</span>configs</span>
+<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a>  <span class="kw">case</span> List.find (\config <span class="ot">-&gt;</span> config<span class="op">.</span>name <span class="op">==</span> jname) configs <span class="kw">of</span></span>
+<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Nothing</span> <span class="ot">-&gt;</span></span>
+<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a>      WS.sendBinaryData conn (<span class="dt">Protocol.JobFailure</span> jid)</span>
+<span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Just</span> config <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a>      WS.sendBinaryData conn (<span class="dt">Protocol.JobRunning</span> jid)</span>
+<span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a>      threadDelay 10_000_000</span>
+<span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a>      WS.sendBinaryData conn (<span class="dt">Protocol.JobSuccess</span> jid)</span></code></pre></div>
+<p>クライアントは、サーバーから受け取った設定の情報を STM で保存することにします。 現状はとりあえず、10秒待って成功のメッセージを返すようにします。 これだけだとまだ、ジョブを積む側の処理がありません。ジョブは Web API を介して積むようにしました：</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">JobAPI</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> <span class="st">&quot;workers&quot;</span> <span class="op">:&gt;</span> <span class="dt">Get</span> &#39;[<span class="dt">JSON</span>] [<span class="dt">Worker.Info</span>]</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a> <span class="op">:&lt;|&gt;</span> <span class="st">&quot;jobs&quot;</span> <span class="op">:&gt;</span> <span class="dt">Get</span> &#39;[<span class="dt">JSON</span>] [<span class="dt">Job</span>]</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a> <span class="op">:&lt;|&gt;</span> <span class="st">&quot;jobs&quot;</span> <span class="op">:&gt;</span> <span class="dt">Capture</span> <span class="st">&quot;name&quot;</span> <span class="dt">Job.Name</span> <span class="op">:&gt;</span> <span class="dt">Post</span> &#39;[<span class="dt">JSON</span>] <span class="dt">Job</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="ot">server ::</span> [<span class="dt">Job.Config</span>] <span class="ot">-&gt;</span> <span class="dt">DB</span> <span class="ot">-&gt;</span> <span class="dt">Server</span> <span class="dt">API</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>server configs db</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>      <span class="ot">=</span> (getWorkers <span class="op">:&lt;|&gt;</span> getJobs <span class="op">:&lt;|&gt;</span> kickJob)</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>   <span class="op">:&lt;|&gt;</span> (liftIO <span class="op">.</span> serveRunner config db)</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    getWorkers <span class="ot">=</span> liftIO <span class="op">$</span> DB.getAllWorkerInfo db</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    getJobs <span class="ot">=</span> liftIO <span class="op">$</span> DB.getAllJob db</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    kickJob name <span class="ot">=</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>      <span class="kw">case</span> List.find (\config <span class="ot">-&gt;</span> config<span class="op">.</span>name <span class="op">==</span> name) configs <span class="kw">of</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Nothing</span> <span class="ot">-&gt;</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>          throwError err404</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Just</span> _ <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>          w <span class="ot">&lt;-</span> liftIO <span class="op">$</span> randomWorker db</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>          <span class="kw">case</span> w <span class="kw">of</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>            <span class="dt">Nothing</span> <span class="ot">-&gt;</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>              throwError <span class="op">$</span> err500 { errBody <span class="ot">=</span> <span class="st">&quot;worker is not exist.&quot;</span> }</span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>            <span class="dt">Just</span> worker <span class="ot">-&gt;</span> liftIO <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>              job <span class="ot">&lt;-</span> DB.enqueueJob db name</span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>              WS.sendBinaryData worker<span class="op">.</span>conn (<span class="dt">Protocol.Enqueue</span> job<span class="op">.</span><span class="fu">id</span> job<span class="op">.</span>name)</span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>              <span class="fu">pure</span> job</span></code></pre></div>
+<p><code>Job</code> 型も <code>Worker</code> 型と同じように STM で管理します（割愛）。 クライアントは複数あるので、ランダムで1つ取得するための処理が <code>randomWorker</code> 関数です。 雑に <code>randomRIO</code> 関数を使ってとってくるだけです：</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">System.Random</span> (randomRIO)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="ot">randomWorker ::</span> <span class="dt">DB</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Maybe</span> <span class="dt">Worker</span>)</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>randomWorker db <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  workers <span class="ot">&lt;-</span> DB.getAllWorker db</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">case</span> workers <span class="kw">of</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    [] <span class="ot">-&gt;</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>      <span class="fu">pure</span> <span class="dt">Nothing</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    _ <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>      idx <span class="ot">&lt;-</span> (\x <span class="ot">-&gt;</span> x <span class="op">-</span> <span class="dv">1</span>) <span class="op">&lt;$&gt;</span> randomRIO (<span class="dv">1</span>, <span class="fu">length</span> workers)</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>      <span class="fu">pure</span> <span class="op">$</span> <span class="dt">Just</span> (workers <span class="op">!!</span> idx)</span></code></pre></div>
+<p>Docker イメージを更新して、適当に curl するとこうなります：</p>
+<pre><code>$ curl -s localhost:8080/api/workers | jq
+[
+  {
+    &quot;id&quot;: 1,
+    &quot;working&quot;: false
+  },
+  {
+    &quot;id&quot;: 2,
+    &quot;working&quot;: false
+  }
+]
+$ curl -s localhost:8080/api/jobs | jq
+[]
+$ curl -s -XPOST localhost:8080/api/jobs/hello-world | jq
+{
+  &quot;id&quot;: 1,
+  &quot;name&quot;: &quot;hello-world&quot;,
+  &quot;queuing&quot;: true,
+  &quot;running&quot;: false,
+  &quot;success&quot;: false
+}
+$ curl -s localhost:8080/api/workers | jq
+[
+  {
+    &quot;id&quot;: 1,
+    &quot;working&quot;: false
+  },
+  {
+    &quot;id&quot;: 2,
+    &quot;working&quot;: true
+  }
+]
+$ curl -s localhost:8080/api/jobs | jq
+[
+  {
+    &quot;id&quot;: 1,
+    &quot;name&quot;: &quot;hello-world&quot;,
+    &quot;queuing&quot;: false,
+    &quot;running&quot;: true,
+    &quot;success&quot;: false
+  }
+]</code></pre>
+<h3 id="client-にキューを導入">Client にキューを導入</h3>
+<p><code>runJob</code> のところでジョブを実行しても良いですが、そうすると WebSocket が詰まってしまいそうなので、クライアント側に非同期用のキューをサクッと実装します。 Haskell では <a href="https://hackage.haskell.org/package/stm-2.5.0.2/docs/Control-Concurrent-STM-TQueue.html">stm パッケージの <code>TQueue</code> 型</a>を利用することで、簡単に非同期処理用のメッセージキューを実装できます：</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">JobWorker.Client</span> <span class="kw">where</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Client</span> <span class="ot">=</span> <span class="dt">Client</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  {<span class="ot"> host    ::</span> <span class="dt">String</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> port    ::</span> <span class="dt">Int</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> path    ::</span> <span class="dt">String</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> configs ::</span> <span class="dt">STM.TVar</span> [<span class="dt">Job.Config</span>]</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> queue   ::</span> <span class="dt">STM.TQueue</span> <span class="dt">Job</span> <span class="co">-- コレ</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="ot">run ::</span> <span class="dt">Client</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>run client <span class="ot">=</span> WS.runClient client<span class="op">.</span>host client<span class="op">.</span>port client<span class="op">.</span>path <span class="op">$</span> \conn <span class="ot">-&gt;</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>  WS.withPingThread conn <span class="dv">15</span> (<span class="fu">pure</span> ()) <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>    forkIO <span class="op">$</span> forever (runJob conn client) <span class="co">-- ジョブの処理を非同期にする</span></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>    forever (receive conn)</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>    receive conn <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>      p <span class="ot">&lt;-</span> WS.receiveData conn</span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>      <span class="kw">case</span> p <span class="kw">of</span></span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>        <span class="dt">Protocol.Enqueue</span> jid jname <span class="ot">-&gt;</span></span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>          <span class="co">-- WebSocketからのをそのままキューに積むだけ</span></span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>          STM.atomically <span class="op">$</span> STM.writeTQueue client<span class="op">.</span>queue (Job.new jname jid)</span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>        <span class="op">...</span></span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a><span class="ot">runJob ::</span> <span class="dt">WS.Connection</span> <span class="ot">-&gt;</span> <span class="dt">Client</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a>runJob conn client <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- キューからジョブを取り出す（取り出せるまで待つ）</span></span>
+<span id="cb16-29"><a href="#cb16-29" aria-hidden="true" tabindex="-1"></a>  job <span class="ot">&lt;-</span> STM.atomically <span class="op">$</span> STM.readTQueue client<span class="op">.</span>queue</span>
+<span id="cb16-30"><a href="#cb16-30" aria-hidden="true" tabindex="-1"></a>  configs <span class="ot">&lt;-</span> STM.atomically <span class="op">$</span> STM.readTVar client<span class="op">.</span>configs</span>
+<span id="cb16-31"><a href="#cb16-31" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
+<h3 id="docker-コンテナの実行">Docker コンテナの実行</h3>
+<p>最後に、ジョブを Docker コンテナで実行します。 といっても、ただプロセスを雑に実行するだけです。 外部プロセスを実行するのには <a href="https://hackage.haskell.org/package/process-1.6.14.0/docs/System-Process.html#v:readProcessWithExitCode">process パッケージの <code>eadProcessWithExitCode</code> 関数</a> を使います：</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">JobWorker.Docker</span> <span class="kw">where</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">JobWorker.Job</span> <span class="kw">qualified</span> <span class="kw">as</span> <span class="dt">Job</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">System.Exit</span> (<span class="dt">ExitCode</span>)</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">System.Process</span> <span class="kw">qualified</span> <span class="kw">as</span> <span class="dt">Process</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="ot">run ::</span> <span class="dt">Job.Config</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">ExitCode</span>, <span class="dt">String</span>, <span class="dt">String</span>)</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>run config <span class="ot">=</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>  Process.readProcessWithExitCode <span class="st">&quot;docker&quot;</span> [<span class="st">&quot;run&quot;</span>, <span class="st">&quot;--rm&quot;</span>, config<span class="op">.</span>image, config<span class="op">.</span>command] <span class="st">&quot;&quot;</span></span></code></pre></div>
+<p>最後の引数 <code>""</code> はプロセスに与える標準入力なので空文字列です。 後はこれをクライアントで呼び出して、結果に応じてサーバーへの返答を変えるだけです。</p>
+<h2 id="おしまい">おしまい</h2>
+            </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>
