@@ -1,10 +1,11 @@
-resolver: lts-18.5
+resolver: nightly-2022-07-01
 
 packages:
 - .
 
 extra-deps:
-- slick-1.1.1.0
-- extensible-0.8.2
+- github: ChrisPenner/slick # 1.1.2.2
+  commit: 0127e8d7942dba17967d6ef431093f730e00d5e3
+- extensible-0.9
 - incremental-0.3.1
 - membership-0.0.1

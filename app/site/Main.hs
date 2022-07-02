@@ -1,7 +1,9 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE NumericUnderscores    #-}
 {-# LANGUAGE OverloadedLabels      #-}
+{-# LANGUAGE OverloadedRecordDot   #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE TypeApplications      #-}
@@ -16,6 +18,7 @@ import           Control.Monad
 import           Data.Extensible
 import           Data.Functor.Identity      (Identity)
 import           Data.Time
+import           Data.Time.Format.ISO8601
 import           Development.Shake
 import           Development.Shake.Classes  ()
 import           Development.Shake.FilePath
@@ -186,9 +189,8 @@ formatToIsoDate humanDate = toIsoDate parsedTime
       parseTimeOrError True defaultTimeLocale "%b %e, %Y" humanDate
 
 toIsoDate :: UTCTime -> String
-toIsoDate = formatTime defaultTimeLocale (iso8601DateFormat rfc3339)
-  where
-    rfc3339 = Just "%H:%M:%SZ"
+toIsoDate t =
+  iso8601Show t { utctDayTime = secondsToDiffTime (diffTimeToPicoseconds t.utctDayTime `div` 1000_000_000_000) }
 
 buildSitemap :: [Post] -> Action ()
 buildSitemap posts = do
@@ -200,12 +202,11 @@ buildSitemap posts = do
     mkSitemapPost p = p & #date .~ formatToIsoDateOnly (p ^. #date)
 
 formatToIsoDateOnly :: String -> String
-formatToIsoDateOnly humanDate = toIsoDateOnly parsedTime
+formatToIsoDateOnly humanDate = iso8601Show parsedTime
   where
+    parsedTime :: Day
     parsedTime =
       parseTimeOrError True defaultTimeLocale "%b %e, %Y" humanDate
-    toIsoDateOnly :: UTCTime -> String
-    toIsoDateOnly = formatTime defaultTimeLocale (iso8601DateFormat Nothing)
 
 buildWithPagenation
   :: Forall (KeyTargetAre KnownSymbol (Instance1 ToMustache Identity)) (xs ++ PagenationInfoParams)
