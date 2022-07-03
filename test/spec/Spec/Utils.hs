@@ -1,6 +1,6 @@
 module Spec.Utils (spec) where
 
-import           Test.Tasty.Hspec
+import           Test.Hspec
 import           Text.HTML.Scalpel.Core (scrapeStringLike)
 import           Text.Megaparsec        (parseMaybe)
 import           Utils

@@ -58,5 +58,6 @@ tests:
     - app/site
     - test/spec
     dependencies:
+    - hspec
     - tasty
     - tasty-hspec

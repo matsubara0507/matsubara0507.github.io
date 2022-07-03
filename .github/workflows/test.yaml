@@ -13,8 +13,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, windows-2019]
-        ghc: ["8.10.4"]
+        os: [ubuntu-20.04, windows-2022]
+        ghc: ["9.2.3"]
 
     steps:
     - uses: actions/checkout@v2

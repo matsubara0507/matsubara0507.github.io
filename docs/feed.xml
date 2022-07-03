@@ -7,7 +7,7 @@
     <author>
         <name>MATSUBARA Nobutada</name>
     </author>
-    <updated>2022-03-05T07:30:40Z</updated>
+    <updated>2022-07-02T10:47:56Z</updated>
 
     <entry>
         <title>Haskell Servant + WebSocket で非同期ジョブを作る</title>
