@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head profile="http://www.w3.org/2005/10/profile">
+  <meta charset="utf-8">
+  <link rel="icon" href="/assets/icon.jpg">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Elm 用の Octicons パッケージを作る" />
+  <meta property="og:site_name" content="ひげメモ" />
+  <title>Elm 用の Octicons パッケージを作る</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/highlight.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />  <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<body>
+  <div class="outer">
+    <header class="site-header">
+      <div class="wrapper">
+        <a class="site-title" href="https://matsubara0507.github.io/">ひげメモ</a>
+      </div>
+      <div class="header-badge">
+        <a href="https://matsubara0507.github.io/">
+          <img src="/assets/icon.jpg" />
+        </a>
+      </div>
+    </header>    <div class="page-content">
+      <div class="wrapper">
+        <article class="post card" itemscope itemtype="http://schema.org/BlogPosting">
+          <div class="card-content">
+            <header class="post-header">
+              <h1 class="post-title" itemprop="name headline">Elm 用の Octicons パッケージを作る</h1>
+              <p class="post-meta">
+                <time datetime="$time$" itemprop="datePublished">Dec  1, 2022</time>
+              <div class="tags">
+                <i class="fa fa-tags"></i>
+                <a href="../tags/Elm/1">Elm</a>
+                <a href="../tags/Haskell/1">Haskell</a>
+                <a href="../tags/GitHub/1">GitHub</a>
+              </div>
+              </p>
+            </header>
+
+            <div class="post-content" itemprop="articleBody">
+              <p><a href="https://primer.style/octicons">Octicons</a>
+というのは、GitHub が提供している SVG アイコン集です。
+わたしは、なんかしらの Web アプリを作るときに <a
+href="https://primer.style/css/">Primer CSS</a> と Octicons
+をよく使います。</p>
+<p>また、なんかしらの Web アプリを作るときに Elm もよく使います。 <a
+href="https://package.elm-lang.org/packages/capitalist/elm-octicons">Elm
+で Octisons
+を使うためのパッケージが既にあります</a>が、長いことアップデートされてない（2022年12月現在での最終アップデートは2018年の
+v2.3.0）ので、いっそのこと自作しましたという話です。</p>
+<h2 id="octiconselm">octicons.elm</h2>
+<p>出来上がったのがこちら</p>
+<p><a
+href="https://github.com/matsubara0507/octicons-elm"><img src="https://opengraph.githubassets.com/1c8b51a32c8c7e6498a712fd4bd6456e878a506a5ccd588080fda6b06740d924/matsubara0507/octicons-elm" style="max-width: 500px;" /></a></p>
+<p>Octicons
+は主に3つのサイズがあるので、サイズごとの別のモジュールを用意した：</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode elm"><code class="sourceCode elm"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Html</span><span class="op">.</span><span class="dt">Attributes</span> <span class="kw">exposing</span> (<span class="fu">style</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Octicons</span><span class="op">.</span><span class="dt">Medium</span> <span class="kw">as</span> <span class="dt">Octicons</span> <span class="co">-- 16px のやつ</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">view</span> : <span class="dt">Model</span> <span class="op">-&gt;</span> <span class="dt">Html</span> <span class="fu">msg</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">view</span> <span class="fu">model</span> <span class="op">=</span> </span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Octicons</span><span class="op">.</span><span class="fu">alert</span> [ <span class="fu">style</span> <span class="st">&quot;fill&quot;</span> <span class="st">&quot;red&quot;</span> ]</span></code></pre></div>
+<p>公式が提供しているライブラリ（Ruby や
+JavaScript）によっては、自動でサイズを選択してくれるのもがるが、実装が煩雑になりそうだったのでやめた。
+動作確認を兼ねて、このパッケージを利用して作った<a
+href="https://matsubara0507.github.io/octicons-elm/">サンプルページ</a>も用意した。</p>
+<h2 id="自動生成">自動生成</h2>
+<p>サンプルページや、Octicons
+のページを見てもらうとわかるが、アイコンの量が非常に多い。
+これを1つ1つ手で Elm
+コードに書き写すのは苦行なので、いい感じに自動生成するプログラムを
+Haskell で作ることにした。 リポジトリの <code>svg2elm</code>
+ディレクトリ配下がそのプラグラムのプロジェクトだ。</p>
+<p>やってることは簡単で、<a
+href="https://github.com/primer/octicons">Octicons のリポジトリ</a>の
+<code>icons</code> ディレクトリにある SVG ファイルを読み込んで 、<a
+href="https://hackage.haskell.org/package/xml-conduit">xml-conduit
+パッケージ</a>でパースし、XMLの木構造を再帰的に Elm
+のコード文字列に変換して書き出すだけ。 こんな感じ：</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode elm"><code class="sourceCode elm"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">alert16Nodes</span> : <span class="dt">List</span> (<span class="dt">Svg</span> <span class="fu">msg</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">alert16Nodes</span> <span class="op">=</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    [ <span class="dt">Svg</span><span class="op">.</span><span class="fu">path</span> [ <span class="dt">Svg</span><span class="op">.</span><span class="dt">Attributes</span><span class="op">.</span><span class="fu">d</span> <span class="st">&quot;M8.22 1.754a.25.25 0 00-.44 0L1.698 13.132a.25.25 0 00.22.368h12.164a.25.25 0 00.22-.368L8.22 1.754zm-1.763-.707c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0114.082 15H1.918a1.75 1.75 0 01-1.543-2.575L6.457 1.047zM9 11a1 1 0 11-2 0 1 1 0 012 0zm-.25-5.25a.75.75 0 00-1.5 0v2.5a.75.75 0 001.5 0v-2.5z&quot;</span><span class="op">,</span> <span class="dt">Svg</span><span class="op">.</span><span class="dt">Attributes</span><span class="op">.</span><span class="fu">fillRule</span> <span class="st">&quot;evenodd&quot;</span> ] [] ]</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">alert24Nodes</span> : <span class="dt">List</span> (<span class="dt">Svg</span> <span class="fu">msg</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">alert24Nodes</span> <span class="op">=</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    [ <span class="dt">Svg</span><span class="op">.</span><span class="fu">path</span> [ <span class="dt">Svg</span><span class="op">.</span><span class="dt">Attributes</span><span class="op">.</span><span class="fu">d</span> <span class="st">&quot;M13 17.5a1 1 0 11-2 0 1 1 0 012 0zm-.25-8.25a.75.75 0 00-1.5 0v4.5a.75.75 0 001.5 0v-4.5z&quot;</span> ] []<span class="op">,</span> <span class="dt">Svg</span><span class="op">.</span><span class="fu">path</span> [ <span class="dt">Svg</span><span class="op">.</span><span class="dt">Attributes</span><span class="op">.</span><span class="fu">d</span> <span class="st">&quot;M9.836 3.244c.963-1.665 3.365-1.665 4.328 0l8.967 15.504c.963 1.667-.24 3.752-2.165 3.752H3.034c-1.926 0-3.128-2.085-2.165-3.752L9.836 3.244zm3.03.751a1 1 0 00-1.732 0L2.168 19.499A1 1 0 003.034 21h17.932a1 1 0 00.866-1.5L12.866 3.994z&quot;</span><span class="op">,</span> <span class="dt">Svg</span><span class="op">.</span><span class="dt">Attributes</span><span class="op">.</span><span class="fu">fillRule</span> <span class="st">&quot;evenodd&quot;</span> ] [] ]</span></code></pre></div>
+<p>上記のような、SVG ファイルから <code>List (Svg msg)</code>
+型の値に変換してそのまま書き出したのが <code>Nodes</code>
+モジュールである。 <code>Nodes</code>
+モジュールを参照して、使いやすいようにインターフェースを整えて、サイズ別に分けたのが
+<code>Small</code>・<code>Medium</code>・<code>Large</code>
+モジュールだ。 こんな感じ：</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode elm"><code class="sourceCode elm"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">Octicons</span><span class="op">.</span><span class="dt">Medium</span> <span class="kw">exposing</span> (<span class="op">...</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">{-| `Html msg` values as SVG that size is 16px.</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># SVG Icons</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co">@docs accessibility, accessibilityInset, alert, ...</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co">-}</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Html</span> <span class="kw">exposing</span> (<span class="dt">Html</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Octicons</span><span class="op">.</span><span class="dt">Internal</span> <span class="kw">as</span> <span class="dt">Octicons</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Octicons</span><span class="op">.</span><span class="dt">Nodes</span> <span class="kw">as</span> <span class="dt">Octicons</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co">{-| ref: &lt;https://primer.style/octicons/alert-16&gt;</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="co">-}</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="fu">alert</span> : <span class="dt">List</span> (<span class="dt">Html</span><span class="op">.</span><span class="dt">Attribute</span> <span class="fu">msg</span>) <span class="op">-&gt;</span> <span class="dt">Html</span> <span class="fu">msg</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="fu">alert</span> <span class="op">=</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Octicons</span><span class="op">.</span><span class="fu">toSvg</span> { <span class="fu">name</span> <span class="op">=</span> <span class="st">&quot;alert&quot;</span><span class="op">,</span> <span class="fu">size</span> <span class="op">=</span> <span class="dv">16</span> } <span class="dt">Octicons</span><span class="op">.</span><span class="fu">alert16Nodes</span></span></code></pre></div>
+<p><code>Internal</code>
+モジュールは、サイズ別のモジュールで利用する関数を定義してある。
+ドキュメント用のコメントアウトが無いと <code>elm publish</code>
+できないっぽいので、それも雑にだが生成するようにした。</p>
+<h2 id="更新検知">更新検知</h2>
+<p>GitHub Actions の定期実行を使って、Octicons
+のリポジトリに新しいリリースがでたら通知する（メンション付きでPRを作る）ようにした：</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Build new version commit</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">VERSION_FILE</span><span class="kw">:</span><span class="at"> .octicons-version</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">LATEST_LINK</span><span class="kw">:</span><span class="at"> https://api.github.com/repos/primer/octicons/releases/latest</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Checkout</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v2</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">ref</span><span class="kw">:</span><span class="at"> main</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Set current version</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">id</span><span class="kw">:</span><span class="at"> current</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> echo &quot;version=$(cat $VERSION_FILE)&quot; &gt;&gt; $GITHUB_OUTPUT</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Set latest version</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">id</span><span class="kw">:</span><span class="at"> latest</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> echo &quot;version=$(curl -s $LATEST_LINK | jq .tag_name | sed -e s/\&quot;//g | sed -e s/^v//g)&quot; &gt;&gt; $GITHUB_OUTPUT</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Check exist branch</span><span class="co"> # 同じバージョンのPRが重複しないように</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">id</span><span class="kw">:</span><span class="at"> branch</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">branch</span><span class="kw">:</span><span class="at"> octicons-version-${{ steps.latest.outputs.version }}</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> echo &quot;exist=$(git ls-remote --heads origin $branch | wc -l)&quot; &gt;&gt; $GITHUB_OUTPUT</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Update VERSION_FILE</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">if</span><span class="kw">:</span><span class="at"> ${{ steps.latest.outputs.version != steps.current.outputs.version &amp;&amp; steps.branch.outputs.exist == 0 }}</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">NEW_VERSION</span><span class="kw">:</span><span class="at"> ${{ steps.latest.outputs.version }}</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> echo &quot;$NEW_VERSION&quot; &gt; $VERSION_FILE</span></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Create Pull Request</span></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">if</span><span class="kw">:</span><span class="at"> ${{ steps.latest.outputs.version != steps.current.outputs.version &amp;&amp; steps.branch.outputs.exist == 0 }}</span></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> peter-evans/create-pull-request@v4</span></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">token</span><span class="kw">:</span><span class="at"> ${{ secrets.GITHUB_TOKEN }}</span></span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">commit-message</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;Feat: update primer/octicons version&#39;</span></span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">title</span><span class="kw">:</span><span class="at"> Release new primer/octicons version ${{ steps.latest.outputs.version }}</span></span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a><span class="fu">        body</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>         @matsubara0507</span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>         - [x] update primer/octicons version file</span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>         - [ ] update documents (README)</span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>         - [ ] update sample workflow</span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">labels</span><span class="kw">:</span><span class="at"> New primer/octicons Version</span></span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">branch</span><span class="kw">:</span><span class="at"> octicons-version-${{ steps.latest.outputs.version }}</span></span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">base</span><span class="kw">:</span><span class="at"> main</span></span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">draft</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<p>自動生成に使った primer/octicons のバージョンを専用のファイル
+<code>.octicons-version</code> に保存し、最新のバージョンは GitHub
+Release の latest から取得して、それらを GitHub Actions の Outputs
+に保存して比較している。</p>
+<h2 id="おしまい">おしまい</h2>
+            </div>
+
+            <footer class="post-footer">
+              <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button"
+                data-show-count="false">Tweet</a>
+              <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            </footer>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="wrapper">
+        <span class="footer-heading">ひげメモ</span>
+      </div>
+      <div class="page-content card" style="display: flex; justify-content: center; padding: 5px 0px">
+        <a href="https://haskell.jp/blog/posts/links.html#matsubara0507.github.io">
+          <img width="234" src="https://haskell.jp/img/supported-by-haskell-jp.svg" alt="Supported By Haskell-jp.">
+        </a>
+      </div>
+    </footer>  </div>
+</body>
