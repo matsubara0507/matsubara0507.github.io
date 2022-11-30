@@ -13,8 +13,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, windows-2022]
-        ghc: ["9.2.3"]
+        os: [ubuntu-20.04] # windows can't install GHC 9.4.3
+        ghc: ["9.4.3"]
 
     steps:
     - uses: actions/checkout@v2
@@ -27,7 +27,7 @@ jobs:
         key: ${{ runner.os }}-stack-${{ hashFiles('**/package.yaml') }}-${{ hashFiles('**/stack.yaml.lock') }}
         restore-keys: |
           ${{ runner.os }}-stack-
-    - uses: haskell/actions/setup@v1.2.9
+    - uses: haskell/actions/setup@v2
       name: Setup Haskell
       with:
         ghc-version: ${{ matrix.ghc }}
