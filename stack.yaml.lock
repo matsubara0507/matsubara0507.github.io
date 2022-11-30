@@ -5,40 +5,47 @@
 
 packages:
 - completed:
+    name: slick
+    pantry-tree:
+      sha256: 551394912628327a977ad8a714bd7de6aa15dd9f08a9000051fe88cc5e616b62
+      size: 880
+    sha256: 9de86ca7ba8e86f503b63356f096a9df478329173458de567adf6d5209605846
     size: 11191
     url: https://github.com/ChrisPenner/slick/archive/0127e8d7942dba17967d6ef431093f730e00d5e3.tar.gz
-    name: slick
     version: 1.1.2.2
-    sha256: 9de86ca7ba8e86f503b63356f096a9df478329173458de567adf6d5209605846
-    pantry-tree:
-      size: 880
-      sha256: 551394912628327a977ad8a714bd7de6aa15dd9f08a9000051fe88cc5e616b62
   original:
     url: https://github.com/ChrisPenner/slick/archive/0127e8d7942dba17967d6ef431093f730e00d5e3.tar.gz
 - completed:
     hackage: extensible-0.9@sha256:de4d368c30652729ec8726a91606db021b55e71164216ff671455e9b8f3c5474,3208
     pantry-tree:
-      size: 2040
       sha256: c36510b280cdb8f00fb06bfe107fab21d77ee0e8c030b418d75d358195a74714
+      size: 2040
   original:
     hackage: extensible-0.9
 - completed:
     hackage: incremental-0.3.1@sha256:9c697bae4f7e5ceb144bde13e03ca2f36b4bc2d0c92bbc02e0a604231ee279c2,1153
     pantry-tree:
-      size: 370
       sha256: fd5f40352dbf1602babd2c5db2a120c26e57bbd5ad30b19ce24d04189f6a18d1
+      size: 370
   original:
     hackage: incremental-0.3.1
 - completed:
     hackage: membership-0.0.1@sha256:6c4d4ab6e3fb3253c6c670e8a63f74454dc91be50b9f292d0b1355792190aee5,999
     pantry-tree:
-      size: 408
       sha256: b918a1a207108313b2bf453b0d9aa65122d9845c4b360c8ade46d3429ff1107a
+      size: 408
   original:
     hackage: membership-0.0.1
+- completed:
+    hackage: pandoc-2.19.2@sha256:080cf2f4fc8b9d389f2fd3760f59972196b8d5b0f3e9831ecf95eb0a902dbd05,40217
+    pantry-tree:
+      sha256: 947060b4316f43c42151fa21ad3d0e93ea75b67df6d03d9f8d5a33974d1a7e4d
+      size: 142091
+  original:
+    hackage: pandoc-2.19.2
 snapshots:
 - completed:
-    size: 614843
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2022/7/1.yaml
-    sha256: 3d516da83f27e490ecd1d86dfea088f9ae7737802d4e3fb8157c9e4066c355de
-  original: nightly-2022-07-01
+    sha256: 5cdc120e0d177749950441773022eb07e0e79e5d7dc701b4517d029feebd747d
+    size: 557030
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2022/11/29.yaml
+  original: nightly-2022-11-29

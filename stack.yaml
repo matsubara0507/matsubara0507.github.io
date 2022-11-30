@@ -1,11 +1,13 @@
-resolver: nightly-2022-07-01
+resolver: nightly-2022-11-29
 
 packages:
 - .
 
+allow-newer: true # for extensible and slick
 extra-deps:
 - github: ChrisPenner/slick # 1.1.2.2
   commit: 0127e8d7942dba17967d6ef431093f730e00d5e3
 - extensible-0.9
 - incremental-0.3.1
 - membership-0.0.1
+- pandoc-2.19.2 # for slick
